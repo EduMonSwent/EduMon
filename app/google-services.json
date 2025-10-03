@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "154991771075",
+    "project_id": "edumon-1c478",
+    "storage_bucket": "edumon-1c478.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:154991771075:android:255b294ab0c49dafb39176",
+        "android_client_info": {
+          "package_name": "com.android.sample"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDb-3cRCYlIT-TUVnCqgvfw_gPUQi3rd38"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

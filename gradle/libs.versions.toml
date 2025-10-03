@@ -16,6 +16,13 @@ kaspresso = "1.5.5"
 robolectric = "4.11.1"
 sonar = "4.4.1.3373"
 
+# --- Added Firebase versions ---
+firebaseAuth = "23.0.0"          # Firebase Authentication
+firebaseAuthKtx = "23.0.0"       # Firebase Authentication KTX extension
+firebaseFirestore = "25.1.0"     # Firebase Firestore
+firebaseDatabaseKtx = "21.0.0"   # Firebase Realtime Database KTX
+gms = "4.4.2"                    # Google Services Gradle plugin
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -41,8 +48,17 @@ kaspresso-compose = { group = "com.kaspersky.android-components", name = "kaspre
 
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
+# --- Added Firebase libraries ---
+firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }                # Firebase Authentication
+firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.ref = "firebaseAuthKtx" }    # Firebase Auth KTX
+firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestore" } # Firebase Firestore
+firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", version.ref = "firebaseDatabaseKtx" } # Firebase Realtime Database
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 sonar = { id = "org.sonarqube", version.ref = "sonar" }
+
+# --- Added Firebase plugin ---
+gms = { id = "com.google.gms.google-services", version.ref = "gms" }   # Google Services plugin for Firebase
