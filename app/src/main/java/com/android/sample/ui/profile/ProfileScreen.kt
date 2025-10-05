@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +28,20 @@ private val MidDarkCard = Color(0xFF232445)
 private val TextLight = Color(0xFFE0E0E0)
 private val AccentViolet = Color(0xFF9333EA)
 
+
+object ProfileScreenTestTags {
+    const val PROFILE_SCREEN = "profileScreen"
+    const val PET_SECTION = "petSection"
+    const val PROFILE_CARD = "profileCard"
+    const val STATS_CARD = "statsCard"
+    const val CUSTOMIZE_PET_SECTION = "customizePetSection"
+    const val SETTINGS_CARD = "settingsCard"
+    const val ACCOUNT_ACTIONS_SECTION = "accountActionsSection"
+    const val SWITCH_NOTIFICATIONS = "switchNotifications"
+    const val SWITCH_LOCATION = "switchLocation"
+    const val SWITCH_FOCUS_MODE = "switchFocusMode"
+}
+
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
     val user by viewModel.userProfile.collectAsState()
@@ -36,25 +51,46 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
             .fillMaxSize()
             .background(Color(0xFF0F0F1A))
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 60.dp),
+            .padding(bottom = 60.dp)
+            .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        PetSection(level = user.level)
+        PetSection(level = user.level, modifier = Modifier.testTag(ProfileScreenTestTags.PET_SECTION))
         Spacer(modifier = Modifier.height(16.dp))
-        GlowCard { ProfileCard(user = user) }
+        GlowCard {
+            Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) {
+                ProfileCard(user = user)
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        GlowCard { StatsCard(user = user) }
+        GlowCard {
+            Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) {
+                StatsCard(user = user)
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        GlowCard { CustomizePetSection() }
+        GlowCard {
+            Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
+                CustomizePetSection()
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        GlowCard { SettingsCard(user, viewModel) }
+        GlowCard {
+            Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
+                SettingsCard(user, viewModel)
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        GlowCard { AccountActionsSection() }
+        GlowCard {
+            Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
+                AccountActionsSection()
+            }
+        }
     }
 }
 
 @Composable
-fun PetSection(level: Int) {
+fun PetSection(level: Int, modifier: Modifier = Modifier) {
 
     val pulseAlpha by rememberInfiniteTransition().animateFloat(
         initialValue = 0.3f,
@@ -66,7 +102,7 @@ fun PetSection(level: Int) {
     )
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(220.dp)
             .background(
@@ -87,7 +123,6 @@ fun PetSection(level: Int) {
             StatBar(icon = "💡", percent = 0.85f, color = Color(0xFFFFC107))
             StatBar(icon = "⚡", percent = 0.7f, color = Color(0xFF03A9F4))
         }
-
 
         Box(
             modifier = Modifier
@@ -112,7 +147,6 @@ fun PetSection(level: Int) {
             )
         }
 
-
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -128,7 +162,6 @@ fun PetSection(level: Int) {
             )
         }
 
-
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -143,7 +176,6 @@ fun PetSection(level: Int) {
         }
     }
 }
-
 
 @Composable
 fun StatBar(icon: String, percent: Float, color: Color) {
@@ -167,7 +199,6 @@ fun StatBar(icon: String, percent: Float, color: Color) {
         Text("${(percent * 100).toInt()}%", color = TextLight.copy(alpha = 0.8f), fontSize = 12.sp)
     }
 }
-
 
 @Composable
 fun GlowCard(content: @Composable () -> Unit) {
@@ -207,7 +238,6 @@ fun ProfileCard(user: UserProfile) {
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-
             Box(
                 modifier = Modifier
                     .size(70.dp)
@@ -223,7 +253,6 @@ fun ProfileCard(user: UserProfile) {
             }
 
             Spacer(modifier = Modifier.width(20.dp))
-
 
             Image(
                 painter = painterResource(id = R.drawable.epfl),
@@ -244,7 +273,6 @@ fun ProfileCard(user: UserProfile) {
         }
     }
 }
-
 
 @Composable
 fun Badge(text: String, bg: Color, textColor: Color = Color.White) {
@@ -318,18 +346,21 @@ fun SettingsCard(user: UserProfile, viewModel: ProfileViewModel) {
         Text("Settings", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(8.dp))
         SettingRow("🔔 Notifications", "Study reminders & updates",
-            user.notificationsEnabled, { viewModel.toggleNotifications() })
+            user.notificationsEnabled, { viewModel.toggleNotifications() },
+            modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_NOTIFICATIONS))
         Divider(color = Color(0xFF2F2F45))
         SettingRow("📍 Location Services", "Study spot suggestions",
-            user.locationEnabled, { viewModel.toggleLocation() })
+            user.locationEnabled, { viewModel.toggleLocation() },
+            modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
         Divider(color = Color(0xFF2F2F45))
         SettingRow("🎯 Focus Mode", "Minimize distractions",
-            user.focusModeEnabled, { viewModel.toggleFocusMode() })
+            user.focusModeEnabled, { viewModel.toggleFocusMode() },
+            modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
     }
 }
 
 @Composable
-fun SettingRow(title: String, desc: String, value: Boolean, onToggle: () -> Unit) {
+fun SettingRow(title: String, desc: String, value: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -339,18 +370,21 @@ fun SettingRow(title: String, desc: String, value: Boolean, onToggle: () -> Unit
             Text(title, color = TextLight)
             Text(desc, color = TextLight.copy(alpha = 0.6f), fontSize = 12.sp)
         }
-        Switch(checked = value, onCheckedChange = { onToggle() })
+        Switch(checked = value, onCheckedChange = { onToggle() }, modifier = modifier)
     }
 }
 
 @Composable
 fun AccountActionsSection() {
-    Column(modifier = Modifier.padding(12.dp)) {
+    Column(
+        modifier = Modifier.padding(12.dp)
+    ) {
         ActionButton("Privacy Policy")
         ActionButton("Terms of Service")
         ActionButton("Logout", textColor = Color.Red)
     }
 }
+
 
 @Composable
 fun ActionButton(text: String, textColor: Color = TextLight) {
