@@ -20,24 +20,21 @@ data class UserProfile(
 
 class ProfileViewModel : ViewModel() {
 
-    private val _userProfile = MutableStateFlow(UserProfile())
-    val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
+  private val _userProfile = MutableStateFlow(UserProfile())
+  val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
-    fun toggleNotifications() {
-        _userProfile.value = _userProfile.value.copy(
-            notificationsEnabled = !_userProfile.value.notificationsEnabled
-        )
-    }
+  fun toggleNotifications() {
+    _userProfile.value =
+        _userProfile.value.copy(notificationsEnabled = !_userProfile.value.notificationsEnabled)
+  }
 
-    fun toggleLocation() {
-        _userProfile.value = _userProfile.value.copy(
-            locationEnabled = !_userProfile.value.locationEnabled
-        )
-    }
+  fun toggleLocation() {
+    _userProfile.value =
+        _userProfile.value.copy(locationEnabled = !_userProfile.value.locationEnabled)
+  }
 
-    fun toggleFocusMode() {
-        _userProfile.value = _userProfile.value.copy(
-            focusModeEnabled = !_userProfile.value.focusModeEnabled
-        )
-    }
+  fun toggleFocusMode() {
+    _userProfile.value =
+        _userProfile.value.copy(focusModeEnabled = !_userProfile.value.focusModeEnabled)
+  }
 }
