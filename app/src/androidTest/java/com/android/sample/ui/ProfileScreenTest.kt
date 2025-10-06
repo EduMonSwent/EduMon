@@ -1,10 +1,12 @@
-package com.android.sample.ui.profile
+package com.android.sample.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToNode
+import com.android.sample.ui.profile.ProfileScreen
+import com.android.sample.ui.profile.ProfileScreenTestTags
 import org.junit.Rule
 import org.junit.Test
 
