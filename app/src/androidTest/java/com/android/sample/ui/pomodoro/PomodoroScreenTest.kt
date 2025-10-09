@@ -60,6 +60,14 @@ class PomodoroScreenTest {
   }
 
   @Test
+  fun clickingResumeCallsResumeTimer() {
+    fakeViewModel.setState(PomodoroState.PAUSED)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.RESUME_BUTTON).performClick()
+    assert(fakeViewModel.resumeCalled)
+  }
+
+  @Test
   fun clickingSkipCallsNextPhase() {
     fakeViewModel.setState(PomodoroState.RUNNING)
     composeTestRule.waitForIdle()
@@ -73,6 +81,13 @@ class PomodoroScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PomodoroScreenTestTags.RESET_BUTTON).performClick()
     assert(fakeViewModel.resetCalled)
+  }
+  @Test
+  fun clickingNextPhaseCallsNextPhaseWhenFinished() {
+    fakeViewModel.setState(PomodoroState.FINISHED)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.NEXT_PHASE_BUTTON).performClick()
+    assert(fakeViewModel.nextPhaseCalled)
   }
 
   // --- State-dependent UI ---
@@ -96,6 +111,15 @@ class PomodoroScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PomodoroScreenTestTags.SKIP_BUTTON).assertIsDisplayed()
   }
+  @Test
+  fun showsLongBreakPhaseTextCorrectly() {
+    fakeViewModel.setPhase(PomodoroPhase.LONG_BREAK)
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+      .onNodeWithTag(PomodoroScreenTestTags.PHASE_TEXT)
+      .assertTextEquals("Phase: Long Break")
+  }
 
   // --- Timer display ---
   @Test
@@ -107,6 +131,16 @@ class PomodoroScreenTest {
         .assertTextEquals("02:05")
         .assertIsDisplayed()
   }
+  @Test
+  fun timerTextUpdatesWhenTimeChanges() {
+    fakeViewModel.setTime(300)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.TIMER).assertTextEquals("05:00")
+
+    fakeViewModel.setTime(59)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.TIMER).assertTextEquals("00:59")
+  }
 
   // --- Cycle count display ---
   @Test
@@ -117,6 +151,16 @@ class PomodoroScreenTest {
         .onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT)
         .assertTextEquals("Cycles Completed: 3")
         .assertIsDisplayed()
+  }
+  @Test
+  fun cycleCountUpdatesWhenChanged() {
+    fakeViewModel.setCycleCount(1)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT).assertTextEquals("Cycles Completed: 1")
+
+    fakeViewModel.setCycleCount(5)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT).assertTextEquals("Cycles Completed: 5")
   }
 }
 
