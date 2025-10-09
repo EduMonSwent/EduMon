@@ -13,20 +13,22 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.sample.resources.C
+import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
-      SampleAppTheme {
+      /*SampleAppTheme {
         // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
               Greeting("Android")
             }
-      }
+      }*/
+        SampleAppTheme { PlannerScreen() }
     }
   }
 }
