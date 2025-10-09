@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,8 +24,19 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.ui.theme.SampleAppTheme
 
+object PomodoroScreenTestTags {
+  const val TIMER = "timer"
+  const val TITLE = "title"
+  const val START_BUTTON = "start_button"
+  const val PAUSE_BUTTON = "pause_button"
+  const val RESET_BUTTON = "reset_button"
+  const val SKIP_BUTTON = "skip_button"
+  const val PHASE_TEXT = "phase_text"
+  const val CYCLE_COUNT = "cycle_count"
+}
+
 @Composable
-fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
+fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroViewModel>()) {
   val timeLeft by viewModel.timeLeft.collectAsState()
   val phase by viewModel.phase.collectAsState()
   val state by viewModel.state.collectAsState()
@@ -53,26 +65,57 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
-          Text("Pomodoro Timer", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+          Text(
+              text = "Pomodoro Timer",
+              fontSize = 28.sp,
+              fontWeight = FontWeight.Bold,
+              modifier = Modifier.testTag(PomodoroScreenTestTags.TITLE))
           Spacer(modifier = Modifier.height(8.dp))
-          Text("Phase: $phaseText", fontSize = 20.sp)
+          Text(
+              "Phase: $phaseText",
+              fontSize = 20.sp,
+              modifier = Modifier.testTag(PomodoroScreenTestTags.PHASE_TEXT))
           Spacer(modifier = Modifier.height(16.dp))
-          Text(timeText, fontSize = 56.sp, fontWeight = FontWeight.Bold)
+          Text(
+              timeText,
+              fontSize = 56.sp,
+              fontWeight = FontWeight.Bold,
+              modifier = Modifier.testTag(PomodoroScreenTestTags.TIMER))
           Spacer(modifier = Modifier.height(16.dp))
-          Text("Cycles Completed: $cycleCount", fontSize = 16.sp)
+          Text(
+              "Cycles Completed: $cycleCount",
+              fontSize = 16.sp,
+              modifier = Modifier.testTag(PomodoroScreenTestTags.CYCLE_COUNT))
           Spacer(modifier = Modifier.height(24.dp))
 
           when (state) {
-            PomodoroState.IDLE -> Button(onClick = { viewModel.startTimer() }) { Text("Start") }
+            PomodoroState.IDLE ->
+                Button(
+                    onClick = { viewModel.startTimer() },
+                    modifier = Modifier.testTag(PomodoroScreenTestTags.START_BUTTON)) {
+                      Text("Start")
+                    }
             PomodoroState.RUNNING ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                  Button(onClick = { viewModel.pauseTimer() }) { Text("Pause") }
-                  Button(onClick = { viewModel.nextPhase() }) { Text("Skip") }
+                  Button(
+                      onClick = { viewModel.pauseTimer() },
+                      modifier = Modifier.testTag(PomodoroScreenTestTags.PAUSE_BUTTON)) {
+                        Text("Pause")
+                      }
+                  Button(
+                      onClick = { viewModel.nextPhase() },
+                      modifier = Modifier.testTag(PomodoroScreenTestTags.SKIP_BUTTON)) {
+                        Text("Skip")
+                      }
                 }
             PomodoroState.PAUSED ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                   Button(onClick = { viewModel.resumeTimer() }) { Text("Resume") }
-                  Button(onClick = { viewModel.resetTimer() }) { Text("Reset") }
+                  Button(
+                      onClick = { viewModel.resetTimer() },
+                      modifier = Modifier.testTag(PomodoroScreenTestTags.RESET_BUTTON)) {
+                        Text("Reset")
+                      }
                 }
             PomodoroState.FINISHED ->
                 Button(onClick = { viewModel.nextPhase() }) { Text("Next Phase") }

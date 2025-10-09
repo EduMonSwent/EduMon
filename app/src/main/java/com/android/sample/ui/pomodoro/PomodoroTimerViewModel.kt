@@ -1,10 +1,12 @@
 package com.android.sample.ui.pomodoro
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -21,7 +23,24 @@ enum class PomodoroState {
   FINISHED
 }
 
-class PomodoroViewModel : ViewModel() {
+interface PomodoroViewModelContract {
+  val timeLeft: StateFlow<Int>
+  val phase: StateFlow<PomodoroPhase>
+  val state: StateFlow<PomodoroState>
+  val cycleCount: StateFlow<Int>
+
+  fun startTimer()
+
+  fun pauseTimer()
+
+  fun resumeTimer()
+
+  fun resetTimer()
+
+  fun nextPhase()
+}
+
+class PomodoroViewModel : ViewModel(), PomodoroViewModelContract {
 
   // --- Timer Durations (in seconds) ---
   private val WORK_TIME = 25 * 60
@@ -30,22 +49,22 @@ class PomodoroViewModel : ViewModel() {
 
   // --- State Variables ---
   private val _phase = MutableStateFlow(PomodoroPhase.WORK)
-  val phase = _phase.asStateFlow()
+  override val phase = _phase.asStateFlow()
 
   private val _timeLeft = MutableStateFlow(WORK_TIME)
-  val timeLeft = _timeLeft.asStateFlow()
+  override val timeLeft = _timeLeft.asStateFlow()
 
   private val _state = MutableStateFlow(PomodoroState.IDLE)
-  val state = _state.asStateFlow()
+  override val state = _state.asStateFlow()
 
   private val _cycleCount = MutableStateFlow(0)
-  val cycleCount = _cycleCount.asStateFlow()
+  override val cycleCount = _cycleCount.asStateFlow()
 
   private var timerJob: Job? = null
 
   // --- Timer Control ---
   /** Start the timer if it's in the IDLE state. */
-  fun startTimer() {
+  override fun startTimer() {
     if (_state.value == PomodoroState.RUNNING) return
 
     _state.value = PomodoroState.RUNNING
@@ -61,16 +80,16 @@ class PomodoroViewModel : ViewModel() {
   }
 
   /** Pause the timer if it's in the RUNNING state. */
-  fun pauseTimer() {
+  override fun pauseTimer() {
     _state.value = PomodoroState.PAUSED
   }
 
   /** Resume the timer if it's in the PAUSED state. */
-  fun resumeTimer() {
+  override fun resumeTimer() {
     if (_state.value == PomodoroState.PAUSED) startTimer()
   }
   /** Reset the timer to the initial state. */
-  fun resetTimer() {
+  override fun resetTimer() {
     timerJob?.cancel()
     _state.value = PomodoroState.IDLE
     _phase.value = PomodoroPhase.WORK
@@ -97,11 +116,11 @@ class PomodoroViewModel : ViewModel() {
       }
     }
 
-    startTimer() // delete if timer must wait when starting new phase
+    // startTimer() // delete if timer must wait when starting new phase
   }
 
   /** Skip the current phase and move to the next one. */
-  fun nextPhase() {
+  override fun nextPhase() {
     // Allow manual skipping
     onPhaseCompleted()
   }
@@ -116,4 +135,6 @@ class PomodoroViewModel : ViewModel() {
           PomodoroPhase.LONG_BREAK -> LONG_BREAK_TIME
         }
   }
+
+  @VisibleForTesting fun onTestPhaseCompleted() = onPhaseCompleted()
 }
