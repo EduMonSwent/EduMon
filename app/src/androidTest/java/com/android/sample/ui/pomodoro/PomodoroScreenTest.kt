@@ -82,6 +82,7 @@ class PomodoroScreenTest {
     composeTestRule.onNodeWithTag(PomodoroScreenTestTags.RESET_BUTTON).performClick()
     assert(fakeViewModel.resetCalled)
   }
+
   @Test
   fun clickingNextPhaseCallsNextPhaseWhenFinished() {
     fakeViewModel.setState(PomodoroState.FINISHED)
@@ -111,14 +112,15 @@ class PomodoroScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PomodoroScreenTestTags.SKIP_BUTTON).assertIsDisplayed()
   }
+
   @Test
   fun showsLongBreakPhaseTextCorrectly() {
     fakeViewModel.setPhase(PomodoroPhase.LONG_BREAK)
     composeTestRule.waitForIdle()
 
     composeTestRule
-      .onNodeWithTag(PomodoroScreenTestTags.PHASE_TEXT)
-      .assertTextEquals("Phase: Long Break")
+        .onNodeWithTag(PomodoroScreenTestTags.PHASE_TEXT)
+        .assertTextEquals("Phase: Long Break")
   }
 
   // --- Timer display ---
@@ -131,6 +133,7 @@ class PomodoroScreenTest {
         .assertTextEquals("02:05")
         .assertIsDisplayed()
   }
+
   @Test
   fun timerTextUpdatesWhenTimeChanges() {
     fakeViewModel.setTime(300)
@@ -152,15 +155,20 @@ class PomodoroScreenTest {
         .assertTextEquals("Cycles Completed: 3")
         .assertIsDisplayed()
   }
+
   @Test
   fun cycleCountUpdatesWhenChanged() {
     fakeViewModel.setCycleCount(1)
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT).assertTextEquals("Cycles Completed: 1")
+    composeTestRule
+        .onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT)
+        .assertTextEquals("Cycles Completed: 1")
 
     fakeViewModel.setCycleCount(5)
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT).assertTextEquals("Cycles Completed: 5")
+    composeTestRule
+        .onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT)
+        .assertTextEquals("Cycles Completed: 5")
   }
 }
 
