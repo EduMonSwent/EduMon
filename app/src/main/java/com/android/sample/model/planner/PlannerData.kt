@@ -15,7 +15,9 @@ data class Class(
 )
 
 enum class ClassType {
-    LECTURE, EXERCISE, LAB
+  LECTURE,
+  EXERCISE,
+  LAB
 }
 
 data class ClassAttendance(
@@ -27,9 +29,13 @@ data class ClassAttendance(
 )
 
 enum class AttendanceStatus {
-    YES, NO, ARRIVED_LATE
+  YES,
+  NO,
+  ARRIVED_LATE
 }
 
 enum class CompletionStatus {
-    YES, NO, PARTIALLY
+  YES,
+  NO,
+  PARTIALLY
 }
