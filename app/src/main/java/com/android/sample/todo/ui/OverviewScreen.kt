@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,8 +52,9 @@ fun OverviewScreen(
   // Observe UI state (list of todos)
   val state by vm.uiState.collectAsState()
 
-  // Scaffold provides the top bar and FAB layout
+  // provides the top bar and FAB layout
   Scaffold(
+      modifier = Modifier.testTag(TestTags.OverviewScreen),
       containerColor = TodoColors.Background,
       topBar = {
         TopAppBar(
@@ -62,7 +64,8 @@ fun OverviewScreen(
       floatingActionButton = {
         FloatingActionButton(
             onClick = onAddClicked, // open AddToDoScreen
-            containerColor = TodoColors.Accent) {
+            containerColor = TodoColors.Accent,
+            modifier = Modifier.testTag(TestTags.FabAdd)) {
               Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
             }
       }) { padding ->
@@ -78,15 +81,20 @@ fun OverviewScreen(
           // Otherwise show the list of To-Dos
         } else {
           LazyColumn(
-              modifier = Modifier.padding(padding).padding(16.dp).background(TodoColors.Background),
+              modifier =
+                  Modifier.padding(padding)
+                      .padding(16.dp)
+                      .background(TodoColors.Background)
+                      .testTag(TestTags.List),
               verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
                 // For each To-Do in the list
                 items(state.items, key = { it.id }) { item ->
                   Card(
                       colors = todoCardColors(),
                       shape = MaterialTheme.shapes.large,
                       border = BorderStroke(1.dp, TodoColors.CardStroke),
-                      modifier = Modifier.fillMaxWidth()) {
+                      modifier = Modifier.fillMaxWidth().testTag(TestTags.card(item.id))) {
                         Column(
                             Modifier
                                 // Click anywhere on the card to edit
@@ -95,18 +103,24 @@ fun OverviewScreen(
                                     interactionSource = remember { MutableInteractionSource() },
                                     onClick = { onEditClicked(item.id) })
                                 .padding(16.dp)) {
-                              // Top row: status, priority, and delete button
                               Row(verticalAlignment = Alignment.CenterVertically) {
-                                StatusChip(item.status) { vm.cycleStatus(item.id) }
+                                StatusChip(
+                                    status = item.status,
+                                    onClick = { vm.cycleStatus(item.id) },
+                                    modifier = Modifier.testTag(TestTags.status(item.id)))
                                 Spacer(Modifier.width(8.dp))
-                                PriorityChip(item.priority)
+                                PriorityChip(
+                                    priority = item.priority,
+                                    modifier = Modifier.testTag(TestTags.priority(item.id)))
                                 Spacer(Modifier.weight(1f))
-                                IconButton(onClick = { vm.delete(item.id) }) {
-                                  Icon(
-                                      Icons.Default.Delete,
-                                      contentDescription = "Delete",
-                                      tint = Color(0xFFFF3B30))
-                                }
+                                IconButton(
+                                    onClick = { vm.delete(item.id) },
+                                    modifier = Modifier.testTag(TestTags.delete(item.id))) {
+                                      Icon(
+                                          Icons.Default.Delete,
+                                          contentDescription = "Delete",
+                                          tint = Color(0xFFFF3B30))
+                                    }
                               }
 
                               Spacer(Modifier.height(4.dp))
@@ -138,7 +152,7 @@ fun OverviewScreen(
 
 /** A colored chip representing the To-Do's status (TODO / IN_PROGRESS / DONE) */
 @Composable
-private fun StatusChip(status: Status, onClick: () -> Unit) {
+private fun StatusChip(status: Status, onClick: () -> Unit, modifier: Modifier = Modifier) {
   val bg =
       when (status) {
         Status.TODO -> TodoColors.ChipViolet
@@ -148,12 +162,13 @@ private fun StatusChip(status: Status, onClick: () -> Unit) {
   AssistChip(
       onClick = onClick,
       label = { Text(status.name.replace('_', ' ')) },
+      modifier = modifier, // allow tagging from caller
       colors = AssistChipDefaults.assistChipColors(containerColor = bg, labelColor = Color.White))
 }
 
 /** A chip that displays the priority level (LOW / MEDIUM / HIGH) */
 @Composable
-private fun PriorityChip(priority: Priority) {
+private fun PriorityChip(priority: Priority, modifier: Modifier = Modifier) {
   val chipColor =
       when (priority) {
         Priority.HIGH -> TodoColors.Accent
@@ -163,6 +178,7 @@ private fun PriorityChip(priority: Priority) {
   AssistChip(
       onClick = {},
       label = { Text("Priority: ${priority.name}") },
+      modifier = modifier, // allow tagging from caller
       colors =
           AssistChipDefaults.assistChipColors(
               containerColor = chipColor.copy(alpha = 0.25f), labelColor = TodoColors.OnCard))

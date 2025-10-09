@@ -14,6 +14,7 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
 import java.time.LocalDate
@@ -82,7 +83,8 @@ fun DueDateField(
                   cal.get(Calendar.MONTH),
                   cal.get(Calendar.DAY_OF_MONTH))
               .show()
-        }) {
+        },
+        modifier = Modifier.testTag(TestTags.ChangeDateBtn)) {
           Text(changeButtonText)
         }
   }
