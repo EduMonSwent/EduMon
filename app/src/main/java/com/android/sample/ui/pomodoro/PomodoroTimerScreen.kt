@@ -18,11 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.ui.theme.SampleAppTheme
 
 object PomodoroScreenTestTags {
   const val TIMER = "timer"
@@ -30,9 +28,9 @@ object PomodoroScreenTestTags {
   const val START_BUTTON = "start_button"
   const val PAUSE_BUTTON = "pause_button"
   const val RESET_BUTTON = "reset_button"
-    const val RESUME_BUTTON = "resume_button"
+  const val RESUME_BUTTON = "resume_button"
   const val SKIP_BUTTON = "skip_button"
-    const val NEXT_PHASE_BUTTON = "next_phase_button"
+  const val NEXT_PHASE_BUTTON = "next_phase_button"
   const val PHASE_TEXT = "phase_text"
   const val CYCLE_COUNT = "cycle_count"
 }
@@ -112,7 +110,11 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
                 }
             PomodoroState.PAUSED ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                  Button(onClick = { viewModel.resumeTimer() }, modifier = Modifier.testTag(PomodoroScreenTestTags.RESUME_BUTTON)) { Text("Resume") }
+                  Button(
+                      onClick = { viewModel.resumeTimer() },
+                      modifier = Modifier.testTag(PomodoroScreenTestTags.RESUME_BUTTON)) {
+                        Text("Resume")
+                      }
                   Button(
                       onClick = { viewModel.resetTimer() },
                       modifier = Modifier.testTag(PomodoroScreenTestTags.RESET_BUTTON)) {
@@ -120,9 +122,12 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
                       }
                 }
             PomodoroState.FINISHED ->
-                Button(onClick = { viewModel.nextPhase() }, modifier = Modifier.testTag(PomodoroScreenTestTags.NEXT_PHASE_BUTTON)) { Text("Next Phase") }
+                Button(
+                    onClick = { viewModel.nextPhase() },
+                    modifier = Modifier.testTag(PomodoroScreenTestTags.NEXT_PHASE_BUTTON)) {
+                      Text("Next Phase")
+                    }
           }
         }
   }
 }
-
