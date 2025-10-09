@@ -15,8 +15,6 @@ val TextLight = Color(0xFFE0E0E0) // text on dark
 val AccentViolet = Color(0xFF9333EA) // accent / primary
 
 val AccentMint = Color(0xFF10B981) // secondary
-val AccentMagenta= Color(0xFFDB2777) // tertiary
-
-
+val AccentMagenta = Color(0xFFDB2777) // tertiary
 
 val BackgroundDark = Color(0xFF0E0F1A)

@@ -5,10 +5,18 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 // Levels of importance for a task
-enum class Priority { LOW, MEDIUM, HIGH }
+enum class Priority {
+  LOW,
+  MEDIUM,
+  HIGH
+}
 
 // Current progress of a task
-enum class Status { TODO, IN_PROGRESS, DONE }
+enum class Status {
+  TODO,
+  IN_PROGRESS,
+  DONE
+}
 
 /**
  * Represents a single To-Do item.
@@ -20,18 +28,17 @@ data class ToDo(
     val id: String = UUID.randomUUID().toString(),
 
     // ----- Mandatory fields -----
-    val title: String,              // short task name
-    val dueDate: LocalDate,         // deadline
-    val priority: Priority,         // importance level
+    val title: String, // short task name
+    val dueDate: LocalDate, // deadline
+    val priority: Priority, // importance level
     val status: Status = Status.TODO, // defaults to "TODO"
 
     // ----- Optional fields -----
-    val location: String? = null,   // place related to task (optional)
+    val location: String? = null, // place related to task (optional)
     val links: List<String> = emptyList(), // related resources (optional)
-    val note: String? = null,       // extra description (optional)
+    val note: String? = null, // extra description (optional)
     val notificationsEnabled: Boolean = false // reminder toggle
 ) {
-    // Utility to display due date in a human-friendly format
-    fun dueDateFormatted(): String =
-        dueDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))
+  // Utility to display due date in a human-friendly format
+  fun dueDateFormatted(): String = dueDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))
 }

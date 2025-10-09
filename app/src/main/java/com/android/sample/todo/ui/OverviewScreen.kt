@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,162 +34,136 @@ import com.android.sample.todo.ToDoRepositoryProvider
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OverviewScreen(
-    onAddClicked: () -> Unit,           // Navigate to AddToDoScreen
-    onEditClicked: (String) -> Unit     // Navigate to EditToDoScreen for a given ID
+    onAddClicked: () -> Unit, // Navigate to AddToDoScreen
+    onEditClicked: (String) -> Unit // Navigate to EditToDoScreen for a given ID
 ) {
-    // Create a ViewModel and inject the repository
-    val vm: OverviewViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return OverviewViewModel(ToDoRepositoryProvider.repository) as T
+  // Create a ViewModel and inject the repository
+  val vm: OverviewViewModel =
+      viewModel(
+          factory =
+              object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                  return OverviewViewModel(ToDoRepositoryProvider.repository) as T
+                }
+              })
+
+  // Observe UI state (list of todos)
+  val state by vm.uiState.collectAsState()
+
+  // Scaffold provides the top bar and FAB layout
+  Scaffold(
+      containerColor = TodoColors.Background,
+      topBar = {
+        TopAppBar(
+            title = { Text("Your To-Dos", color = TodoColors.OnBackground) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = TodoColors.Background))
+      },
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = onAddClicked, // open AddToDoScreen
+            containerColor = TodoColors.Accent) {
+              Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
             }
-        }
-    )
-
-    // Observe UI state (list of todos)
-    val state by vm.uiState.collectAsState()
-
-    // Scaffold provides the top bar and FAB layout
-    Scaffold(
-        containerColor = TodoColors.Background,
-        topBar = {
-            TopAppBar(
-                title = { Text("Your To-Dos", color = TodoColors.OnBackground) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TodoColors.Background)
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClicked,               // open AddToDoScreen
-                containerColor = TodoColors.Accent
-            ) { Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White) }
-        }
-    ) { padding ->
+      }) { padding ->
 
         // If there are no tasks, show a message
         if (state.items.isEmpty()) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .background(TodoColors.Background),
-                contentAlignment = Alignment.Center
-            ) {
+          Box(
+              Modifier.fillMaxSize().padding(padding).background(TodoColors.Background),
+              contentAlignment = Alignment.Center) {
                 Text("No tasks yet. Tap + to add one.", color = TodoColors.OnBackground)
-            }
+              }
 
-            // Otherwise show the list of To-Dos
+          // Otherwise show the list of To-Dos
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .padding(padding)
-                    .padding(16.dp)
-                    .background(TodoColors.Background),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+          LazyColumn(
+              modifier = Modifier.padding(padding).padding(16.dp).background(TodoColors.Background),
+              verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // For each To-Do in the list
                 items(state.items, key = { it.id }) { item ->
-                    Card(
-                        colors = todoCardColors(),
-                        shape = MaterialTheme.shapes.large,
-                        border = BorderStroke(1.dp, TodoColors.CardStroke),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                  Card(
+                      colors = todoCardColors(),
+                      shape = MaterialTheme.shapes.large,
+                      border = BorderStroke(1.dp, TodoColors.CardStroke),
+                      modifier = Modifier.fillMaxWidth()) {
                         Column(
                             Modifier
                                 // Click anywhere on the card to edit
                                 .clickable(
                                     indication = null,
                                     interactionSource = remember { MutableInteractionSource() },
-                                    onClick = { onEditClicked(item.id) }
-                                )
-                                .padding(16.dp)
-                        ) {
-                            // Top row: status, priority, and delete button
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                    onClick = { onEditClicked(item.id) })
+                                .padding(16.dp)) {
+                              // Top row: status, priority, and delete button
+                              Row(verticalAlignment = Alignment.CenterVertically) {
                                 StatusChip(item.status) { vm.cycleStatus(item.id) }
                                 Spacer(Modifier.width(8.dp))
                                 PriorityChip(item.priority)
                                 Spacer(Modifier.weight(1f))
                                 IconButton(onClick = { vm.delete(item.id) }) {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = "Delete",
-                                        tint = Color(0xFFFF3B30)
-                                    )
+                                  Icon(
+                                      Icons.Default.Delete,
+                                      contentDescription = "Delete",
+                                      tint = Color(0xFFFF3B30))
                                 }
-                            }
+                              }
 
-                            Spacer(Modifier.height(4.dp))
-                            // To-Do title
-                            Text(
-                                item.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                              Spacer(Modifier.height(4.dp))
+                              // To-Do title
+                              Text(
+                                  item.title,
+                                  style = MaterialTheme.typography.titleMedium,
+                                  fontWeight = FontWeight.SemiBold)
 
-                            Spacer(Modifier.height(2.dp))
-                            // Due date
-                            Text(
-                                "Due: ${item.dueDateFormatted()}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TodoColors.OnCard.copy(alpha = 0.85f)
-                            )
+                              Spacer(Modifier.height(2.dp))
+                              // Due date
+                              Text(
+                                  "Due: ${item.dueDateFormatted()}",
+                                  style = MaterialTheme.typography.bodySmall,
+                                  color = TodoColors.OnCard.copy(alpha = 0.85f))
 
-                            // Optional note (if present)
-                            if (!item.note.isNullOrBlank()) {
+                              // Optional note (if present)
+                              if (!item.note.isNullOrBlank()) {
                                 Spacer(Modifier.height(8.dp))
-                                Text(
-                                    item.note!!,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                Text(item.note!!, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                              }
                             }
-                        }
-                    }
+                      }
                 }
-            }
+              }
         }
-    }
+      }
 }
 
-/**
- * A colored chip representing the To-Do's status (TODO / IN_PROGRESS / DONE)
- */
+/** A colored chip representing the To-Do's status (TODO / IN_PROGRESS / DONE) */
 @Composable
 private fun StatusChip(status: Status, onClick: () -> Unit) {
-    val bg = when (status) {
+  val bg =
+      when (status) {
         Status.TODO -> TodoColors.ChipViolet
         Status.IN_PROGRESS -> TodoColors.ChipPink
         Status.DONE -> TodoColors.ChipGreen
-    }
-    AssistChip(
-        onClick = onClick,
-        label = { Text(status.name.replace('_', ' ')) },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = bg,
-            labelColor = Color.White
-        )
-    )
+      }
+  AssistChip(
+      onClick = onClick,
+      label = { Text(status.name.replace('_', ' ')) },
+      colors = AssistChipDefaults.assistChipColors(containerColor = bg, labelColor = Color.White))
 }
 
-/**
- * A chip that displays the priority level (LOW / MEDIUM / HIGH)
- */
+/** A chip that displays the priority level (LOW / MEDIUM / HIGH) */
 @Composable
 private fun PriorityChip(priority: Priority) {
-    val chipColor = when (priority) {
+  val chipColor =
+      when (priority) {
         Priority.HIGH -> TodoColors.Accent
         Priority.MEDIUM -> TodoColors.ChipPink
         Priority.LOW -> TodoColors.ChipGreen
-    }
-    AssistChip(
-        onClick = {},
-        label = { Text("Priority: ${priority.name}") },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = chipColor.copy(alpha = 0.25f),
-            labelColor = TodoColors.OnCard
-        )
-    )
+      }
+  AssistChip(
+      onClick = {},
+      label = { Text("Priority: ${priority.name}") },
+      colors =
+          AssistChipDefaults.assistChipColors(
+              containerColor = chipColor.copy(alpha = 0.25f), labelColor = TodoColors.OnCard))
 }

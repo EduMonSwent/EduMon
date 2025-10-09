@@ -12,9 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 // UI model for the Overview screen
-data class OverviewUiState(
-    val items: List<ToDo> = emptyList()
-)
+data class OverviewUiState(val items: List<ToDo> = emptyList())
 
 /**
  * ViewModel for the Overview screen.
@@ -24,36 +22,39 @@ data class OverviewUiState(
  */
 class OverviewViewModel(private val repo: ToDoRepository) : ViewModel() {
 
-    // Convert repo.todos (Flow<List<ToDo>>) -> StateFlow<OverviewUiState> for Compose
-    val uiState: StateFlow<OverviewUiState> = repo.todos
-        .map { list ->
+  // Convert repo.todos (Flow<List<ToDo>>) -> StateFlow<OverviewUiState> for Compose
+  val uiState: StateFlow<OverviewUiState> =
+      repo.todos
+          .map { list ->
             // Sort: items with DONE last; among the rest, nearest due date first
-            val sorted = list.sortedWith(
-                compareBy<ToDo> { it.status == Status.DONE } // false < true → non-DONE first
-                    .thenBy { it.dueDate }                  // earlier dates first
-            )
-            OverviewUiState(sorted)                         // wrap in a UI state object
-        }
-        .stateIn(
-            scope = viewModelScope,                         // lifecycle-aware scope
-            started = SharingStarted.WhileSubscribed(5_000),// keep active briefly with no collectors
-            initialValue = OverviewUiState()                // initial UI state (empty list)
-        )
+            val sorted =
+                list.sortedWith(
+                    compareBy<ToDo> { it.status == Status.DONE } // false < true → non-DONE first
+                        .thenBy { it.dueDate } // earlier dates first
+                    )
+            OverviewUiState(sorted) // wrap in a UI state object
+          }
+          .stateIn(
+              scope = viewModelScope, // lifecycle-aware scope
+              started =
+                  SharingStarted.WhileSubscribed(5_000), // keep active briefly with no collectors
+              initialValue = OverviewUiState() // initial UI state (empty list)
+              )
 
-    // Cycle status in order: TODO → IN_PROGRESS → DONE → TODO
-    fun cycleStatus(id: String) = viewModelScope.launch {
+  // Cycle status in order: TODO → IN_PROGRESS → DONE → TODO
+  fun cycleStatus(id: String) =
+      viewModelScope.launch {
         repo.getById(id)?.let {
-            val next = when (it.status) {
+          val next =
+              when (it.status) {
                 Status.TODO -> Status.IN_PROGRESS
                 Status.IN_PROGRESS -> Status.DONE
                 Status.DONE -> Status.TODO
-            }
-            repo.update(it.copy(status = next))
+              }
+          repo.update(it.copy(status = next))
         }
-    }
+      }
 
-    // Delete an item by id
-    fun delete(id: String) = viewModelScope.launch {
-        repo.remove(id)
-    }
+  // Delete an item by id
+  fun delete(id: String) = viewModelScope.launch { repo.remove(id) }
 }
