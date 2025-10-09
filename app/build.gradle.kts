@@ -94,9 +94,9 @@ android {
 
 sonar {
     properties {
-        property("sonar.projectKey", "gf_android-sample")
-        property("sonar.projectName", "Android-Sample")
-        property("sonar.organization", "gabrielfleischer")
+        property("sonar.projectKey", "EduMonSwent_EduMon")
+        property("sonar.projectName", "EduMon")
+        property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
         property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
@@ -180,6 +180,7 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         exclude(fileFilter)
     }
 
+
     val mainSrc = "${project.layout.projectDirectory}/src/main/java"
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
@@ -187,4 +188,14 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
+
+    doLast {
+        // New block to modify the XML report after it's generated
+        val reportFile = reports.xml.outputLocation.asFile.get()
+        if (reportFile.exists()) {
+            val content = reportFile.readText()
+            val cleanedContent = content.replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
+            reportFile.writeText(cleanedContent)
+        }
+    }
 }
