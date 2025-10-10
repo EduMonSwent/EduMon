@@ -94,4 +94,38 @@ class HomeViewModelTest {
     advanceUntilIdle()
     assertEquals("Q2", vm2.uiState.value.quote)
   }
+
+  @Test
+  fun fakeRepository_dailyQuote_changesAcrossDays_andWraps() {
+    val repo = FakeHomeRepository()
+    val d0 = repo.dailyQuote(nowMillis = 0L)
+    val d1 = repo.dailyQuote(nowMillis = 86_400_000L) // +1 day
+    val d6 = repo.dailyQuote(nowMillis = 6L * 86_400_000L) // +6 days (wraps mod 5)
+
+    // Same day -> same value; different day -> typically different; day 6 == day 1 (wrap by 5)
+    assertEquals(d1, d6)
+    assertNotEquals(d0, d1)
+  }
+
+  @Test
+  fun fakeRepository_fetches_haveExpectedSizes() = runTest {
+    val repo = FakeHomeRepository()
+    val todos = repo.fetchTodos()
+    val creature = repo.fetchCreatureStats()
+    val user = repo.fetchUserStats()
+
+    assertEquals(3, todos.size)
+    assertTrue(creature.level >= 1)
+    assertTrue(user.dailyGoalMin > 0)
+  }
+
+  @Test
+  fun homeUiState_defaults_areSane() {
+    val s = HomeUiState()
+    assertTrue(s.isLoading)
+    assertTrue(s.todos.isEmpty())
+    assertEquals(5, s.creatureStats.level)
+    assertEquals(180, s.userStats.dailyGoalMin)
+    assertEquals("", s.quote)
+  }
 }

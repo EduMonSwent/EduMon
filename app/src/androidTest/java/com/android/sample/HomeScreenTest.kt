@@ -1,6 +1,7 @@
 package com.android.sample
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -94,5 +95,82 @@ class HomeScreenTest {
     composeRule
         .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.7f, 0f..1f, 0)))
         .assertExists()
+  }
+
+  @Test
+  fun route_showsProgressWhileLoading() {
+    // A slow repo so the VM stays in loading long enough for the assertion.
+    val slowRepo =
+        object : HomeRepository {
+          override suspend fun fetchTodos(): List<Todo> {
+            kotlinx.coroutines.delay(5_000)
+            return emptyList()
+          }
+
+          override suspend fun fetchCreatureStats(): CreatureStats {
+            kotlinx.coroutines.delay(5_000)
+            return CreatureStats()
+          }
+
+          override suspend fun fetchUserStats(): UserStats {
+            kotlinx.coroutines.delay(5_000)
+            return UserStats()
+          }
+
+          override fun dailyQuote(nowMillis: Long): String = "Slow"
+        }
+
+    val vm = HomeViewModel(repository = slowRepo)
+
+    composeRule.setContent {
+      MaterialTheme {
+        EduMonHomeRoute(
+            creatureResId = android.R.drawable.ic_menu_help,
+            environmentResId = android.R.drawable.ic_menu_gallery,
+            onNavigate = {},
+            vm = vm)
+      }
+    }
+
+    // CircularProgressIndicator exposes an indeterminate ProgressBar semantics.
+    composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
+  }
+
+  @Test
+  fun userStats_numbers_areRendered() {
+    setHomeContent()
+    composeRule.onNodeWithText("7d").assertExists()
+    composeRule.onNodeWithText("1250").assertExists()
+    composeRule.onNodeWithText("45m").assertExists()
+    composeRule.onNodeWithText("180m").assertExists()
+  }
+
+  @Test
+  fun todos_showsDoneAndPendingRows_andSeeAllIsClickable() {
+    setHomeContent()
+    // One done -> "Completed"; one pending -> due string visible
+    composeRule.onNodeWithText("Completed").assertExists()
+    composeRule.onNodeWithText("Today 20:00").assertExists()
+    // "See all" is a clickable Text
+    composeRule.onNode(hasText("See all") and hasClickAction()).assertExists()
+  }
+
+  @Test
+  fun chips_arePresentAndClickable() {
+    setHomeContent()
+    composeRule.onNodeWithText("Open Planner").performScrollTo().assertHasClickAction()
+    composeRule.onNodeWithText("Focus Mode").performScrollTo().assertHasClickAction()
+  }
+
+  @Test
+  fun creatureHouse_showsLevelChipConsistently() {
+    setHomeContent()
+    composeRule.onNodeWithText("Lv 5").performScrollTo().assertIsDisplayed()
+  }
+
+  @Test
+  fun glowCard_rendersChildContent() {
+    composeRule.setContent { MaterialTheme { GlowCard { Text("Inside Glow") } } }
+    composeRule.onNodeWithText("Inside Glow").assertIsDisplayed()
   }
 }
