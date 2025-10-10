@@ -463,7 +463,7 @@ fun AIRecommendationCard(recommendationText: String, onActionClick: () -> Unit =
                                     painter = painterResource(id = R.drawable.ic_sparkle),
                                     contentDescription =
                                         "AI Icon", // Consider string resource for content
-                                                   // description
+                                    // description
                                     tint = Color.White.copy(alpha = 0.8f),
                                     modifier = Modifier.size(24.dp).scale(1.2f))
                               }
