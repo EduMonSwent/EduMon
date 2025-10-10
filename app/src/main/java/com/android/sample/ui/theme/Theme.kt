@@ -15,15 +15,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary   = AccentViolet,  onPrimary = TextLight,
-    secondary = AccentMint,    onSecondary = TextLight,
-    tertiary  = AccentMagenta,   onTertiary  = TextLight,
-
-    surface = MidDarkCard, surfaceVariant = MidDarkCard,
-    onSurface = TextLight, background = BackgroundDark, onBackground = TextLight,
-    outline = TextLight.copy(alpha = .24f)
-)
+private val DarkColorScheme =
+    darkColorScheme(
+        primary = AccentViolet,
+        onPrimary = TextLight,
+        secondary = AccentMint,
+        onSecondary = TextLight,
+        tertiary = AccentMagenta,
+        onTertiary = TextLight,
+        surface = MidDarkCard,
+        surfaceVariant = MidDarkCard,
+        onSurface = TextLight,
+        background = BackgroundDark,
+        onBackground = TextLight,
+        outline = TextLight.copy(alpha = .24f))
 
 private val LightColorScheme =
     lightColorScheme(
@@ -65,10 +70,6 @@ fun SampleAppTheme(
     }
   }
 
-  //MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = Typography,
-        content = content
-    )
+  // MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+  MaterialTheme(colorScheme = DarkColorScheme, typography = Typography, content = content)
 }

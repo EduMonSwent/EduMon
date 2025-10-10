@@ -149,6 +149,8 @@ dependencies {
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    implementation("androidx.compose.material:material-icons-extended")
+
 }
 
 tasks.withType<Test> {
