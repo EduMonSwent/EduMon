@@ -18,82 +18,74 @@ import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
 
-    private val auth = FirebaseAuth.getInstance()
+  private val auth = FirebaseAuth.getInstance()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
 
-        setContent {
-            EduMonTheme {
-                var currentUser by remember { mutableStateOf(auth.currentUser) }
+    setContent {
+      EduMonTheme {
+        var currentUser by remember { mutableStateOf(auth.currentUser) }
 
-                // 🔹 Écoute les changements de session Firebase
-                DisposableEffect(Unit) {
-                    val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-                        currentUser = firebaseAuth.currentUser
-                    }
-                    auth.addAuthStateListener(listener)
-                    onDispose { auth.removeAuthStateListener(listener) }
-                }
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    if (currentUser == null) {
-                        // Utilisateur non connecté → écran de login
-                        LoginScreen()
-                    } else {
-                        // Utilisateur connecté → écran de bienvenue
-                        WelcomeScreen(
-                            name = currentUser?.displayName ?: "Utilisateur",
-                            email = currentUser?.email ?: "",
-                            onLogout = {
-                                // 🔹 Déconnexion complète Google + Firebase
-                                val context = this@MainActivity
-                                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                                    .requestIdToken(getString(R.string.default_web_client_id))
-                                    .requestEmail()
-                                    .build()
-
-                                val googleClient = GoogleSignIn.getClient(context, gso)
-
-                                googleClient.revokeAccess().addOnCompleteListener {
-                                    auth.signOut()
-                                }
-                            }
-                        )
-                    }
-                }
-            }
+        // 🔹 Écoute les changements de session Firebase
+        DisposableEffect(Unit) {
+          val listener =
+              FirebaseAuth.AuthStateListener { firebaseAuth ->
+                currentUser = firebaseAuth.currentUser
+              }
+          auth.addAuthStateListener(listener)
+          onDispose { auth.removeAuthStateListener(listener) }
         }
+
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+          if (currentUser == null) {
+            // Utilisateur non connecté → écran de login
+            LoginScreen()
+          } else {
+            // Utilisateur connecté → écran de bienvenue
+            WelcomeScreen(
+                name = currentUser?.displayName ?: "Utilisateur",
+                email = currentUser?.email ?: "",
+                onLogout = {
+                  // 🔹 Déconnexion complète Google + Firebase
+                  val context = this@MainActivity
+                  val gso =
+                      GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                          .requestIdToken(getString(R.string.default_web_client_id))
+                          .requestEmail()
+                          .build()
+
+                  val googleClient = GoogleSignIn.getClient(context, gso)
+
+                  googleClient.revokeAccess().addOnCompleteListener { auth.signOut() }
+                })
+          }
+        }
+      }
     }
+  }
 }
 
 @Composable
 fun WelcomeScreen(name: String, email: String, onLogout: () -> Unit) {
-    val context = LocalContext.current
+  val context = LocalContext.current
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Bienvenue 👋",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = name, style = MaterialTheme.typography.titleLarge)
-            Text(text = email, style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = onLogout,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Se déconnecter", color = MaterialTheme.colorScheme.onPrimary)
-            }
-        }
+  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Text(
+          text = "Bienvenue 👋",
+          style = MaterialTheme.typography.headlineMedium,
+          color = MaterialTheme.colorScheme.onBackground)
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(text = name, style = MaterialTheme.typography.titleLarge)
+      Text(text = email, style = MaterialTheme.typography.bodyMedium)
+      Spacer(modifier = Modifier.height(24.dp))
+      Button(
+          onClick = onLogout,
+          colors =
+              ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+            Text("Se déconnecter", color = MaterialTheme.colorScheme.onPrimary)
+          }
     }
+  }
 }

@@ -18,46 +18,53 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class E2ELoginFlowTest {
 
-    @get:Rule val compose = createComposeRule()
+  @get:Rule val compose = createComposeRule()
 
-    @Test
-    fun loginScreen_displaysProperly() {
-        compose.setContent { LoginScreen() }
-        compose.waitForIdle()
-        compose.onNodeWithText("Connecte-toi à ton compte EduMon").assertIsDisplayed()
-        compose.onNodeWithText("Continuer avec Google").assertIsDisplayed()
-    }
+  @Test
+  fun loginScreen_displaysProperly() {
+    compose.setContent { LoginScreen() }
+    compose.waitForIdle()
+    compose.onNodeWithText("Connecte-toi à ton compte EduMon").assertIsDisplayed()
+    compose.onNodeWithText("Continuer avec Google").assertIsDisplayed()
+  }
 
-    @Test
-    fun googleAuthHelper_behavesAsExpected() {
-        val bundle = Bundle()
-        try { GoogleAuthHelper.fromBundle(bundle) } catch (_: Exception) {}
-        val credential: AuthCredential = GoogleAuthHelper.toFirebaseCredential("fake-token")
-        assert(credential is AuthCredential)
-    }
+  @Test
+  fun googleAuthHelper_behavesAsExpected() {
+    val bundle = Bundle()
+    try {
+      GoogleAuthHelper.fromBundle(bundle)
+    } catch (_: Exception) {}
+    val credential: AuthCredential = GoogleAuthHelper.toFirebaseCredential("fake-token")
+    assert(credential is AuthCredential)
+  }
 
-    @Test
-    fun firebaseAuthRepository_login_success_and_logout() = runBlocking {
-        val repo = FirebaseAuthRepository()
+  @Test
+  fun firebaseAuthRepository_login_success_and_logout() = runBlocking {
+    val repo = FirebaseAuthRepository()
 
-        val invalid = object : androidx.credentials.CustomCredential("fake", Bundle()) {}
-        val r1 = repo.loginWithGoogle(invalid)
-        assert(r1.isFailure)
+    val invalid = object : androidx.credentials.CustomCredential("fake", Bundle()) {}
+    val r1 = repo.loginWithGoogle(invalid)
+    assert(r1.isFailure)
 
-        val valid = object : androidx.credentials.CustomCredential(
-            GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL,
-            Bundle()
-        ) {}
-        val r2 = try { repo.loginWithGoogle(valid) } catch (_: Exception) { Result.failure(Exception()) }
-        assert(r2.isFailure || r2.isSuccess)
+    val valid =
+        object :
+            androidx.credentials.CustomCredential(
+                GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL, Bundle()) {}
+    val r2 =
+        try {
+          repo.loginWithGoogle(valid)
+        } catch (_: Exception) {
+          Result.failure(Exception())
+        }
+    assert(r2.isFailure || r2.isSuccess)
 
-        val logout = repo.logout()
-        assert(logout.isSuccess)
-    }
+    val logout = repo.logout()
+    assert(logout.isSuccess)
+  }
 
-    @Test
-    fun authRepository_isImplemented() {
-        val repo: AuthRepository = FirebaseAuthRepository()
-        assert(repo is AuthRepository)
-    }
+  @Test
+  fun authRepository_isImplemented() {
+    val repo: AuthRepository = FirebaseAuthRepository()
+    assert(repo is AuthRepository)
+  }
 }
