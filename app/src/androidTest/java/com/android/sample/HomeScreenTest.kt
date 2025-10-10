@@ -66,9 +66,15 @@ class HomeScreenTest {
   @Test
   fun showsProvidedQuote_andCompletedLabel() {
     setHomeContent(quote = "Test Quote 123")
-    composeRule.onNodeWithText("Test Quote 123").assertIsDisplayed()
-    // Done item should show "Completed"
-    composeRule.onNodeWithText("Completed").assertExists()
+
+    // Scroll to where the quote lives, then assert it's visible
+    composeRule.onNodeWithText("Test Quote 123").performScrollTo().assertIsDisplayed()
+
+    // "Completed" may also be off-screen on smaller devices
+    composeRule
+        .onNodeWithText("Completed")
+        .performScrollTo()
+        .assertExists() // or .assertIsDisplayed() if you prefer visibility
   }
 
   @Test
