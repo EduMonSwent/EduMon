@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class PlannerViewModel(private val profileRepository: PlannerRepository = PlannerRepository()) :
+class PlannerViewModel(private val plannerRepository: PlannerRepository = PlannerRepository()) :
     ViewModel() {
 
   private val _todayClasses = MutableStateFlow<List<Class>>(emptyList())
@@ -35,17 +35,13 @@ class PlannerViewModel(private val profileRepository: PlannerRepository = Planne
   val selectedClassForAttendance: StateFlow<Class?> = _selectedClassForAttendance.asStateFlow()
 
   init {
-    loadTodayClasses()
-    loadTodayAttendanceRecords()
+    loadPlannerData()
   }
 
-  private fun loadTodayClasses() {
-    viewModelScope.launch { _todayClasses.value = profileRepository.getTodayClasses() }
-  }
-
-  private fun loadTodayAttendanceRecords() {
+  private fun loadPlannerData() {
     viewModelScope.launch {
-      _todayAttendanceRecords.value = profileRepository.getTodayAttendanceRecords()
+      _todayClasses.value = plannerRepository.getTodayClasses()
+      _todayAttendanceRecords.value = plannerRepository.getTodayAttendanceRecords()
     }
   }
 
@@ -67,7 +63,7 @@ class PlannerViewModel(private val profileRepository: PlannerRepository = Planne
     _selectedClassForAttendance.value = null
   }
 
-  private val _eventFlow = MutableSharedFlow<UiEvent>() // For one-time events
+  private val _eventFlow = MutableSharedFlow<UiEvent>()
   val eventFlow = _eventFlow.asSharedFlow()
 
   sealed class UiEvent {
@@ -84,16 +80,16 @@ class PlannerViewModel(private val profileRepository: PlannerRepository = Planne
         val attendanceRecord =
             ClassAttendance(
                 classId = classItem.id,
-                date = LocalDate.now(), // Always current date for "today's classes"
+                date = LocalDate.now(),
                 attendance = attendance,
                 completion = completion)
-        profileRepository.saveAttendance(attendanceRecord)
-        loadTodayAttendanceRecords() // Refresh records after saving
+
+        plannerRepository.saveAttendance(attendanceRecord)
+
+        loadPlannerData()
         onDismissClassAttendanceModal()
-        profileRepository.saveAttendance(attendanceRecord)
+
         _eventFlow.emit(UiEvent.ShowSnackbar("Attendance saved successfully!"))
-        loadTodayAttendanceRecords()
-        onDismissClassAttendanceModal()
       } catch (e: Exception) {
         _eventFlow.emit(UiEvent.ShowSnackbar("Error saving attendance: ${e.localizedMessage}"))
       }

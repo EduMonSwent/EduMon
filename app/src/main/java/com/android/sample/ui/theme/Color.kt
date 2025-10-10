@@ -9,7 +9,8 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
-
+val DarknightViolet = Color(0xFF2A1B3D)
+val DarkViolet = Color(0xFF1F1B2D)
 val AccentViolet = Color(0xFF9333EA)
 val MidDarkCard =
     Color(0xFF1E1E3D) // Or match the exact dark card background from your original screenshots
@@ -18,4 +19,22 @@ val TextLight = Color(0xFFE0E0E0)
 val BackgroundDark = Color(0xFF12122A)
 val BackgroundGradientEnd = Color(0xFF181830)
 val DarkCardItem = Color(0xFF202233)
+val Gray = Color(0xFF2D2B42)
+val DarkDivider = Color(0xFF3A3750)
 val LightBlueAccent = Color(0xFF82B1FF) // A light blue accent for contrast
+
+val CustomGreen = Color(0xFF4CAF50) // Used in Attendance
+val CustomBlue = Color(0xFF2196F3) // Used in Completion
+
+// Specific colors for stat bars
+val StatBarHeart = Color(0xFFFF69B4)
+val StatBarLightbulb = Color(0xFFFFC107)
+val StatBarLightning = Color(0xFF03A9F4)
+
+// Specific colors for event types
+val EventColorYoga = Color(0xFF4CAF50) // Green
+val EventColorLecture = Color(0xFF2196F3) // Blue
+val EventColorSports = Color(0xFFFF9800) // Orange
+val EventColorSocial = Color(0xFFE91E63) // Pink
+val EventColorMusic = Color(0xFF9C27B0) // Purple
+val EventColorDefault = Color(0xFF00BCD4) // Cyan

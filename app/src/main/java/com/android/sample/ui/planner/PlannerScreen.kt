@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +58,10 @@ object PlannerScreenTestTags {
   const val WELLNESS_CAMPUS_SECTION = "wellnessCampusSection" // New section
   const val ADD_TASK_MODAL = "addTaskModal"
   const val CLASS_ATTENDANCE_MODAL = "classAttendanceModal"
+  const val SUBJECT_FIELD = "subject_field"
+  const val TASK_TITLE_FIELD = "task_title_field"
+  const val DURATION_FIELD = "duration_field"
+  const val DEADLINE_FIELD = "deadline_field"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,10 +80,10 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
             onClick = { viewModel.onAddStudyTaskClicked() },
             containerColor = AccentViolet,
             contentColor = Color.White) {
-              Icon(Icons.Filled.Add, "Add Study Task")
+              Icon(Icons.Filled.Add, stringResource(R.string.add_study_task))
             }
       },
-      containerColor = Color.Transparent, // Ensure background gradient is visible
+      containerColor = Color.Transparent,
       modifier =
           Modifier.background(Brush.verticalGradient(listOf(BackgroundDark, BackgroundGradientEnd)))
               .testTag(PlannerScreenTestTags.PLANNER_SCREEN),
@@ -89,7 +94,6 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
               item {
-                // Your preferred Pet Header
                 PetHeader(
                     level = 5, // Placeholder level
                     modifier = Modifier.testTag(PlannerScreenTestTags.PET_HEADER),
@@ -100,7 +104,7 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
                 PlannerGlowCard {
                   AIRecommendationCard(
                       recommendationText =
-                          "Based on your schedule, start with the Calculus problem set (high priority, due tomorrow). Take a 10-minute break after 45 minutes.",
+                          stringResource(R.string.ai_recommendation_calculus_example),
                       onActionClick = { /* Handle action for AI recommendation, e.g., open task details */})
                 }
               }
@@ -113,7 +117,7 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
                               .padding(16.dp)
                               .testTag(PlannerScreenTestTags.TODAY_CLASSES_SECTION)) {
                         Text(
-                            text = "Today's Classes", // Renamed
+                            text = stringResource(R.string.today_classes_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextLight)
@@ -125,26 +129,20 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
                             modifier = Modifier.padding(bottom = 8.dp))
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        if (todayClasses
-                            .isEmpty()) { // Assuming todayClasses will eventually include study
-                          // tasks
+                        if (todayClasses.isEmpty()) {
                           Text(
-                              text = "No activities scheduled for today.",
+                              text = stringResource(R.string.no_activities_scheduled),
                               color = TextLight.copy(alpha = 0.7f),
                               modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                               textAlign = TextAlign.Center)
                         } else {
-                          todayClasses.forEach { classItem
-                            -> // You'll need to adapt this to a generic 'Activity' type
+                          todayClasses.forEach { classItem ->
                             val attendanceRecord =
                                 todayAttendanceRecords.find { it.classId == classItem.id }
-                            ActivityItem( // Renamed from ClassItem to be more generic
-                                activity = classItem, // Pass a generic activity type
+                            ActivityItem(
+                                activity = classItem,
                                 attendanceRecord = attendanceRecord,
-                                onClick = {
-                                  viewModel.onClassClicked(classItem)
-                                } // Adapt to onActivityClicked
-                                )
+                                onClick = { viewModel.onClassClicked(classItem) })
                             Spacer(modifier = Modifier.height(8.dp))
                           }
                         }
@@ -153,7 +151,6 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
               }
 
               item {
-                // New Section: Wellness & Campus Life
                 PlannerGlowCard {
                   Column(
                       modifier =
@@ -161,29 +158,30 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
                               .padding(16.dp)
                               .testTag(PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION)) {
                         Text(
-                            text = "Wellness & Campus Life",
+                            text = stringResource(R.string.wellness_campus_life_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextLight)
                         Text(
-                            text = "Balance your studies with well-being!",
+                            text = stringResource(R.string.wellness_campus_life_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = TextLight.copy(alpha = 0.7f),
                             modifier = Modifier.padding(bottom = 8.dp))
                         Spacer(modifier = Modifier.height(8.dp))
 
                         WellnessEventItem(
-                            title = "Yoga Session @ Sports Center",
-                            time = "17:00 - 18:00",
-                            description = "Relax and recharge after classes. Sign up now!",
-                            iconRes = R.drawable.ic_yoga,
+                            title = stringResource(R.string.wellness_event_yoga_title),
+                            time = stringResource(R.string.wellness_event_yoga_time),
+                            description = stringResource(R.string.wellness_event_yoga_description),
+                            eventType = WellnessEventType.YOGA, // Using enum
                             onClick = { /* Handle navigation to wellness details */})
                         Spacer(modifier = Modifier.height(8.dp))
                         WellnessEventItem(
-                            title = "Guest Lecture: Future of AI",
-                            time = "19:30 - 21:00",
-                            description = "EPFL Auditorium. Don't miss this insightful talk!",
-                            iconRes = R.drawable.ic_event,
+                            title = stringResource(R.string.wellness_event_lecture_title),
+                            time = stringResource(R.string.wellness_event_lecture_time),
+                            description =
+                                stringResource(R.string.wellness_event_lecture_description),
+                            eventType = WellnessEventType.LECTURE, // Using enum
                             onClick = { /* Handle navigation to event details */})
                       }
                 }
@@ -194,7 +192,6 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
           AddStudyTaskModal(
               onDismiss = { viewModel.onDismissAddStudyTaskModal() },
               onAddTask = { subject, title, duration, deadline, priority ->
-                // Handle adding the task - ViewModel would typically handle this
                 // TODO: Call viewModel.addStudyTask(subject, title, duration, deadline, priority)
                 viewModel.onDismissAddStudyTaskModal()
               },
@@ -242,32 +239,27 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
               label = "pulseAlpha")
 
   Box(modifier = modifier.fillMaxWidth().height(200.dp).testTag(PlannerScreenTestTags.PET_HEADER)) {
-    // Background Image
     Image(
         painter = painterResource(id = R.drawable.epfl_amphi_background),
-        contentDescription = "EPFL Amphitheater Background",
+        contentDescription = stringResource(R.string.app_name), // Generic content description
         modifier = Modifier.fillMaxSize(),
         contentScale = ContentScale.Crop)
 
-    // Overlay content for pet, stats, and profile button
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .padding(vertical = 20.dp, horizontal = 16.dp)
                 .align(Alignment.Center)) {
           Box(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 20.dp)) {
-            // Stats (Left aligned)
             Column(
-                modifier = Modifier.align(Alignment.CenterStart), // Give stats a consistent width
+                modifier = Modifier.align(Alignment.CenterStart),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.Start // Align stats to the start
-                ) {
-                  StatBar(icon = "❤️", percent = 0.9f, color = Color(0xFFFF69B4))
-                  StatBar(icon = "💡", percent = 0.85f, color = Color(0xFFFFC107))
-                  StatBar(icon = "⚡", percent = 0.7f, color = Color(0xFF03A9F4))
+                horizontalAlignment = Alignment.Start) {
+                  StatBar(icon = "❤️", percent = 0.9f, color = StatBarHeart)
+                  StatBar(icon = "💡", percent = 0.85f, color = StatBarLightbulb)
+                  StatBar(icon = "⚡", percent = 0.7f, color = StatBarLightning)
                 }
 
-            // Pet (More centrally aligned, slightly left)
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -280,7 +272,7 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
                                       Brush.radialGradient(
                                           colors =
                                               listOf(
-                                                  Color(0xFF5CE1E6).copy(alpha = pulseAlpha * 0.6f),
+                                                  LightBlueAccent.copy(alpha = pulseAlpha * 0.6f),
                                                   Color.Transparent)),
                                   shape = RoundedCornerShape(100.dp)),
                       contentAlignment = Alignment.Center) {
@@ -291,40 +283,39 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
                       }
                   Spacer(modifier = Modifier.height(8.dp))
 
-                  // Level Chip (positioned more like CreatureHouseCard's level)
                   AssistChip(
                       onClick = { /* Not clickable for primary action, just info */},
                       label = { Text("Lv $level", color = AccentViolet) },
+                      // label = { Text(stringResource(R.string, level), color = AccentViolet) },
                       leadingIcon = {
                         Icon(
                             Icons.Outlined.Star,
                             null,
                             tint = AccentViolet,
-                            modifier = Modifier.size(16.dp) // Adjust icon size
-                            )
+                            modifier = Modifier.size(16.dp))
                       },
                       colors =
                           AssistChipDefaults.assistChipColors(
-                              containerColor =
-                                  DarkCardItem.copy(alpha = 0.8f), // Use a dark card color
+                              containerColor = DarkCardItem.copy(alpha = 0.8f),
                               labelColor = AccentViolet,
                               leadingIconContentColor = AccentViolet),
                       border = BorderStroke(1.dp, AccentViolet.copy(alpha = 0.5f)),
-                      modifier = Modifier.offset(y = (-5).dp) // Slightly lift it
-                      )
+                      modifier = Modifier.offset(y = (-5).dp))
                 }
           }
         }
 
-    // Edumon Profile (Top Right)
     Box(
         modifier =
-            Modifier.align(Alignment.TopEnd) // Align to top end
-                .padding(top = 16.dp, end = 16.dp) // Adjust padding
-                .background(Color(0xFF1A1B2E), RoundedCornerShape(20.dp))
+            Modifier.align(Alignment.TopEnd)
+                .padding(top = 16.dp, end = 16.dp)
+                .background(DarkCardItem, RoundedCornerShape(20.dp))
                 .padding(horizontal = 16.dp, vertical = 6.dp)
                 .clickable(onClick = onEdumonNameClick)) {
-          Text("Edumon Profile", color = TextLight.copy(alpha = 0.8f), fontSize = 13.sp)
+          Text(
+              stringResource(R.string.edumon_profile),
+              color = TextLight.copy(alpha = 0.8f),
+              fontSize = 13.sp)
         }
   }
 }
@@ -338,7 +329,9 @@ fun StatBar(icon: String, percent: Float, color: Color) {
         modifier =
             Modifier.width(70.dp)
                 .height(10.dp)
-                .background(Color(0xFF202233), RoundedCornerShape(10.dp))) {
+                .background(
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                    RoundedCornerShape(10.dp))) { // Using theme color
           Box(
               modifier =
                   Modifier.fillMaxHeight()
@@ -350,7 +343,6 @@ fun StatBar(icon: String, percent: Float, color: Color) {
   }
 }
 
-// Local GlowCard equivalent for PlannerScreen
 @Composable
 fun PlannerGlowCard(content: @Composable () -> Unit) {
   val infiniteTransition = rememberInfiniteTransition(label = "glowAnim")
@@ -381,11 +373,7 @@ fun PlannerGlowCard(content: @Composable () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AIRecommendationCard(
-    recommendationText: String =
-        "Based on your schedule, start with the Calculus problem set (high priority, due tomorrow). Take a 10-minute break after 45 minutes.",
-    onActionClick: () -> Unit = {}
-) {
+fun AIRecommendationCard(recommendationText: String, onActionClick: () -> Unit = {}) {
   val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
 
   val buttonScale by
@@ -408,18 +396,13 @@ fun AIRecommendationCard(
                   repeatMode = RepeatMode.Reverse),
           label = "glowAlpha")
 
-  // Background with gradient and glow
   Box(
       modifier =
           Modifier.fillMaxWidth()
               .background(
                   brush =
                       Brush.verticalGradient(
-                          colors =
-                              listOf(
-                                  Color(0xFF2A1B3D), // Deep purple
-                                  Color(0xFF1F1B2D) // Dark blue
-                                  ),
+                          colors = listOf(DarknightViolet, DarkViolet),
                           startY = 0f,
                           endY = Float.POSITIVE_INFINITY),
                   shape = RoundedCornerShape(20.dp))
@@ -430,11 +413,10 @@ fun AIRecommendationCard(
                           colors =
                               listOf(
                                   AccentViolet.copy(alpha = 0.6f),
-                                  Color(0xFF82B1FF).copy(alpha = 0.4f),
+                                  LightBlueAccent.copy(alpha = 0.4f),
                                   AccentViolet.copy(alpha = 0.6f))),
                   shape = RoundedCornerShape(20.dp))
               .drawBehind {
-                // Outer glow effect
                 drawCircle(
                     brush =
                         Brush.radialGradient(
@@ -445,135 +427,130 @@ fun AIRecommendationCard(
                             radius = size.height * 1.5f),
                     center = center.copy(x = size.width * 0.8f),
                     radius = size.height * 1.5f)
-              })
-
-  Column(
-      modifier = Modifier.fillMaxWidth().padding(20.dp),
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        // Header with AI icon and title
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween) {
-              Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                // Animated AI icon container
-                Box(
-                    modifier =
-                        Modifier.size(44.dp)
-                            .background(
-                                brush =
-                                    Brush.radialGradient(
-                                        colors =
-                                            listOf(
-                                                AccentViolet.copy(alpha = 0.3f),
-                                                Color.Transparent)),
-                                shape = CircleShape)
-                            .border(
-                                width = 1.dp,
-                                brush =
-                                    Brush.radialGradient(
-                                        colors =
-                                            listOf(
-                                                AccentViolet.copy(alpha = 0.6f),
-                                                Color.Transparent)),
-                                shape = CircleShape),
-                    contentAlignment = Alignment.Center) {
-                      // Placeholder for AI icon - you might replace this with an actual icon
-                      Icon(
-                          painter =
-                              painterResource(
-                                  id = R.drawable.ic_sparkle), // Using sparkle as a placeholder
-                          contentDescription = "AI Icon",
-                          tint = Color.White.copy(alpha = 0.8f),
-                          modifier =
-                              Modifier.size(24.dp).scale(1.2f) // Slightly larger to fill the circle
-                          )
-                    }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column {
-                  Text(
-                      text = "AI Study Assistant",
-                      color = Color(0xFF82B1FF), // Light blue
-                      fontWeight = FontWeight.Bold,
-                      fontSize = 16.sp)
-                  Text(
-                      text = "Personalized Recommendation",
-                      color = TextLight.copy(alpha = 0.7f),
-                      fontSize = 12.sp)
-                }
-              }
-            }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Recommendation text in a speech bubble style
-        Box(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .background(
-                        color = Color(0xFF2D2B42).copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(16.dp))
-                    .padding(16.dp)) {
-              Text(
-                  text = "💡 $recommendationText",
-                  color = TextLight.copy(alpha = 0.9f),
-                  fontSize = 14.sp,
-                  lineHeight = 18.sp,
-                  modifier = Modifier.fillMaxWidth())
-            }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Animated action button
-        Box(
-            modifier =
-                Modifier.scale(buttonScale).shadow(8.dp, RoundedCornerShape(12.dp), clip = true)) {
-              Button(
-                  onClick = onActionClick,
-                  modifier = Modifier.fillMaxWidth(0.9f).height(44.dp),
-                  shape = RoundedCornerShape(12.dp),
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = AccentViolet, contentColor = Color.White),
-                  border =
-                      BorderStroke(
-                          1.dp,
-                          Brush.verticalGradient(
-                              colors = listOf(Color.White.copy(alpha = 0.3f), Color.Transparent))),
-                  contentPadding = PaddingValues(0.dp)) {
+              }) { // Content moved inside the Box's lambda
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.SpaceBetween) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center) {
-                          Icon(
-                              painter =
-                                  painterResource(id = R.drawable.ic_play), // Play or start icon
-                              contentDescription = "Start",
-                              tint = Color.White,
-                              modifier = Modifier.size(18.dp))
-                          Spacer(modifier = Modifier.width(8.dp))
-                          Text(
-                              "Start Studying Session",
-                              color = Color.White,
-                              fontWeight = FontWeight.Bold,
-                              fontSize = 14.sp)
+                        modifier = Modifier.weight(1f)) {
+                          Box(
+                              modifier =
+                                  Modifier.size(44.dp)
+                                      .background(
+                                          brush =
+                                              Brush.radialGradient(
+                                                  colors =
+                                                      listOf(
+                                                          AccentViolet.copy(alpha = 0.3f),
+                                                          Color.Transparent)),
+                                          shape = CircleShape)
+                                      .border(
+                                          width = 1.dp,
+                                          brush =
+                                              Brush.radialGradient(
+                                                  colors =
+                                                      listOf(
+                                                          AccentViolet.copy(alpha = 0.6f),
+                                                          Color.Transparent)),
+                                          shape = CircleShape),
+                              contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_sparkle),
+                                    contentDescription =
+                                        "AI Icon", // Consider string resource for content
+                                                   // description
+                                    tint = Color.White.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(24.dp).scale(1.2f))
+                              }
+
+                          Spacer(modifier = Modifier.width(12.dp))
+
+                          Column {
+                            Text(
+                                text = stringResource(R.string.ai_recommendation_title),
+                                color = LightBlueAccent,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp)
+                            Text(
+                                text = stringResource(R.string.ai_recommendation_subtitle),
+                                color = TextLight.copy(alpha = 0.7f),
+                                fontSize = 12.sp)
+                          }
                         }
                   }
-            }
 
-        // Footer note
-        Text(
-            text = "Based on your schedule and performance patterns",
-            color = TextLight.copy(alpha = 0.5f),
-            fontSize = 10.sp,
-            modifier = Modifier.padding(top = 8.dp))
+              Spacer(modifier = Modifier.height(16.dp))
+
+              Box(
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .background(
+                              color = DarkCardItem.copy(alpha = 0.8f),
+                              shape = RoundedCornerShape(16.dp))
+                          .padding(16.dp)) {
+                    Text(
+                        text = "💡 $recommendationText",
+                        color = TextLight.copy(alpha = 0.9f),
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.fillMaxWidth())
+                  }
+
+              Spacer(modifier = Modifier.height(20.dp))
+
+              Box(
+                  modifier =
+                      Modifier.scale(buttonScale)
+                          .shadow(8.dp, RoundedCornerShape(12.dp), clip = true)) {
+                    Button(
+                        onClick = onActionClick,
+                        modifier = Modifier.fillMaxWidth(0.9f).height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = AccentViolet, contentColor = Color.White),
+                        border =
+                            BorderStroke(
+                                1.dp,
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(Color.White.copy(alpha = 0.3f), Color.Transparent))),
+                        contentPadding = PaddingValues(0.dp)) {
+                          Row(
+                              verticalAlignment = Alignment.CenterVertically,
+                              horizontalArrangement = Arrangement.Center) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_play),
+                                    contentDescription =
+                                        stringResource(R.string.start_studying_session),
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    stringResource(R.string.start_studying_session),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp)
+                              }
+                        }
+                  }
+
+              Text(
+                  text = stringResource(R.string.ai_recommendation_footer),
+                  color = TextLight.copy(alpha = 0.5f),
+                  fontSize = 10.sp,
+                  modifier = Modifier.padding(top = 8.dp))
+            }
       }
 }
 
 @Composable
 fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: () -> Unit) {
-  // Animated subtle inner glow
   val infiniteTransition = rememberInfiniteTransition(label = "activityGlowAnim")
   val glowAlpha by
       infiniteTransition.animateFloat(
@@ -593,8 +570,7 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                   Brush.verticalGradient(
                       colors =
                           listOf(
-                              Color(0xFF24223B).copy(alpha = 0.95f),
-                              Color(0xFF1C1A2B).copy(alpha = 0.98f))))
+                              MidDarkCard.copy(alpha = 0.95f), DarkCardItem.copy(alpha = 0.98f))))
               .border(
                   width = 1.dp,
                   brush =
@@ -607,11 +583,9 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
         Box(
             modifier =
                 Modifier.matchParentSize().drawBehind {
-                  // compute center & radius from the actual size
                   val center = Offset(size.width / 2f, size.height / 2f)
                   val radius = max(size.width, size.height) * 0.7f
 
-                  // draw a radial glow centered on the box
                   drawCircle(
                       brush =
                           Brush.radialGradient(
@@ -624,13 +598,19 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                 })
 
         Column {
-          // --- Header (icon + title)
           Row(verticalAlignment = Alignment.CenterVertically) {
             val iconColor =
                 when (activity.type) {
-                  ClassType.LECTURE -> Color(0xFF82B1FF)
-                  ClassType.EXERCISE -> Color(0xFF69F0AE)
-                  ClassType.LAB -> Color(0xFFB388FF)
+                  ClassType.LECTURE -> LightBlueAccent
+                  ClassType.EXERCISE -> CustomGreen
+                  ClassType.LAB -> AccentViolet
+                }
+
+            val classTypeText =
+                when (activity.type) {
+                  ClassType.LECTURE -> stringResource(R.string.lecture_type)
+                  ClassType.EXERCISE -> stringResource(R.string.exercise_type)
+                  ClassType.LAB -> stringResource(R.string.lab_type)
                 }
 
             Icon(
@@ -642,15 +622,14 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                               ClassType.EXERCISE -> R.drawable.ic_exercise
                               ClassType.LAB -> R.drawable.ic_lab
                             }),
-                contentDescription = activity.type.name,
+                contentDescription = classTypeText, // Content description from string resource
                 tint = iconColor.copy(alpha = 0.9f),
                 modifier = Modifier.size(28.dp).shadow(6.dp, shape = CircleShape))
 
             Spacer(modifier = Modifier.width(10.dp))
 
             Text(
-                text =
-                    "${activity.courseName} (${activity.type.name.lowercase().replaceFirstChar { it.uppercase() }})",
+                text = "${activity.courseName} (${classTypeText})",
                 color = TextLight,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp)
@@ -658,7 +637,6 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
 
           Spacer(modifier = Modifier.height(6.dp))
 
-          // --- Time and details
           Text(
               text =
                   "${activity.startTime.format(DateTimeFormatter.ofPattern("HH:mm"))} - ${activity.endTime.format(DateTimeFormatter.ofPattern("HH:mm"))}",
@@ -669,11 +647,11 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
               color = TextLight.copy(alpha = 0.7f),
               fontSize = 12.sp)
 
-          // --- Attendance info
           attendanceRecord?.let {
             Spacer(modifier = Modifier.height(10.dp))
             Divider(
-                color = Color.White.copy(alpha = 0.08f),
+                color =
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), // Using theme color
                 thickness = 0.5.dp,
                 modifier = Modifier.padding(vertical = 4.dp))
             Row(
@@ -683,14 +661,21 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                   Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_check_circle),
-                        contentDescription = "Attended",
-                        tint = Color(0xFF4CAF50),
+                        contentDescription =
+                            stringResource(
+                                R.string.attended_status, ""), // Content desc for attended
+                        tint = CustomGreen, // Custom green color
                         modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text =
-                            "Attended: ${it.attendance.name.replace("_", " ").lowercase().replaceFirstChar { c -> c.uppercase() }}",
-                        color = Color(0xFF4CAF50),
+                            stringResource(
+                                R.string.attended_status,
+                                it.attendance.name.replace("_", " ").lowercase().replaceFirstChar {
+                                    c ->
+                                  c.uppercase()
+                                }),
+                        color = CustomGreen,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium)
                   }
@@ -698,14 +683,20 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                   Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_done_all),
-                        contentDescription = "Completed",
-                        tint = Color(0xFF2196F3),
+                        contentDescription =
+                            stringResource(
+                                R.string.completed_status, ""), // Content desc for completed
+                        tint = CustomBlue, // Custom blue color
                         modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text =
-                            "Completed: ${it.completion.name.lowercase().replaceFirstChar { c -> c.uppercase() }}",
-                        color = Color(0xFF2196F3),
+                            stringResource(
+                                R.string.completed_status,
+                                it.completion.name.lowercase().replaceFirstChar { c ->
+                                  c.uppercase()
+                                }),
+                        color = CustomBlue,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium)
                   }
@@ -715,16 +706,14 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
       }
 }
 
-// New Composable for Wellness/Event items
 @Composable
 fun WellnessEventItem(
     title: String,
     time: String,
     description: String,
-    iconRes: Int,
+    eventType: WellnessEventType,
     onClick: () -> Unit
 ) {
-  // Animated subtle inner glow
   val infiniteTransition = rememberInfiniteTransition(label = "wellnessGlowAnim")
   val glowAlpha by
       infiniteTransition.animateFloat(
@@ -735,41 +724,10 @@ fun WellnessEventItem(
                   animation = tween(durationMillis = 2800, easing = LinearEasing),
                   repeatMode = RepeatMode.Reverse),
           label = "wellnessGlowAlpha")
-  val (iconColor, containerColor, borderColor) =
-      when {
-        title.contains("Yoga", ignoreCase = true) ->
-            Triple(
-                Color(0xFF4CAF50), // Green for yoga/meditation
-                Color(0xFF4CAF50).copy(alpha = 0.1f),
-                Color(0xFF4CAF50).copy(alpha = 0.3f))
-        title.contains("Lecture", ignoreCase = true) || title.contains("Talk", ignoreCase = true) ->
-            Triple(
-                Color(0xFF2196F3), // Blue for educational events
-                Color(0xFF2196F3).copy(alpha = 0.1f),
-                Color(0xFF2196F3).copy(alpha = 0.3f))
-        title.contains("Sports", ignoreCase = true) ||
-            title.contains("Fitness", ignoreCase = true) ->
-            Triple(
-                Color(0xFFFF9800), // Orange for sports
-                Color(0xFFFF9800).copy(alpha = 0.1f),
-                Color(0xFFFF9800).copy(alpha = 0.3f))
-        title.contains("Social", ignoreCase = true) || title.contains("Party", ignoreCase = true) ->
-            Triple(
-                Color(0xFFE91E63), // Pink for social events
-                Color(0xFFE91E63).copy(alpha = 0.1f),
-                Color(0xFFE91E63).copy(alpha = 0.3f))
-        title.contains("Music", ignoreCase = true) ||
-            title.contains("Concert", ignoreCase = true) ->
-            Triple(
-                Color(0xFF9C27B0), // Purple for music/arts
-                Color(0xFF9C27B0).copy(alpha = 0.1f),
-                Color(0xFF9C27B0).copy(alpha = 0.3f))
-        else ->
-            Triple(
-                Color(0xFF00BCD4), // Cyan as default
-                Color(0xFF00BCD4).copy(alpha = 0.1f),
-                Color(0xFF00BCD4).copy(alpha = 0.3f))
-      }
+
+  val iconColor = eventType.primaryColor
+  val containerColor = iconColor.copy(alpha = 0.1f)
+  val borderColor = iconColor.copy(alpha = 0.3f)
 
   Box(
       modifier =
@@ -779,8 +737,7 @@ fun WellnessEventItem(
                   Brush.verticalGradient(
                       colors =
                           listOf(
-                              Color(0xFF24223B).copy(alpha = 0.95f),
-                              Color(0xFF1C1A2B).copy(alpha = 0.98f))))
+                              MidDarkCard.copy(alpha = 0.95f), DarkCardItem.copy(alpha = 0.98f))))
               .border(
                   width = 1.dp,
                   brush =
@@ -793,11 +750,9 @@ fun WellnessEventItem(
         Box(
             modifier =
                 Modifier.matchParentSize().drawBehind {
-                  // compute center & radius from the actual size
                   val center = Offset(size.width / 2f, size.height / 2f)
                   val radius = max(size.width, size.height) * 0.7f
 
-                  // draw a radial glow centered on the box
                   drawCircle(
                       brush =
                           Brush.radialGradient(
@@ -811,7 +766,6 @@ fun WellnessEventItem(
                 })
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-          // Yoga/Wellness Icon with proper styling
           Box(
               modifier =
                   Modifier.size(40.dp)
@@ -819,21 +773,19 @@ fun WellnessEventItem(
                       .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(10.dp)),
               contentAlignment = Alignment.Center) {
                 Icon(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = title,
+                    painter = painterResource(id = eventType.iconRes), // Using enum icon
+                    contentDescription = title, // Content description as title
                     tint = iconColor,
                     modifier = Modifier.size(24.dp))
               }
 
           Spacer(modifier = Modifier.width(12.dp))
 
-          // Content
           Column(modifier = Modifier.weight(1f)) {
             Text(text = title, color = TextLight, fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            // Time with accent color
             Text(text = time, color = iconColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -845,10 +797,9 @@ fun WellnessEventItem(
                 lineHeight = 14.sp)
           }
 
-          // Arrow indicator
           Icon(
               painter = painterResource(id = R.drawable.ic_arrow_right),
-              contentDescription = "Details",
+              contentDescription = stringResource(R.string.details),
               tint = TextLight.copy(alpha = 0.5f),
               modifier = Modifier.size(20.dp))
         }
@@ -875,13 +826,13 @@ fun AddStudyTaskModal(
         Card(
             modifier = modifier.fillMaxWidth(0.9f).shadow(32.dp, RoundedCornerShape(28.dp)),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1F1B2D))) {
+            colors = CardDefaults.cardColors(containerColor = DarkViolet)) {
               Column(
                   modifier =
                       Modifier.background(
                               brush =
                                   Brush.verticalGradient(
-                                      colors = listOf(Color(0xFF2A1B3D), Color(0xFF1F1B2D))))
+                                      colors = listOf(DarknightViolet, DarkViolet)))
                           .padding(24.dp)) {
                     // Header
                     Row(
@@ -903,7 +854,7 @@ fun AddStudyTaskModal(
                           IconButton(
                               onClick = onDismiss,
                               modifier =
-                                  Modifier.size(40.dp).background(Color(0xFF2F2F45), CircleShape)) {
+                                  Modifier.size(40.dp).background(DarkCardItem, CircleShape)) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_close),
                                     contentDescription = "Close",
@@ -921,14 +872,16 @@ fun AddStudyTaskModal(
                           label = "Subject *",
                           placeholder = "e.g., Data Structures",
                           value = subject,
-                          onValueChange = { subject = it })
+                          onValueChange = { subject = it },
+                          testTag = PlannerScreenTestTags.SUBJECT_FIELD)
 
                       // Task Title Field
                       FormFieldSection(
                           label = "Task Title *",
                           placeholder = "e.g., Complete homework exercises",
                           value = taskTitle,
-                          onValueChange = { taskTitle = it })
+                          onValueChange = { taskTitle = it },
+                          testTag = PlannerScreenTestTags.TASK_TITLE_FIELD)
 
                       // Duration Field
                       FormFieldSection(
@@ -936,19 +889,19 @@ fun AddStudyTaskModal(
                           placeholder = "60",
                           value = duration,
                           onValueChange = { duration = it },
-                          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                          testTag = PlannerScreenTestTags.DURATION_FIELD)
 
                       // Divider
-                      Box(
-                          modifier =
-                              Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF3A3750)))
+                      Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DarkDivider))
 
                       // Deadline Field
                       FormFieldSection(
                           label = "Deadline",
                           placeholder = "dd.mm.yyyy",
                           value = deadline,
-                          onValueChange = { deadline = it })
+                          onValueChange = { deadline = it },
+                          testTag = PlannerScreenTestTags.DEADLINE_FIELD)
 
                       // Priority Dropdown
                       PriorityDropdownSection(
@@ -965,7 +918,7 @@ fun AddStudyTaskModal(
                               onClick = onDismiss,
                               modifier = Modifier.weight(1f).height(52.dp),
                               shape = RoundedCornerShape(14.dp),
-                              border = BorderStroke(1.5.dp, Color(0xFF3A3750)),
+                              border = BorderStroke(1.5.dp, DarkDivider),
                               colors =
                                   ButtonDefaults.outlinedButtonColors(
                                       contentColor = TextLight.copy(alpha = 0.8f))) {
@@ -1019,7 +972,8 @@ fun FormFieldSection(
     placeholder: String,
     value: String,
     onValueChange: (String) -> Unit,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    testTag: String = ""
 ) {
   Column {
     Text(
@@ -1033,18 +987,18 @@ fun FormFieldSection(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(placeholder, color = TextLight.copy(alpha = 0.4f), fontSize = 16.sp) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag(testTag),
         keyboardOptions = keyboardOptions,
         colors =
             OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = AccentViolet,
-                unfocusedBorderColor = Color(0xFF3A3750),
+                unfocusedBorderColor = DarkDivider,
                 focusedTextColor = TextLight,
                 unfocusedTextColor = TextLight,
                 focusedLabelColor = Color.Transparent,
                 unfocusedLabelColor = Color.Transparent,
-                focusedContainerColor = Color(0xFF2D2B42).copy(alpha = 0.6f),
-                unfocusedContainerColor = Color(0xFF2D2B42).copy(alpha = 0.4f),
+                focusedContainerColor = Gray.copy(alpha = 0.6f),
+                unfocusedContainerColor = Gray.copy(alpha = 0.4f),
                 cursorColor = AccentViolet,
                 focusedLeadingIconColor = AccentViolet,
                 unfocusedLeadingIconColor = TextLight.copy(alpha = 0.6f)),
@@ -1082,11 +1036,11 @@ fun PriorityDropdownSection(priority: String, onPriorityChange: (String) -> Unit
               colors =
                   OutlinedTextFieldDefaults.colors(
                       focusedBorderColor = AccentViolet,
-                      unfocusedBorderColor = Color(0xFF3A3750),
+                      unfocusedBorderColor = DarkDivider,
                       focusedTextColor = TextLight,
                       unfocusedTextColor = TextLight,
-                      focusedContainerColor = Color(0xFF2D2B42).copy(alpha = 0.6f),
-                      unfocusedContainerColor = Color(0xFF2D2B42).copy(alpha = 0.4f),
+                      focusedContainerColor = Gray.copy(alpha = 0.6f),
+                      unfocusedContainerColor = Gray.copy(alpha = 0.4f),
                       cursorColor = AccentViolet),
               shape = RoundedCornerShape(12.dp),
               leadingIcon = {
@@ -1101,7 +1055,7 @@ fun PriorityDropdownSection(priority: String, onPriorityChange: (String) -> Unit
           ExposedDropdownMenu(
               expanded = expanded,
               onDismissRequest = { expanded = false },
-              modifier = Modifier.background(Color(0xFF2D2B42))) {
+              modifier = Modifier.background(Gray)) {
                 listOf("Low", "Medium", "High").forEach { selectionOption ->
                   DropdownMenuItem(
                       text = { Text(selectionOption, color = TextLight, fontSize = 15.sp) },
@@ -1109,7 +1063,7 @@ fun PriorityDropdownSection(priority: String, onPriorityChange: (String) -> Unit
                         onPriorityChange(selectionOption)
                         expanded = false
                       },
-                      modifier = Modifier.background(Color(0xFF2D2B42)))
+                      modifier = Modifier.background(Gray))
                 }
               }
         }
@@ -1135,7 +1089,7 @@ fun ClassAttendanceModal(
           colors =
               listOf(
                   MidDarkCard.copy(alpha = 0.95f),
-                  Color(0xFF2A1B3D).copy(alpha = 0.95f) // Slightly darker purple
+                  DarknightViolet.copy(alpha = 0.95f) // Slightly darker purple
                   ))
 
   AlertDialog(
@@ -1289,7 +1243,7 @@ fun ChoiceButton(
 ) {
   val backgroundColor by
       animateColorAsState(
-          targetValue = if (isSelected) AccentViolet.copy(alpha = 0.9f) else Color(0xFF2F2F45),
+          targetValue = if (isSelected) AccentViolet.copy(alpha = 0.9f) else DarkCardItem,
           animationSpec = tween(durationMillis = 200),
           label = "choiceButtonBgColor")
   val textColor by
