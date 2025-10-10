@@ -97,6 +97,28 @@ class WeekProgressViewModelTest {
     }
   }
 
+  @Test
+  fun setWeeks_selectedIndex_negative_isClampedToZero() {
+    val vm = newVm()
+    val weeks = listOf(WeekProgressItem("W1", 15), WeekProgressItem("W2", 25))
+    vm.setWeeks(weeks, selectedIndex = -10)
+    vm.uiState.value.let { s ->
+      assertEquals(0, s.selectedWeekIndex)
+      assertEquals(15, s.weekProgressPercent)
+    }
+  }
+
+  @Test
+  fun setWeeks_selectedIndex_tooLarge_isClampedToLast() {
+    val vm = newVm()
+    val weeks = listOf(WeekProgressItem("W1", 15), WeekProgressItem("W2", 75))
+    vm.setWeeks(weeks, selectedIndex = 99)
+    vm.uiState.value.let { s ->
+      assertEquals(1, s.selectedWeekIndex)
+      assertEquals(75, s.weekProgressPercent)
+    }
+  }
+
   // --- updateWeekPercent -------------------------------------------------
 
   @Test
@@ -253,6 +275,16 @@ class WeekProgressViewModelTest {
     vm.setObjectives(emptyList())
     val before = vm.uiState.value.objectives
     vm.moveObjective(0, 1)
+    assertEquals(before, vm.uiState.value.objectives)
+  }
+
+  @Test
+  fun moveObjective_sameFromTo_isNoOp() {
+    val vm = newVm()
+    val base = listOf(Objective("A", "C1", 10, "r1"), Objective("B", "C2", 20, "r2"))
+    vm.setObjectives(base)
+    val before = vm.uiState.value.objectives
+    vm.moveObjective(fromIndex = 1, toIndex = 1)
     assertEquals(before, vm.uiState.value.objectives)
   }
 

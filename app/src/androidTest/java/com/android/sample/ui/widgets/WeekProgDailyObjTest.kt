@@ -25,9 +25,12 @@ class WeekProgDailyObjTest {
 
   @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-  private fun setContent() {
+  private fun setContent(
+      vm: WeekProgressViewModel = WeekProgressViewModel(),
+      pending: String = "\u231B" // default hourglass
+  ) {
     compose.setContent {
-      EduMonTheme { WeekProgDailyObj(viewModel = WeekProgressViewModel(), modifier = Modifier) }
+      EduMonTheme { WeekProgDailyObj(viewModel = vm, modifier = Modifier, pendingIcon = pending) }
     }
   }
 
@@ -53,8 +56,6 @@ class WeekProgDailyObjTest {
     // Expand the weeks section
     compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE).assertHasClickAction()
     compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE).performClick()
-
-    compose.waitForIdle()
 
     // Only assert list if there is week content available
     val weeksNodes =
@@ -130,6 +131,45 @@ class WeekProgDailyObjTest {
         .onAllNodes(hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX))[0]
         .assertHasClickAction()
         .performClick()
+  }
+
+  // ---------------------------------------------------------------------
+  // Merged additional coverage
+  // ---------------------------------------------------------------------
+
+  @Test
+  fun weeks_expandCollapse_toggleTwice() {
+    setContent()
+
+    val toggle = compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE)
+    toggle.assertHasClickAction()
+
+    // expand
+    toggle.performClick()
+    // collapse
+    toggle.performClick()
+  }
+
+  @Test
+  fun objectives_headerToggle_expandsAndCollapses_whenMultiple() {
+    setContent()
+
+    // Header is clickable only when there are multiple objectives
+    val toggleNodes = compose.onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_TOGGLE)
+    if (toggleNodes.fetchSemanticsNodes().isEmpty()) return
+
+    val toggle = compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_TOGGLE)
+    toggle.assertHasClickAction()
+    toggle.performClick() // expand
+    toggle.performClick() // collapse
+  }
+
+  @Test
+  fun objectives_emptyState_rendersWhenNoObjectives() {
+    val vm = WeekProgressViewModel().apply { setObjectives(emptyList()) }
+    setContent(vm)
+
+    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY).assertExists().assertIsDisplayed()
   }
 }
 
