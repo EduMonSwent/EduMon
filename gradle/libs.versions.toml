@@ -21,7 +21,9 @@ firebaseAuth = "23.0.0"          # Firebase Authentication
 firebaseAuthKtx = "23.0.0"       # Firebase Authentication KTX extension
 firebaseFirestore = "25.1.0"     # Firebase Firestore
 firebaseDatabaseKtx = "21.0.0"   # Firebase Realtime Database KTX
-gms = "4.4.2"                    # Google Services Gradle plugin
+gms = "4.4.2"
+firebaseCommonKtx = "22.0.1"
+composeMaterial = "1.5.2"                    # Google Services Gradle plugin
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -52,7 +54,9 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }                # Firebase Authentication
 firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.ref = "firebaseAuthKtx" }    # Firebase Auth KTX
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestore" } # Firebase Firestore
-firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", version.ref = "firebaseDatabaseKtx" } # Firebase Realtime Database
+firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", version.ref = "firebaseDatabaseKtx" }
+firebase-common-ktx = { group = "com.google.firebase", name = "firebase-common-ktx", version.ref = "firebaseCommonKtx" }
+androidx-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeMaterial" } # Firebase Realtime Database
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

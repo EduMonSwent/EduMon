@@ -40,7 +40,7 @@ android {
     }
 
     testCoverage {
-        jacocoVersion = "0.8.8"
+        jacocoVersion = "0.8.11"
     }
 
     buildFeatures {
@@ -94,9 +94,10 @@ android {
 
 sonar {
     properties {
-        property("sonar.projectKey", "gf_android-sample")
-        property("sonar.projectName", "Android-Sample")
-        property("sonar.organization", "gabrielfleischer")
+        property("sonar.token", System.getenv("SONAR_TOKEN")?.trim() ?: "")
+        property("sonar.projectKey", "EduMonSwent_EduMon")
+        property("sonar.projectName", "EduMon")
+        property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
         property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
@@ -149,6 +150,8 @@ dependencies {
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
 }
 
 tasks.withType<Test> {
