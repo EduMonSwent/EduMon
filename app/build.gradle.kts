@@ -94,9 +94,9 @@ android {
 
 sonar {
     properties {
-        property("sonar.projectKey", "gf_android-sample")
-        property("sonar.projectName", "Android-Sample")
-        property("sonar.organization", "gabrielfleischer")
+        property("sonar.projectKey", "EduMonSwent_EduMon")
+        property("sonar.projectName", "EduMon")
+        property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
         property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
@@ -149,6 +149,31 @@ dependencies {
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.google.android.gms:play-services-tasks:18.1.0")
+
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    testImplementation("junit:junit:4.13.2")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.auth)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
+
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.mockito:mockito-inline:5.2.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:<version>")
+
+
+
 }
 
 tasks.withType<Test> {
