@@ -27,10 +27,14 @@ class WeekProgDailyObjTest {
 
   private fun setContent(
       vm: WeekProgressViewModel = WeekProgressViewModel(),
-      pending: String = "\u231B" // default hourglass
   ) {
     compose.setContent {
-      EduMonTheme { WeekProgDailyObj(viewModel = vm, modifier = Modifier, pendingIcon = pending) }
+      EduMonTheme {
+        WeekProgDailyObj(
+            viewModel = vm,
+            modifier = Modifier,
+        )
+      }
     }
   }
 
