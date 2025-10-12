@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -30,13 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.android.sample.ui.viewmodel.WeekProgressItem
 
 @Composable
@@ -45,7 +44,6 @@ fun WeekProgressSection(
     weeks: List<WeekProgressItem>,
     selectedWeekIndex: Int,
     onSelectWeek: (index: Int) -> Unit,
-    pendingIcon: ImageVector,
     modifier: Modifier = Modifier,
 ) {
   val cs = MaterialTheme.colorScheme
@@ -53,8 +51,9 @@ fun WeekProgressSection(
   val clampedPct = remember(weekProgressPercent) { weekProgressPercent.coerceIn(0, 100) }
 
   GlassSurface(modifier = modifier, testTag = WeekProgDailyObjTags.WEEK_PROGRESS_SECTION) {
-    val rotation by animateFloatAsState(
-        targetValue = if (weeksExpanded) 180f else 0f, label = "chevron-rotation")
+    val rotation by
+        animateFloatAsState(
+            targetValue = if (weeksExpanded) 180f else 0f, label = "chevron-rotation")
 
     Column(
         modifier =
@@ -94,12 +93,13 @@ fun WeekProgressSection(
 
     if (weeks.isNotEmpty()) {
       AnimatedVisibility(
-          visible = weeksExpanded, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+          visible = weeksExpanded,
+          enter = fadeIn() + expandVertically(),
+          exit = fadeOut() + shrinkVertically()) {
             WeeksExpandedList(
                 weeks = weeks,
                 selectedIndex = selectedWeekIndex,
                 onSelect = onSelectWeek,
-                pendingIcon = pendingIcon,
                 modifier = Modifier.padding(top = 12.dp).testTag(WeekProgDailyObjTags.WEEKS_LIST))
           }
     }
@@ -112,7 +112,6 @@ private fun WeeksExpandedList(
     weeks: List<WeekProgressItem>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
-    pendingIcon: ImageVector,
     modifier: Modifier = Modifier
 ) {
   val cs = MaterialTheme.colorScheme
@@ -146,20 +145,24 @@ private fun WeeksExpandedList(
                 "${item.percent}%",
                 style = MaterialTheme.typography.labelSmall,
                 color = cs.onSurface.copy(alpha = 0.75f),
-                modifier = Modifier.padding(end = 8.dp).testTag(WeekProgDailyObjTags.WEEK_PERCENT_PREFIX + index))
+                modifier =
+                    Modifier.padding(end = 8.dp)
+                        .testTag(WeekProgDailyObjTags.WEEK_PERCENT_PREFIX + index))
             val finished = item.percent >= 100
             if (finished) {
               Icon(
                   imageVector = Icons.Filled.Check,
                   contentDescription = "Finished week",
                   tint = cs.primary,
-                  modifier = Modifier.size(20.dp).testTag(WeekProgDailyObjTags.WEEK_STATUS_PREFIX + index))
+                  modifier =
+                      Modifier.size(20.dp).testTag(WeekProgDailyObjTags.WEEK_STATUS_PREFIX + index))
             } else {
               Icon(
-                  imageVector = pendingIcon,
+                  imageVector = Icons.Outlined.HourglassEmpty,
                   contentDescription = "Pending week",
                   tint = cs.onSurface.copy(alpha = 0.8f),
-                  modifier = Modifier.size(20.dp).testTag(WeekProgDailyObjTags.WEEK_STATUS_PREFIX + index))
+                  modifier =
+                      Modifier.size(20.dp).testTag(WeekProgDailyObjTags.WEEK_STATUS_PREFIX + index))
             }
           }
     }

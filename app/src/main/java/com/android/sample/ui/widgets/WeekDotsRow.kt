@@ -69,4 +69,3 @@ fun WeekDotsRow(dayStatuses: List<DayStatus>, modifier: Modifier = Modifier) {
         }
       }
 }
-

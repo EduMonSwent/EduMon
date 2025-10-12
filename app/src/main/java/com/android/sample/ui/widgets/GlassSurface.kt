@@ -28,14 +28,17 @@ fun GlassSurface(
   val gradient =
       Brush.linearGradient(
           listOf(cs.surfaceVariant.copy(alpha = 0.20f), cs.surfaceVariant.copy(alpha = 0.10f)))
-  Surface(color = Color.Transparent, shape = shape, tonalElevation = 0.dp, shadowElevation = 0.dp,
+  Surface(
+      color = Color.Transparent,
+      shape = shape,
+      tonalElevation = 0.dp,
+      shadowElevation = 0.dp,
       modifier = modifier.let { m -> if (testTag != null) m.testTag(testTag) else m }) {
-    Column(
-        Modifier.clip(shape)
-            .background(gradient)
-            .border(1.dp, cs.onSurface.copy(alpha = 0.12f), shape)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        content = content)
-  }
+        Column(
+            Modifier.clip(shape)
+                .background(gradient)
+                .border(1.dp, cs.onSurface.copy(alpha = 0.12f), shape)
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            content = content)
+      }
 }
-

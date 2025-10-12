@@ -9,29 +9,25 @@ package com.android.sample.ui.widgets
  */
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.android.sample.ui.theme.EduMonTheme
 import com.android.sample.ui.viewmodel.WeekProgressViewModel
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.HourglassEmpty
-import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
 fun WeekProgDailyObj(
     viewModel: WeekProgressViewModel,
     modifier: Modifier = Modifier,
-    pendingIcon: ImageVector = Icons.Outlined.HourglassEmpty
 ) {
   val state by viewModel.uiState.collectAsState()
   val cs = MaterialTheme.colorScheme
@@ -53,7 +49,6 @@ fun WeekProgDailyObj(
               weeks = state.weeks,
               selectedWeekIndex = state.selectedWeekIndex,
               onSelectWeek = { idx -> viewModel.selectWeek(idx) },
-              pendingIcon = pendingIcon,
               modifier = Modifier.fillMaxWidth())
 
           Spacer(Modifier.height(18.dp))
@@ -74,8 +69,7 @@ fun WeekProgDailyObj(
         WeekDotsRow(
             dayStatuses = state.dayStatuses,
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 14.dp)
                     .testTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
       }
