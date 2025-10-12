@@ -1,5 +1,6 @@
 package com.android.sample.ui.planner
 
+// Alias pour éviter le conflit avec java.lang.Class
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.android.sample.model.planner.AttendanceStatus
+import com.android.sample.model.planner.Class as PlannerClass
 import com.android.sample.model.planner.ClassAttendance
 import com.android.sample.model.planner.ClassType
 import com.android.sample.model.planner.CompletionStatus
@@ -20,88 +22,77 @@ import java.time.LocalTime
 import org.junit.Rule
 import org.junit.Test
 
-// Alias pour éviter le conflit avec java.lang.Class
-import com.android.sample.model.planner.Class as PlannerClass
-
 class PlannerScreenTest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
+  @get:Rule val composeTestRule = createComposeRule()
 
-    @Test
-    fun allMainSectionsAreDisplayed() {
-        composeTestRule.setContent { PlannerScreen() }
+  @Test
+  fun allMainSectionsAreDisplayed() {
+    composeTestRule.setContent { PlannerScreen() }
 
-        val tags = listOf(
+    val tags =
+        listOf(
             PlannerScreenTestTags.PLANNER_SCREEN,
             PlannerScreenTestTags.PET_HEADER,
             PlannerScreenTestTags.TODAY_CLASSES_SECTION,
-            PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION
-        )
+            PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION)
 
-        tags.forEach {
-            composeTestRule
-                .onNodeWithTag(PlannerScreenTestTags.PLANNER_SCREEN)
-                .performScrollToNode(hasTestTag(it))
-            composeTestRule.onNodeWithTag(it).assertExists()
-        }
+    tags.forEach {
+      composeTestRule
+          .onNodeWithTag(PlannerScreenTestTags.PLANNER_SCREEN)
+          .performScrollToNode(hasTestTag(it))
+      composeTestRule.onNodeWithTag(it).assertExists()
+    }
+  }
+
+  @Test
+  fun petHeaderDisplaysElements() {
+    composeTestRule.setContent { PetHeader(level = 5, onEdumonNameClick = {}) }
+
+    composeTestRule.onNodeWithText("Lv 5").assertExists()
+    composeTestRule.onNodeWithText("Edumon Profile").assertExists()
+  }
+
+  @Test
+  fun statBarDisplaysCorrectPercentages() {
+    composeTestRule.setContent {
+      Column {
+        StatBar(icon = "❤️", percent = 0.9f, color = Color(0xFFFF69B4))
+        StatBar(icon = "💡", percent = 0.85f, color = Color(0xFFFFC107))
+        StatBar(icon = "⚡", percent = 0.7f, color = Color(0xFF03A9F4))
+      }
     }
 
-    @Test
-    fun petHeaderDisplaysElements() {
-        composeTestRule.setContent {
-            PetHeader(level = 5, onEdumonNameClick = {})
-        }
+    composeTestRule.onNodeWithText("90%").assertExists()
+    composeTestRule.onNodeWithText("85%").assertExists()
+    composeTestRule.onNodeWithText("70%").assertExists()
+  }
 
-        composeTestRule.onNodeWithText("Lv 5").assertExists()
-        composeTestRule.onNodeWithText("Edumon Profile").assertExists()
+  @Test
+  fun aiRecommendationCardDisplaysContent() {
+    composeTestRule.setContent {
+      AIRecommendationCard(
+          recommendationText = "Focus on calculus exercises today", onActionClick = {})
     }
 
-    @Test
-    fun statBarDisplaysCorrectPercentages() {
-        composeTestRule.setContent {
-            Column {
-                StatBar(icon = "❤️", percent = 0.9f, color = Color(0xFFFF69B4))
-                StatBar(icon = "💡", percent = 0.85f, color = Color(0xFFFFC107))
-                StatBar(icon = "⚡", percent = 0.7f, color = Color(0xFF03A9F4))
-            }
-        }
+    // Utiliser des vérifications plus flexibles
+    composeTestRule.onNodeWithText("AI", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("Recommendation", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("Focus on calculus exercises today").assertExists()
+    composeTestRule.onNodeWithText("Start", ignoreCase = true).assertExists()
+  }
 
-        composeTestRule.onNodeWithText("90%").assertExists()
-        composeTestRule.onNodeWithText("85%").assertExists()
-        composeTestRule.onNodeWithText("70%").assertExists()
-    }
+  @Test
+  fun plannerGlowCardRendersContent() {
+    composeTestRule.setContent { PlannerGlowCard { Text("Test content inside glow card") } }
 
-    @Test
-    fun aiRecommendationCardDisplaysContent() {
-        composeTestRule.setContent {
-            AIRecommendationCard(
-                recommendationText = "Focus on calculus exercises today",
-                onActionClick = {}
-            )
-        }
+    composeTestRule.onNodeWithText("Test content inside glow card").assertExists()
+  }
 
-        // Utiliser des vérifications plus flexibles
-        composeTestRule.onNodeWithText("AI", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("Recommendation", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("Focus on calculus exercises today").assertExists()
-        composeTestRule.onNodeWithText("Start", ignoreCase = true).assertExists()
-    }
-
-    @Test
-    fun plannerGlowCardRendersContent() {
-        composeTestRule.setContent {
-            PlannerGlowCard {
-                Text("Test content inside glow card")
-            }
-        }
-
-        composeTestRule.onNodeWithText("Test content inside glow card").assertExists()
-    }
-
-    @Test
-    fun activityItemDisplaysClassInformation() {
-        val testClass = PlannerClass(
+  @Test
+  fun activityItemDisplaysClassInformation() {
+    val testClass =
+        PlannerClass(
             id = "1",
             courseName = "Mathematics",
             type = ClassType.LECTURE,
@@ -110,137 +101,126 @@ class PlannerScreenTest {
             location = "Room 101",
             instructor = "Dr. Smith"
             // Pas de paramètre date
-        )
-
-        composeTestRule.setContent {
-            ActivityItem(
-                activity = testClass,
-                attendanceRecord = null,
-                onClick = {}
             )
-        }
 
-        composeTestRule.onNodeWithText("Mathematics").assertExists()
-        composeTestRule.onNodeWithText("Lecture", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("09:00 - 10:00").assertExists()
-        composeTestRule.onNodeWithText("Room 101").assertExists()
+    composeTestRule.setContent {
+      ActivityItem(activity = testClass, attendanceRecord = null, onClick = {})
     }
 
-    @Test
-    fun wellnessEventItemDisplaysEventInformation() {
-        composeTestRule.setContent {
-            WellnessEventItem(
-                title = "Morning Yoga",
-                time = "08:00 - 09:00",
-                description = "Start your day with relaxing yoga",
-                eventType = WellnessEventType.YOGA,
-                onClick = {}
-            )
-        }
+    composeTestRule.onNodeWithText("Mathematics").assertExists()
+    composeTestRule.onNodeWithText("Lecture", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("09:00 - 10:00").assertExists()
+    composeTestRule.onNodeWithText("Room 101").assertExists()
+  }
 
-        composeTestRule.onNodeWithText("Morning Yoga").assertExists()
-        composeTestRule.onNodeWithText("08:00 - 09:00").assertExists()
-        composeTestRule.onNodeWithText("Start your day with relaxing yoga").assertExists()
+  @Test
+  fun wellnessEventItemDisplaysEventInformation() {
+    composeTestRule.setContent {
+      WellnessEventItem(
+          title = "Morning Yoga",
+          time = "08:00 - 09:00",
+          description = "Start your day with relaxing yoga",
+          eventType = WellnessEventType.YOGA,
+          onClick = {})
     }
 
-    @Test
-    fun fabOpensAddTaskModal() {
-        composeTestRule.setContent { PlannerScreen() }
+    composeTestRule.onNodeWithText("Morning Yoga").assertExists()
+    composeTestRule.onNodeWithText("08:00 - 09:00").assertExists()
+    composeTestRule.onNodeWithText("Start your day with relaxing yoga").assertExists()
+  }
 
-        // Vérifier d'abord que le FAB existe
-        composeTestRule.onNodeWithTag("add_study_task_fab").assertExists()
+  @Test
+  fun fabOpensAddTaskModal() {
+    composeTestRule.setContent { PlannerScreen() }
 
-        // Click the FAB
-        composeTestRule.onNodeWithTag("add_study_task_fab").performClick()
+    // Vérifier d'abord que le FAB existe
+    composeTestRule.onNodeWithTag("add_study_task_fab").assertExists()
 
-        // Check if modal appears
-        composeTestRule.onNodeWithTag(PlannerScreenTestTags.ADD_TASK_MODAL).assertExists()
+    // Click the FAB
+    composeTestRule.onNodeWithTag("add_study_task_fab").performClick()
+
+    // Check if modal appears
+    composeTestRule.onNodeWithTag(PlannerScreenTestTags.ADD_TASK_MODAL).assertExists()
+  }
+
+  @Test
+  fun addStudyTaskModalFormFieldsWork() {
+    var dismissed = false
+
+    composeTestRule.setContent {
+      AddStudyTaskModal(onDismiss = { dismissed = true }, onAddTask = { _, _, _, _, _ -> })
     }
 
-    @Test
-    fun addStudyTaskModalFormFieldsWork() {
-        var dismissed = false
+    // Test subject field
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
+        .performTextInput("Mathematics")
 
-        composeTestRule.setContent {
-            AddStudyTaskModal(
-                onDismiss = { dismissed = true },
-                onAddTask = { _, _, _, _, _ -> }
-            )
-        }
+    // Test task title field
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
+        .performTextInput("Complete exercises")
 
-        // Test subject field
-        composeTestRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
-            .performTextInput("Mathematics")
+    // Test duration field
+    composeTestRule.onNodeWithTag(PlannerScreenTestTags.DURATION_FIELD).performTextInput("90")
 
-        // Test task title field
-        composeTestRule.onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
-            .performTextInput("Complete exercises")
+    // Test deadline field
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.DEADLINE_FIELD)
+        .performTextInput("15.12.2024")
 
-        // Test duration field
-        composeTestRule.onNodeWithTag(PlannerScreenTestTags.DURATION_FIELD)
-            .performTextInput("90")
+    // Utiliser un test tag pour le bouton close
+    composeTestRule.onNodeWithText("Cancel", ignoreCase = true).performClick()
+    assert(dismissed)
+  }
 
-        // Test deadline field
-        composeTestRule.onNodeWithTag(PlannerScreenTestTags.DEADLINE_FIELD)
-            .performTextInput("15.12.2024")
+  @Test
+  fun priorityDropdownSectionWorks() {
+    var selectedPriority = "Medium"
 
-        // Utiliser un test tag pour le bouton close
-        composeTestRule.onNodeWithText("Cancel", ignoreCase = true).performClick()
-        assert(dismissed)
+    composeTestRule.setContent {
+      PriorityDropdownSection(
+          priority = selectedPriority, onPriorityChange = { selectedPriority = it })
     }
 
-    @Test
-    fun priorityDropdownSectionWorks() {
-        var selectedPriority = "Medium"
+    composeTestRule.onNodeWithText("Priority").assertExists()
+    composeTestRule.onNodeWithText("Medium").assertExists()
+  }
 
-        composeTestRule.setContent {
-            PriorityDropdownSection(
-                priority = selectedPriority,
-                onPriorityChange = { selectedPriority = it }
-            )
-        }
+  @Test
+  fun formFieldSectionDisplaysCorrectly() {
+    var fieldValue = ""
 
-        composeTestRule.onNodeWithText("Priority").assertExists()
-        composeTestRule.onNodeWithText("Medium").assertExists()
+    composeTestRule.setContent {
+      FormFieldSection(
+          label = "Test Label",
+          placeholder = "Test placeholder",
+          value = fieldValue,
+          onValueChange = { fieldValue = it },
+          testTag = "test_field")
     }
 
-    @Test
-    fun formFieldSectionDisplaysCorrectly() {
-        var fieldValue = ""
+    composeTestRule.onNodeWithText("Test Label").assertExists()
+    composeTestRule.onNodeWithText("Test placeholder").assertExists()
+  }
 
-        composeTestRule.setContent {
-            FormFieldSection(
-                label = "Test Label",
-                placeholder = "Test placeholder",
-                value = fieldValue,
-                onValueChange = { fieldValue = it },
-                testTag = "test_field"
-            )
-        }
+  @Test
+  fun choiceButtonChangesSelection() {
+    var isSelected = false
 
-        composeTestRule.onNodeWithText("Test Label").assertExists()
-        composeTestRule.onNodeWithText("Test placeholder").assertExists()
+    composeTestRule.setContent {
+      ChoiceButton(
+          text = "Test Option", isSelected = isSelected, onClick = { isSelected = !isSelected })
     }
 
-    @Test
-    fun choiceButtonChangesSelection() {
-        var isSelected = false
+    composeTestRule.onNodeWithText("Test Option").assertExists()
+    composeTestRule.onNodeWithText("Test Option").performClick()
+  }
 
-        composeTestRule.setContent {
-            ChoiceButton(
-                text = "Test Option",
-                isSelected = isSelected,
-                onClick = { isSelected = !isSelected }
-            )
-        }
-
-        composeTestRule.onNodeWithText("Test Option").assertExists()
-        composeTestRule.onNodeWithText("Test Option").performClick()
-    }
-
-    @Test
-    fun classAttendanceModalDisplaysClassInfo() {
-        val testClass = PlannerClass(
+  @Test
+  fun classAttendanceModalDisplaysClassInfo() {
+    val testClass =
+        PlannerClass(
             id = "1",
             courseName = "Physics",
             type = ClassType.LAB,
@@ -249,47 +229,47 @@ class PlannerScreenTest {
             location = "Lab B",
             instructor = "Prof. Johnson"
             // Pas de paramètre date
-        )
-
-        composeTestRule.setContent {
-            ClassAttendanceModal(
-                classItem = testClass,
-                initialAttendance = null,
-                initialCompletion = null,
-                onDismiss = {},
-                onSave = { _, _ -> }
             )
-        }
 
-        // Vérifications plus flexibles
-        composeTestRule.onNodeWithText("Physics", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("Lab", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("attend", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("finish", ignoreCase = true).assertExists()
+    composeTestRule.setContent {
+      ClassAttendanceModal(
+          classItem = testClass,
+          initialAttendance = null,
+          initialCompletion = null,
+          onDismiss = {},
+          onSave = { _, _ -> })
     }
 
-    @Test
-    fun todayClassesSectionDisplaysDate() {
-        composeTestRule.setContent { PlannerScreen() }
+    // Vérifications plus flexibles
+    composeTestRule.onNodeWithText("Physics", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("Lab", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("attend", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("finish", ignoreCase = true).assertExists()
+  }
 
-        composeTestRule.onNodeWithTag(PlannerScreenTestTags.TODAY_CLASSES_SECTION).assertExists()
-        composeTestRule.onNodeWithText("Today", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("Classes", ignoreCase = true).assertExists()
-    }
+  @Test
+  fun todayClassesSectionDisplaysDate() {
+    composeTestRule.setContent { PlannerScreen() }
 
-    @Test
-    fun wellnessCampusSectionDisplaysContent() {
-        composeTestRule.setContent { PlannerScreen() }
+    composeTestRule.onNodeWithTag(PlannerScreenTestTags.TODAY_CLASSES_SECTION).assertExists()
+    composeTestRule.onNodeWithText("Today", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("Classes", ignoreCase = true).assertExists()
+  }
 
-        composeTestRule.onNodeWithTag(PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION).assertExists()
-        composeTestRule.onNodeWithText("Wellness", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("Campus", ignoreCase = true).assertExists()
-        composeTestRule.onNodeWithText("Balance", ignoreCase = true).assertExists()
-    }
+  @Test
+  fun wellnessCampusSectionDisplaysContent() {
+    composeTestRule.setContent { PlannerScreen() }
 
-    @Test
-    fun activityItemWithAttendanceShowsStatus() {
-        val testClass = PlannerClass(
+    composeTestRule.onNodeWithTag(PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION).assertExists()
+    composeTestRule.onNodeWithText("Wellness", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("Campus", ignoreCase = true).assertExists()
+    composeTestRule.onNodeWithText("Balance", ignoreCase = true).assertExists()
+  }
+
+  @Test
+  fun activityItemWithAttendanceShowsStatus() {
+    val testClass =
+        PlannerClass(
             id = "1",
             courseName = "Chemistry",
             type = ClassType.LECTURE,
@@ -298,27 +278,23 @@ class PlannerScreenTest {
             location = "Auditorium",
             instructor = "Dr. Brown"
             // Pas de paramètre date
-        )
+            )
 
-        val attendanceRecord = ClassAttendance(
+    val attendanceRecord =
+        ClassAttendance(
             classId = "1",
             attendance = AttendanceStatus.YES,
             completion = CompletionStatus.YES,
-            date = LocalDate.now()
-        )
+            date = LocalDate.now())
 
-        composeTestRule.setContent {
-            ActivityItem(
-                activity = testClass,
-                attendanceRecord = attendanceRecord,
-                onClick = {}
-            )
-        }
-
-        composeTestRule.onNodeWithText("Chemistry").assertExists()
-        composeTestRule.onNodeWithText("Lecture", ignoreCase = true).assertExists()
-
-        // Vérifier les statuts avec des textes partiels
-        composeTestRule.onNodeWithText("Yes", ignoreCase = true).assertExists()
+    composeTestRule.setContent {
+      ActivityItem(activity = testClass, attendanceRecord = attendanceRecord, onClick = {})
     }
+
+    composeTestRule.onNodeWithText("Chemistry").assertExists()
+    composeTestRule.onNodeWithText("Lecture", ignoreCase = true).assertExists()
+
+    // Vérifier les statuts avec des textes partiels
+    composeTestRule.onNodeWithText("Yes", ignoreCase = true).assertExists()
+  }
 }
