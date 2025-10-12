@@ -10,7 +10,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class AddToDoScreenUiTest : ToDoTest {
+class AddToDoScreenTest : ToDoTest {
 
   @get:Rule val compose = createComposeRule()
 
