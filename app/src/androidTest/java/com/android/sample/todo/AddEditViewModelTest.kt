@@ -1,38 +1,97 @@
 package com.android.sample.todo.ui
 
-import com.android.sample.todo.*
-import org.junit.Assert.*
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.todo.Priority
+import com.android.sample.todo.Status
+import com.android.sample.todo.ToDo
+import com.android.sample.todo.ToDoRepository
+import com.android.sample.todo.ToDoRepositoryLocal
+import java.time.LocalDate
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class AddEditViewModelTest {
 
-  private val repo = ToDoRepositoryLocal()
+  private lateinit var repo: ToDoRepository
 
-  /**
-   * @OptIn(ExperimentalCoroutinesApi::class)
-   * @Test fun save_addsTodo() = runTest { val vm = AddToDoViewModel(repo) vm.title = "New Task"
-   *   vm.dueDate = LocalDate.now() vm.priority = Priority.MEDIUM vm.status = Status.TODO
-   *
-   * vm.save {} advanceUntilIdle()
-   *
-   * val todos = repo.todos.first() assertTrue(todos.any { it.title == "New Task" }) }
-   */
-  @Test
-  fun cannotSaveWhenTitleBlank() {
-    val vm = AddToDoViewModel(repo)
-    vm.title = ""
-    assertFalse(vm.canSave)
+  @Before
+  fun setUp() {
+    repo = ToDoRepositoryLocal()
   }
 
-  /**
-   * @OptIn(ExperimentalCoroutinesApi::class)
-   * @Test fun edit_updatesExistingTodo() = runTest { val seed = ToDo( title = "Initial", dueDate =
-   *   LocalDate.now(), priority = Priority.MEDIUM, status = Status.TODO) repo.add(seed)
-   *
-   * val vm = EditToDoViewModel(repo, seed.id) advanceUntilIdle()
-   *
-   * vm.title = "Updated" vm.save {} advanceUntilIdle()
-   *
-   * assertEquals("Updated", repo.getById(seed.id)?.title) }
-   */
+  // ---------------- AddToDoViewModel ----------------
+
+  @Test
+  fun add_canSave_depends_on_title() {
+    val vm = AddToDoViewModel(repo)
+    assertFalse(vm.canSave)
+    vm.title = "  Study  "
+    assertTrue(vm.canSave)
+  }
+
+  @Test
+  fun add_save_noop_when_title_blank() = runBlocking {
+    val vm = AddToDoViewModel(repo)
+    vm.title = "   "
+    var called = false
+    vm.save { called = true }
+    val list = (repo.todos as kotlinx.coroutines.flow.MutableStateFlow<List<ToDo>>).value
+    assertEquals(0, list.size)
+    assertFalse(called)
+  }
+
+  // ---------------- EditToDoViewModel ----------------
+
+  @Test
+  fun edit_init_prefills_from_repository() = runBlocking {
+    val existing =
+        ToDo(
+            id = "E1",
+            title = "Original",
+            dueDate = LocalDate.of(2025, 2, 3),
+            priority = Priority.LOW,
+            status = Status.TODO,
+            location = "Dorm",
+            links = listOf("x.com", "y.com"),
+            note = "n",
+            notificationsEnabled = true)
+    repo.add(existing)
+
+    val vm = EditToDoViewModel(repo, id = "E1")
+    waitUntil(timeoutMs = 1_000) { vm.title == "Original" }
+
+    assertEquals("Original", vm.title)
+    assertEquals(LocalDate.of(2025, 2, 3), vm.dueDate)
+    assertEquals(Priority.LOW, vm.priority)
+    assertEquals(Status.TODO, vm.status)
+    assertEquals("Dorm", vm.location)
+    assertEquals("x.com, y.com", vm.linksText)
+    assertEquals("n", vm.note)
+    assertTrue(vm.notificationsEnabled)
+  }
+
+  @Test
+  fun edit_save_noop_if_item_missing() = runBlocking {
+    val vm = EditToDoViewModel(repo, id = "missing")
+    vm.title = "X"
+    vm.save { /* not expected to run */}
+    val list = (repo.todos as kotlinx.coroutines.flow.MutableStateFlow<List<ToDo>>).value
+    assertEquals(0, list.size)
+  }
+
+  // ---------- tiny polling helper (no dispatcher needed) ----------
+  private suspend fun waitUntil(timeoutMs: Long, condition: () -> Boolean) {
+    val start = System.currentTimeMillis()
+    while (!condition()) {
+      if (System.currentTimeMillis() - start > timeoutMs) break
+      delay(10)
+    }
+  }
 }
