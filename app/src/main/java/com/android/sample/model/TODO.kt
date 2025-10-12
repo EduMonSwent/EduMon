@@ -6,16 +6,16 @@ import java.util.UUID
 
 // Levels of importance for a task
 enum class Priority {
-    LOW,
-    MEDIUM,
-    HIGH
+  LOW,
+  MEDIUM,
+  HIGH
 }
 
 // Current progress of a task
 enum class Status {
-    TODO,
-    IN_PROGRESS,
-    DONE
+  TODO,
+  IN_PROGRESS,
+  DONE
 }
 
 /**
@@ -39,6 +39,6 @@ data class ToDo(
     val note: String? = null, // extra description (optional)
     val notificationsEnabled: Boolean = false // reminder toggle
 ) {
-    // Utility to display due date in a human-friendly format
-    fun dueDateFormatted(): String = dueDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))
+  // Utility to display due date in a human-friendly format
+  fun dueDateFormatted(): String = dueDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))
 }
