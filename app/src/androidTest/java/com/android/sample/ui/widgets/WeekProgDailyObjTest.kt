@@ -8,8 +8,13 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.ui.theme.EduMonTheme
+import com.android.sample.ui.viewmodel.DayStatus
+import com.android.sample.ui.viewmodel.Objective
 import com.android.sample.ui.viewmodel.WeekProgressViewModel
 import java.time.DayOfWeek
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -175,14 +180,131 @@ class WeekProgDailyObjTest {
 
     compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY).assertExists().assertIsDisplayed()
   }
-}
 
-/**
- * Matches any node whose testTag starts with [prefix]. Helpful for lists where items use
- * index-suffixed tags (e.g. "WEEK_ROW_0").
- */
-private fun hasTestTagPrefix(prefix: String): SemanticsMatcher =
-    SemanticsMatcher("Has testTag starting with $prefix") { node ->
-      val tag = kotlin.runCatching { node.config[SemanticsProperties.TestTag] }.getOrNull()
-      tag?.startsWith(prefix) == true
+  @Test
+  fun objective_reason_isVisible_forFirstObjective_whenShowWhyTrue() {
+    setContent()
+
+    // With default VM, showWhy = true and first objective has a non-empty reason
+    compose
+        .onNodeWithTag(WeekProgDailyObjTags.OBJECTIVE_REASON_PREFIX + 0)
+        .assertExists()
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun selectNext_and_selectPrevious_areClamped_andSyncHeader() = runTest {
+    val vm = WeekProgressViewModel()
+    // move forward
+    vm.selectNextWeek()
+    assertEquals(2, vm.uiState.value.selectedWeekIndex)
+    assertEquals(10, vm.uiState.value.weekProgressPercent)
+
+    // move backward
+    vm.selectPreviousWeek()
+    assertEquals(1, vm.uiState.value.selectedWeekIndex)
+    assertEquals(55, vm.uiState.value.weekProgressPercent)
+
+    // with empty weeks, selection stays within [0,0] and header unchanged
+    val before = vm.uiState.value.weekProgressPercent
+    vm.setWeeks(emptyList())
+    vm.selectNextWeek()
+    assertEquals(0, vm.uiState.value.selectedWeekIndex)
+    assertEquals(before, vm.uiState.value.weekProgressPercent)
+    vm.selectPreviousWeek()
+    assertEquals(0, vm.uiState.value.selectedWeekIndex)
+    assertEquals(before, vm.uiState.value.weekProgressPercent)
+  }
+
+  @Test
+  fun dayStatuses_set_and_toggleOnlyMatchingDay() = runTest {
+    val vm = WeekProgressViewModel()
+    vm.setDayStatuses(listOf(DayStatus(DayOfWeek.MONDAY, false)))
+    vm.toggleDayMet(DayOfWeek.MONDAY)
+    assertTrue(vm.uiState.value.dayStatuses.first().metTarget)
+
+    // toggling a missing day leaves list unchanged
+    val before = vm.uiState.value.dayStatuses
+    vm.toggleDayMet(DayOfWeek.SUNDAY)
+    assertEquals(before, vm.uiState.value.dayStatuses)
+  }
+
+  @Test
+  fun setShowWhy_updatesFlag() = runTest {
+    val vm = WeekProgressViewModel()
+    assertTrue(vm.uiState.value.showWhy)
+    vm.setShowWhy(false)
+    assertFalse(vm.uiState.value.showWhy)
+  }
+
+  @Test
+  fun weekDotsRow_rendersAllDays_withMetAndUnmetStates() {
+    val statuses =
+        listOf(
+            DayStatus(DayOfWeek.MONDAY, true),
+            DayStatus(DayOfWeek.TUESDAY, false),
+            DayStatus(DayOfWeek.WEDNESDAY, true)
+            // rest will be filled as false by the composable
+            )
+
+    compose.setContent { EduMonTheme { WeekDotsRow(statuses) } }
+
+    // All 7 dots exist by tag (the composable fills missing days)
+    DayOfWeek.values().forEach { dow ->
+      compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOT_PREFIX + dow.name).assertExists()
     }
+  }
+
+  @Test
+  fun dailyObjectives_empty_showsFriendlyMessage_andNoShowAllButton() {
+    compose.setContent {
+      EduMonTheme {
+        DailyObjectivesSection(objectives = emptyList(), showWhy = true, onStartObjective = {})
+      }
+    }
+
+    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY).assertIsDisplayed()
+    compose.onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_BUTTON).assertCountEquals(0)
+  }
+
+  @Test
+  fun dailyObjectives_showWhyFalse_hidesReasonEvenIfPresent() {
+    val objs = listOf(Objective("Task", "Course", 5, "Some reason"))
+    compose.setContent {
+      EduMonTheme {
+        DailyObjectivesSection(
+            objectives = objs,
+            showWhy = false, // hide why
+            onStartObjective = {})
+      }
+    }
+    compose.onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVE_REASON_PREFIX + 0).assertCountEquals(0)
+  }
+
+  @Test
+  fun weekProgress_noWeeks_doesNotShowExpandedList() {
+    compose.setContent {
+      EduMonTheme {
+        WeekProgressSection(
+            weekProgressPercent = 40,
+            weeks = emptyList(),
+            selectedWeekIndex = 0,
+            onSelectWeek = {},
+        )
+      }
+    }
+    // tapping the header shouldn't reveal a list since there are no weeks
+    compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE).performClick()
+    compose.onAllNodesWithTag(WeekProgDailyObjTags.WEEKS_LIST).assertCountEquals(0)
+  }
+
+  /**
+   * Matches any node whose testTag starts with [prefix]. Helpful for lists where items use
+   * index-suffixed tags (e.g. "WEEK_ROW_0").
+   */
+  private fun hasTestTagPrefix(prefix: String): SemanticsMatcher =
+      SemanticsMatcher("Has testTag starting with $prefix") { node ->
+        val tag = kotlin.runCatching { node.config[SemanticsProperties.TestTag] }.getOrNull()
+        tag?.startsWith(prefix) == true
+      }
+}
