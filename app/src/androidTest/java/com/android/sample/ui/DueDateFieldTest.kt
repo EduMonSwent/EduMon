@@ -7,7 +7,7 @@ import com.android.sample.todo.ui.components.TodoForm
 import org.junit.Rule
 import org.junit.Test
 
-class DueDateFieldUiTest {
+class DueDateFieldTest {
 
   @get:Rule val compose = createComposeRule()
 
