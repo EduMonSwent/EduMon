@@ -1,4 +1,4 @@
-package com.android.sample.model
+package com.android.sample.data
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

@@ -1,11 +1,11 @@
-package com.android.sample
+package com.android.sample.repositories
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.model.CreatureStats
-import com.android.sample.model.Priority
-import com.android.sample.model.ToDo
-import com.android.sample.model.UserStats
+import com.android.sample.data.CreatureStats
+import com.android.sample.data.Priority
+import com.android.sample.data.ToDo
+import com.android.sample.data.UserStats
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

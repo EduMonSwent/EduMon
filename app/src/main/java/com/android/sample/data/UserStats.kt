@@ -1,4 +1,4 @@
-package com.android.sample.model
+package com.android.sample.data
 
 data class UserStats(
     val streakDays: Int = 7,

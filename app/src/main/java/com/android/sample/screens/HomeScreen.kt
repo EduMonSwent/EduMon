@@ -1,15 +1,12 @@
-package com.android.sample
+package com.android.sample.screens
 
 import android.content.res.Configuration
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,16 +25,19 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.R
+import com.android.sample.data.Status
+import com.android.sample.data.ToDo
+import com.android.sample.data.UserStats
+import com.android.sample.repositories.HomeUiState
+import com.android.sample.repositories.HomeViewModel
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
@@ -219,122 +219,6 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun CreatureHouseCard(
-    creatureResId: Int,
-    level: Int,
-    environmentResId: Int,
-    modifier: Modifier = Modifier,
-) {
-  Surface(
-      modifier = modifier.fillMaxWidth(),
-      color = MaterialTheme.colorScheme.surface,
-      shape = RoundedCornerShape(24.dp),
-      tonalElevation = 1.dp,
-  ) {
-    Box(
-        modifier =
-            Modifier.fillMaxWidth().padding(16.dp).clip(RoundedCornerShape(20.dp)).height(220.dp)) {
-          Image(
-              painter = painterResource(environmentResId),
-              contentDescription = "Creature environment",
-              contentScale = ContentScale.Crop,
-              modifier = Modifier.fillMaxSize())
-          Box(
-              Modifier.align(Alignment.BottomCenter)
-                  .fillMaxWidth(0.7f)
-                  .height(6.dp)
-                  .clip(RoundedCornerShape(50))
-                  .background(MaterialTheme.colorScheme.onSurface.copy(alpha = .18f)))
-          CreatureSprite(
-              resId = creatureResId,
-              size = 120.dp,
-              modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-28).dp))
-          AssistChip(
-              onClick = {},
-              label = { Text("Lv $level", color = MaterialTheme.colorScheme.primary) },
-              leadingIcon = {
-                Icon(Icons.Outlined.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
-              },
-              colors =
-                  AssistChipDefaults.assistChipColors(
-                      containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                      labelColor = MaterialTheme.colorScheme.onSurface,
-                      leadingIconContentColor = MaterialTheme.colorScheme.primary),
-              modifier = Modifier.align(Alignment.TopStart).padding(10.dp))
-        }
-  }
-}
-
-@Composable
-private fun CreatureSprite(resId: Int, modifier: Modifier = Modifier, size: Dp = 120.dp) {
-  val inf = rememberInfiniteTransition(label = "float")
-  val offset by
-      inf.animateFloat(
-          initialValue = 0f,
-          targetValue = -10f,
-          animationSpec =
-              infiniteRepeatable(
-                  animation = tween(1800, easing = FastOutSlowInEasing),
-                  repeatMode = RepeatMode.Reverse),
-          label = "offset")
-  val glowAlpha by
-      inf.animateFloat(
-          initialValue = 0.25f,
-          targetValue = 0.5f,
-          animationSpec =
-              infiniteRepeatable(
-                  animation = tween(1400, easing = FastOutSlowInEasing),
-                  repeatMode = RepeatMode.Reverse),
-          label = "glow")
-
-  Box(modifier = modifier.size(size + 40.dp), contentAlignment = Alignment.Center) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-      drawCircle(
-          brush =
-              Brush.radialGradient(
-                  0.0f to Color(0xFFA26BF2).copy(alpha = glowAlpha), 1.0f to Color.Transparent),
-          radius = (size.value * 0.9f) * density,
-          center = center)
-    }
-    Image(
-        painter = painterResource(id = resId),
-        contentDescription = "Creature",
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.size(size).offset(y = offset.dp))
-  }
-}
-
-@Composable
-fun CreatureStatsCard(stats: CreatureStats, modifier: Modifier = Modifier) {
-  ElevatedCard(
-      modifier,
-      colors =
-          CardDefaults.elevatedCardColors(
-              containerColor = MaterialTheme.colorScheme.surface,
-              contentColor = MaterialTheme.colorScheme.onSurface),
-      shape = RoundedCornerShape(20.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text("Buddy Stats", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-          StatRow(
-              "Happiness",
-              stats.happiness,
-              Icons.Outlined.FavoriteBorder,
-              barColor = MaterialTheme.colorScheme.primary)
-          StatRow(
-              "Health",
-              stats.health,
-              Icons.Outlined.LocalHospital,
-              barColor = MaterialTheme.colorScheme.secondary)
-          StatRow(
-              "Energy",
-              stats.energy,
-              Icons.Outlined.Bolt,
-              barColor = MaterialTheme.colorScheme.tertiary)
-        }
-      }
-}
-
-@Composable
 fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
   ElevatedCard(
       modifier,
@@ -387,7 +271,7 @@ private fun BigNumber(text: String) {
 
 @Composable
 fun TodayTodosCard(
-    todos: List<Todo>,
+    todos: List<ToDo>,
     onSeeAll: () -> Unit,
 ) {
   ElevatedCard(
@@ -412,9 +296,11 @@ fun TodayTodosCard(
 
           Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             todos.take(3).forEach { t ->
+              val isDone = t.status == Status.DONE
               val secondary = MaterialTheme.colorScheme.onSurface.copy(alpha = .70f)
+
               Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                if (t.done) {
+                if (isDone) {
                   Surface(
                       color = MaterialTheme.colorScheme.secondary.copy(alpha = .15f),
                       shape = CircleShape,
@@ -439,19 +325,19 @@ fun TodayTodosCard(
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis,
                       color = MaterialTheme.colorScheme.onSurface,
-                      textDecoration = if (t.done) TextDecoration.LineThrough else null)
+                      textDecoration = if (isDone) TextDecoration.LineThrough else null)
                   Text(
-                      if (t.done) "Completed" else t.due,
-                      color = if (t.done) MaterialTheme.colorScheme.secondary else secondary,
+                      if (isDone) "Completed" else t.dueDateFormatted(),
+                      color = if (isDone) MaterialTheme.colorScheme.secondary else secondary,
                       fontSize = 12.sp)
                 }
 
                 Icon(
                     imageVector =
-                        if (t.done) Icons.Outlined.CheckCircle else Icons.Outlined.ChevronRight,
+                        if (isDone) Icons.Outlined.CheckCircle else Icons.Outlined.ChevronRight,
                     contentDescription = null,
                     tint =
-                        if (t.done) MaterialTheme.colorScheme.secondary
+                        if (isDone) MaterialTheme.colorScheme.secondary
                         else MaterialTheme.colorScheme.onSurface.copy(alpha = .65f))
               }
             }
@@ -540,29 +426,6 @@ private fun QuickButton(
           Icon(icon, contentDescription = null)
           Text(text)
         }
-  }
-}
-
-@Composable
-private fun StatRow(
-    title: String,
-    value: Int,
-    icon: ImageVector,
-    barColor: Color,
-) {
-  Column {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(icon, contentDescription = null, tint = barColor)
-      Spacer(Modifier.width(6.dp))
-      Text(title, modifier = Modifier.weight(1f))
-      Text("${value}%", color = MaterialTheme.colorScheme.onSurface)
-    }
-    Spacer(Modifier.height(6.dp))
-    LinearProgressIndicator(
-        progress = value / 100f,
-        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .20f),
-        color = barColor,
-        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(8.dp)))
   }
 }
 

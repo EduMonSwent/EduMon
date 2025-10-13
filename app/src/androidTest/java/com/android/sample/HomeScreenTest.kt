@@ -1,11 +1,18 @@
 package com.android.sample
 
+import android.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.repositories.HomeRepository
+import com.android.sample.repositories.HomeUiState
+import com.android.sample.repositories.HomeViewModel
+import com.android.sample.screens.EduMonHomeRoute
+import com.android.sample.screens.EduMonHomeScreen
+import com.android.sample.screens.GlowCard
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,8 +43,8 @@ class HomeScreenTest {
                             streakDays = 7, points = 1250, studyTodayMin = 45, dailyGoalMin = 180),
                     quote = quote),
             // use platform drawables so tests don’t depend on app resources
-            creatureResId = android.R.drawable.ic_menu_help,
-            environmentResId = android.R.drawable.ic_menu_gallery,
+            creatureResId = R.drawable.ic_menu_help,
+            environmentResId = R.drawable.ic_menu_gallery,
             onNavigate = onNavigate)
       }
     }
@@ -131,8 +138,8 @@ class HomeScreenTest {
     composeRule.setContent {
       MaterialTheme {
         EduMonHomeRoute(
-            creatureResId = android.R.drawable.ic_menu_help,
-            environmentResId = android.R.drawable.ic_menu_gallery,
+            creatureResId = R.drawable.ic_menu_help,
+            environmentResId = R.drawable.ic_menu_gallery,
             onNavigate = {},
             vm = vm)
       }
