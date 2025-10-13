@@ -20,7 +20,8 @@ import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 
-const val UI_WAIT_TIMEOUT = 5_000L
+// Longer timeout helps on CI
+const val UI_WAIT_TIMEOUT = 15_000L
 
 /** Test helpers. */
 interface ToDoTest {
@@ -36,7 +37,6 @@ interface ToDoTest {
     ToDoRepositoryProvider.repository = createInitializedRepository()
   }
 
-  // ----- top-level model factory (Option A: no companion) -----
   fun sampleToDo(
       id: String = "id-${System.nanoTime()}",
       title: String = "Task",
@@ -45,40 +45,57 @@ interface ToDoTest {
       status: Status = Status.TODO
   ) = ToDo(id = id, title = title, dueDate = due, priority = priority, status = status)
 
+  fun ComposeTestRule.awaitDisplayed(
+      tag: String,
+      timeoutMs: Long = UI_WAIT_TIMEOUT
+  ): SemanticsNodeInteraction {
+    waitUntil(timeoutMs) { onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    return onNodeWithTag(tag).assertIsDisplayed()
+  }
+
   // ----- form helpers -----
   fun ComposeTestRule.enterTitle(title: String) =
-      onNodeWithTag(TestTags.TitleField).performTextInput(title)
+      awaitDisplayed(TestTags.TitleField).performTextInput(title)
 
   fun ComposeTestRule.clearAndEnterTitle(title: String) {
-    onNodeWithTag(TestTags.TitleField).performTextClearance()
+    awaitDisplayed(TestTags.TitleField).performTextClearance()
     onNodeWithTag(TestTags.TitleField).performTextInput(title)
   }
 
-  fun ComposeTestRule.openOptionalSection() =
-      onNodeWithTag(TestTags.OptionalToggle).assertIsDisplayed().performClick()
+  /** Only opens the optional section if it's currently hidden. */
+  fun ComposeTestRule.openOptionalSection() {
+    val links = TestTags.LinksField
+    val isVisible = onAllNodesWithTag(links).fetchSemanticsNodes().isNotEmpty()
+    if (!isVisible) {
+      awaitDisplayed(TestTags.OptionalToggle).performClick()
+      awaitDisplayed(links) // wait for fields to appear
+    }
+  }
 
   fun ComposeTestRule.enterLocation(text: String) =
-      onNodeWithTag(TestTags.LocationField).performTextInput(text)
+      awaitDisplayed(TestTags.LocationField).performTextInput(text)
 
-  fun ComposeTestRule.enterLinks(text: String) =
-      onNodeWithTag(TestTags.LinksField).performTextInput(text)
+  /** Idempotent: ensures the optional block is visible first. */
+  fun ComposeTestRule.enterLinks(text: String) {
+    openOptionalSection()
+    awaitDisplayed(TestTags.LinksField).performTextInput(text)
+  }
 
   fun ComposeTestRule.enterNote(text: String) =
-      onNodeWithTag(TestTags.NoteField).performTextInput(text)
+      awaitDisplayed(TestTags.NoteField).performTextInput(text)
 
   fun ComposeTestRule.toggleNotifications() =
-      onNodeWithTag(TestTags.NotificationsSwitch).performClick()
+      awaitDisplayed(TestTags.NotificationsSwitch).performClick()
 
   fun ComposeTestRule.clickSave(waitForRedirection: Boolean = false) {
-    onNodeWithTag(TestTags.SaveButton).assertIsDisplayed().performClick()
+    awaitDisplayed(TestTags.SaveButton).performClick()
     waitUntil(UI_WAIT_TIMEOUT) {
       !waitForRedirection || onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isEmpty()
     }
   }
 
   // ----- overview helpers -----
-  fun ComposeTestRule.clickAddFab() =
-      onNodeWithTag(TestTags.FabAdd).assertIsDisplayed().performClick()
+  fun ComposeTestRule.clickAddFab() = awaitDisplayed(TestTags.FabAdd).performClick()
 
   fun ComposeTestRule.waitUntilTodoCardShown(id: String): SemanticsNodeInteraction {
     waitUntil(UI_WAIT_TIMEOUT) {
@@ -88,14 +105,12 @@ interface ToDoTest {
   }
 
   fun ComposeTestRule.clickStatusChip(id: String) =
-      onNodeWithTag(TestTags.status(id)).assertIsDisplayed().performClick()
+      awaitDisplayed(TestTags.status(id)).performClick()
 
-  fun ComposeTestRule.clickDelete(id: String) =
-      onNodeWithTag(TestTags.delete(id)).assertIsDisplayed().performClick()
+  fun ComposeTestRule.clickDelete(id: String) = awaitDisplayed(TestTags.delete(id)).performClick()
 
   fun ComposeTestRule.checkTopBarTitleContains(text: String) =
-      onNodeWithTag(TestTags.TitleField)
-          .assertIsDisplayed()
+      awaitDisplayed(TestTags.TitleField)
           .assertTextContains(text, substring = true, ignoreCase = true)
 
   // ----- tiny repo helpers -----
