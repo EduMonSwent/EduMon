@@ -50,6 +50,22 @@ class PomodoroViewModelTest {
   }
 
   @Test
+  fun resumeTimerCallsStartOnlyWhenPaused() = runTest {
+    // Initial state: should not call start when not paused
+    viewModel.startTimer() // now RUNNING
+    viewModel.resumeTimer()
+    assertEquals(PomodoroState.RUNNING, viewModel.state.value)
+
+    // Move to PAUSED state manually
+    viewModel.pauseTimer()
+    assertEquals(PomodoroState.PAUSED, viewModel.state.value)
+
+    // Now resumeTimer() should behave like startTimer()
+    viewModel.resumeTimer()
+    assertEquals(PomodoroState.RUNNING, viewModel.state.value)
+  }
+
+  @Test
   fun resetTimerResetsTimerAndState() = runTest {
     viewModel.startTimer()
     viewModel.resetTimer()
@@ -73,5 +89,21 @@ class PomodoroViewModelTest {
       viewModel.onTestPhaseCompleted()
     }
     assertEquals(PomodoroPhase.LONG_BREAK, viewModel.phase.value)
+  }
+
+  @Test
+  fun nextPhaseAdvancesToNextPhase() = runTest {
+    // Start from default state (WORK)
+    assertEquals(PomodoroPhase.WORK, viewModel.phase.value)
+
+    // When nextPhase() is called, it should act like finishing a work session
+    viewModel.nextPhase()
+
+    // Then we should move to SHORT_BREAK phase
+    assertEquals(PomodoroPhase.SHORT_BREAK, viewModel.phase.value)
+
+    // Calling nextPhase again should eventually cycle forward
+    viewModel.nextPhase()
+    assertEquals(PomodoroPhase.WORK, viewModel.phase.value)
   }
 }

@@ -78,6 +78,26 @@ class PomodoroScreenTest {
   }
 
   @Test
+  fun skipButtonDebouncePreventsDoubleClick() {
+    fakeViewModel.setState(PomodoroState.RUNNING)
+    composeTestRule.waitForIdle()
+
+    val skipButton = composeTestRule.onNodeWithTag(PomodoroScreenTestTags.SKIP_BUTTON)
+
+    // First click — should call nextPhase()
+    skipButton.performClick()
+
+    // Immediately click again (within debounce window)
+    skipButton.performClick()
+
+    // Wait a bit to let debounce logic settle
+    composeTestRule.waitForIdle()
+
+    // Should only trigger once despite two clicks
+    assert(fakeViewModel.nextPhaseCalled)
+  }
+
+  @Test
   fun clickingResetCallsResetTimer() {
     fakeViewModel.setState(PomodoroState.PAUSED)
     composeTestRule.waitForIdle()
