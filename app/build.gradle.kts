@@ -176,6 +176,8 @@ dependencies {
 
 
 
+    implementation("androidx.compose.material:material-icons-extended")
+
 }
 
 tasks.withType<Test> {
