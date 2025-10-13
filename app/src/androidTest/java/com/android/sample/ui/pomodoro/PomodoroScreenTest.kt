@@ -8,6 +8,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+// Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
+
 class PomodoroScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()

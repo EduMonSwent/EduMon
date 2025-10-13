@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+// Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
+
 enum class PomodoroPhase {
   WORK,
   SHORT_BREAK,
