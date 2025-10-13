@@ -81,19 +81,20 @@ extensions.configure<BaseAppModuleExtension>("android") {
     }
 }
 
-// ✅ SonarCloud configuration
 sonar {
     properties {
-        property("sonar.projectKey", "gf_android-sample")
-        property("sonar.projectName", "Android-Sample")
-        property("sonar.organization", "gabrielfleischer")
+        property("sonar.projectKey", "EduMonSwent_EduMon")
+        property("sonar.projectName", "EduMon")
+        property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugUnitTest/")
+        // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
+        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
+        // Paths to xml files with Android Lint issues. If the main flavor is changed, this file will have to be changed too.
         property("sonar.androidLint.reportPaths", "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml")
+        // Paths to JaCoCo XML coverage report files.
         property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
     }
 }
-
 // Utilitaire global pour tests partagés
 fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
     androidTestImplementation(dep)

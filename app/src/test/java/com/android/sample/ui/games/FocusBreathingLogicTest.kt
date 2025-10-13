@@ -5,15 +5,15 @@ import org.junit.Test
 
 class FocusBreathingLogicTest {
 
-    @Test
-    fun phasesFollowExpectedOrder() {
-        val phases = listOf("Inhale...", "Hold...", "Exhale...")
-        var index = 0
+  @Test
+  fun phasesFollowExpectedOrder() {
+    val phases = listOf("Inhale...", "Hold...", "Exhale...")
+    var index = 0
 
-        repeat(6) {
-            val expected = phases[index % 3]
-            assertEquals(expected, phases[index % 3])
-            index++
-        }
+    repeat(6) {
+      val expected = phases[index % 3]
+      assertEquals(expected, phases[index % 3])
+      index++
     }
+  }
 }

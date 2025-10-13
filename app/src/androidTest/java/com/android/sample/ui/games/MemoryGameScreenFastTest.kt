@@ -2,8 +2,8 @@ package com.android.sample.ui.games
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
 
@@ -11,37 +11,31 @@ import org.junit.Test
 
 class MemoryGameScreenFastTest {
 
-    @get:Rule
-    val composeRule = createComposeRule()
+  @get:Rule val composeRule = createComposeRule()
 
-    @Test
-    fun showsWinOverlay_whenInitialWinTrue() {
-        val cards = List(18) { MemoryCard(it, Icons.Default.Book, isMatched = true) }
+  @Test
+  fun showsWinOverlay_whenInitialWinTrue() {
+    val cards = List(18) { MemoryCard(it, Icons.Default.Book, isMatched = true) }
 
-        composeRule.setContent {
-            MemoryGameScreenTestable(initialCards = cards, initialWin = true)
-        }
+    composeRule.setContent { MemoryGameScreenTestable(initialCards = cards, initialWin = true) }
 
-        composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodesWithText("Well done!").fetchSemanticsNodes().isNotEmpty()
-        }
-
-        composeRule.onNodeWithText("Well done!").assertExists()
-        composeRule.onAllNodes(hasText("Score:", substring = true))[1].assertExists()
+    composeRule.waitUntil(timeoutMillis = 10_000) {
+      composeRule.onAllNodesWithText("Well done!").fetchSemanticsNodes().isNotEmpty()
     }
 
+    composeRule.onNodeWithText("Well done!").assertExists()
+    composeRule.onAllNodes(hasText("Score:", substring = true))[1].assertExists()
+  }
 
-    @Test
-    fun restartButton_resetsStateInstantly() {
-        val cards = List(18) { MemoryCard(it, Icons.Default.Book, isMatched = true) }
+  @Test
+  fun restartButton_resetsStateInstantly() {
+    val cards = List(18) { MemoryCard(it, Icons.Default.Book, isMatched = true) }
 
-        composeRule.setContent {
-            MemoryGameScreenTestable(initialCards = cards, initialWin = true)
-        }
+    composeRule.setContent { MemoryGameScreenTestable(initialCards = cards, initialWin = true) }
 
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText("Restart").performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText("Memory Game").assertExists()
-    }
+    composeRule.waitForIdle()
+    composeRule.onNodeWithText("Restart").performClick()
+    composeRule.waitForIdle()
+    composeRule.onNodeWithText("Memory Game").assertExists()
+  }
 }

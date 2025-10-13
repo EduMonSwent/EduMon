@@ -11,9 +11,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-
 // The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
-
 
 class GamesScreenTest {
 
@@ -28,20 +26,19 @@ class GamesScreenTest {
       navController = TestNavHostController(context)
       navController.navigatorProvider.addNavigator(ComposeNavigator())
 
-
-      val graph = navController.createGraph(startDestination = "games") {
-        composable("games") {}
-        composable("memory") {}
-        composable("reaction") {}
-        composable("focus") {}
-        composable("runner") {}
-      }
+      val graph =
+          navController.createGraph(startDestination = "games") {
+            composable("games") {}
+            composable("memory") {}
+            composable("reaction") {}
+            composable("focus") {}
+            composable("runner") {}
+          }
       navController.graph = graph
 
       GamesScreen(navController = navController)
     }
   }
-
 
   @Test
   fun displaysMainTitle() {
