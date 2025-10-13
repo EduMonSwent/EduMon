@@ -1,12 +1,22 @@
 package com.android.sample
 
+import com.android.sample.data.CreatureStats
+import com.android.sample.data.Priority
+import com.android.sample.data.Status
+import com.android.sample.data.ToDo
+import com.android.sample.data.UserStats
 import com.android.sample.repositories.FakeHomeRepository
 import com.android.sample.repositories.HomeRepository
 import com.android.sample.repositories.HomeUiState
 import com.android.sample.repositories.HomeViewModel
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.*
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -16,18 +26,26 @@ import org.junit.Test
 class HomeViewModelTest {
 
   private class TestRepository(
-      private val todos: List<Todo> =
-          listOf(
-              Todo("1", "A", "Today 10:00", true),
-              Todo("2", "B", "Today 12:00"),
-              Todo("3", "C", "Tomorrow")),
+      private val todos: List<ToDo> = run {
+        val today = LocalDate.now()
+        val tomorrow = today.plusDays(1)
+        listOf(
+            ToDo(
+                id = "1",
+                title = "A",
+                dueDate = today,
+                priority = Priority.MEDIUM,
+                status = Status.DONE),
+            ToDo(id = "2", title = "B", dueDate = today, priority = Priority.LOW),
+            ToDo(id = "3", title = "C", dueDate = tomorrow, priority = Priority.HIGH))
+      },
       private val creature: CreatureStats =
           CreatureStats(happiness = 10, health = 20, energy = 30, level = 7),
       private val user: UserStats =
           UserStats(streakDays = 3, points = 99, studyTodayMin = 15, dailyGoalMin = 120),
       private val quote: String = "Test quote"
   ) : HomeRepository {
-    override suspend fun fetchTodos(): List<Todo> = todos
+    override suspend fun fetchTodos(): List<ToDo> = todos
 
     override suspend fun fetchCreatureStats(): CreatureStats = creature
 
@@ -51,7 +69,6 @@ class HomeViewModelTest {
   @Test
   fun `initial refresh populates state and stops loading`() = runTest {
     val vm = HomeViewModel(repository = TestRepository())
-    // init{} triggers refresh immediately
     assertTrue(vm.uiState.value.isLoading)
     advanceUntilIdle()
 
@@ -70,9 +87,7 @@ class HomeViewModelTest {
     advanceUntilIdle()
     assertEquals("Q1", vm.uiState.value.quote)
 
-    // call refresh again and check the loading flip
     vm.refresh()
-    // Immediately after call, still on main thread
     assertTrue(vm.uiState.value.isLoading)
     advanceUntilIdle()
     assertFalse(vm.uiState.value.isLoading)
@@ -106,7 +121,6 @@ class HomeViewModelTest {
     val d1 = repo.dailyQuote(nowMillis = 86_400_000L) // +1 day
     val d6 = repo.dailyQuote(nowMillis = 6L * 86_400_000L) // +6 days (wraps mod 5)
 
-    // Same day -> same value; different day -> typically different; day 6 == day 1 (wrap by 5)
     assertEquals(d1, d6)
     assertNotEquals(d0, d1)
   }

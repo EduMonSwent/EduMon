@@ -2,17 +2,30 @@ package com.android.sample
 
 import android.R
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasProgressBarRangeInfo
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.data.CreatureStats
+import com.android.sample.data.Priority
+import com.android.sample.data.Status
+import com.android.sample.data.ToDo
+import com.android.sample.data.UserStats
 import com.android.sample.repositories.HomeRepository
 import com.android.sample.repositories.HomeUiState
 import com.android.sample.repositories.HomeViewModel
 import com.android.sample.screens.EduMonHomeRoute
 import com.android.sample.screens.EduMonHomeScreen
 import com.android.sample.screens.GlowCard
+import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,6 +36,9 @@ class HomeScreenTest {
   @get:Rule val composeRule = createComposeRule()
 
   private fun setHomeContent(quote: String = "Keep going.", onNavigate: (String) -> Unit = {}) {
+    val today = LocalDate.now()
+    val tomorrow = today.plusDays(1)
+
     composeRule.setContent {
       MaterialTheme {
         EduMonHomeScreen(
@@ -31,11 +47,23 @@ class HomeScreenTest {
                     isLoading = false,
                     todos =
                         listOf(
-                            // both done and not-done to hit both branches
-                            Todo("1", "CS-101: Finish exercise sheet", "Today 18:00", true),
-                            Todo("2", "Math review: sequences", "Today 20:00"),
-                            Todo("3", "Pack lab kit for tomorrow", "Tomorrow"),
-                        ),
+                            // one DONE + two pending to hit both branches
+                            ToDo(
+                                id = "1",
+                                title = "CS-101: Finish exercise sheet",
+                                dueDate = today,
+                                priority = Priority.HIGH,
+                                status = Status.DONE),
+                            ToDo(
+                                id = "2",
+                                title = "Math review: sequences",
+                                dueDate = today,
+                                priority = Priority.MEDIUM),
+                            ToDo(
+                                id = "3",
+                                title = "Pack lab kit for tomorrow",
+                                dueDate = tomorrow,
+                                priority = Priority.LOW)),
                     creatureStats =
                         CreatureStats(happiness = 85, health = 90, energy = 70, level = 5),
                     userStats =
@@ -64,9 +92,7 @@ class HomeScreenTest {
         .onNodeWithContentDescription("Creature environment")
         .performScrollTo()
         .assertExists()
-
     composeRule.onNodeWithContentDescription("Creature").performScrollTo().assertExists()
-
     composeRule.onNodeWithText("Lv 5").performScrollTo().assertIsDisplayed()
   }
 
@@ -74,14 +100,8 @@ class HomeScreenTest {
   fun showsProvidedQuote_andCompletedLabel() {
     setHomeContent(quote = "Test Quote 123")
 
-    // Scroll to where the quote lives, then assert it's visible
     composeRule.onNodeWithText("Test Quote 123").performScrollTo().assertIsDisplayed()
-
-    // "Completed" may also be off-screen on smaller devices
-    composeRule
-        .onNodeWithText("Completed")
-        .performScrollTo()
-        .assertExists() // or .assertIsDisplayed() if you prefer visibility
+    composeRule.onNodeWithText("Completed").performScrollTo().assertExists()
   }
 
   @Test
@@ -89,7 +109,6 @@ class HomeScreenTest {
     setHomeContent()
 
     composeRule.onNodeWithContentDescription("Menu").performClick()
-    // Drawer contents should become visible
     composeRule.onNodeWithText("EPFL Companion").assertIsDisplayed()
     composeRule.onNodeWithText("Edumon").assertIsDisplayed()
   }
@@ -98,7 +117,6 @@ class HomeScreenTest {
   fun creatureStats_progressIndicators_haveExpectedValues() {
     setHomeContent()
 
-    // Expect 0.85f, 0.9f, 0.7f for Happiness, Health, Energy
     composeRule
         .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.85f, 0f..1f, 0)))
         .assertExists()
@@ -112,10 +130,9 @@ class HomeScreenTest {
 
   @Test
   fun route_showsProgressWhileLoading() {
-    // A slow repo so the VM stays in loading long enough for the assertion.
     val slowRepo =
         object : HomeRepository {
-          override suspend fun fetchTodos(): List<Todo> {
+          override suspend fun fetchTodos(): List<ToDo> {
             kotlinx.coroutines.delay(5_000)
             return emptyList()
           }
@@ -145,7 +162,6 @@ class HomeScreenTest {
       }
     }
 
-    // CircularProgressIndicator exposes an indeterminate ProgressBar semantics.
     composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
   }
 
@@ -161,10 +177,10 @@ class HomeScreenTest {
   @Test
   fun todos_showsDoneAndPendingRows_andSeeAllIsClickable() {
     setHomeContent()
-    // One done -> "Completed"; one pending -> due string visible
+    // One done -> "Completed"; one pending -> verify by title
     composeRule.onNodeWithText("Completed").assertExists()
-    composeRule.onNodeWithText("Today 20:00").assertExists()
-    // "See all" is a clickable Text
+    composeRule.onNodeWithText("Math review: sequences").assertExists()
+
     composeRule.onNode(hasText("See all") and hasClickAction()).assertExists()
   }
 
@@ -183,7 +199,9 @@ class HomeScreenTest {
 
   @Test
   fun glowCard_rendersChildContent() {
-    composeRule.setContent { MaterialTheme { GlowCard { Text("Inside Glow") } } }
+    composeRule.setContent {
+      MaterialTheme { GlowCard { androidx.compose.material3.Text("Inside Glow") } }
+    }
     composeRule.onNodeWithText("Inside Glow").assertIsDisplayed()
   }
 }
