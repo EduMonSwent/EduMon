@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.sonar)
     id("jacoco")
-    alias(libs.plugins.gms)
 }
 
 android {
@@ -94,6 +93,7 @@ android {
 
 sonar {
     properties {
+        property("sonar.token", System.getenv("SONAR_TOKEN")?.trim() ?: "")
         property("sonar.projectKey", "EduMonSwent_EduMon")
         property("sonar.projectName", "EduMon")
         property("sonar.organization", "edumonswent")
@@ -104,7 +104,6 @@ sonar {
         property("sonar.androidLint.reportPaths", "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml")
         // Paths to JaCoCo XML coverage report files.
         property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
-        property("sonar.tests", "src/test/java,src/androidTest/java")
     }
 }
 
