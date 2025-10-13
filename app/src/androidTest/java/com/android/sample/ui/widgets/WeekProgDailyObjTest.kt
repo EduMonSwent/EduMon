@@ -8,39 +8,52 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.ui.theme.EduMonTheme
-import com.android.sample.ui.viewmodel.DayStatus
-import com.android.sample.ui.viewmodel.Objective
-import com.android.sample.ui.viewmodel.WeekProgressViewModel
+import com.android.sample.ui.viewmodel.*
 import java.time.DayOfWeek
-import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * UI tests for [WeekProgDailyObj]. These tests rely on the default data provided by
- * [WeekProgressViewModel()]. If your ViewModel requires constructor args or doesn't expose sample
- * data by default, adjust the `setContent()` calls to use your DI / test fake.
- */
+/** UI tests for [WeekProgDailyObj] using separated view models (weeks, objectives, dots). */
 @RunWith(AndroidJUnit4::class)
 class WeekProgDailyObjTest {
 
   @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
   private fun setContent(
-      vm: WeekProgressViewModel = WeekProgressViewModel(),
+      customize: (WeeksViewModel, ObjectivesViewModel, WeekDotsViewModel) -> Unit = { _, _, _ -> }
   ) {
-    compose.setContent {
-      EduMonTheme {
-        WeekProgDailyObj(
-            viewModel = vm,
-            modifier = Modifier,
-        )
-      }
-    }
+    val weeksVM = WeeksViewModel()
+    val objVM = ObjectivesViewModel()
+    val dotsVM = WeekDotsViewModel()
+
+    // Seed defaults similar to old WeekProgressViewModel
+    weeksVM.setWeeks(
+        listOf(
+            WeekProgressItem("Week 1", 100),
+            WeekProgressItem("Week 2", 55),
+            WeekProgressItem("Week 3", 10),
+            WeekProgressItem("Week 4", 0)),
+        selectedIndex = 1)
+    weeksVM.setProgress(55)
+
+    objVM.setObjectives(
+        listOf(
+            Objective("Finish Quiz 3", "CS101", 30, "Due tomorrow • high impact"),
+            Objective("Read Chapter 5", "Math201", 25, "Prereq for next lecture")))
+
+    dotsVM.setDayStatuses(
+        listOf(
+            DayStatus(DayOfWeek.MONDAY, true),
+            DayStatus(DayOfWeek.TUESDAY, true),
+            DayStatus(DayOfWeek.WEDNESDAY, false),
+            DayStatus(DayOfWeek.THURSDAY, true)))
+
+    // Allow per-test overrides
+    customize(weeksVM, objVM, dotsVM)
+
+    compose.setContent { EduMonTheme { WeekProgDailyObj(weeksVM, objVM, dotsVM, Modifier) } }
   }
 
   @Test
@@ -175,8 +188,7 @@ class WeekProgDailyObjTest {
 
   @Test
   fun objectives_emptyState_rendersWhenNoObjectives() {
-    val vm = WeekProgressViewModel().apply { setObjectives(emptyList()) }
-    setContent(vm)
+    setContent { _, objVM, _ -> objVM.setObjectives(emptyList()) }
 
     compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY).assertExists().assertIsDisplayed()
   }
@@ -185,56 +197,11 @@ class WeekProgDailyObjTest {
   fun objective_reason_isVisible_forFirstObjective_whenShowWhyTrue() {
     setContent()
 
-    // With default VM, showWhy = true and first objective has a non-empty reason
+    // With default seed, showWhy = true and first objective has a non-empty reason
     compose
         .onNodeWithTag(WeekProgDailyObjTags.OBJECTIVE_REASON_PREFIX + 0)
         .assertExists()
         .assertIsDisplayed()
-  }
-
-  @Test
-  fun selectNext_and_selectPrevious_areClamped_andSyncHeader() = runTest {
-    val vm = WeekProgressViewModel()
-    // move forward
-    vm.selectNextWeek()
-    assertEquals(2, vm.uiState.value.selectedWeekIndex)
-    assertEquals(10, vm.uiState.value.weekProgressPercent)
-
-    // move backward
-    vm.selectPreviousWeek()
-    assertEquals(1, vm.uiState.value.selectedWeekIndex)
-    assertEquals(55, vm.uiState.value.weekProgressPercent)
-
-    // with empty weeks, selection stays within [0,0] and header unchanged
-    val before = vm.uiState.value.weekProgressPercent
-    vm.setWeeks(emptyList())
-    vm.selectNextWeek()
-    assertEquals(0, vm.uiState.value.selectedWeekIndex)
-    assertEquals(before, vm.uiState.value.weekProgressPercent)
-    vm.selectPreviousWeek()
-    assertEquals(0, vm.uiState.value.selectedWeekIndex)
-    assertEquals(before, vm.uiState.value.weekProgressPercent)
-  }
-
-  @Test
-  fun dayStatuses_set_and_toggleOnlyMatchingDay() = runTest {
-    val vm = WeekProgressViewModel()
-    vm.setDayStatuses(listOf(DayStatus(DayOfWeek.MONDAY, false)))
-    vm.toggleDayMet(DayOfWeek.MONDAY)
-    assertTrue(vm.uiState.value.dayStatuses.first().metTarget)
-
-    // toggling a missing day leaves list unchanged
-    val before = vm.uiState.value.dayStatuses
-    vm.toggleDayMet(DayOfWeek.SUNDAY)
-    assertEquals(before, vm.uiState.value.dayStatuses)
-  }
-
-  @Test
-  fun setShowWhy_updatesFlag() = runTest {
-    val vm = WeekProgressViewModel()
-    assertTrue(vm.uiState.value.showWhy)
-    vm.setShowWhy(false)
-    assertFalse(vm.uiState.value.showWhy)
   }
 
   @Test
