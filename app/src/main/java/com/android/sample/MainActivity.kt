@@ -6,16 +6,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.tooling.preview.Preview
 import com.android.sample.resources.C
-import com.android.sample.ui.games.*
 import com.android.sample.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,11 +20,11 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     setContent {
       SampleAppTheme {
+        // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
-              val navController = rememberNavController()
-              EduMonNavHost(navController)
+              Greeting("Android")
             }
       }
     }
@@ -35,12 +32,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun EduMonNavHost(navController: NavHostController) {
-  NavHost(navController = navController, startDestination = "games") {
-    composable("games") { GamesScreen(navController) }
-    composable("memory") { MemoryGameScreen() }
-    composable("reaction") { ReactionGameScreen() }
-    composable("focus") { FocusBreathingScreen() }
-    composable("runner") { FlappyEduMonScreen() }
-  }
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+  Text(text = "Hello $name!", modifier = modifier.semantics { testTag = C.Tag.greeting })
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  SampleAppTheme { Greeting("Android") }
 }
