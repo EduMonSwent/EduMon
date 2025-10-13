@@ -75,21 +75,33 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
   val snackbarHostState = remember { SnackbarHostState() }
 
   Scaffold(
-      floatingActionButton = {
+      /*floatingActionButton = {
         FloatingActionButton(
             onClick = { viewModel.onAddStudyTaskClicked() },
             containerColor = AccentViolet,
             contentColor = Color.White) {
               Icon(Icons.Filled.Add, stringResource(R.string.add_study_task))
             }
+      },*/
+      floatingActionButton = {
+        FloatingActionButton(
+            modifier = Modifier.testTag("addTaskFab"),
+            onClick = { viewModel.onAddStudyTaskClicked() },
+            containerColor = AccentViolet,
+            contentColor = Color.White) {
+              Icon(Icons.Filled.Add, contentDescription = "Add Study Task")
+            }
       },
       containerColor = Color.Transparent,
       modifier =
-          Modifier.background(Brush.verticalGradient(listOf(BackgroundDark, BackgroundGradientEnd)))
-              .testTag(PlannerScreenTestTags.PLANNER_SCREEN),
+          Modifier.background(
+              Brush.verticalGradient(listOf(BackgroundDark, BackgroundGradientEnd))),
       snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(paddingValues)
+                    .testTag(PlannerScreenTestTags.PLANNER_SCREEN),
             horizontalAlignment = Alignment.CenterHorizontally,
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -311,7 +323,8 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
                 .padding(top = 16.dp, end = 16.dp)
                 .background(DarkCardItem, RoundedCornerShape(20.dp))
                 .padding(horizontal = 16.dp, vertical = 6.dp)
-                .clickable(onClick = onEdumonNameClick)) {
+                .clickable(onClick = onEdumonNameClick)
+                .testTag("petNameBox")) {
           Text(
               stringResource(R.string.edumon_profile),
               color = TextLight.copy(alpha = 0.8f),
