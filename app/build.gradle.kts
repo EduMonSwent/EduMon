@@ -118,9 +118,12 @@ dependencies {
     globalTestImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
 
-    // Navigation Compose
-    implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.navigation.testing)
+    implementation(libs.compose.viewmodel)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+
 
     // Tests
     testImplementation(libs.junit)
@@ -142,6 +145,7 @@ dependencies {
 
     implementation(libs.compose.material.icons.extended)
 }
+
 
 tasks.withType<Test> {
     configure<JacocoTaskExtension> {

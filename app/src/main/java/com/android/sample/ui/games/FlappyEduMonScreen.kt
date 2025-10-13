@@ -27,6 +27,8 @@ import kotlin.random.Random
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
+// The assistance of an AI tool (ChatGPT) was solicited in writing this  file.
+
 @Composable
 fun FlappyEduMonScreen(
     modifier: Modifier = Modifier,
