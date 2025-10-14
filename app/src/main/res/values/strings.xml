@@ -5,8 +5,8 @@
     <!-- Calendar -->
     <string name="calendar_title">Calendar</string>
     <string name="calendar_subtitle">Long-term planning and events</string>
-    <string name="previous_month">Previous month</string>
-    <string name="next_month">Next month</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
 
     <!-- Events -->
     <string name="upcoming_events">Upcoming Events</string>

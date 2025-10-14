@@ -166,7 +166,9 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
                         startOfWeek = vm.startOfWeek(selectedDate),
                         selectedDate = selectedDate,
                         allTasks = allTasks,
-                        onDayClick = { vm.onDateSelected(it) }
+                        onDayClick = { vm.onDateSelected(it) },
+                        onPrevClick = {vm.onPreviousMonthWeekClicked()},
+                        onNextClick = {vm.onNextMonthWeekClicked()}
                     )
                 }
             }
@@ -206,38 +208,11 @@ fun MonthGrid(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         /* --- Month Header --- */
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "${currentMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    color = LightViolet,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPrevClick) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = stringResource(R.string.previous_month),
-                        tint = LightViolet
-                    )
-                }
-                IconButton(onClick = onNextClick) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = stringResource(R.string.next_month),
-                        tint = LightViolet
-                    )
-                }
-            }
-        }
+        CalendarHeader(
+            title = "${currentMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
+            onPrevClick = onPrevClick,
+            onNextClick = onNextClick
+        )
 
         /* --- Weekday Header --- */
         Row(
@@ -301,11 +276,23 @@ fun WeekRow(
     startOfWeek: LocalDate,
     selectedDate: LocalDate,
     allTasks: List<StudyItem>,
-    onDayClick: (LocalDate) -> Unit
+    onDayClick: (LocalDate) -> Unit,
+    onPrevClick: () -> Unit,
+    onNextClick: () -> Unit
 ) {
     val weekDays = remember(startOfWeek) {
         (0..6).map { startOfWeek.plusDays(it.toLong()) }
     }
+
+    val weekTitle = "${weekDays.first().month.name.lowercase().replaceFirstChar { it.uppercase() }} " +
+            "${weekDays.first().dayOfMonth} - ${weekDays.last().dayOfMonth}"
+
+    CalendarHeader(
+        title = weekTitle,
+        onPrevClick = onPrevClick,
+        onNextClick = onNextClick
+    )
+
 
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -400,4 +387,45 @@ fun WeekRow(
         }
     }
 }
+@Composable
+private fun CalendarHeader(
+    title: String,
+    onPrevClick: () -> Unit,
+    onNextClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge.copy(
+                color = LightViolet,
+                fontWeight = FontWeight.Bold
+            )
+        )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onPrevClick) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = stringResource(R.string.previous),
+                    tint = LightViolet
+                )
+            }
+            IconButton(onClick = onNextClick) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.next),
+                    tint = LightViolet
+                )
+            }
+        }
+    }
+}
+
 
