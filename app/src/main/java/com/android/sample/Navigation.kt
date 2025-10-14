@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.android.sample.R
 import com.android.sample.screens.AppDestination
 import com.android.sample.screens.EduMonHomeRoute
+import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.viewmodel.WeekDotsViewModel
 import com.android.sample.ui.viewmodel.WeeksViewModel
@@ -67,10 +68,26 @@ fun EduMonNavHost(modifier: Modifier = Modifier) {
           }
     }
 
+      composable(AppDestination.Profile.route) {
+          Scaffold(
+              topBar = {
+                  TopAppBar(
+                      title = { Text("Profile") },
+                      navigationIcon = {
+                          IconButton(onClick = { nav.popBackStack() }) {
+                              Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                      })
+              }
+          ) { padding ->
+              Box(Modifier.fillMaxSize().padding(padding)) {
+                  ProfileScreen()
+              }
+          }
+      }
     // --- Safe stubs so BottomNav clicks don’t crash even if not implemented yet ---
     composable(AppDestination.Calendar.route) { SimpleStub("Calendar") }
     composable(AppDestination.Stats.route) { SimpleStub("Shop") }
-    composable(AppDestination.Profile.route) { SimpleStub("Profile") }
     composable(AppDestination.Games.route) { SimpleStub("Games") }
     composable(AppDestination.Settings.route) { SimpleStub("Settings") }
     composable(AppDestination.Study.route) { SimpleStub("Study") }
