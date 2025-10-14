@@ -2,4 +2,34 @@
     <string name="app_name">SampleApp</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="title_activity_second">SecondActivity</string>
+    <!-- Calendar -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_subtitle">Long-term planning and events</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+
+    <!-- Events -->
+    <string name="upcoming_events">Upcoming Events</string>
+    <string name="upcoming_events_week">Upcoming Events for This Week</string>
+    <string name="no_upcoming_events">No upcoming events</string>
+    <string name="add_event">Add Event</string>
+
+    <!-- Tasks -->
+    <string name="add_new_task">Add New Task</string>
+    <string name="edit_task">Edit Task</string>
+    <string name="close">Close</string>
+    <string name="title_label">Title</string>
+    <string name="description_label">Description (Optional)</string>
+    <string name="date_label">Date: %1$s</string>
+    <string name="add_time">Add Time</string>
+    <string name="time_label">Time: %1$s</string>
+    <string name="select_time">Select Time</string>
+    <string name="duration_label">Duration (minutes, optional)</string>
+    <string name="priority_label">Priority</string>
+    <string name="type_label">Type</string>
+    <string name="completed_label">Completed</string>
+    <string name="delete">Delete</string>
+    <string name="save">Save</string>
+    <string name="update">Update</string>
+    <string name="ok">OK</string>
 </resources>
