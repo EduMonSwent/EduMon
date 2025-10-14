@@ -54,6 +54,7 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   Settings("settings", "Settings", Icons.Outlined.Settings),
   Games("games", "Games", Icons.Outlined.Extension),
   Stats("stats", "Stats", Icons.Outlined.BarChart),
+  Todos("todos", "To-Do List", Icons.Outlined.AssignmentTurnedIn),
 }
 
 // ---------- Route (hooks up VM to UI) ----------
