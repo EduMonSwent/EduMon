@@ -66,9 +66,7 @@ class EditToDoScreenTest {
 
         compose.onNodeWithTag(TestTags.SaveButton).performClick()
 
-        compose.waitUntil(timeoutMillis = 5_000) {
-          fakeRepo.todos.value.any { it.id == "42" && it.note == "new note" } // ✅ non-suspend
-        }
+        compose.onNodeWithTag(TestTags.SaveButton).assertDoesNotExist()
 
         val updated = fakeRepo.getById("42")!!
         Assert.assertEquals("Updated", updated.title)
