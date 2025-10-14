@@ -356,13 +356,13 @@ private fun CalendarHeader(
           IconButton(onClick = onPrevClick) {
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = stringResource(R.string.previous),
+                contentDescription = "Previous",
                 tint = LightViolet)
           }
           IconButton(onClick = onNextClick) {
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.next),
+                contentDescription = "Next",
                 tint = LightViolet)
           }
         }

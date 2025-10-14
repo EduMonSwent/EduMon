@@ -40,7 +40,7 @@ class DayCellTest {
             tasks = items,
             isSelected = selected.value,
             onDateClick = { selected.value = true },
-            modifier = Modifier.testTag("dayCell"))
+            modifier = Modifier.Companion.testTag("dayCell"))
       }
     }
 
