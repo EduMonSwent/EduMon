@@ -51,8 +51,7 @@ fun UpcomingEventsSection(
       colors =
           CardDefaults.cardColors(
               containerColor =
-                  brushColor(Brush.verticalGradient(colors = listOf(DarkBlue, DarkerBlue)))
-          ),
+                  brushColor(Brush.verticalGradient(colors = listOf(DarkBlue, DarkerBlue)))),
       shape = RoundedCornerShape(20.dp)) {
         Column(modifier = Modifier.padding(20.dp)) {
           // Header Row
