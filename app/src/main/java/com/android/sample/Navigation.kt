@@ -24,70 +24,62 @@ import com.android.sample.ui.widgets.WeekProgDailyObj
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EduMonNavHost(modifier: Modifier = Modifier) {
-    val nav = rememberNavController()
+  val nav = rememberNavController()
 
-    NavHost(
-        navController = nav,
-        startDestination = AppDestination.Home.route,
-        modifier = modifier
-    ) {
-        // HOME
-        composable(AppDestination.Home.route) {
-            EduMonHomeRoute(
-                creatureResId = R.drawable.edumon,
-                environmentResId = R.drawable.home,
-                onNavigate = { route ->
-                    nav.navigate(route) {
-                        // avoid building a tall stack and enable state restore
-                        popUpTo(AppDestination.Home.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
-        }
-
-        // PLANNER -> WeekProgDailyObj
-        composable(AppDestination.Planner.route) {
-            val weeksVM: WeeksViewModel = viewModel()
-            val objectivesVM: ObjectivesViewModel = viewModel()
-            val dotsVM: WeekDotsViewModel = viewModel()
-
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("Planner") },
-                        navigationIcon = {
-                            IconButton(onClick = { nav.popBackStack() }) {
-                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
-                            }
-                        }
-                    )
-                }
-            ) { padding ->
-                Box(Modifier.fillMaxSize().padding(padding)) {
-                    WeekProgDailyObj(
-                        weeksViewModel = weeksVM,
-                        objectivesViewModel = objectivesVM,
-                        dotsViewModel = dotsVM
-                    )
-                }
+  NavHost(navController = nav, startDestination = AppDestination.Home.route, modifier = modifier) {
+    // HOME
+    composable(AppDestination.Home.route) {
+      EduMonHomeRoute(
+          creatureResId = R.drawable.edumon,
+          environmentResId = R.drawable.home,
+          onNavigate = { route ->
+            nav.navigate(route) {
+              // avoid building a tall stack and enable state restore
+              popUpTo(AppDestination.Home.route) { saveState = true }
+              launchSingleTop = true
+              restoreState = true
             }
-        }
-
-        // --- Safe stubs so BottomNav clicks don’t crash even if not implemented yet ---
-        composable(AppDestination.Calendar.route) { SimpleStub("Calendar") }
-        composable(AppDestination.Shop.route)     { SimpleStub("Shop") }
-        composable(AppDestination.Profile.route)  { SimpleStub("Profile") }
-        composable(AppDestination.Games.route)    { SimpleStub("Games") }
-        composable(AppDestination.Settings.route) { SimpleStub("Settings") }
-        composable(AppDestination.Study.route)    { SimpleStub("Study") }
+          })
     }
+
+    // PLANNER -> WeekProgDailyObj
+    composable(AppDestination.Planner.route) {
+      val weeksVM: WeeksViewModel = viewModel()
+      val objectivesVM: ObjectivesViewModel = viewModel()
+      val dotsVM: WeekDotsViewModel = viewModel()
+
+      Scaffold(
+          topBar = {
+            TopAppBar(
+                title = { Text("Planner") },
+                navigationIcon = {
+                  IconButton(onClick = { nav.popBackStack() }) {
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                  }
+                })
+          }) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
+              WeekProgDailyObj(
+                  weeksViewModel = weeksVM,
+                  objectivesViewModel = objectivesVM,
+                  dotsViewModel = dotsVM)
+            }
+          }
+    }
+
+    // --- Safe stubs so BottomNav clicks don’t crash even if not implemented yet ---
+    composable(AppDestination.Calendar.route) { SimpleStub("Calendar") }
+    composable(AppDestination.Stats.route) { SimpleStub("Shop") }
+    composable(AppDestination.Profile.route) { SimpleStub("Profile") }
+    composable(AppDestination.Games.route) { SimpleStub("Games") }
+    composable(AppDestination.Settings.route) { SimpleStub("Settings") }
+    composable(AppDestination.Study.route) { SimpleStub("Study") }
+  }
 }
 
 @Composable
 private fun SimpleStub(title: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-    }
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Text(title, style = MaterialTheme.typography.titleLarge)
+  }
 }
