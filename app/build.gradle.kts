@@ -174,10 +174,8 @@ dependencies {
     testImplementation("org.mockito:mockito-inline:5.2.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:<version>")
 
-
-
     implementation("androidx.compose.material:material-icons-extended")
-
+    implementation("androidx.navigation:navigation-compose:2.8.3")
 }
 
 tasks.withType<Test> {
