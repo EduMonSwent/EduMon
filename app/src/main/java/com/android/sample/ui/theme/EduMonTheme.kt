@@ -17,8 +17,8 @@ private val DarkColorScheme =
 
 @Composable
 fun EduMonTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-  MaterialTheme(
-      colorScheme = DarkColorScheme,
-      typography = androidx.compose.material3.Typography(),
-      content = content)
+    MaterialTheme(
+        colorScheme = DarkColorScheme,
+        typography = androidx.compose.material3.Typography(),
+        content = content)
 }

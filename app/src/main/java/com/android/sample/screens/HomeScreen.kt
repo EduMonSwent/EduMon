@@ -162,12 +162,9 @@ fun EduMonHomeScreen(
                         happiness = state.creatureStats.happiness,
                         health = state.creatureStats.health,
                         energy = state.creatureStats.energy,
-                        // Provide your UserStats card as a slot so layout stays the same
-                        userStats = { mod ->
-                          UserStatsCard(stats = state.userStats, modifier = mod)
-                        })
+                        )
 
-                    AffirmationsAndRemindersCard(
+                  AffirmationsAndRemindersCard(
                         quote = state.quote,
                         onOpenPlanner = { onNavigate(AppDestination.Planner.route) },
                     )

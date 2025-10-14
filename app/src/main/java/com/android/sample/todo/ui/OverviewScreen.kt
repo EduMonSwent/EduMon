@@ -15,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,9 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.CreatureSprite
 import com.android.sample.todo.Priority
 import com.android.sample.todo.Status
 import com.android.sample.todo.ToDoRepositoryProvider
+import com.android.sample.R
 
 /**
  * The Overview screen shows the list of all To-Dos.
@@ -72,13 +76,23 @@ fun OverviewScreen(
 
         // If there are no tasks, show a message
         if (state.items.isEmpty()) {
-          Box(
-              Modifier.fillMaxSize().padding(padding).background(TodoColors.Background),
-              contentAlignment = Alignment.Center) {
-                Text("No tasks yet. Tap + to add one.", color = TodoColors.OnBackground)
-              }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(TodoColors.Background),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CreatureSprite(
+                        resId = R.drawable.edumon,   // your buddy sprite
+                        size = 120.dp,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text("No tasks yet. Tap + to add one.", color = TodoColors.OnBackground)
+                }
+            }
 
-          // Otherwise show the list of To-Dos
         } else {
           LazyColumn(
               modifier =
