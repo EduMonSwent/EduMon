@@ -59,7 +59,10 @@ class AddToDoScreenTest {
         // Save
         compose.onNodeWithTag(TestTags.SaveButton).assertIsEnabled().performClick()
 
-        compose.onNodeWithTag(TestTags.SaveButton).assertDoesNotExist()
+        compose.waitUntil(timeoutMillis = 5_000) {
+          // The condition to wait for: the list of nodes with this tag is empty.
+          compose.onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isEmpty()
+        }
 
         val saved = fakeRepo.todos.value.single()
         Assert.assertEquals("Finish lab 4", saved.title)

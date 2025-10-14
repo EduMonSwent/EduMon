@@ -66,7 +66,11 @@ class EditToDoScreenTest {
 
         compose.onNodeWithTag(TestTags.SaveButton).performClick()
 
-        compose.onNodeWithTag(TestTags.SaveButton).assertDoesNotExist()
+        // This explicitly waits up to 2 seconds for the UI to reflect the navigation.
+        compose.waitUntil(timeoutMillis = 5_000) {
+          // The condition to wait for: the list of nodes with this tag is empty.
+          compose.onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isEmpty()
+        }
 
         val updated = fakeRepo.getById("42")!!
         Assert.assertEquals("Updated", updated.title)
