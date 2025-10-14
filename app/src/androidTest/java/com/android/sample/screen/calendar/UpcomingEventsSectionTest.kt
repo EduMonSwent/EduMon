@@ -1,58 +1,66 @@
-package com.android.sample.screen.calendar
+package com.android.sample.ui.calendar
 
 import androidx.activity.ComponentActivity
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.model.calendar.StudyItem
 import com.android.sample.model.calendar.TaskType
-import com.android.sample.ui.calendar.UpcomingEventsSection
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class UpcomingEventsSectionTest {
 
-  @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   @Test
-  fun upcoming_events_sorted_and_heading_visible() {
-    val selected = LocalDate.of(2025, 10, 14)
-    val items =
+  fun upcomingEventsSection_displays_tasks_and_addButton() {
+    val today = LocalDate.now()
+    val tasks =
         listOf(
             StudyItem(
-                title = "B later",
-                date = selected,
-                time = LocalTime.of(15, 0),
-                type = TaskType.WORK),
-            StudyItem(
-                title = "A earlier",
-                date = selected,
-                time = LocalTime.of(9, 30),
+                id = "1",
+                title = "Math Revision",
+                date = today,
+                time = LocalTime.of(10, 0),
                 type = TaskType.STUDY),
-            StudyItem(title = "All Day", date = selected, time = null, type = TaskType.PERSONAL))
+            StudyItem(
+                id = "2",
+                title = "Team Meeting",
+                date = today.plusDays(1),
+                time = LocalTime.of(8, 0),
+                type = TaskType.WORK))
 
-    composeRule.setContent {
-      MaterialTheme {
-        UpcomingEventsSection(
-            tasks = items.sortedBy { it.time ?: LocalTime.MIN },
-            selectedDate = selected,
-            onAddTaskClick = {},
-            onTaskClick = {},
-            title = "Upcoming Events")
-      }
+    composeTestRule.setContent {
+      UpcomingEventsSection(
+          tasks = tasks,
+          selectedDate = today,
+          onAddTaskClick = {},
+          onTaskClick = {},
+          title = "Upcoming Events")
     }
 
-    // Title
-    composeRule.onNodeWithText("Upcoming Events").assertExists()
+    composeTestRule.onNodeWithText("Upcoming Events").assertIsDisplayed()
 
-    // Order: All Day (time null becomes MIN) -> A earlier -> B later
-    composeRule.onNodeWithText("All Day").assertExists()
-    composeRule.onNodeWithText("A earlier").assertExists()
-    composeRule.onNodeWithText("B later").assertExists()
+    composeTestRule.onNodeWithText("Math Revision").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Team Meeting").assertIsDisplayed()
+
+    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists().performClick()
+  }
+
+  @Test
+  fun upcomingEventsSection_shows_empty_message_when_no_tasks() {
+    composeTestRule.setContent {
+      UpcomingEventsSection(
+          tasks = emptyList(),
+          selectedDate = LocalDate.now(),
+          onAddTaskClick = {},
+          onTaskClick = {},
+          title = "Upcoming Events")
+    }
+
+    composeTestRule.onNodeWithText("No upcoming events", ignoreCase = true).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists()
   }
 }
