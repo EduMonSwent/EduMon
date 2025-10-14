@@ -17,7 +17,7 @@ class OverviewViewModelTest {
   @get:Rule val coroutineRule = MainCoroutineRule()
 
   @Test
-  fun uiState_correctly_sorts_items() = runTest {
+  fun `uiState correctly sorts items`() = runTest {
     // Arrange
     val repo = FakeToDoRepository()
     val vm = OverviewViewModel(repo)
@@ -47,14 +47,13 @@ class OverviewViewModelTest {
     val uiState = vm.uiState.first()
 
     // Assert: Sorted by non-DONE first, then by earliest due date
-    assertEquals("Task B (Todo)", uiState.items[0].title)
-    assertEquals("Task A (Todo)", uiState.items[1].title)
-    assertEquals("Task C (Done)", uiState.items[2].title)
+    assertEquals("Task B (Todo)", uiState.items[0].title) // Jan 5
+    assertEquals("Task A (Todo)", uiState.items[1].title) // Jan 10
+    assertEquals("Task C (Done)", uiState.items[2].title) // Done items last
   }
 
   @Test
-  fun cycleStatus_moves_TODO_to_IN_PROGRESS() = runTest { // ✅ Wrapped in runTest
-    // Arrange
+  fun `cycleStatus moves TODO to IN_PROGRESS`() = runTest {
     val repo = FakeToDoRepository()
     val vm = OverviewViewModel(repo)
     repo.setInitialItems(
@@ -66,25 +65,19 @@ class OverviewViewModelTest {
                 status = Status.TODO,
                 priority = Priority.LOW)))
 
-    // Act
     vm.cycleStatus("1")
 
-    // Assert
-    // This now works because we are inside a coroutine from runTest
     assertEquals(Status.IN_PROGRESS, repo.getById("1")?.status)
   }
 
   @Test
-  fun delete_removes_item_from_repository() = runTest { // ✅ Wrapped in runTest
-    // Arrange
+  fun `delete removes item from repository`() = runTest {
     val repo = FakeToDoRepository()
     val vm = OverviewViewModel(repo)
     repo.setInitialItems(listOf(ToDo("1", "T", dueDate = LocalDate.now(), priority = Priority.LOW)))
 
-    // Act
     vm.delete("1")
 
-    // Assert
     assertTrue(repo.currentList.isEmpty())
   }
 }

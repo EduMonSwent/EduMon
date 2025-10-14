@@ -1,81 +1,77 @@
-package com.android.sample
+package com.android.sample.todo.ui
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.android.sample.todo.*
-import com.android.sample.todo.ui.EditToDoScreen
-import com.android.sample.todo.ui.TestTags
+import com.android.sample.FakeToDoRepository
+import com.android.sample.todo.Priority
+import com.android.sample.todo.ToDo
+import com.android.sample.todo.ToDoRepositoryProvider
 import java.time.LocalDate
-import org.junit.*
+import junit.framework.TestCase.*
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
 
 class EditToDoScreenTest {
+
   @get:Rule val compose = createComposeRule()
 
-  private val realRepo by lazy { ToDoRepositoryProvider.repository }
   private val fakeRepo = FakeToDoRepository()
+  private val existingTodo =
+      ToDo(
+          id = "123",
+          title = "Existing Task",
+          dueDate = LocalDate.of(2025, 5, 20),
+          priority = Priority.MEDIUM,
+          note = "Some details")
 
   @Before
-  fun swapRepo() {
+  fun setUp() {
+    fakeRepo.setInitialItems(listOf(existingTodo))
     ToDoRepositoryProvider.repository = fakeRepo
   }
 
-  @After
-  fun restoreRepo() {
-    ToDoRepositoryProvider.repository = realRepo
+  @Test
+  fun screen_preFillsData_fromRepository() {
+    compose.setContent { MaterialTheme { EditToDoScreen(id = "123", onBack = {}) } }
+
+    // Wait for the ViewModel to load the data
+    compose.waitForIdle()
+
+    // Assert that fields are pre-filled
+    compose.onNodeWithTag(TestTags.TitleField).assertTextContains("Existing Task")
+    compose.onNodeWithTag(TestTags.NoteField).assertTextContains("Some details")
+    // Optional fields are visible by default on edit screen
+    compose.onNodeWithTag(TestTags.LocationField).assertIsDisplayed()
   }
 
-  @OptIn(ExperimentalTestApi::class)
   @Test
-  fun prefill_and_SaveUpdatesItem() =
-      kotlinx.coroutines.test.runTest {
-        val original =
-            makeToDo(
-                    id = "42",
-                    title = "Original",
-                    due = LocalDate.of(2025, 2, 2),
-                    priority = Priority.LOW,
-                    status = Status.IN_PROGRESS,
-                    note = "old note",
-                    notifications = true)
-                .copy(links = listOf("https://a", "https://b"), location = "CO 2")
-        fakeRepo.add(original)
+  fun saving_updatesItemInRepo_andNavigatesBack() {
+    var onBackCalled = false
+    compose.setContent {
+      MaterialTheme { EditToDoScreen(id = "123", onBack = { onBackCalled = true }) }
+    }
+    compose.waitForIdle()
 
-        var back = false
-        compose.setContent { MaterialTheme { EditToDoScreen(id = "42", onBack = { back = true }) } }
+    // Act: Change some data
+    compose.onNodeWithTag(TestTags.TitleField).performTextClearance()
+    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Updated Task Title")
+    compose.onNodeWithTag(TestTags.NotificationsSwitch).performClick()
 
-        // Wait for prefilled field, focus, then replace text
-        compose.waitUntilExactlyOneExists(hasTestTag(TestTags.TitleField))
-        compose
-            .onNodeWithTag(TestTags.TitleField, useUnmergedTree = true)
-            .performClick()
-            .performTextReplacement("Updated")
+    // Save
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
 
-        // Edit links & note (optional section is shown by default in Edit)
-        compose.waitUntilExactlyOneExists(hasTestTag(TestTags.LinksField))
-        compose
-            .onNodeWithTag(TestTags.LinksField, useUnmergedTree = true)
-            .performClick()
-            .performTextReplacement("https://c, https://d")
+    // This correctly waits for the callback to be invoked
+    compose.waitUntil(timeoutMillis = 2_000) {
+      onBackCalled // The condition is simply the boolean flag itself
+    }
 
-        compose.waitUntilExactlyOneExists(hasTestTag(TestTags.NoteField))
-        compose
-            .onNodeWithTag(TestTags.NoteField, useUnmergedTree = true)
-            .performClick()
-            .performTextReplacement("new note")
-
-        compose.onNodeWithTag(TestTags.SaveButton).performClick()
-
-        // This explicitly waits up to 2 seconds for the UI to reflect the navigation.
-        compose.waitUntil(timeoutMillis = 5_000) {
-          // The condition to wait for: the list of nodes with this tag is empty.
-          compose.onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isEmpty()
-        }
-
-        val updated = fakeRepo.getById("42")!!
-        Assert.assertEquals("Updated", updated.title)
-        Assert.assertEquals(listOf("https://c", "https://d"), updated.links)
-        Assert.assertEquals("new note", updated.note)
-        Assert.assertTrue(back)
-      }
+    // Assert side-effects after confirming navigation
+    assertTrue("onBack should have been called", onBackCalled)
+    val updatedItem = fakeRepo.currentList.single()
+    assertEquals("123", updatedItem.id) // ID is unchanged
+    assertEquals("Updated Task Title", updatedItem.title) // Title is updated
+    assertTrue(updatedItem.notificationsEnabled) // Switch was toggled
+  }
 }
