@@ -154,6 +154,7 @@ dependencies {
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    testImplementation(kotlin("test"))
 
 }
 
