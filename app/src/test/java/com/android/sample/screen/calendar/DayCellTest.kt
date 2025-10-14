@@ -14,40 +14,39 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.model.calendar.StudyItem
 import com.android.sample.model.calendar.TaskType
 import com.android.sample.ui.calendar.DayCell
+import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.LocalDate
 
 @RunWith(AndroidJUnit4::class)
 class DayCellTest {
 
-    @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
+  @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    @Test
-    fun dayCell_click_selects_and_shows_number_and_dots() {
-        val date = LocalDate.of(2025, 10, 14)
-        val items = listOf(
+  @Test
+  fun dayCell_click_selects_and_shows_number_and_dots() {
+    val date = LocalDate.of(2025, 10, 14)
+    val items =
+        listOf(
             StudyItem(title = "A", date = date, type = TaskType.STUDY),
-            StudyItem(title = "B", date = date, type = TaskType.WORK)
-        )
-        val selected = mutableStateOf(false)
+            StudyItem(title = "B", date = date, type = TaskType.WORK))
+    val selected = mutableStateOf(false)
 
-        composeRule.setContent {
-            MaterialTheme {
-                DayCell(
-                    date = date,
-                    tasks = items,
-                    isSelected = selected.value,
-                    onDateClick = { selected.value = true },
-                    modifier = Modifier.testTag("dayCell")
-                )
-            }
-        }
-
-        composeRule.onNodeWithTag("dayCell").performClick()
-        composeRule.onNodeWithText(date.dayOfMonth.toString()).assertIsDisplayed()
-        // We don’t have separate semantics for dots; the presence of the cell + day number is our proxy.
+    composeRule.setContent {
+      MaterialTheme {
+        DayCell(
+            date = date,
+            tasks = items,
+            isSelected = selected.value,
+            onDateClick = { selected.value = true },
+            modifier = Modifier.testTag("dayCell"))
+      }
     }
+
+    composeRule.onNodeWithTag("dayCell").performClick()
+    composeRule.onNodeWithText(date.dayOfMonth.toString()).assertIsDisplayed()
+    // We don’t have separate semantics for dots; the presence of the cell + day number is our
+    // proxy.
+  }
 }

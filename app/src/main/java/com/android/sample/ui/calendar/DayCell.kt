@@ -38,78 +38,64 @@ fun DayCell(
     modifier: Modifier = Modifier,
     size: Dp = 48.dp
 ) {
-    val hasTasks = tasks.isNotEmpty()
+  val hasTasks = tasks.isNotEmpty()
 
-    val selectedBrush = Brush.verticalGradient(
-        colors = listOf(
-            PurpleTop,
-            PurpleBottom
-        )
-    )
+  val selectedBrush = Brush.verticalGradient(colors = listOf(PurpleTop, PurpleBottom))
 
-    Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .size(size)
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                brush = if (isSelected) selectedBrush
-                else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent))
-            )
-            .border(
-                width = 1.dp,
-                color = if (isSelected) PurpleBorder
-                else PurpleSoft.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable { onDateClick(date) },
-        contentAlignment = Alignment.Center
-    ) {
+  Box(
+      modifier =
+          modifier
+              .aspectRatio(1f)
+              .size(size)
+              .clip(RoundedCornerShape(12.dp))
+              .background(
+                  brush =
+                      if (isSelected) selectedBrush
+                      else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent)))
+              .border(
+                  width = 1.dp,
+                  color = if (isSelected) PurpleBorder else PurpleSoft.copy(alpha = 0.4f),
+                  shape = RoundedCornerShape(12.dp))
+              .clickable { onDateClick(date) },
+      contentAlignment = Alignment.Center) {
         if (isSelected) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color.Transparent,
-                modifier = Modifier
-                    .size(size)
-                    .shadow(8.dp, RoundedCornerShape(12.dp))
-                    .background(selectedBrush, RoundedCornerShape(12.dp))
-            ) {}
+          Surface(
+              shape = RoundedCornerShape(12.dp),
+              color = Color.Transparent,
+              modifier =
+                  Modifier.size(size)
+                      .shadow(8.dp, RoundedCornerShape(12.dp))
+                      .background(selectedBrush, RoundedCornerShape(12.dp))) {}
         }
 
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Day number
-            Text(
-                text = date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = if (isSelected)
-                        Color.White
-                    else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 16.sp
-                ),
-                textAlign = TextAlign.Center
-            )
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              // Day number
+              Text(
+                  text = date.dayOfMonth.toString(),
+                  style =
+                      MaterialTheme.typography.bodyLarge.copy(
+                          color =
+                              if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                          fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                          fontSize = 16.sp),
+                  textAlign = TextAlign.Center)
 
-            // Small dots for tasks
-            if (hasTasks) {
+              // Small dots for tasks
+              if (hasTasks) {
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 2.dp)
-                ) {
-                    repeat(tasks.size.coerceAtMost(3)) {
+                    modifier = Modifier.padding(top = 2.dp)) {
+                      repeat(tasks.size.coerceAtMost(3)) {
                         Canvas(modifier = Modifier.size(4.dp).padding(horizontal = 1.dp)) {
-                            drawCircle(
-                                color = VioletSoft.copy(alpha = 0.9f)
-                            )
+                          drawCircle(color = VioletSoft.copy(alpha = 0.9f))
                         }
+                      }
                     }
-                }
+              }
             }
-        }
-    }
+      }
 }

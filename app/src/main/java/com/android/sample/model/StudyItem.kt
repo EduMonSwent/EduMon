@@ -17,8 +17,17 @@ data class StudyItem(
     val type: TaskType
 )
 
-enum class Priority { LOW, MEDIUM, HIGH }
-enum class TaskType { STUDY, WORK, PERSONAL }
+enum class Priority {
+  LOW,
+  MEDIUM,
+  HIGH
+}
+
+enum class TaskType {
+  STUDY,
+  WORK,
+  PERSONAL
+}
 
 data class CalendarUiState(
     val tasksByDate: Map<LocalDate, List<StudyItem>> = emptyMap(),
