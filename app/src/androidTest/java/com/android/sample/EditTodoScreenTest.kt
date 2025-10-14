@@ -1,50 +1,75 @@
-package com.android.sample.todo.ui
+package com.android.sample
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextClearance
-import androidx.compose.ui.test.performTextInput
-import com.android.sample.todo.ToDo
-import com.android.sample.todo.ToDoRepositoryLocal
-import com.android.sample.todo.ToDoRepositoryProvider
+import com.android.sample.todo.*
+import com.android.sample.todo.ui.EditToDoScreen
+import com.android.sample.todo.ui.TestTags
 import java.time.LocalDate
-import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 
 class EditToDoScreenTest {
-
   @get:Rule val compose = createComposeRule()
-  private lateinit var existing: ToDo
+
+  private val realRepo by lazy { ToDoRepositoryProvider.repository }
+  private val fakeRepo = FakeToDoRepository()
 
   @Before
-  fun setup() {
-    ToDoRepositoryProvider.repository = ToDoRepositoryLocal()
-    existing =
-        ToDo(
-            id = "E1",
-            title = "Orig",
-            dueDate = LocalDate.now(),
-            priority = com.android.sample.todo.Priority.MEDIUM)
-    kotlinx.coroutines.runBlocking { ToDoRepositoryProvider.repository.add(existing) }
+  fun swapRepo() {
+    ToDoRepositoryProvider.repository = fakeRepo
   }
 
+  @After
+  fun restoreRepo() {
+    ToDoRepositoryProvider.repository = realRepo
+  }
+
+  @OptIn(ExperimentalTestApi::class)
   @Test
-  fun change_title_and_links_then_save_updates_repo() {
-    compose.setContent { EditToDoScreen(id = "E1", onBack = {}) }
+  fun prefill_and_SaveUpdatesItem() =
+      kotlinx.coroutines.test.runTest {
+        val original =
+            makeToDo(
+                    id = "42",
+                    title = "Original",
+                    due = LocalDate.of(2025, 2, 2),
+                    priority = Priority.LOW,
+                    status = Status.IN_PROGRESS,
+                    note = "old note",
+                    notifications = true)
+                .copy(links = listOf("https://a", "https://b"), location = "CO 2")
+        fakeRepo.add(original)
 
-    // champs optionnels visibles par défaut sur Edit
-    compose.onNodeWithTag(TestTags.TitleField).performTextClearance()
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput(" Updated ")
-    compose.onNodeWithTag(TestTags.LinksField).performTextInput("x.com, y.com")
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+        var back = false
+        compose.setContent { MaterialTheme { EditToDoScreen(id = "42", onBack = { back = true }) } }
 
-    compose.runOnIdle {}
-    val updated =
-        kotlinx.coroutines.runBlocking { ToDoRepositoryProvider.repository.getById("E1")!! }
-    assertEquals("Updated", updated.title)
-    assertEquals(listOf("x.com", "y.com"), updated.links)
-  }
+        // Wait for prefilled field, focus, then replace text
+        compose.waitUntilExactlyOneExists(hasTestTag(TestTags.TitleField))
+        compose
+            .onNodeWithTag(TestTags.TitleField, useUnmergedTree = true)
+            .performClick()
+            .performTextReplacement("Updated")
+
+        // Edit links & note (optional section is shown by default in Edit)
+        compose.waitUntilExactlyOneExists(hasTestTag(TestTags.LinksField))
+        compose
+            .onNodeWithTag(TestTags.LinksField, useUnmergedTree = true)
+            .performClick()
+            .performTextReplacement("https://c, https://d")
+
+        compose.waitUntilExactlyOneExists(hasTestTag(TestTags.NoteField))
+        compose
+            .onNodeWithTag(TestTags.NoteField, useUnmergedTree = true)
+            .performClick()
+            .performTextReplacement("new note")
+
+        compose.onNodeWithTag(TestTags.SaveButton).performClick()
+
+        val updated = fakeRepo.getById("42")!!
+        Assert.assertEquals("Updated", updated.title)
+        Assert.assertEquals(listOf("https://c", "https://d"), updated.links)
+        Assert.assertEquals("new note", updated.note)
+        Assert.assertTrue(back)
+      }
 }

@@ -2,7 +2,6 @@ package com.android.sample.todo.testutils
 
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,10 +19,10 @@ import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 
-// Longer timeout helps on CI
+/** Generous timeout for CI/emulator. */
 const val UI_WAIT_TIMEOUT = 15_000L
 
-/** Test helpers. */
+/** Test helpers shared by all UI tests (connected). */
 interface ToDoTest {
 
   // ----- repo wiring -----
@@ -34,9 +33,11 @@ interface ToDoTest {
 
   @Before
   fun setUpProvider() {
+    // Fresh singleton per test to avoid cross-test bleed on device
     ToDoRepositoryProvider.repository = createInitializedRepository()
   }
 
+  // ----- tiny model factory (no companion needed) -----
   fun sampleToDo(
       id: String = "id-${System.nanoTime()}",
       title: String = "Task",
@@ -45,77 +46,100 @@ interface ToDoTest {
       status: Status = Status.TODO
   ) = ToDo(id = id, title = title, dueDate = due, priority = priority, status = status)
 
-  fun ComposeTestRule.awaitDisplayed(
-      tag: String,
-      timeoutMs: Long = UI_WAIT_TIMEOUT
-  ): SemanticsNodeInteraction {
-    waitUntil(timeoutMs) { onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
-    return onNodeWithTag(tag).assertIsDisplayed()
+  // ----- robust node wait -----
+  fun ComposeTestRule.awaitDisplayed(tag: String): SemanticsNodeInteraction {
+    waitUntil(UI_WAIT_TIMEOUT) { onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    return onNodeWithTag(tag).assertExists().assertIsDisplayed()
   }
 
-  // ----- form helpers -----
-  fun ComposeTestRule.enterTitle(title: String) =
-      awaitDisplayed(TestTags.TitleField).performTextInput(title)
+  // ----- repo snapshot & waits -----
+  fun currentTodos(): List<ToDo> =
+      (repository.todos as kotlinx.coroutines.flow.MutableStateFlow<List<ToDo>>).value
+
+  fun ComposeTestRule.waitUntilRepo(
+      timeoutMs: Long = UI_WAIT_TIMEOUT,
+      predicate: (List<ToDo>) -> Boolean
+  ) {
+    waitUntil(timeoutMs) { predicate(currentTodos()) }
+  }
+
+  fun ComposeTestRule.waitRepoSize(size: Int, timeoutMs: Long = UI_WAIT_TIMEOUT) =
+      waitUntilRepo(timeoutMs) { it.size == size }
+
+  // ----- form helpers (scroll-safe & idempotent where needed) -----
+  fun ComposeTestRule.enterTitle(title: String) {
+    awaitDisplayed(TestTags.TitleField).performTextInput(title)
+  }
 
   fun ComposeTestRule.clearAndEnterTitle(title: String) {
     awaitDisplayed(TestTags.TitleField).performTextClearance()
-    onNodeWithTag(TestTags.TitleField).performTextInput(title)
+    awaitDisplayed(TestTags.TitleField).performTextInput(title)
   }
 
-  /** Only opens the optional section if it's currently hidden. */
+  /** Ensures optional section is open, but is idempotent if already open. */
   fun ComposeTestRule.openOptionalSection() {
-    val links = TestTags.LinksField
-    val isVisible = onAllNodesWithTag(links).fetchSemanticsNodes().isNotEmpty()
-    if (!isVisible) {
+    // If Links field already exists, we assume optional is open
+    val alreadyOpen = onAllNodesWithTag(TestTags.LinksField).fetchSemanticsNodes().isNotEmpty()
+    if (!alreadyOpen) {
       awaitDisplayed(TestTags.OptionalToggle).performClick()
-      awaitDisplayed(links) // wait for fields to appear
+      // wait until any optional field appears
+      waitUntil(UI_WAIT_TIMEOUT) {
+        onAllNodesWithTag(TestTags.LinksField).fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithTag(TestTags.LocationField).fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithTag(TestTags.NoteField).fetchSemanticsNodes().isNotEmpty()
+      }
     }
   }
 
-  fun ComposeTestRule.enterLocation(text: String) =
-      awaitDisplayed(TestTags.LocationField).performTextInput(text)
+  fun ComposeTestRule.enterLocation(text: String) {
+    openOptionalSection()
+    awaitDisplayed(TestTags.LocationField).performTextInput(text)
+  }
 
-  /** Idempotent: ensures the optional block is visible first. */
   fun ComposeTestRule.enterLinks(text: String) {
     openOptionalSection()
     awaitDisplayed(TestTags.LinksField).performTextInput(text)
   }
 
-  fun ComposeTestRule.enterNote(text: String) =
-      awaitDisplayed(TestTags.NoteField).performTextInput(text)
+  fun ComposeTestRule.enterNote(text: String) {
+    openOptionalSection()
+    awaitDisplayed(TestTags.NoteField).performTextInput(text)
+  }
 
-  fun ComposeTestRule.toggleNotifications() =
-      awaitDisplayed(TestTags.NotificationsSwitch).performClick()
+  fun ComposeTestRule.toggleNotifications() {
+    openOptionalSection()
+    awaitDisplayed(TestTags.NotificationsSwitch).performClick()
+  }
 
-  fun ComposeTestRule.clickSave(waitForRedirection: Boolean = false) {
+  /** Clicks Save and waits either for navigation or repo growth. */
+  fun ComposeTestRule.clickSaveAndAwait(expectSizeAfter: Int? = null) {
     awaitDisplayed(TestTags.SaveButton).performClick()
     waitUntil(UI_WAIT_TIMEOUT) {
-      !waitForRedirection || onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isEmpty()
+      // Save button might disappear on navigateBack, or repo size might grow
+      onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isEmpty() ||
+          (expectSizeAfter != null && currentTodos().size >= expectSizeAfter)
     }
+    runOnIdle {} // yield a frame
   }
 
   // ----- overview helpers -----
-  fun ComposeTestRule.clickAddFab() = awaitDisplayed(TestTags.FabAdd).performClick()
-
   fun ComposeTestRule.waitUntilTodoCardShown(id: String): SemanticsNodeInteraction {
     waitUntil(UI_WAIT_TIMEOUT) {
       onAllNodesWithTag(TestTags.card(id)).fetchSemanticsNodes().isNotEmpty()
     }
-    return onNodeWithTag(TestTags.card(id)).assertIsDisplayed()
+    return onNodeWithTag(TestTags.card(id)).assertExists().assertIsDisplayed()
   }
 
-  fun ComposeTestRule.clickStatusChip(id: String) =
-      awaitDisplayed(TestTags.status(id)).performClick()
+  fun ComposeTestRule.clickStatusChipAndAwait(id: String) {
+    awaitDisplayed(TestTags.status(id)).performClick()
+    runOnIdle {} // allow VM to push update
+  }
 
-  fun ComposeTestRule.clickDelete(id: String) = awaitDisplayed(TestTags.delete(id)).performClick()
+  fun ComposeTestRule.clickDeleteAndAwait(id: String) {
+    awaitDisplayed(TestTags.delete(id)).performClick()
+    waitUntilRepo { list -> list.none { it.id == id } }
+  }
 
-  fun ComposeTestRule.checkTopBarTitleContains(text: String) =
-      awaitDisplayed(TestTags.TitleField)
-          .assertTextContains(text, substring = true, ignoreCase = true)
-
-  // ----- tiny repo helpers -----
-  fun currentTodos(): List<ToDo> =
-      (repository.todos as kotlinx.coroutines.flow.MutableStateFlow<List<ToDo>>).value
-
+  // ----- tiny repo helper -----
   fun addAll(vararg items: ToDo) = runBlocking { items.forEach { repository.add(it) } }
 }

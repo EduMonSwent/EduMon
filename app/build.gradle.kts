@@ -121,6 +121,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
     testImplementation(libs.junit)
+    androidTestImplementation(project(":app"))
+    androidTestImplementation(project(":app"))
+    androidTestImplementation(project(":app"))
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
 
