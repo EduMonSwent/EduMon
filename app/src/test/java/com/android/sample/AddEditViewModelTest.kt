@@ -1,4 +1,4 @@
-package com.android.sample.todo.ui
+package com.android.sample
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.todo.Priority
@@ -6,11 +6,12 @@ import com.android.sample.todo.Status
 import com.android.sample.todo.ToDo
 import com.android.sample.todo.ToDoRepository
 import com.android.sample.todo.ToDoRepositoryLocal
+import com.android.sample.todo.ui.AddToDoViewModel
+import com.android.sample.todo.ui.EditToDoViewModel
 import java.time.LocalDate
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
@@ -31,9 +32,9 @@ class AddEditViewModelTest {
   @Test
   fun add_canSave_depends_on_title() {
     val vm = AddToDoViewModel(repo)
-    assertFalse(vm.canSave)
+    TestCase.assertFalse(vm.canSave)
     vm.title = "  Study  "
-    assertTrue(vm.canSave)
+    TestCase.assertTrue(vm.canSave)
   }
 
   @Test
@@ -42,9 +43,9 @@ class AddEditViewModelTest {
     vm.title = "   "
     var called = false
     vm.save { called = true }
-    val list = (repo.todos as kotlinx.coroutines.flow.MutableStateFlow<List<ToDo>>).value
-    assertEquals(0, list.size)
-    assertFalse(called)
+    val list = (repo.todos as MutableStateFlow<List<ToDo>>).value
+    TestCase.assertEquals(0, list.size)
+    TestCase.assertFalse(called)
   }
 
   // ---------------- EditToDoViewModel ----------------
@@ -67,14 +68,14 @@ class AddEditViewModelTest {
     val vm = EditToDoViewModel(repo, id = "E1")
     waitUntil(timeoutMs = 1_000) { vm.title == "Original" }
 
-    assertEquals("Original", vm.title)
-    assertEquals(LocalDate.of(2025, 2, 3), vm.dueDate)
-    assertEquals(Priority.LOW, vm.priority)
-    assertEquals(Status.TODO, vm.status)
-    assertEquals("Dorm", vm.location)
-    assertEquals("x.com, y.com", vm.linksText)
-    assertEquals("n", vm.note)
-    assertTrue(vm.notificationsEnabled)
+    TestCase.assertEquals("Original", vm.title)
+    TestCase.assertEquals(LocalDate.of(2025, 2, 3), vm.dueDate)
+    TestCase.assertEquals(Priority.LOW, vm.priority)
+    TestCase.assertEquals(Status.TODO, vm.status)
+    TestCase.assertEquals("Dorm", vm.location)
+    TestCase.assertEquals("x.com, y.com", vm.linksText)
+    TestCase.assertEquals("n", vm.note)
+    TestCase.assertTrue(vm.notificationsEnabled)
   }
 
   @Test
@@ -82,8 +83,8 @@ class AddEditViewModelTest {
     val vm = EditToDoViewModel(repo, id = "missing")
     vm.title = "X"
     vm.save { /* not expected to run */}
-    val list = (repo.todos as kotlinx.coroutines.flow.MutableStateFlow<List<ToDo>>).value
-    assertEquals(0, list.size)
+    val list = (repo.todos as MutableStateFlow<List<ToDo>>).value
+    TestCase.assertEquals(0, list.size)
   }
 
   // ---------- tiny polling helper (no dispatcher needed) ----------
