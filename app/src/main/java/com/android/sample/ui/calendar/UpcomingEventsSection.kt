@@ -31,7 +31,6 @@ import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletLilas
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 @Composable
 fun UpcomingEventsSection(
@@ -52,9 +51,8 @@ fun UpcomingEventsSection(
       colors =
           CardDefaults.cardColors(
               containerColor =
-                  Brush.verticalGradient(colors = listOf(DarkBlue, DarkerBlue)).let {
-                    BrushColor(it)
-                  }),
+                  brushColor(Brush.verticalGradient(colors = listOf(DarkBlue, DarkerBlue)))
+          ),
       shape = RoundedCornerShape(20.dp)) {
         Column(modifier = Modifier.padding(20.dp)) {
           // Header Row
@@ -174,5 +172,5 @@ private fun EventCard(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
 
 // Helper to use Brush as background color in Card
 @Composable
-fun BrushColor(brush: Brush): Color =
+fun brushColor(brush: Brush): Color =
     Color.Transparent.copy(alpha = 0f).also { Box(Modifier.background(brush)) }
