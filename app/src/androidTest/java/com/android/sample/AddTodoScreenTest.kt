@@ -59,6 +59,8 @@ class AddToDoScreenTest {
         // Save
         compose.onNodeWithTag(TestTags.SaveButton).assertIsEnabled().performClick()
 
+        compose.waitUntil(timeoutMillis = 5_000) { fakeRepo.todos.value.isNotEmpty() }
+
         val saved = fakeRepo.todos.value.single()
         Assert.assertEquals("Finish lab 4", saved.title)
         Assert.assertEquals(LocalDate.now(), saved.dueDate) // default today
