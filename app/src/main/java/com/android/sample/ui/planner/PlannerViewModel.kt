@@ -95,4 +95,9 @@ class PlannerViewModel(private val plannerRepository: PlannerRepository = Planne
       }
     }
   }
+
+  fun updateTestData(classes: List<Class>, attendance: List<ClassAttendance>) {
+    _todayClasses.value = classes
+    _todayAttendanceRecords.value = attendance
+  }
 }
