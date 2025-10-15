@@ -15,13 +15,18 @@ lifecycleRuntimeKtx = "2.7.0"
 kaspresso = "1.5.5"
 robolectric = "4.11.1"
 sonar = "4.4.1.3373"
+googleid = "1.1.0"
+credentials = "1.2.2"
 
 # --- Added Firebase versions ---
 firebaseAuth = "23.0.0"          # Firebase Authentication
 firebaseAuthKtx = "23.0.0"       # Firebase Authentication KTX extension
 firebaseFirestore = "25.1.0"     # Firebase Firestore
 firebaseDatabaseKtx = "21.0.0"   # Firebase Realtime Database KTX
-gms = "4.4.2"                    # Google Services Gradle plugin
+gms = "4.4.2"
+firebaseCommonKtx = "22.0.1"
+composeMaterial = "1.5.2"                    # Google Services Gradle plugin
+gmsPlugin = "4.4.2"                    # Google Services Gradle plugin
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,11 +53,17 @@ kaspresso-compose = { group = "com.kaspersky.android-components", name = "kaspre
 
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
+credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+
 # --- Added Firebase libraries ---
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }                # Firebase Authentication
 firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.ref = "firebaseAuthKtx" }    # Firebase Auth KTX
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestore" } # Firebase Firestore
-firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", version.ref = "firebaseDatabaseKtx" } # Firebase Realtime Database
+firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", version.ref = "firebaseDatabaseKtx" }
+firebase-common-ktx = { group = "com.google.firebase", name = "firebase-common-ktx", version.ref = "firebaseCommonKtx" }
+androidx-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeMaterial" } # Firebase Realtime Database
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -61,4 +72,4 @@ ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 sonar = { id = "org.sonarqube", version.ref = "sonar" }
 
 # --- Added Firebase plugin ---
-gms = { id = "com.google.gms.google-services", version.ref = "gms" }   # Google Services plugin for Firebase
+gms = { id = "com.google.gms.google-services", version.ref = "gmsPlugin" }   # Google Services plugin for Firebase
