@@ -1,0 +1,237 @@
+package com.android.sample.ui.games
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.android.sample.ui.theme.*
+import kotlinx.coroutines.delay
+
+// ✅ Version unifiée : utilisée à la fois pour le jeu normal et les tests
+@Composable
+fun MemoryGameScreenBase(
+    icons: List<ImageVector> =
+        listOf(
+            Icons.Filled.School,
+            Icons.Filled.Book,
+            Icons.Filled.Psychology,
+            Icons.Filled.Lightbulb,
+            Icons.Filled.AutoAwesome,
+            Icons.Filled.Science,
+            Icons.Filled.SportsEsports,
+            Icons.Filled.TravelExplore,
+            Icons.Filled.Bolt),
+    initialCards: List<MemoryCard>? = null,
+    initialWin: Boolean = false,
+    initialGameOver: Boolean = false,
+    enableTimer: Boolean = true
+) {
+  var cards by remember { mutableStateOf(initialCards ?: generateCards(icons)) }
+  var flipped by remember { mutableStateOf(listOf<Int>()) }
+  var score by remember { mutableStateOf(0) }
+  var timer by remember { mutableStateOf(90) }
+  var isGameOver by remember { mutableStateOf(initialGameOver) }
+  var isWin by remember { mutableStateOf(initialWin) }
+
+  // ⏱️ Timer uniquement si activé (désactivé dans les tests)
+  LaunchedEffect(enableTimer, isGameOver, isWin) {
+    if (enableTimer && !isGameOver && !isWin) {
+      while (timer > 0) {
+        delay(1000)
+        timer--
+      }
+      if (timer == 0) isGameOver = true
+    }
+  }
+
+  // 🎉 Victoire
+  LaunchedEffect(cards) { if (cards.all { it.isMatched }) isWin = true }
+
+  // 💡 Logique de matching
+  if (flipped.size == 2) {
+    LaunchedEffect(flipped) {
+      delay(700)
+      val (first, second) = flipped.map { id -> cards.first { it.id == id } }
+      if (first.icon == second.icon) {
+        score += 10
+        cards = cards.map { if (it.id in flipped) it.copy(isMatched = true) else it }
+      } else {
+        cards = cards.map { if (it.id in flipped) it.copy(isFlipped = false) else it }
+      }
+      flipped = emptyList()
+    }
+  }
+
+  // 🧠 UI du jeu
+  Column(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(BackgroundDark)
+              .padding(horizontal = 16.dp, vertical = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "Memory Game",
+            color = AccentViolet,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+        Text("Time: ${timer}s | Score: $score", color = TextLight, fontSize = 16.sp)
+        Spacer(Modifier.height(16.dp))
+
+        Box(modifier = Modifier.weight(1f)) {
+          LazyVerticalGrid(
+              columns = GridCells.Fixed(3),
+              modifier = Modifier.fillMaxSize(),
+              horizontalArrangement = Arrangement.spacedBy(12.dp),
+              verticalArrangement = Arrangement.spacedBy(12.dp),
+              contentPadding = PaddingValues(6.dp)) {
+                items(cards) { card ->
+                  MemoryCardView(card) {
+                    if (!isGameOver &&
+                        !isWin &&
+                        flipped.size < 2 &&
+                        !card.isFlipped &&
+                        !card.isMatched) {
+                      flipped = flipped + card.id
+                      cards = cards.map { if (it.id == card.id) it.copy(isFlipped = true) else it }
+                    }
+                  }
+                }
+              }
+        }
+
+        // 🎭 Overlay fin de partie
+        if (isWin || isGameOver) {
+          GameEndOverlay(
+              isWin = isWin,
+              score = score,
+              onRestart = {
+                cards = generateCards(icons)
+                flipped = emptyList()
+                score = 0
+                timer = 90
+                isWin = false
+                isGameOver = false
+              })
+        }
+      }
+}
+
+// ✅ Écran utilisé dans l’application
+@Composable
+fun MemoryGameScreen() {
+  MemoryGameScreenBase()
+}
+
+// ✅ Variante utilisée dans les tests
+@Composable
+fun MemoryGameScreenTestable(
+    initialCards: List<MemoryCard> =
+        generateCards(
+            listOf(
+                Icons.Filled.School,
+                Icons.Filled.Book,
+                Icons.Filled.Psychology,
+                Icons.Filled.Lightbulb,
+                Icons.Filled.AutoAwesome,
+                Icons.Filled.Science,
+                Icons.Filled.SportsEsports,
+                Icons.Filled.TravelExplore,
+                Icons.Filled.Bolt)),
+    initialWin: Boolean = false,
+    initialGameOver: Boolean = false
+) {
+  MemoryGameScreenBase(
+      initialCards = initialCards,
+      initialWin = initialWin,
+      initialGameOver = initialGameOver,
+      enableTimer = false // 🔕 pas de timer dans les tests
+      )
+}
+
+// 🎭 Overlay de fin de partie
+@Composable
+fun GameEndOverlay(isWin: Boolean, score: Int, onRestart: () -> Unit) {
+  Box(
+      modifier = Modifier.fillMaxSize().background(Color(0xAA000000)),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Text(
+              text = if (isWin) "Well done!" else "Time’s up!",
+              color = if (isWin) AccentViolet else Color.Red,
+              fontSize = 26.sp,
+              fontWeight = FontWeight.Bold)
+          Spacer(Modifier.height(8.dp))
+          Text("Score: $score", color = TextLight, fontSize = 18.sp)
+          Spacer(Modifier.height(20.dp))
+          Button(
+              onClick = onRestart,
+              colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
+                Text("Restart", color = TextLight, fontWeight = FontWeight.Bold)
+              }
+        }
+      }
+}
+
+// -----------------------------------------------------------
+// Cartes et utilitaires
+// -----------------------------------------------------------
+@Composable
+fun MemoryCardView(card: MemoryCard, onClick: () -> Unit) {
+  val bg by
+      animateColorAsState(
+          when {
+            card.isMatched -> Glow
+            card.isFlipped -> MidDarkCard
+            else -> Color(0xFF1C1C2E)
+          })
+
+  Box(
+      modifier =
+          Modifier.aspectRatio(1f)
+              .fillMaxWidth()
+              .shadow(10.dp, RoundedCornerShape(18.dp))
+              .background(bg, RoundedCornerShape(18.dp))
+              .clickable(enabled = !card.isMatched) { onClick() },
+      contentAlignment = Alignment.Center) {
+        if (card.isFlipped || card.isMatched) {
+          Icon(
+              imageVector = card.icon,
+              contentDescription = null,
+              tint = TextLight,
+              modifier = Modifier.size(36.dp))
+        } else {
+          Text("?", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = TextLight)
+        }
+      }
+}
+
+data class MemoryCard(
+    val id: Int,
+    val icon: ImageVector,
+    val isFlipped: Boolean = false,
+    val isMatched: Boolean = false
+)
+
+fun generateCards(icons: List<ImageVector>): List<MemoryCard> {
+  val pairs = (icons.shuffled().take(9) * 2).shuffled()
+  return pairs.mapIndexed { i, icon -> MemoryCard(i, icon) }
+}
+
+operator fun <T> List<T>.times(n: Int): List<T> = List(n) { this }.flatten()

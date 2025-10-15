@@ -18,14 +18,22 @@ sonar = "4.4.1.3373"
 googleid = "1.1.0"
 credentials = "1.2.2"
 
+# --- Firebase versions (compatibles AGP 8.3) ---
+firebaseAuth = "23.0.0"
+firebaseAuthKtx = "23.0.0"
+firebaseFirestore = "25.1.0"
+firebaseDatabaseKtx = "21.0.0"
+gms = "4.4.2"
+
+# --- Navigation (stables pour compileSdk 34) ---
+navigationRuntimeKtx = "2.7.7"
+navigationCompose = "2.7.7"
+navigationTestingAndroid = "2.7.7"
 # --- Added Firebase versions ---
-firebaseAuth = "23.0.0"          # Firebase Authentication
-firebaseAuthKtx = "23.0.0"       # Firebase Authentication KTX extension
-firebaseFirestore = "25.1.0"     # Firebase Firestore
-firebaseDatabaseKtx = "21.0.0"   # Firebase Realtime Database KTX
-gmsPlugin = "4.4.2"                    # Google Services Gradle plugin
+# Google Services Gradle plugin
 
 [libraries]
+# --- Android core ---
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -34,6 +42,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 
+# --- Jetpack Compose ---
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-ui = { group = "androidx.compose.ui", name = "ui" }
@@ -44,10 +53,23 @@ compose-activity = { group = "androidx.activity", name = "activity-compose", ver
 compose-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "composeViewModel" }
 compose-test-junit = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 
+# --- Navigation Compose ---
+androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+androidx-navigation-testing = { group = "androidx.navigation", name = "navigation-testing", version.ref = "navigationTestingAndroid" }
+
+# --- Testing ---
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+
+# --- Kaspresso ---
 kaspresso = { group = "com.kaspersky.android-components", name = "kaspresso", version.ref = "kaspresso" }
 kaspresso-compose = { group = "com.kaspersky.android-components", name = "kaspresso-compose-support", version.ref = "kaspresso" }
 
+# --- Robolectric ---
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
