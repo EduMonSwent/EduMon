@@ -4,6 +4,7 @@ import com.android.sample.ui.flashcards.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/** In-memory repository for managing flashcard decks. */
 object InMemoryFlashcardsRepository {
   private var _decks = MutableStateFlow<List<Deck>>(emptyList())
   val decks: StateFlow<List<Deck>> = _decks

@@ -7,10 +7,12 @@ import com.android.sample.ui.flashcards.model.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+/** ViewModel that exposes the list of decks from the repository. */
 class DeckListViewModel : ViewModel() {
   val decks = InMemoryFlashcardsRepository.decks
 }
 
+/** ViewModel for creating a new deck. */
 class CreateDeckViewModel : ViewModel() {
   private val _title = MutableStateFlow("")
   private val _description = MutableStateFlow("")
@@ -54,7 +56,9 @@ class CreateDeckViewModel : ViewModel() {
         onSaved(id)
       }
 }
-
+/**
+ * Immutable UI state for studying a deck. Tracks current index and whether the answer is visible.
+ */
 data class StudyState(val deck: Deck, val index: Int = 0, val showingAnswer: Boolean = false) {
   val total: Int
     get() = deck.cards.size
@@ -68,7 +72,7 @@ data class StudyState(val deck: Deck, val index: Int = 0, val showingAnswer: Boo
   val isLast: Boolean
     get() = index == total - 1
 }
-
+/** ViewModel that drives the study flow (flip/next/prev/record). */
 class StudyViewModel(private val deckId: String) : ViewModel() {
   private val deck = requireNotNull(InMemoryFlashcardsRepository.deck(deckId)) { "Deck not found" }
   private val _state = MutableStateFlow(StudyState(deck))

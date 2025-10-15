@@ -13,6 +13,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * UI test that simulates the full user flow for flashcards. creating a deck, adding a card,
+ * studying it, and returning to the main screen.
+ */
 @RunWith(AndroidJUnit4::class)
 class FlashcardsFlowTest {
 
@@ -20,7 +24,7 @@ class FlashcardsFlowTest {
 
   @Test
   fun fullFlow_createDeck_thenStudy_thenBack() {
-    // Starts empty
+    // Start screen should be visible and empty
     composeRule.onNodeWithText("Flashcards").assertIsDisplayed()
     composeRule.onAllNodesWithText("Study").assertCountEquals(0)
 
@@ -37,7 +41,7 @@ class FlashcardsFlowTest {
 
     composeRule.onNodeWithText("Save Deck").performClick()
 
-    // Back to list + shows 1 deck
+    // Back to list and shows 1 deck
     composeRule.onNodeWithText("Flashcards").assertIsDisplayed()
     composeRule.onAllNodesWithText("Study").assertCountEquals(1)
     composeRule.onNodeWithText("Study").performClick()
@@ -50,7 +54,7 @@ class FlashcardsFlowTest {
     // Reveal and mark confidence
     composeRule.onNodeWithText("Reveal").performClick()
     composeRule.onNodeWithText("Answer").assertIsDisplayed()
-    composeRule.onNodeWithText("Medium").performClick() // advances (no crash)
+    composeRule.onNodeWithText("Medium").performClick()
 
     // Go back
     composeRule.onNodeWithText("← Back").performClick()

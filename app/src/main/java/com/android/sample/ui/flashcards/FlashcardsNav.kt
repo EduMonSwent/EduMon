@@ -4,7 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.android.sample.ui.flashcards.data.StudyScreen
 
+/**
+ * Sets up navigation for the Flashcards feature using Jetpack Compose Navigation. Defines routes
+ * for the deck list, deck creation, and study screens.
+ */
 sealed interface FCRoute {
   val route: String
 }

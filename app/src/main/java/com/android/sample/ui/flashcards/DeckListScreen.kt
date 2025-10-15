@@ -17,6 +17,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.ui.flashcards.model.Deck
 import com.android.sample.ui.theme.*
 
+/**
+ * Composable screen displaying the list of flashcard decks. Allows users to create new decks or
+ * start studying existing ones.
+ */
 @Composable
 fun DeckListScreen(
     onCreateDeck: () -> Unit,

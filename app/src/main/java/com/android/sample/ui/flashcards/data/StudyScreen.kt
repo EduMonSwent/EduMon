@@ -1,4 +1,4 @@
-package com.android.sample.ui.flashcards
+package com.android.sample.ui.flashcards.data
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.android.sample.ui.flashcards.StudyViewModel
 import com.android.sample.ui.flashcards.model.Confidence
 import com.android.sample.ui.theme.*
 
