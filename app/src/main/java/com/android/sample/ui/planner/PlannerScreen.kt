@@ -96,7 +96,7 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
                   AIRecommendationCard(
                       recommendationText =
                           stringResource(R.string.ai_recommendation_calculus_example),
-                      onActionClick = { /* Handle action for AI recommendation, e.g., open task details */})
+                      onActionClick = {})
                 }
               }
 

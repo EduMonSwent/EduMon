@@ -9,11 +9,14 @@ import org.junit.Rule
 import org.junit.Test
 
 class PetHeaderTest {
+
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   @Test
   fun displaysProgressBarAndLevel() {
     composeTestRule.setContent { PetHeader(level = 5, modifier = Modifier, onEdumonNameClick = {}) }
-    composeTestRule.onNodeWithText("Level 5").assertExists()
+
+    // "Lv 5" is the actual text in AssistChip
+    composeTestRule.onNodeWithText("Lv 5").assertExists()
   }
 }
