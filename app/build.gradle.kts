@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.sonar)
     id("jacoco")
+    alias(libs.plugins.gms)
 }
 
 android {
@@ -93,39 +94,16 @@ android {
 
 sonar {
     properties {
-        property("sonar.token", System.getenv("SONAR_TOKEN")?.trim() ?: "")
         property("sonar.projectKey", "EduMonSwent_EduMon")
         property("sonar.projectName", "EduMon")
         property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
-        /*property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
+        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
         // Paths to xml files with Android Lint issues. If the main flavor is changed, this file will have to be changed too.
         property("sonar.androidLint.reportPaths", "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml")
         // Paths to JaCoCo XML coverage report files.
-        property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")*/
-        property(
-            "sonar.junit.reportPaths",
-            listOf(
-                "${project.layout.buildDirectory.get()}/test-results/testDebugUnitTest/",
-                "${project.layout.buildDirectory.get()}/reports/androidTests/connected/"
-            ).joinToString(",")
-        )
-
-        // ✅ Android Lint XML report
-        property(
-            "sonar.androidLint.reportPaths",
-            "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml"
-        )
-
-        // ✅ JaCoCo coverage report (merged coverage for unit + android tests)
-        property(
-            "sonar.coverage.jacoco.xmlReportPaths",
-            listOf(
-                "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml",
-                "${project.layout.buildDirectory.get()}/reports/coverage/androidTest/connected/jacocoTestReport.xml"
-            ).joinToString(",")
-        )
+        property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
     }
 }
 
@@ -202,6 +180,7 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         exclude(fileFilter)
     }
 
+
     val mainSrc = "${project.layout.projectDirectory}/src/main/java"
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
@@ -209,4 +188,14 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
+
+    doLast {
+        // New block to modify the XML report after it's generated
+        val reportFile = reports.xml.outputLocation.asFile.get()
+        if (reportFile.exists()) {
+            val content = reportFile.readText()
+            val cleanedContent = content.replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
+            reportFile.writeText(cleanedContent)
+        }
+    }
 }
