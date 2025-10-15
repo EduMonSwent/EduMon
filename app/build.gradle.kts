@@ -94,6 +94,7 @@ android {
 
 sonar {
     properties {
+        property("sonar.token", System.getenv("SONAR_TOKEN")?.trim() ?: "")
         property("sonar.projectKey", "EduMonSwent_EduMon")
         property("sonar.projectName", "EduMon")
         property("sonar.organization", "edumonswent")
@@ -146,6 +147,7 @@ dependencies {
     implementation(libs.compose.viewmodel)
     // Android Studio Preview support
     implementation(libs.compose.preview)
+    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation(libs.compose.tooling)
     // UI Tests
     globalTestImplementation(libs.compose.test.junit)
