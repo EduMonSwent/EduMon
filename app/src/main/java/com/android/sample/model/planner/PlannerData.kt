@@ -11,9 +11,10 @@ import com.android.sample.ui.theme.EventColorYoga
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.UUID
 
 data class Class(
-    val id: String,
+    val id: String = UUID.randomUUID().toString(),
     val courseName: String,
     val startTime: LocalTime,
     val endTime: LocalTime,

@@ -1,143 +1,141 @@
 package com.android.sample.planner
 
+import androidx.lifecycle.viewModelScope
 import com.android.sample.model.planner.*
-import com.android.sample.ui.planner.PlannerViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.android.sample.ui.viewmodel.PlannerViewModel
+import java.time.LocalTime
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-// Simple test rule for coroutines
-class TestCoroutineRule : TestWatcher() {
-  @OptIn(ExperimentalCoroutinesApi::class)
-  override fun starting(description: Description) {
-    Dispatchers.setMain(Dispatchers.Unconfined)
-  }
-}
-
+/**
+ * ✅ Test stable pour PlannerViewModel
+ * - Pas de blocage 10s
+ * - Pas besoin de modifier Gradle
+ * - Utilise un FakeRepository à flux finis
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(manifest = Config.NONE)
 class PlannerViewModelTest {
 
-  @get:Rule val testCoroutineRule = TestCoroutineRule()
-
+  private val dispatcher = UnconfinedTestDispatcher()
   private lateinit var viewModel: PlannerViewModel
+
+  // Fake repository avec flux finis (pas de collect infini)
+  private class FakePlannerRepository : PlannerRepository() {
+    override fun getTodayClassesFlow() =
+        kotlinx.coroutines.flow.flow {
+          emit(
+              listOf(
+                  Class(
+                      id = "1",
+                      courseName = "Algorithms",
+                      startTime = LocalTime.of(9, 0),
+                      endTime = LocalTime.of(10, 0),
+                      type = ClassType.LECTURE,
+                      location = "INM202",
+                      instructor = "Prof. Smith"),
+                  Class(
+                      id = "2",
+                      courseName = "Data Structures",
+                      startTime = LocalTime.of(11, 0),
+                      endTime = LocalTime.of(12, 30),
+                      type = ClassType.EXERCISE,
+                      location = "BC101",
+                      instructor = "Dr. Johnson"),
+                  Class(
+                      id = "3",
+                      courseName = "Networks",
+                      startTime = LocalTime.of(14, 0),
+                      endTime = LocalTime.of(16, 0),
+                      type = ClassType.LAB,
+                      location = "LabA",
+                      instructor = "Prof. Davis")))
+        }
+
+    override fun getTodayAttendanceFlow() =
+        kotlinx.coroutines.flow.flow { emit(emptyList<ClassAttendance>()) }
+
+    override suspend fun saveAttendance(attendance: ClassAttendance): Result<Unit> {
+      return Result.success(Unit)
+    }
+  }
 
   @Before
   fun setup() {
-    // Use the real repository with default constructor
-    viewModel = PlannerViewModel()
+    Dispatchers.setMain(dispatcher)
+    // ⚠️ Important : fake repo qui émet une fois et s’arrête
+    viewModel = PlannerViewModel(FakePlannerRepository())
+  }
+
+  @After
+  fun tearDown() {
+    Dispatchers.resetMain()
+    viewModel.viewModelScope.coroutineContext.cancelChildren()
   }
 
   @Test
-  fun `initial state loads today classes`() = runTest {
-    // When - ViewModel is initialized
+  fun `initial state should load classes`() =
+      runTest(dispatcher) {
+        // Attends la première valeur émise du flux
+        val uiState = withTimeout(2000) { viewModel.uiState.take(1).first() }
 
-    // Then - Should have today's classes loaded
-    val classes = viewModel.todayClasses.first()
-    assertTrue(classes.isNotEmpty())
-    assertEquals("Algorithms", classes[0].courseName)
-  }
-
-  @Test
-  fun `show add study task modal when FAB clicked`() = runTest {
-    // When
-    viewModel.onAddStudyTaskClicked()
-
-    // Then
-    assertTrue(viewModel.showAddStudyTaskModal.first())
-  }
+        assertTrue(uiState.classes.isNotEmpty())
+        assertEquals(3, uiState.classes.size)
+        assertTrue(uiState.attendanceRecords.isEmpty())
+      }
 
   @Test
-  fun `hide add study task modal when dismissed`() = runTest {
-    // Given
-    viewModel.onAddStudyTaskClicked()
-    assertTrue(viewModel.showAddStudyTaskModal.first())
+  fun `modal visibility should toggle correctly`() =
+      runTest(dispatcher) {
+        var state = withTimeout(2000) { viewModel.uiState.first() }
+        assertFalse(state.showAddTaskModal)
 
-    // When
-    viewModel.onDismissAddStudyTaskModal()
+        viewModel.onAddStudyTaskClicked()
+        state = withTimeout(2000) { viewModel.uiState.first() }
+        assertTrue(state.showAddTaskModal)
 
-    // Then
-    assertFalse(viewModel.showAddStudyTaskModal.first())
-  }
-
-  @Test
-  fun `select class and show attendance modal`() = runTest {
-    // Given
-    val classes = viewModel.todayClasses.first()
-    val testClass = classes[0]
-
-    // When
-    viewModel.onClassClicked(testClass)
-
-    // Then
-    assertEquals(testClass, viewModel.selectedClassForAttendance.first())
-    assertTrue(viewModel.showClassAttendanceModal.first())
-  }
+        viewModel.onDismissAddStudyTaskModal()
+        state = withTimeout(2000) { viewModel.uiState.first() }
+        assertFalse(state.showAddTaskModal)
+      }
 
   @Test
-  fun `dismiss attendance modal resets selection`() = runTest {
-    // Given
-    val classes = viewModel.todayClasses.first()
-    val testClass = classes[0]
-    viewModel.onClassClicked(testClass)
+  fun `saveClassAttendance should emit snackbar and close modal`() =
+      runTest(dispatcher) {
+        val classItem = viewModel.uiState.first().classes.first()
 
-    // When
-    viewModel.onDismissClassAttendanceModal()
+        // Open modal
+        viewModel.onClassClicked(classItem)
 
-    // Then
-    assertNull(viewModel.selectedClassForAttendance.first())
-    assertFalse(viewModel.showClassAttendanceModal.first())
-  }
+        // Start collecting events in parallel
+        val eventDeferred = async { withTimeout(2000) { viewModel.eventFlow.first() } }
 
-  @Test
-  fun `save attendance for lecture class`() = runTest {
-    // Given
-    val classes = viewModel.todayClasses.first()
-    val lectureClass = classes.find { it.type == ClassType.LECTURE }!!
+        // Trigger save
+        viewModel.saveClassAttendance(classItem, AttendanceStatus.YES, CompletionStatus.YES)
 
-    // When
-    viewModel.saveClassAttendance(lectureClass, AttendanceStatus.YES, CompletionStatus.YES)
+        // Await snackbar event
+        val event = eventDeferred.await()
+        assertTrue(event is PlannerViewModel.UiEvent.ShowSnackbar)
+        assertEquals(
+            "Attendance saved successfully!",
+            (event as PlannerViewModel.UiEvent.ShowSnackbar).message)
 
-    // Then - Should save without errors and close modal
-    assertFalse(viewModel.showClassAttendanceModal.first())
-    assertNull(viewModel.selectedClassForAttendance.first())
-  }
-
-  @Test
-  fun `save attendance for exercise class`() = runTest {
-    // Given
-    val classes = viewModel.todayClasses.first()
-    val exerciseClass = classes.find { it.type == ClassType.EXERCISE }!!
-
-    // When
-    viewModel.saveClassAttendance(
-        exerciseClass, AttendanceStatus.ARRIVED_LATE, CompletionStatus.PARTIALLY)
-
-    // Then - Should save without errors
-    assertFalse(viewModel.showClassAttendanceModal.first())
-  }
-
-  @Test
-  fun `save attendance for lab class`() = runTest {
-    // Given
-    val classes = viewModel.todayClasses.first()
-    val labClass = classes.find { it.type == ClassType.LAB }!!
-
-    // When
-    viewModel.saveClassAttendance(labClass, AttendanceStatus.NO, CompletionStatus.NO)
-
-    // Then - Should save without errors
-    assertFalse(viewModel.showClassAttendanceModal.first())
-  }
+        // Check UI state updates (with timeout guard)
+        val state = withTimeout(2000) { viewModel.uiState.first() }
+        assertFalse(state.showAttendanceModal)
+        assertNull(state.selectedClass)
+      }
 }

@@ -51,7 +51,7 @@ import com.android.sample.ui.theme.TextLight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun AIRecommendationCard(recommendationText: String, onActionClick: () -> Unit = {}) {
+fun AIRecommendationCard(recommendationText: String, onActionClick: () -> Unit = {}) {
   val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
 
   val buttonScale by
