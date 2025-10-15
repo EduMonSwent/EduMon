@@ -139,6 +139,7 @@ dependencies {
     // Android Studio Preview support
     implementation(libs.compose.preview)
     debugImplementation(libs.compose.tooling)
+    implementation(libs.androidx.material.icons.extended)
     // UI Tests
     globalTestImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
@@ -180,6 +181,7 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         exclude(fileFilter)
     }
 
+
     val mainSrc = "${project.layout.projectDirectory}/src/main/java"
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
@@ -187,4 +189,14 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
+
+    doLast {
+        // New block to modify the XML report after it's generated
+        val reportFile = reports.xml.outputLocation.asFile.get()
+        if (reportFile.exists()) {
+            val content = reportFile.readText()
+            val cleanedContent = content.replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
+            reportFile.writeText(cleanedContent)
+        }
+    }
 }
