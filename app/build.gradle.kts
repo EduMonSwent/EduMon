@@ -149,6 +149,15 @@ dependencies {
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    implementation("com.google.firebase:firebase-firestore:25.1.0")
+    implementation("androidx.navigation:navigation-compose:2.8.3")
+    implementation("androidx.compose.material3:material3:1.3.0")
+    // Core Mockito
+    testImplementation("org.mockito:mockito-core:5.13.0")
+// Kotlin-friendly extensions
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
+// JUnit (if not already included)
+    testImplementation("junit:junit:4.13.2")
 }
 
 tasks.withType<Test> {
