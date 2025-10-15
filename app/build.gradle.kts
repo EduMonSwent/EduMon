@@ -119,8 +119,6 @@ sonar {
     }
 }
 
-
-
 // When a library is used both by robolectric and connected tests, use this function
 fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
     androidTestImplementation(dep)
