@@ -2,12 +2,13 @@
 package com.android.sample.ui.stats
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.theme.EduMonTheme
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -30,8 +31,10 @@ class StatsScreenUiTest {
 
     // Header should be visible at top
     rule.onNodeWithText("Tes statistiques de la semaine").assertIsDisplayed()
-    // Sections may be below the fold on small CI devices: assert existence instead of visibility
-    rule.onNodeWithText("Répartition par cours").assertExists()
-    rule.onNodeWithText("Progression sur 7 jours").assertExists()
+
+    // Sections may be below the fold on small CI devices: assert existence via nodes list
+    assertTrue(rule.onAllNodesWithText("Répartition par cours").fetchSemanticsNodes().isNotEmpty())
+    assertTrue(
+        rule.onAllNodesWithText("Progression sur 7 jours").fetchSemanticsNodes().isNotEmpty())
   }
 }
