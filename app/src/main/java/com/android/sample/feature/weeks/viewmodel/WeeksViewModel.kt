@@ -1,10 +1,16 @@
-package com.android.sample.ui.viewmodel
+package com.android.sample.feature.weeks.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.android.sample.feature.weeks.model.DayStatus
+import com.android.sample.feature.weeks.model.WeekProgressItem
+import com.android.sample.feature.weeks.repository.FakeWeeksRepository
+import com.android.sample.feature.weeks.repository.WeeksRepository
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 // Holds only week-related UI state
 
@@ -13,11 +19,37 @@ data class WeeksUiState(
     val dayStatuses: List<DayStatus> = emptyList(),
     val weeks: List<WeekProgressItem> = emptyList(),
     val selectedWeekIndex: Int = 0,
+    val isLoading: Boolean = true,
 )
 
-class WeeksViewModel : ViewModel() {
+class WeeksViewModel(
+    private val repository: WeeksRepository = FakeWeeksRepository(),
+) : ViewModel() {
   private val _uiState = MutableStateFlow(WeeksUiState())
   val uiState = _uiState.asStateFlow()
+
+  init {
+    refresh()
+  }
+
+  fun refresh() {
+    _uiState.update { it.copy(isLoading = true) }
+    viewModelScope.launch {
+      val weeks = repository.getWeeks()
+      val statuses = repository.getDayStatuses()
+      // default to first week selected
+      val selected = 0.coerceIn(0, weeks.lastIndex.coerceAtLeast(0))
+      val headerPct = weeks.getOrNull(selected)?.percent ?: 0
+      _uiState.update {
+        it.copy(
+            isLoading = false,
+            weeks = weeks,
+            dayStatuses = statuses,
+            selectedWeekIndex = selected,
+            weekProgressPercent = headerPct)
+      }
+    }
+  }
 
   // ---- Mutations ----
   fun setProgress(pct: Int) {
@@ -35,16 +67,14 @@ class WeeksViewModel : ViewModel() {
   }
 
   fun updateWeekPercent(index: Int, percent: Int) {
-    _uiState.update { current ->
-      if (index !in current.weeks.indices) return@update current
-      val clamped = percent.coerceIn(0, 100)
-      val updatedWeeks =
-          current.weeks.toMutableList().also { list ->
-            list[index] = list[index].copy(percent = clamped)
-          }
-      val newHeaderPct =
-          if (index == current.selectedWeekIndex) clamped else current.weekProgressPercent
-      current.copy(weeks = updatedWeeks, weekProgressPercent = newHeaderPct)
+    // Delegate to repository, then sync UI state
+    viewModelScope.launch {
+      val updatedWeeks = repository.updateWeekPercent(index, percent)
+      _uiState.update { cur ->
+        val sel = cur.selectedWeekIndex.coerceIn(0, updatedWeeks.lastIndex.coerceAtLeast(0))
+        val header = updatedWeeks.getOrNull(sel)?.percent ?: cur.weekProgressPercent
+        cur.copy(weeks = updatedWeeks, weekProgressPercent = header)
+      }
     }
   }
 
