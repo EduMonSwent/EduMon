@@ -128,6 +128,8 @@ dependencies {
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     globalTestImplementation(composeBom)
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
