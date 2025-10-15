@@ -64,7 +64,8 @@ fun StatsScreen(
   val scroll = rememberScrollState()
 
   // mapping stable "label -> couleur" partagé par donut + légende
-  val colorMap = remember(stats.courseTimesMin.keys.toList()) { buildColorMap(stats.courseTimesMin) }
+  val colorMap =
+      remember(stats.courseTimesMin.keys.toList()) { buildColorMap(stats.courseTimesMin) }
 
   Column(
       modifier =
@@ -132,7 +133,8 @@ fun StatsScreen(
 // --- UI helpers below (unchanged) ---
 
 private fun encouragement(stats: StudyStats): String {
-  val ratio = if (stats.weeklyGoalMin == 0) 0f else stats.totalTimeMin.toFloat() / stats.weeklyGoalMin
+  val ratio =
+      if (stats.weeklyGoalMin == 0) 0f else stats.totalTimeMin.toFloat() / stats.weeklyGoalMin
   return when {
     ratio >= 1f -> "Objectif atteint 💪 Continue sur ta lancée !"
     ratio >= 0.75f -> "Tu y es presque ! Un dernier effort 🔥"
@@ -159,7 +161,9 @@ private fun ScenarioSelector(titles: List<String>, selectedIndex: Int, onSelect:
           FilledTonalButton(
               onClick = { onSelect(i) },
               colors = colors,
-              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) { Text(label) }
+              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) {
+                Text(label)
+              }
         }
       }
 }
@@ -246,18 +250,22 @@ private fun PieChart(
 private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
   val total = data.values.sum().coerceAtLeast(1)
   Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-    data.entries.sortedByDescending { it.value }.forEach { (label, value) ->
-      val pct = (value * 100f / total).roundToInt()
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).background(colors[label] ?: Color.LightGray, RoundedCornerShape(2.dp)))
-        Spacer(Modifier.width(8.dp))
-        Text(
-            "$label — $pct%",
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis)
-      }
-    }
+    data.entries
+        .sortedByDescending { it.value }
+        .forEach { (label, value) ->
+          val pct = (value * 100f / total).roundToInt()
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(10.dp)
+                    .background(colors[label] ?: Color.LightGray, RoundedCornerShape(2.dp)))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "$label — $pct%",
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis)
+          }
+        }
   }
 }
 
@@ -266,12 +274,13 @@ private fun niceStep(maxVal: Int, ticks: Int = 4): Int {
   val raw = maxVal / ticks.toFloat()
   val pow = kotlin.math.floor(kotlin.math.log10(raw)).toInt()
   val base = raw / 10f.pow(pow)
-  val niceBase = when {
-    base <= 1f -> 1f
-    base <= 2f -> 2f
-    base <= 5f -> 5f
-    else -> 10f
-  }
+  val niceBase =
+      when {
+        base <= 1f -> 1f
+        base <= 2f -> 2f
+        base <= 5f -> 5f
+        else -> 10f
+      }
   return (niceBase * 10f.pow(pow)).toInt().coerceAtLeast(1)
 }
 
@@ -304,16 +313,21 @@ private fun BarChart7Days(
       val chartH = size.height - bottomPad - topPad
       val origin = Offset(leftPad, size.height - bottomPad)
 
-      val textPaint = android.graphics.Paint().apply {
-        isAntiAlias = true
-        textSize = 11.dp.toPx()
-        color = android.graphics.Color.argb(180, 220, 225, 235)
-      }
+      val textPaint =
+          android.graphics.Paint().apply {
+            isAntiAlias = true
+            textSize = 11.dp.toPx()
+            color = android.graphics.Color.argb(180, 220, 225, 235)
+          }
       val tickCount = (yMax / step)
       for (i in 0..tickCount) {
         val yVal = i * step
         val y = origin.y - (yVal / yMax.toFloat()) * chartH
-        drawLine(color = gridColor, start = Offset(leftPad, y), end = Offset(size.width, y), strokeWidth = 1.dp.toPx())
+        drawLine(
+            color = gridColor,
+            start = Offset(leftPad, y),
+            end = Offset(size.width, y),
+            strokeWidth = 1.dp.toPx())
 
         drawContext.canvas.nativeCanvas.drawText("$yVal", 6.dp.toPx(), y + 4.dp.toPx(), textPaint)
       }
@@ -326,7 +340,10 @@ private fun BarChart7Days(
         val left = leftPad + spacingPx + i * (barWidth + spacingPx)
         val top = origin.y - h
 
-        drawRect(color = gridColor, topLeft = Offset(left, origin.y - chartH), size = Size(barWidth, chartH))
+        drawRect(
+            color = gridColor,
+            topLeft = Offset(left, origin.y - chartH),
+            size = Size(barWidth, chartH))
 
         drawRect(color = barColor, topLeft = Offset(left, top), size = Size(barWidth, h))
 
@@ -346,19 +363,33 @@ private fun BarChart7Days(
 
       perDayGoal?.let { g ->
         val gy = origin.y - (g.coerceAtLeast(0) / yMax.toFloat()) * chartH
-        drawLine(color = goalColor, start = Offset(leftPad, gy), end = Offset(size.width, gy), strokeWidth = 2.dp.toPx())
+        drawLine(
+            color = goalColor,
+            start = Offset(leftPad, gy),
+            end = Offset(size.width, gy),
+            strokeWidth = 2.dp.toPx())
         drawContext.canvas.nativeCanvas.drawText(
-            "Objectif/jour: ${g}$unitLabel", size.width - 140.dp.toPx(), gy - 4.dp.toPx(), textPaint)
+            "Objectif/jour: ${g}$unitLabel",
+            size.width - 140.dp.toPx(),
+            gy - 4.dp.toPx(),
+            textPaint)
       }
 
-      drawLine(color = axisColor, start = Offset(leftPad, origin.y), end = Offset(size.width, origin.y), strokeWidth = 1.dp.toPx())
+      drawLine(
+          color = axisColor,
+          start = Offset(leftPad, origin.y),
+          end = Offset(size.width, origin.y),
+          strokeWidth = 1.dp.toPx())
     }
 
     Spacer(Modifier.height(6.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
       labelsX.forEachIndexed { i, l ->
         val tone = if (i == todayIndex) 1f else 0.7f
-        Text(l, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = tone))
+        Text(
+            l,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = tone))
       }
     }
 

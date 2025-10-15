@@ -5,6 +5,7 @@ import java.time.ZoneId
 import java.time.temporal.WeekFields
 import java.util.Locale
 
+@Deprecated("Not used by the app. Use FakeStatsRepository through StatsViewModel instead.")
 object WeekUtils {
   private val tz = ZoneId.of("Europe/Zurich")
 

@@ -8,29 +8,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** ViewModel for StatsScreen. Bridges UI to the repository. */
-class StatsViewModel(
-    private val repo: FakeStatsRepository = FakeStatsRepository()
-) : ViewModel() {
+/** ViewModel for StatsScreen. Uses only FakeStatsRepository. */
+class StatsViewModel(private val repo: FakeStatsRepository = FakeStatsRepository()) : ViewModel() {
 
-    private val _stats = MutableStateFlow<StudyStats?>(null)
-    val stats: StateFlow<StudyStats?> = _stats
+  private val _stats = MutableStateFlow<StudyStats?>(null)
+  val stats: StateFlow<StudyStats?> = _stats
 
-    val scenarioTitles: List<String> get() = repo.titles
-    val scenarioIndex: StateFlow<Int> get() = repo.selectedIndex
+  val scenarioTitles: List<String>
+    get() = repo.titles
 
-    fun selectScenario(i: Int) = repo.loadScenario(i)
+  val scenarioIndex: StateFlow<Int>
+    get() = repo.selectedIndex
 
-    init {
-        viewModelScope.launch {
-            repo.stats.collect { value -> _stats.value = value }
-        }
-    }
+  fun selectScenario(i: Int) = repo.loadScenario(i)
 
-    /** Optional: attach a remote flow (e.g., Firestore) overriding local stats. */
-    fun attachRemote(flow: StateFlow<StudyStats?>) {
-        viewModelScope.launch {
-            flow.collect { s -> if (s != null) _stats.value = s }
-        }
-    }
+  init {
+    viewModelScope.launch { repo.stats.collect { value -> _stats.value = value } }
+  }
 }

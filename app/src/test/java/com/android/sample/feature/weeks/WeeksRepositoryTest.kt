@@ -40,4 +40,21 @@ class WeeksRepositoryTest {
     val after = repo.updateWeekPercent(index = 42, percent = 77) // out-of-range index
     assertEquals(before, after)
   }
+
+  @Test
+  fun getWeeks_returnsInitialSample() = runTest {
+    val repo = FakeWeeksRepository()
+    val weeks = repo.getWeeks()
+    assertEquals(listOf("Week 1", "Week 2", "Week 3"), weeks.map { it.label })
+    assertEquals(listOf(100, 55, 10), weeks.map { it.percent })
+  }
+
+  @Test
+  fun getDayStatuses_returnsSevenWithAlternatingPattern() = runTest {
+    val repo = FakeWeeksRepository()
+    val statuses = repo.getDayStatuses()
+    assertEquals(7, statuses.size)
+    // Pattern in Fake: idx % 2 == 0 -> metTarget true
+    statuses.forEachIndexed { i, ds -> assertEquals(i % 2 == 0, ds.metTarget) }
+  }
 }

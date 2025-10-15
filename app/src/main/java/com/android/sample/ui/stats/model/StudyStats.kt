@@ -8,4 +8,3 @@ data class StudyStats(
     val progressByDayMin: List<Int> = List(7) { 0 },
     val weeklyGoalMin: Int = 300
 )
-
