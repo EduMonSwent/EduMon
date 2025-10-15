@@ -3,6 +3,7 @@ package com.android.sample.planner
 import com.android.sample.model.planner.*
 import com.android.sample.ui.planner.PlannerViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -18,6 +19,7 @@ import org.robolectric.annotation.Config
 
 // Simple test rule for coroutines
 class TestCoroutineRule : TestWatcher() {
+  @OptIn(ExperimentalCoroutinesApi::class)
   override fun starting(description: Description) {
     Dispatchers.setMain(Dispatchers.Unconfined)
   }
