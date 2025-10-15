@@ -23,8 +23,123 @@ import androidx.compose.ui.unit.sp
 import com.android.sample.ui.theme.*
 import kotlinx.coroutines.delay
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this file.
+// ✅ Version unifiée : utilisée à la fois pour le jeu normal et les tests
+@Composable
+fun MemoryGameScreenBase(
+    icons: List<ImageVector> =
+        listOf(
+            Icons.Filled.School,
+            Icons.Filled.Book,
+            Icons.Filled.Psychology,
+            Icons.Filled.Lightbulb,
+            Icons.Filled.AutoAwesome,
+            Icons.Filled.Science,
+            Icons.Filled.SportsEsports,
+            Icons.Filled.TravelExplore,
+            Icons.Filled.Bolt),
+    initialCards: List<MemoryCard>? = null,
+    initialWin: Boolean = false,
+    initialGameOver: Boolean = false,
+    enableTimer: Boolean = true
+) {
+  var cards by remember { mutableStateOf(initialCards ?: generateCards(icons)) }
+  var flipped by remember { mutableStateOf(listOf<Int>()) }
+  var score by remember { mutableStateOf(0) }
+  var timer by remember { mutableStateOf(90) }
+  var isGameOver by remember { mutableStateOf(initialGameOver) }
+  var isWin by remember { mutableStateOf(initialWin) }
 
+  // ⏱️ Timer uniquement si activé (désactivé dans les tests)
+  LaunchedEffect(enableTimer, isGameOver, isWin) {
+    if (enableTimer && !isGameOver && !isWin) {
+      while (timer > 0) {
+        delay(1000)
+        timer--
+      }
+      if (timer == 0) isGameOver = true
+    }
+  }
+
+  // 🎉 Victoire
+  LaunchedEffect(cards) { if (cards.all { it.isMatched }) isWin = true }
+
+  // 💡 Logique de matching
+  if (flipped.size == 2) {
+    LaunchedEffect(flipped) {
+      delay(700)
+      val (first, second) = flipped.map { id -> cards.first { it.id == id } }
+      if (first.icon == second.icon) {
+        score += 10
+        cards = cards.map { if (it.id in flipped) it.copy(isMatched = true) else it }
+      } else {
+        cards = cards.map { if (it.id in flipped) it.copy(isFlipped = false) else it }
+      }
+      flipped = emptyList()
+    }
+  }
+
+  // 🧠 UI du jeu
+  Column(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(BackgroundDark)
+              .padding(horizontal = 16.dp, vertical = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "Memory Game",
+            color = AccentViolet,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+        Text("Time: ${timer}s | Score: $score", color = TextLight, fontSize = 16.sp)
+        Spacer(Modifier.height(16.dp))
+
+        Box(modifier = Modifier.weight(1f)) {
+          LazyVerticalGrid(
+              columns = GridCells.Fixed(3),
+              modifier = Modifier.fillMaxSize(),
+              horizontalArrangement = Arrangement.spacedBy(12.dp),
+              verticalArrangement = Arrangement.spacedBy(12.dp),
+              contentPadding = PaddingValues(6.dp)) {
+                items(cards) { card ->
+                  MemoryCardView(card) {
+                    if (!isGameOver &&
+                        !isWin &&
+                        flipped.size < 2 &&
+                        !card.isFlipped &&
+                        !card.isMatched) {
+                      flipped = flipped + card.id
+                      cards = cards.map { if (it.id == card.id) it.copy(isFlipped = true) else it }
+                    }
+                  }
+                }
+              }
+        }
+
+        // 🎭 Overlay fin de partie
+        if (isWin || isGameOver) {
+          GameEndOverlay(
+              isWin = isWin,
+              score = score,
+              onRestart = {
+                cards = generateCards(icons)
+                flipped = emptyList()
+                score = 0
+                timer = 90
+                isWin = false
+                isGameOver = false
+              })
+        }
+      }
+}
+
+// ✅ Écran utilisé dans l’application
+@Composable
+fun MemoryGameScreen() {
+  MemoryGameScreenBase()
+}
+
+// ✅ Variante utilisée dans les tests
 @Composable
 fun MemoryGameScreenTestable(
     initialCards: List<MemoryCard> =
@@ -42,216 +157,40 @@ fun MemoryGameScreenTestable(
     initialWin: Boolean = false,
     initialGameOver: Boolean = false
 ) {
-  var cards by remember { mutableStateOf(initialCards) }
-  var flipped by remember { mutableStateOf(listOf<Int>()) }
-  var score by remember { mutableStateOf(0) }
-  var timer by remember { mutableStateOf(90) }
-  var isGameOver by remember { mutableStateOf(initialGameOver) }
-  var isWin by remember { mutableStateOf(initialWin) }
-
-  SideEffect {
-    if (initialWin || initialGameOver) {
-      isWin = initialWin
-      isGameOver = initialGameOver
-    }
-  }
-
-  Column(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(BackgroundDark)
-              .padding(horizontal = 16.dp, vertical = 8.dp),
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            "Memory Game",
-            color = AccentViolet,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
-        Text("Time: ${timer}s | Score: $score", color = TextLight, fontSize = 16.sp)
-        Spacer(Modifier.height(16.dp))
-
-        Box(modifier = Modifier.weight(1f)) {
-          LazyVerticalGrid(
-              columns = GridCells.Fixed(3),
-              modifier = Modifier.fillMaxSize(),
-              horizontalArrangement = Arrangement.spacedBy(12.dp),
-              verticalArrangement = Arrangement.spacedBy(12.dp),
-              contentPadding = PaddingValues(6.dp)) {
-                items(cards) { card ->
-                  MemoryCardView(card) {
-                    if (!isGameOver &&
-                        !isWin &&
-                        flipped.size < 2 &&
-                        !card.isFlipped &&
-                        !card.isMatched) {
-                      flipped = flipped + card.id
-                      cards = cards.map { if (it.id == card.id) it.copy(isFlipped = true) else it }
-                    }
-                  }
-                }
-              }
-        }
-
-        if (isWin || isGameOver) {
-          Box(
-              modifier = Modifier.fillMaxSize().background(Color(0xAA000000)),
-              contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                  Text(
-                      text = if (isWin) "Well done!" else "Time’s up!",
-                      color = if (isWin) AccentViolet else Color.Red,
-                      fontSize = 26.sp,
-                      fontWeight = FontWeight.Bold)
-                  Spacer(Modifier.height(8.dp))
-                  Text("Score: $score", color = TextLight, fontSize = 18.sp)
-                  Spacer(Modifier.height(20.dp))
-                  Button(
-                      onClick = {
-                        cards = generateCards(initialCards.map { it.icon })
-                        flipped = listOf()
-                        score = 0
-                        timer = 90
-                        isWin = false
-                        isGameOver = false
-                      },
-                      colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
-                        Text("Restart", color = TextLight, fontWeight = FontWeight.Bold)
-                      }
-                }
-              }
-        }
-      }
+  MemoryGameScreenBase(
+      initialCards = initialCards,
+      initialWin = initialWin,
+      initialGameOver = initialGameOver,
+      enableTimer = false // 🔕 pas de timer dans les tests
+      )
 }
 
+// 🎭 Overlay de fin de partie
 @Composable
-fun MemoryGameScreen() {
-  // Icônes Material à la place des emojis
-  val icons =
-      listOf(
-          Icons.Filled.School,
-          Icons.Filled.Book,
-          Icons.Filled.Psychology,
-          Icons.Filled.Lightbulb,
-          Icons.Filled.AutoAwesome,
-          Icons.Filled.Science,
-          Icons.Filled.SportsEsports,
-          Icons.Filled.TravelExplore,
-          Icons.Filled.Bolt)
-
-  var cards by remember { mutableStateOf(generateCards(icons)) }
-  var flipped by remember { mutableStateOf(listOf<Int>()) }
-  var score by remember { mutableStateOf(0) }
-  var timer by remember { mutableStateOf(90) }
-  var isGameOver by remember { mutableStateOf(false) }
-  var isWin by remember { mutableStateOf(false) }
-
-  // Timer
-  LaunchedEffect(isGameOver, isWin) {
-    if (!isGameOver && !isWin) {
-      while (timer > 0) {
-        delay(1000)
-        timer--
-      }
-      if (timer == 0) isGameOver = true
-    }
-  }
-
-  // Victoire
-  LaunchedEffect(cards) {
-    if (cards.all { it.isMatched }) {
-      isWin = true
-    }
-  }
-
-  Column(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(BackgroundDark)
-              .padding(horizontal = 16.dp, vertical = 8.dp),
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            "Memory Game",
-            color = AccentViolet,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
-        Text("Time: ${timer}s | Score: $score", color = TextLight, fontSize = 16.sp)
-        Spacer(Modifier.height(16.dp))
-
-        Box(modifier = Modifier.weight(1f)) {
-          LazyVerticalGrid(
-              columns = GridCells.Fixed(3),
-              modifier = Modifier.fillMaxSize(),
-              horizontalArrangement = Arrangement.spacedBy(12.dp),
-              verticalArrangement = Arrangement.spacedBy(12.dp),
-              contentPadding = PaddingValues(6.dp)) {
-                items(cards) { card ->
-                  MemoryCardView(card) {
-                    if (!isGameOver &&
-                        !isWin &&
-                        flipped.size < 2 &&
-                        !card.isFlipped &&
-                        !card.isMatched) {
-                      flipped = flipped + card.id
-                      cards = cards.map { if (it.id == card.id) it.copy(isFlipped = true) else it }
-                    }
-                  }
-                }
-              }
-        }
-
-        // Logique de matching
-        if (flipped.size == 2) {
-          LaunchedEffect(flipped) {
-            delay(700)
-            val first = cards.first { it.id == flipped[0] }
-            val second = cards.first { it.id == flipped[1] }
-
-            if (first.icon == second.icon) {
-              score += 10
-              cards = cards.map { if (it.id in flipped) it.copy(isMatched = true) else it }
-            } else {
-              cards = cards.map { if (it.id in flipped) it.copy(isFlipped = false) else it }
-            }
-            flipped = listOf()
-          }
-        }
-
-        // Overlay victoire / défaite
-        if (isWin || isGameOver) {
-          Box(
-              modifier = Modifier.fillMaxSize().background(Color(0xAA000000)),
-              contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                  Text(
-                      text = if (isWin) "Well done!" else "Time’s up!",
-                      color = if (isWin) AccentViolet else Color.Red,
-                      fontSize = 26.sp,
-                      fontWeight = FontWeight.Bold)
-                  Spacer(Modifier.height(8.dp))
-                  Text("Score: $score", color = TextLight, fontSize = 18.sp)
-                  Spacer(Modifier.height(20.dp))
-                  Button(
-                      onClick = {
-                        cards = generateCards(icons)
-                        flipped = listOf()
-                        score = 0
-                        timer = 90
-                        isWin = false
-                        isGameOver = false
-                      },
-                      colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
-                        Text("Restart", color = TextLight, fontWeight = FontWeight.Bold)
-                      }
-                }
+fun GameEndOverlay(isWin: Boolean, score: Int, onRestart: () -> Unit) {
+  Box(
+      modifier = Modifier.fillMaxSize().background(Color(0xAA000000)),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Text(
+              text = if (isWin) "Well done!" else "Time’s up!",
+              color = if (isWin) AccentViolet else Color.Red,
+              fontSize = 26.sp,
+              fontWeight = FontWeight.Bold)
+          Spacer(Modifier.height(8.dp))
+          Text("Score: $score", color = TextLight, fontSize = 18.sp)
+          Spacer(Modifier.height(20.dp))
+          Button(
+              onClick = onRestart,
+              colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
+                Text("Restart", color = TextLight, fontWeight = FontWeight.Bold)
               }
         }
       }
 }
 
 // -----------------------------------------------------------
-// Cartes et utilitaires (inchangés)
+// Cartes et utilitaires
 // -----------------------------------------------------------
 @Composable
 fun MemoryCardView(card: MemoryCard, onClick: () -> Unit) {
