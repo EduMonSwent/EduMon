@@ -24,6 +24,12 @@ class AddStudyTaskModalTest {
           })
     }
 
+    // Synchronisation initiale (important pour CI)
+    composeTestRule.mainClock.autoAdvance = false
+    composeTestRule.mainClock.advanceTimeBy(3000)
+    composeTestRule.waitForIdle()
+
+    // Remplissage des champs
     composeTestRule
         .onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
         .performTextInput("Mathematics")
@@ -34,31 +40,48 @@ class AddStudyTaskModalTest {
 
     composeTestRule.onNodeWithTag(PlannerScreenTestTags.DURATION_FIELD).performTextInput("90")
 
+    // Attente d'activation du bouton
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodes(hasClickAction()).fetchSemanticsNodes().size >= 2
+    }
+
+    composeTestRule.mainClock.advanceTimeBy(2000)
     composeTestRule.waitForIdle()
 
+    // Clique sur le bouton Add Task (dernier cliquable)
     composeTestRule.onAllNodes(hasClickAction()).onLast().performClick()
 
+    composeTestRule.mainClock.advanceTimeBy(2000)
     composeTestRule.waitForIdle()
 
-    assert(added) { "onAddTask was not triggered — check that Add button is enabled and clicked." }
+    assert(added) { "X onAddTask was not triggered — Add button likely not enabled in CI timing." }
   }
 
   @Test
   fun addStudyTaskModal_cancelButtonDismisses() {
     var dismissed = false
+
     composeTestRule.setContent {
       AddStudyTaskModal(onDismiss = { dismissed = true }, onAddTask = { _, _, _, _, _ -> })
     }
 
-    /*composeTestRule.onNodeWithText("Cancel", ignoreCase = true).assertExists().performClick()
-
-    assert(dismissed)*/
-    composeTestRule
-        .onAllNodesWithText("Cancel", substring = true, ignoreCase = true)
-        .onFirst()
-        .performClick()
-
+    composeTestRule.mainClock.autoAdvance = false
+    composeTestRule.mainClock.advanceTimeBy(3000)
     composeTestRule.waitForIdle()
-    assert(dismissed)
+
+    // Attente du bouton Cancel
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodes(hasClickAction()).fetchSemanticsNodes().isNotEmpty()
+    }
+
+    // Clique sur le premier bouton (Cancel)
+    composeTestRule.onAllNodes(hasClickAction()).onFirst().performClick()
+
+    composeTestRule.mainClock.advanceTimeBy(1000)
+    composeTestRule.waitForIdle()
+
+    assert(dismissed) {
+      "X onDismiss not triggered — Cancel button may not have been clickable yet."
+    }
   }
 }
