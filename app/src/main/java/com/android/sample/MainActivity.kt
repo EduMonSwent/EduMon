@@ -24,96 +24,95 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+  private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+  @OptIn(ExperimentalMaterial3Api::class)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
 
-        try {
-            Firebase.firestore.useEmulator("10.0.2.2", 8080)
-        } catch(_: IllegalStateException){ }
+    try {
+      Firebase.firestore.useEmulator("10.0.2.2", 8080)
+    } catch (_: IllegalStateException) {}
 
-        setContent {
-            EduMonTheme {
-                val nav = rememberNavController()
-                var user by remember { mutableStateOf(auth.currentUser) }
-                val scope = rememberCoroutineScope()
+    setContent {
+      EduMonTheme {
+        val nav = rememberNavController()
+        var user by remember { mutableStateOf(auth.currentUser) }
+        val scope = rememberCoroutineScope()
 
-                // Écoute auth et navigue automatiquement
-                DisposableEffect(Unit) {
-                    val l = FirebaseAuth.AuthStateListener { fa ->
-                        val u = fa.currentUser
-                        val goTo = if (u == null) "login" else "stats"
-                        user = u
-                        // évite les doublons de back stack
-                        nav.navigate(goTo) {
-                            popUpTo(nav.graph.startDestinationId) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                    auth.addAuthStateListener(l)
-                    onDispose { auth.removeAuthStateListener(l) }
+        // Écoute auth et navigue automatiquement
+        DisposableEffect(Unit) {
+          val l =
+              FirebaseAuth.AuthStateListener { fa ->
+                val u = fa.currentUser
+                val goTo = if (u == null) "login" else "stats"
+                user = u
+                // évite les doublons de back stack
+                nav.navigate(goTo) {
+                  popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                  launchSingleTop = true
                 }
-
-                Scaffold(
-                    topBar = {
-                        CenterAlignedTopAppBar(
-                            title = { Text(if (user == null) "EduMon — Connexion" else "EduMon — Stats") },
-                            actions = {
-                                if (user != null) {
-                                    TextButton(onClick = { signOutAll() }) {
-                                        Text("Déconnexion")
-                                    }
-                                }
-                            }
-                        )
-                    }
-                ) { padding ->
-                    Box(Modifier.fillMaxSize().padding(padding)) {
-                        NavHost(navController = nav, startDestination = if (user == null) "login" else "stats") {
-
-                            composable("login") {
-                                // Écran login — quand Google/Firebase connecte, l’AuthStateListener push vers "stats"
-                                LoginScreen()
-                            }
-
-                            composable("stats") {
-                                // VM créée uniquement sur l’écran Stats (évite NPE quand pas loggé)
-                                val statsVm: StatsViewModel = viewModel()
-
-                                // Brancher Firestore en toute sécurité (après login)
-                                LaunchedEffect(user?.uid) {
-                                    user?.let {
-                                        try {
-                                            val repo = FirestoreStatsRepository()
-                                            repo.ensureDefaults()
-                                            statsVm.attachFirestore(repo.stats)
-                                        } catch (_: Exception) {
-                                            // en cas d’erreur Firestore: l’UI reste sur le mode Scénarios (fake)
-                                        }
-                                    }
-                                }
-
-                                StatsScreen(viewModel = statsVm)
-                            }
-                        }
-                    }
-                }
-            }
+              }
+          auth.addAuthStateListener(l)
+          onDispose { auth.removeAuthStateListener(l) }
         }
-    }
 
-    private fun signOutAll() {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        Scaffold(
+            topBar = {
+              CenterAlignedTopAppBar(
+                  title = { Text(if (user == null) "EduMon — Connexion" else "EduMon — Stats") },
+                  actions = {
+                    if (user != null) {
+                      TextButton(onClick = { signOutAll() }) { Text("Déconnexion") }
+                    }
+                  })
+            }) { padding ->
+              Box(Modifier.fillMaxSize().padding(padding)) {
+                NavHost(
+                    navController = nav,
+                    startDestination = if (user == null) "login" else "stats") {
+                      composable("login") {
+                        // Écran login — quand Google/Firebase connecte, l’AuthStateListener push
+                        // vers "stats"
+                        LoginScreen()
+                      }
+
+                      composable("stats") {
+                        // VM créée uniquement sur l’écran Stats (évite NPE quand pas loggé)
+                        val statsVm: StatsViewModel = viewModel()
+
+                        // Brancher Firestore en toute sécurité (après login)
+                        LaunchedEffect(user?.uid) {
+                          user?.let {
+                            try {
+                              val repo = FirestoreStatsRepository()
+                              repo.ensureDefaults()
+                              statsVm.attachFirestore(repo.stats)
+                            } catch (_: Exception) {
+                              // en cas d’erreur Firestore: l’UI reste sur le mode Scénarios (fake)
+                            }
+                          }
+                        }
+
+                        StatsScreen(viewModel = statsVm)
+                      }
+                    }
+              }
+            }
+      }
+    }
+  }
+
+  private fun signOutAll() {
+    val gso =
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
-        val googleClient = GoogleSignIn.getClient(this, gso)
-        googleClient.revokeAccess().addOnCompleteListener { auth.signOut() }
-    }
+    val googleClient = GoogleSignIn.getClient(this, gso)
+    googleClient.revokeAccess().addOnCompleteListener { auth.signOut() }
+  }
 }
