@@ -14,45 +14,37 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PlannerScreenAndroidTest {
 
-    @get:Rule
-    val composeRule = createComposeRule()
+  @get:Rule val composeRule = createComposeRule()
 
-    @Test
-    fun plannerScreenShouldDisplaySections() {
-        composeRule.setContent {
-            PlannerScreen(viewModel = PlannerViewModel())
-        }
+  @Test
+  fun plannerScreenShouldDisplaySections() {
+    composeRule.setContent { PlannerScreen(viewModel = PlannerViewModel()) }
 
-        composeRule.waitForIdle()
+    composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("plannerScreen").assertExists()
-        composeRule.onNodeWithTag("petHeader").assertExists()
-        composeRule.onNodeWithTag("TODAY_CLASSES_SECTION").assertExists()
+    composeRule.onNodeWithTag("plannerScreen").assertExists()
+    composeRule.onNodeWithTag("petHeader").assertExists()
+    composeRule.onNodeWithTag("TODAY_CLASSES_SECTION").assertExists()
 
-        // 🧩 FIX: Scroll until WELLNESS_CAMPUS_SECTION is visible
-        composeRule
-            .onNodeWithTag("plannerScreen")
-            .performScrollToNode(hasTestTag("WELLNESS_CAMPUS_SECTION"))
+    // 🧩 FIX: Scroll until WELLNESS_CAMPUS_SECTION is visible
+    composeRule
+        .onNodeWithTag("plannerScreen")
+        .performScrollToNode(hasTestTag("WELLNESS_CAMPUS_SECTION"))
 
-        composeRule.onNodeWithTag("WELLNESS_CAMPUS_SECTION").assertExists()
-    }
+    composeRule.onNodeWithTag("WELLNESS_CAMPUS_SECTION").assertExists()
+  }
 
-    @OptIn(ExperimentalTestApi::class)
-    @Test
-    fun clickingFabShouldOpenAddTaskModal() {
-        composeRule.setContent {
-            PlannerScreen(viewModel = PlannerViewModel())
-        }
+  @OptIn(ExperimentalTestApi::class)
+  @Test
+  fun clickingFabShouldOpenAddTaskModal() {
+    composeRule.setContent { PlannerScreen(viewModel = PlannerViewModel()) }
 
-        composeRule.waitForIdle()
+    composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("addTaskFab").performClick()
+    composeRule.onNodeWithTag("addTaskFab").performClick()
 
-        composeRule.waitUntilExactlyOneExists(
-            hasTestTag("addTaskModal"),
-            timeoutMillis = 5000
-        )
+    composeRule.waitUntilExactlyOneExists(hasTestTag("addTaskModal"), timeoutMillis = 5000)
 
-        composeRule.onNodeWithTag("addTaskModal").assertExists()
-    }
+    composeRule.onNodeWithTag("addTaskModal").assertExists()
+  }
 }
