@@ -3,89 +3,110 @@ package com.android.sample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
+import com.android.sample.ui.stats.FirestoreStatsRepository
+import com.android.sample.ui.stats.StatsScreen
+import com.android.sample.ui.stats.StatsViewModel
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-  private val auth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+    @OptIn(ExperimentalMaterial3Api::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    setContent {
-      EduMonTheme {
-        var currentUser by remember { mutableStateOf(auth.currentUser) }
+        setContent {
+            EduMonTheme {
+                val nav = rememberNavController()
+                var user by remember { mutableStateOf(auth.currentUser) }
+                val scope = rememberCoroutineScope()
 
-        // 🔹 Écoute les changements de session Firebase
-        DisposableEffect(Unit) {
-          val listener =
-              FirebaseAuth.AuthStateListener { firebaseAuth ->
-                currentUser = firebaseAuth.currentUser
-              }
-          auth.addAuthStateListener(listener)
-          onDispose { auth.removeAuthStateListener(listener) }
+                // Écoute auth et navigue automatiquement
+                DisposableEffect(Unit) {
+                    val l = FirebaseAuth.AuthStateListener { fa ->
+                        val u = fa.currentUser
+                        val goTo = if (u == null) "login" else "stats"
+                        user = u
+                        // évite les doublons de back stack
+                        nav.navigate(goTo) {
+                            popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                    auth.addAuthStateListener(l)
+                    onDispose { auth.removeAuthStateListener(l) }
+                }
+
+                Scaffold(
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            title = { Text(if (user == null) "EduMon — Connexion" else "EduMon — Stats") },
+                            actions = {
+                                if (user != null) {
+                                    TextButton(onClick = { signOutAll() }) {
+                                        Text("Déconnexion")
+                                    }
+                                }
+                            }
+                        )
+                    }
+                ) { padding ->
+                    Box(Modifier.fillMaxSize().padding(padding)) {
+                        NavHost(navController = nav, startDestination = if (user == null) "login" else "stats") {
+
+                            composable("login") {
+                                // Écran login — quand Google/Firebase connecte, l’AuthStateListener push vers "stats"
+                                LoginScreen()
+                            }
+
+                            composable("stats") {
+                                // VM créée uniquement sur l’écran Stats (évite NPE quand pas loggé)
+                                val statsVm: StatsViewModel = viewModel()
+
+                                // Brancher Firestore en toute sécurité (après login)
+                                LaunchedEffect(user?.uid) {
+                                    user?.let {
+                                        try {
+                                            val repo = FirestoreStatsRepository()
+                                            repo.ensureDefaults()
+                                            statsVm.attachFirestore(repo.stats)
+                                        } catch (_: Exception) {
+                                            // en cas d’erreur Firestore: l’UI reste sur le mode Scénarios (fake)
+                                        }
+                                    }
+                                }
+
+                                StatsScreen(viewModel = statsVm)
+                            }
+                        }
+                    }
+                }
+            }
         }
-
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-          if (currentUser == null) {
-            // Utilisateur non connecté → écran de login
-            LoginScreen()
-          } else {
-            // Utilisateur connecté → écran de bienvenue
-            WelcomeScreen(
-                name = currentUser?.displayName ?: "Utilisateur",
-                email = currentUser?.email ?: "",
-                onLogout = {
-                  // 🔹 Déconnexion complète Google + Firebase
-                  val context = this@MainActivity
-                  val gso =
-                      GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                          .requestIdToken(getString(R.string.default_web_client_id))
-                          .requestEmail()
-                          .build()
-
-                  val googleClient = GoogleSignIn.getClient(context, gso)
-
-                  googleClient.revokeAccess().addOnCompleteListener { auth.signOut() }
-                })
-          }
-        }
-      }
     }
-  }
-}
 
-@Composable
-fun WelcomeScreen(name: String, email: String, onLogout: () -> Unit) {
-  val context = LocalContext.current
-
-  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Text(
-          text = "Bienvenue 👋",
-          style = MaterialTheme.typography.headlineMedium,
-          color = MaterialTheme.colorScheme.onBackground)
-      Spacer(modifier = Modifier.height(8.dp))
-      Text(text = name, style = MaterialTheme.typography.titleLarge)
-      Text(text = email, style = MaterialTheme.typography.bodyMedium)
-      Spacer(modifier = Modifier.height(24.dp))
-      Button(
-          onClick = onLogout,
-          colors =
-              ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
-            Text("Se déconnecter", color = MaterialTheme.colorScheme.onPrimary)
-          }
+    private fun signOutAll() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        val googleClient = GoogleSignIn.getClient(this, gso)
+        googleClient.revokeAccess().addOnCompleteListener { auth.signOut() }
     }
-  }
 }
