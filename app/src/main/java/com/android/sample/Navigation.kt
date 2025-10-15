@@ -14,12 +14,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.sample.R
-import com.android.sample.screens.AppDestination
-import com.android.sample.screens.EduMonHomeRoute
-import com.android.sample.ui.viewmodel.ObjectivesViewModel
-import com.android.sample.ui.viewmodel.WeekDotsViewModel
-import com.android.sample.ui.viewmodel.WeeksViewModel
-import com.android.sample.ui.widgets.WeekProgDailyObj
+import com.android.sample.feature.homeScreen.AppDestination
+import com.android.sample.feature.homeScreen.EduMonHomeRoute
+import com.android.sample.feature.weeks.ui.WeekProgDailyObj
+import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
+import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +45,6 @@ fun EduMonNavHost(modifier: Modifier = Modifier) {
     composable(AppDestination.Planner.route) {
       val weeksVM: WeeksViewModel = viewModel()
       val objectivesVM: ObjectivesViewModel = viewModel()
-      val dotsVM: WeekDotsViewModel = viewModel()
 
       Scaffold(
           topBar = {
@@ -62,7 +60,7 @@ fun EduMonNavHost(modifier: Modifier = Modifier) {
               WeekProgDailyObj(
                   weeksViewModel = weeksVM,
                   objectivesViewModel = objectivesVM,
-                  dotsViewModel = dotsVM)
+              )
             }
           }
     }
