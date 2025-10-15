@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -65,9 +65,9 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
         PomodoroPhase.LONG_BREAK -> MaterialTheme.colorScheme.tertiaryContainer
       }
 
-  Surface(modifier = Modifier.fillMaxSize(), color = backgroundColor) {
+  Surface(modifier = Modifier.fillMaxWidth(), color = backgroundColor) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxWidth().padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
           Text(
