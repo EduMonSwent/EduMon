@@ -1,4 +1,4 @@
-package com.android.sample.todo.ui
+package com.android.sample.ui.todo
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,9 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.todo.Priority
-import com.android.sample.todo.Status
-import com.android.sample.todo.ToDoRepositoryProvider
+import com.android.sample.ui.todo.data.ToDoRepositoryProvider
+import com.android.sample.ui.todo.model.Priority
+import com.android.sample.ui.todo.model.Status
 
 /**
  * The Overview screen shows the list of all To-Dos.

@@ -1,5 +1,6 @@
-package com.android.sample.todo
+package com.android.sample.ui.todo.data
 
+import com.android.sample.ui.todo.model.ToDo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update

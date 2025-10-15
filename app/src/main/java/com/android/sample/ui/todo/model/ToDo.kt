@@ -1,4 +1,4 @@
-package com.android.sample.todo
+package com.android.sample.ui.todo.model
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

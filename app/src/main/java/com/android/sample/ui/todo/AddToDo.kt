@@ -1,11 +1,11 @@
-package com.android.sample.todo.ui
+package com.android.sample.ui.todo
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.todo.ToDoRepositoryProvider
 import com.android.sample.todo.ui.components.TodoForm
+import com.android.sample.ui.todo.data.ToDoRepositoryProvider
 
 /**
  * Add To-Do screen:

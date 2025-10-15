@@ -1,4 +1,4 @@
-package com.android.sample.todo.ui
+package com.android.sample.ui.todo
 
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults

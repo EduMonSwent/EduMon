@@ -1,10 +1,10 @@
-package com.android.sample.todo.ui
+package com.android.sample.ui.todo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.todo.Status
-import com.android.sample.todo.ToDo
-import com.android.sample.todo.ToDoRepository
+import com.android.sample.ui.todo.data.ToDoRepository
+import com.android.sample.ui.todo.model.Status
+import com.android.sample.ui.todo.model.ToDo
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map

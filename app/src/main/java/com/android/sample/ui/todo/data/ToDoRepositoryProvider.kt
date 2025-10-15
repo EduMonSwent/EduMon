@@ -1,4 +1,4 @@
-package com.android.sample.todo
+package com.android.sample.ui.todo.data
 
 /**
  * Provides a single instance of the repository in the app. `repository` is mutable for testing or

@@ -1,4 +1,4 @@
-package com.android.sample.todo
+package com.android.sample.ui.todo
 
 /** Central place to define navigation routes for the To-Do feature. */
 object ToDoRoutes {

@@ -120,10 +120,13 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
+    implementation(libs.androidx.compose.ui.test.junit4.android)
     testImplementation(libs.junit)
     androidTestImplementation(project(":app"))
     androidTestImplementation(project(":app"))
     androidTestImplementation(project(":app"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.8")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.8")
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
 
@@ -150,6 +153,19 @@ dependencies {
     // --------- Kaspresso test framework ----------
     globalTestImplementation(libs.kaspresso)
     globalTestImplementation(libs.kaspresso.compose)
+
+    // Compose UI test (compatible with AGP 8.3 / compileSdk 34)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.8")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.8")
+
+// Pin Espresso to one version (what Kaspresso wants)
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+// Force it so transitive deps can’t downgrade it
+    configurations.all {
+        resolutionStrategy.force("androidx.test.espresso:espresso-core:3.5.1")
+    }
+
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)

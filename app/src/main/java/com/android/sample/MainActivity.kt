@@ -15,12 +15,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.android.sample.todo.ToDoRoutes
-import com.android.sample.todo.ui.AddToDoScreen
-import com.android.sample.todo.ui.EditToDoScreen
-import com.android.sample.todo.ui.OverviewScreen
-import com.android.sample.todo.ui.TestTags
 import com.android.sample.ui.theme.SampleAppTheme
+import com.android.sample.ui.todo.AddToDoScreen
+import com.android.sample.ui.todo.EditToDoScreen
+import com.android.sample.ui.todo.OverviewScreen
+import com.android.sample.ui.todo.TestTags
+import com.android.sample.ui.todo.ToDoRoutes
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
