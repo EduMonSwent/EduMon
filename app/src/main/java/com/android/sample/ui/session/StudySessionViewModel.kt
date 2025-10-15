@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
 import com.android.sample.ui.pomodoro.PomodoroViewModel
+import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,7 +32,7 @@ data class StudySessionUiState(
 class Task(val name: String) // temporary
 
 class StudySessionViewModel(
-    private val pomodoroViewModel: PomodoroViewModel = PomodoroViewModel(),
+    private val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
     private val repository: StudySessionRepository = FakeStudySessionRepository()
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(StudySessionUiState())

@@ -7,14 +7,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.ui.pomodoro.PomodoroScreen
 import com.android.sample.ui.pomodoro.PomodoroViewModel
 import com.android.sample.ui.session.components.SessionStatsPanel
 import com.android.sample.ui.session.components.SuggestedTasksList
-import com.android.sample.ui.theme.SampleAppTheme
 
 // Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
 
@@ -75,10 +73,4 @@ fun StudySessionScreen(
               modifier = Modifier.testTag(StudySessionTestTags.STATS_PANEL))
         }
   }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StudySessionScreenPreview() {
-  SampleAppTheme { StudySessionScreen() }
 }
