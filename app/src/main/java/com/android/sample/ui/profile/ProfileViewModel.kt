@@ -1,9 +1,9 @@
 package com.android.sample.ui.profile
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class UserProfile(
     val name: String = "Alex",
@@ -18,23 +18,30 @@ data class UserProfile(
     val focusModeEnabled: Boolean = false
 )
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(private val repository: ProfileRepository = FakeProfileRepository()) :
+    ViewModel() {
 
-  private val _userProfile = MutableStateFlow(UserProfile())
-  val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
+  // Expose the repository as the single source of truth
+  val userProfile: StateFlow<UserProfile> = repository.profile
 
   fun toggleNotifications() {
-    _userProfile.value =
-        _userProfile.value.copy(notificationsEnabled = !_userProfile.value.notificationsEnabled)
+    val current = userProfile.value
+    viewModelScope.launch {
+      repository.updateProfile(current.copy(notificationsEnabled = !current.notificationsEnabled))
+    }
   }
 
   fun toggleLocation() {
-    _userProfile.value =
-        _userProfile.value.copy(locationEnabled = !_userProfile.value.locationEnabled)
+    val current = userProfile.value
+    viewModelScope.launch {
+      repository.updateProfile(current.copy(locationEnabled = !current.locationEnabled))
+    }
   }
 
   fun toggleFocusMode() {
-    _userProfile.value =
-        _userProfile.value.copy(focusModeEnabled = !_userProfile.value.focusModeEnabled)
+    val current = userProfile.value
+    viewModelScope.launch {
+      repository.updateProfile(current.copy(focusModeEnabled = !current.focusModeEnabled))
+    }
   }
 }
