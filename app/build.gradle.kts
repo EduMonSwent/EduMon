@@ -155,9 +155,10 @@ tasks.withType<Test> {
     }
 }
 
-// ✅ Jacoco Report task
+// ✅ Jacoco Report task (with fix for line nr="65535" bug)
 tasks.register("jacocoTestReport", JacocoReport::class) {
     mustRunAfter("testDebugUnitTest", "connectedDebugAndroidTest")
+
     reports {
         xml.required.set(true)
         html.required.set(true)
@@ -179,10 +180,18 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
     val mainSrc = "${project.layout.projectDirectory}/src/main/java"
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(
-        fileTree(project.layout.buildDirectory.get()) {
-            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-            include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
+    executionData.setFrom(fileTree(project.layout.buildDirectory.get()) {
+        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+        include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
+    })
+
+    // ✅ Patch to remove invalid JaCoCo lines (nr="65535") that break Sonar coverage
+    doLast {
+        val reportFile = reports.xml.outputLocation.asFile.get()
+        if (reportFile.exists()) {
+            val content = reportFile.readText()
+            val cleanedContent = content.replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
+            reportFile.writeText(cleanedContent)
         }
-    )
+    }
 }
