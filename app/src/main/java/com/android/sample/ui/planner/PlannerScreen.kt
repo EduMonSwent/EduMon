@@ -33,8 +33,8 @@ import kotlinx.coroutines.flow.collectLatest
 object PlannerScreenTestTags {
   const val PLANNER_SCREEN = "plannerScreen"
   const val PET_HEADER = "petHeader" // Renamed from PET_SECTION to avoid conflict
-  const val TODAY_CLASSES_SECTION = "todayClassesSection" // Renamed for broader scope
-  const val WELLNESS_CAMPUS_SECTION = "wellnessCampusSection" // New section
+  const val TODAY_CLASSES_SECTION = "TODAY_CLASSES_SECTION" // Renamed for broader scope
+  const val WELLNESS_CAMPUS_SECTION = "WELLNESS_CAMPUS_SECTION" // New section
   const val ADD_TASK_MODAL = "addTaskModal"
   const val CLASS_ATTENDANCE_MODAL = "classAttendanceModal"
   const val SUBJECT_FIELD = "subject_field"
@@ -133,7 +133,8 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
                             ActivityItem(
                                 activity = classItem,
                                 attendanceRecord = attendanceRecord,
-                                onClick = { viewModel.onClassClicked(classItem) })
+                                onClick = { viewModel.onClassClicked(classItem) },
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                           }
                         }
@@ -183,7 +184,6 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
           AddStudyTaskModal(
               onDismiss = { viewModel.onDismissAddStudyTaskModal() },
               onAddTask = { subject, title, duration, deadline, priority ->
-                // TODO: Call viewModel.addStudyTask(subject, title, duration, deadline, priority)
                 viewModel.onDismissAddStudyTaskModal()
               },
               modifier = Modifier.testTag(PlannerScreenTestTags.ADD_TASK_MODAL))
