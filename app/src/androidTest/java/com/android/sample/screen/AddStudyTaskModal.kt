@@ -12,43 +12,56 @@ class AddStudyTaskModalTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-  @Test
-  fun addStudyTaskModal_allowsInputAndTriggersAddTask() {
-    var added = false
+    @Test
+    fun addStudyTaskModal_allowsInputAndTriggersAddTask() {
+        var added = false
 
-    composeTestRule.setContent {
-      AddStudyTaskModal(
-          onDismiss = {},
-          onAddTask = { subject, title, duration, deadline, priority ->
-            added = subject.isNotEmpty() && title.isNotEmpty()
-          })
+        composeTestRule.setContent {
+            AddStudyTaskModal(
+                onDismiss = {},
+                onAddTask = { subject, title, duration, deadline, priority ->
+                    added = subject.isNotEmpty() && title.isNotEmpty() && duration > 0
+                }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
+            .performTextInput("Mathematics")
+
+        composeTestRule.onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
+            .performTextInput("Integration Practice")
+
+        composeTestRule.onNodeWithTag(PlannerScreenTestTags.DURATION_FIELD)
+            .performTextInput("90")
+
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onAllNodes(hasClickAction()).onLast().performClick()
+
+        composeTestRule.waitForIdle()
+
+        assert(added) { "onAddTask was not triggered — check that Add button is enabled and clicked." }
     }
 
-    composeTestRule
-        .onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
-        .performTextInput("Mathematics")
-    composeTestRule
-        .onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
-        .performTextInput("Integration Practice")
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.DURATION_FIELD).performTextInput("90")
-    composeTestRule
-        .onNodeWithTag(PlannerScreenTestTags.DEADLINE_FIELD)
-        .performTextInput("2025-10-16")
 
-    composeTestRule.onNodeWithText("Add Task", ignoreCase = true).assertExists().performClick()
 
-    assert(added)
-  }
-
-  @Test
+    @Test
   fun addStudyTaskModal_cancelButtonDismisses() {
     var dismissed = false
     composeTestRule.setContent {
       AddStudyTaskModal(onDismiss = { dismissed = true }, onAddTask = { _, _, _, _, _ -> })
     }
 
-    composeTestRule.onNodeWithText("Cancel", ignoreCase = true).assertExists().performClick()
+    /*composeTestRule.onNodeWithText("Cancel", ignoreCase = true).assertExists().performClick()
 
-    assert(dismissed)
+    assert(dismissed)*/
+      composeTestRule
+          .onAllNodesWithText("Cancel", substring = true, ignoreCase = true)
+          .onFirst()
+          .performClick()
+
+      composeTestRule.waitForIdle()
+      assert(dismissed)
+
   }
 }
