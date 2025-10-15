@@ -99,11 +99,33 @@ sonar {
         property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
-        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
+        /*property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
         // Paths to xml files with Android Lint issues. If the main flavor is changed, this file will have to be changed too.
         property("sonar.androidLint.reportPaths", "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml")
         // Paths to JaCoCo XML coverage report files.
-        property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+        property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")*/
+        property(
+            "sonar.junit.reportPaths",
+            listOf(
+                "${project.layout.buildDirectory.get()}/test-results/testDebugUnitTest/",
+                "${project.layout.buildDirectory.get()}/reports/androidTests/connected/"
+            ).joinToString(",")
+        )
+
+        // ✅ Android Lint XML report
+        property(
+            "sonar.androidLint.reportPaths",
+            "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml"
+        )
+
+        // ✅ JaCoCo coverage report (merged coverage for unit + android tests)
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            listOf(
+                "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml",
+                "${project.layout.buildDirectory.get()}/reports/coverage/androidTest/connected/jacocoTestReport.xml"
+            ).joinToString(",")
+        )
     }
 }
 
