@@ -15,6 +15,12 @@ import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.tooling.preview.Preview
+import com.android.sample.resources.C
+import com.android.sample.screens.EduMonHomeRoute
+import com.android.sample.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
 
