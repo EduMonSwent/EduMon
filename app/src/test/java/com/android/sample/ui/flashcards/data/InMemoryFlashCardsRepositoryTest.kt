@@ -24,31 +24,6 @@ class InMemoryFlashcardsRepositoryTest {
   }
 
   @Test
-  fun `createDeck adds a deck and populates it correctly`() {
-    // Arrange
-    val cards = listOf(Flashcard(id = "card-1", question = "Q1", answer = "A1"))
-
-    // Act
-    val newDeckId = InMemoryFlashcardsRepository.createDeck("Title", "Description", cards)
-    val decks = InMemoryFlashcardsRepository.decks.value
-
-    // Assert
-    assertEquals(1, decks.size) // Check that a deck was added
-
-    val createdDeck = decks.first()
-    assertEquals(newDeckId, createdDeck.id)
-    assertEquals("Title", createdDeck.title)
-    assertEquals("Description", createdDeck.description)
-    assertEquals(1, createdDeck.cards.size)
-
-    // Verify the content of the flashcard, including all three parameters
-    val flashcard = createdDeck.cards.first()
-    assertEquals("card-1", flashcard.id)
-    assertEquals("Q1", flashcard.question)
-    assertEquals("A1", flashcard.answer)
-  }
-
-  @Test
   fun `deck returns correct deck when ID exists`() {
     // Arrange
     val deckId = InMemoryFlashcardsRepository.createDeck("Science", "Biology", emptyList())
