@@ -1,5 +1,6 @@
 package com.android.sample.ui.login
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -27,11 +28,12 @@ import com.google.firebase.auth.GoogleAuthProvider
 fun LoginScreen() {
   val context = LocalContext.current
   val auth = FirebaseAuth.getInstance()
-  val webClientId = context.getString(R.string.default_web_client_id)
+  val webClientId =
+      "154991771075-mluie21sbgjbjuv66l4jrl1oqofk824n.apps.googleusercontent.com.apps.googleusercontent.com"
 
   val gso =
       GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-          .requestIdToken(webClientId)
+          .requestIdToken(webClientId) // 🔹 ID client Web
           .requestEmail()
           .build()
 
@@ -44,10 +46,13 @@ fun LoginScreen() {
             try {
               val account = task.result
               val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-              // Quand la connexion réussit, FirebaseAuth se mettra à jour
-              auth.signInWithCredential(credential)
+
+              auth
+                  .signInWithCredential(credential)
+                  .addOnSuccessListener { Log.d("Login", "Connexion réussie : ${it.user?.email}") }
+                  .addOnFailureListener { Log.e("Login", "Erreur Firebase : ${it.message}") }
             } catch (e: Exception) {
-              e.printStackTrace()
+              Log.e("Login", "Erreur GoogleSignIn : ${e.message}")
             }
           }
 
