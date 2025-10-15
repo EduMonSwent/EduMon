@@ -45,12 +45,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
+import com.android.sample.ui.theme.AccentMagenta
+import com.android.sample.ui.theme.AccentMint
 import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.DarkCardItem
-import com.android.sample.ui.theme.LightBlueAccent
-import com.android.sample.ui.theme.StatBarHeart
-import com.android.sample.ui.theme.StatBarLightbulb
-import com.android.sample.ui.theme.StatBarLightning
+import com.android.sample.ui.theme.DarkBlue
+import com.android.sample.ui.theme.DarkerBlue
+import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,9 +84,9 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
                 modifier = Modifier.align(Alignment.CenterStart),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.Start) {
-                  StatBar(icon = "❤️", percent = 0.9f, color = StatBarHeart)
-                  StatBar(icon = "💡", percent = 0.85f, color = StatBarLightbulb)
-                  StatBar(icon = "⚡", percent = 0.7f, color = StatBarLightning)
+                  StatBar(icon = "❤️", percent = 0.9f, color = AccentViolet)
+                  StatBar(icon = "💡", percent = 0.85f, color = AccentMint)
+                  StatBar(icon = "⚡", percent = 0.7f, color = AccentMagenta)
                 }
 
             Column(
@@ -101,7 +101,7 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
                                       Brush.radialGradient(
                                           colors =
                                               listOf(
-                                                  LightBlueAccent.copy(alpha = pulseAlpha * 0.6f),
+                                                  DarkBlue.copy(alpha = pulseAlpha * 0.6f),
                                                   Color.Transparent)),
                                   shape = RoundedCornerShape(100.dp)),
                       contentAlignment = Alignment.Center) {
@@ -125,7 +125,7 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
                       },
                       colors =
                           AssistChipDefaults.assistChipColors(
-                              containerColor = DarkCardItem.copy(alpha = 0.8f),
+                              containerColor = DarkerBlue.copy(alpha = 0.8f),
                               labelColor = AccentViolet,
                               leadingIconContentColor = AccentViolet),
                       border = BorderStroke(1.dp, AccentViolet.copy(alpha = 0.5f)),
@@ -138,7 +138,7 @@ fun PetHeader(level: Int, modifier: Modifier = Modifier, onEdumonNameClick: () -
         modifier =
             Modifier.align(Alignment.TopEnd)
                 .padding(top = 16.dp, end = 16.dp)
-                .background(DarkCardItem, RoundedCornerShape(20.dp))
+                .background(MidDarkCard, RoundedCornerShape(20.dp))
                 .padding(horizontal = 16.dp, vertical = 6.dp)
                 .clickable(onClick = onEdumonNameClick)
                 .testTag("petNameBox")) {

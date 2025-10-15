@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
 import com.android.sample.model.planner.WellnessEventType
-import com.android.sample.ui.theme.DarkCardItem
 import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import kotlin.math.max
@@ -73,8 +72,7 @@ fun WellnessEventItem(
               .background(
                   Brush.verticalGradient(
                       colors =
-                          listOf(
-                              MidDarkCard.copy(alpha = 0.95f), DarkCardItem.copy(alpha = 0.98f))))
+                          listOf(MidDarkCard.copy(alpha = 0.95f), MidDarkCard.copy(alpha = 0.98f))))
               .border(
                   width = 1.dp,
                   brush =

@@ -34,3 +34,5 @@ val PurpleTop = Color(0xFF9C27B0)
 val PurpleBottom = Color(0xFF7B1FA2)
 val VioletSoft = Color(0xFFBB86FC)
 val EventViolet = Color(0xFFBBA8F9)
+val AccentMint = Color(0xFF10B981) // secondary
+val AccentMagenta = Color(0xFFDB2777) // tertiary

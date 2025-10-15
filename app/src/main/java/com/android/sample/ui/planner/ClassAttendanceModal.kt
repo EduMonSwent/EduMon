@@ -43,9 +43,7 @@ import com.android.sample.model.planner.Class
 import com.android.sample.model.planner.ClassType
 import com.android.sample.model.planner.CompletionStatus
 import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.DarkCardItem
-import com.android.sample.ui.theme.DarknightViolet
-import com.android.sample.ui.theme.LightBlueAccent
+import com.android.sample.ui.theme.Blue
 import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 
@@ -68,7 +66,7 @@ fun ClassAttendanceModal(
           colors =
               listOf(
                   MidDarkCard.copy(alpha = 0.95f),
-                  DarknightViolet.copy(alpha = 0.95f) // Slightly darker purple
+                  AccentViolet.copy(alpha = 0.95f) // Slightly darker purple
                   ))
 
   AlertDialog(
@@ -84,9 +82,7 @@ fun ClassAttendanceModal(
                   brush =
                       Brush.verticalGradient(
                           colors =
-                              listOf(
-                                  AccentViolet.copy(alpha = 0.4f),
-                                  LightBlueAccent.copy(alpha = 0.2f))),
+                              listOf(AccentViolet.copy(alpha = 0.4f), Blue.copy(alpha = 0.2f))),
                   shape = RoundedCornerShape(16.dp)),
       title = {
         Row(
@@ -97,7 +93,7 @@ fun ClassAttendanceModal(
               Text(
                   text =
                       "${classItem.courseName} (${classItem.type.name.lowercase().replaceFirstChar { it.uppercase() }})",
-                  color = LightBlueAccent, // Use accent color for title
+                  color = Blue, // Use accent color for title
                   fontWeight = FontWeight.ExtraBold,
                   fontSize = 20.sp // Slightly larger title
                   )
@@ -222,7 +218,7 @@ fun ChoiceButton(
 ) {
   val backgroundColor by
       animateColorAsState(
-          targetValue = if (isSelected) AccentViolet.copy(alpha = 0.9f) else DarkCardItem,
+          targetValue = if (isSelected) AccentViolet.copy(alpha = 0.9f) else MidDarkCard,
           animationSpec = tween(durationMillis = 200),
           label = "choiceButtonBgColor")
   val textColor by

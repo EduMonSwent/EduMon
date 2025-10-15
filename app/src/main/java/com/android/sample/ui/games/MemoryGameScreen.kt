@@ -197,7 +197,7 @@ fun MemoryCardView(card: MemoryCard, onClick: () -> Unit) {
   val bg by
       animateColorAsState(
           when {
-            card.isMatched -> Glow
+            card.isMatched -> AccentMint
             card.isFlipped -> MidDarkCard
             else -> Color(0xFF1C1C2E)
           })

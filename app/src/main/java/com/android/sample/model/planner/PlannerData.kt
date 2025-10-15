@@ -2,12 +2,10 @@ package com.android.sample.model.planner
 
 import androidx.compose.ui.graphics.Color
 import com.android.sample.R
-import com.android.sample.ui.theme.EventColorDefault
-import com.android.sample.ui.theme.EventColorLecture
-import com.android.sample.ui.theme.EventColorMusic
-import com.android.sample.ui.theme.EventColorSocial
-import com.android.sample.ui.theme.EventColorSports
-import com.android.sample.ui.theme.EventColorYoga
+import com.android.sample.ui.theme.AccentMagenta
+import com.android.sample.ui.theme.AccentMint
+import com.android.sample.ui.theme.AccentViolet
+import com.android.sample.ui.theme.MidDarkCard
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -49,12 +47,12 @@ enum class CompletionStatus {
 }
 
 enum class WellnessEventType(val iconRes: Int, val primaryColor: Color) {
-  YOGA(R.drawable.ic_yoga, EventColorYoga),
-  LECTURE(R.drawable.ic_event, EventColorLecture), // Reusing ic_event, or add specific for lecture
-  SPORTS(R.drawable.ic_yoga, EventColorSports), // Assuming you have an ic_sports
-  SOCIAL(R.drawable.ic_star, EventColorSocial), // Assuming you have an ic_social
-  MUSIC(R.drawable.ic_sparkle, EventColorMusic), // Assuming you have an ic_music
-  DEFAULT(R.drawable.ic_event, EventColorDefault); // Default if type isn't matched
+  YOGA(R.drawable.ic_yoga, AccentMint),
+  LECTURE(R.drawable.ic_event, AccentMagenta), // Reusing ic_event, or add specific for lecture
+  SPORTS(R.drawable.ic_yoga, AccentViolet), // Assuming you have an ic_sports
+  SOCIAL(R.drawable.ic_star, MidDarkCard), // Assuming you have an ic_social
+  MUSIC(R.drawable.ic_sparkle, AccentViolet), // Assuming you have an ic_music
+  DEFAULT(R.drawable.ic_event, AccentMint); // Default if type isn't matched
 
   // You might want to provide a way to get the type from a string, if needed
   companion object {

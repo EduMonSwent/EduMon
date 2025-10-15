@@ -184,7 +184,7 @@ fun FlappyEduMonScreen(
         if (!started && !gameOver) {
           Text(
               text = "Tap anywhere to start",
-              color = AccentBlue,
+              color = Blue,
               fontSize = 18.sp,
               fontWeight = FontWeight.Medium,
               modifier = Modifier.align(Alignment.Center))
@@ -206,7 +206,7 @@ fun FlappyEduMonScreen(
                 Spacer(Modifier.height(12.dp))
                 Button(
                     onClick = { resetGame() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)) {
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue)) {
                       Text("Restart", color = Color.White, fontSize = 16.sp)
                     }
               }

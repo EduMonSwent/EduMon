@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,12 +51,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.android.sample.R
 import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.DarkCardItem
-import com.android.sample.ui.theme.DarkDivider
-import com.android.sample.ui.theme.DarkViolet
-import com.android.sample.ui.theme.DarknightViolet
-import com.android.sample.ui.theme.Gray
+import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
+import com.android.sample.ui.theme.VioletSoft
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,13 +75,12 @@ fun AddStudyTaskModal(
         Card(
             modifier = modifier.fillMaxWidth(0.9f).shadow(32.dp, RoundedCornerShape(28.dp)),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkViolet)) {
+            colors = CardDefaults.cardColors(containerColor = VioletSoft)) {
               Column(
                   modifier =
                       Modifier.background(
                               brush =
-                                  Brush.verticalGradient(
-                                      colors = listOf(DarknightViolet, DarkViolet)))
+                                  Brush.verticalGradient(colors = listOf(AccentViolet, VioletSoft)))
                           .padding(24.dp)) {
                     // Header
                     Row(
@@ -105,7 +102,7 @@ fun AddStudyTaskModal(
                           IconButton(
                               onClick = onDismiss,
                               modifier =
-                                  Modifier.size(40.dp).background(DarkCardItem, CircleShape)) {
+                                  Modifier.size(40.dp).background(MidDarkCard, CircleShape)) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_close),
                                     contentDescription = "Close",
@@ -144,7 +141,7 @@ fun AddStudyTaskModal(
                           testTag = PlannerScreenTestTags.DURATION_FIELD)
 
                       // Divider
-                      Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DarkDivider))
+                      Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MidDarkCard))
 
                       // Deadline Field
                       FormFieldSection(
@@ -169,7 +166,7 @@ fun AddStudyTaskModal(
                               onClick = onDismiss,
                               modifier = Modifier.weight(1f).height(52.dp),
                               shape = RoundedCornerShape(14.dp),
-                              border = BorderStroke(1.5.dp, DarkDivider),
+                              border = BorderStroke(1.5.dp, MidDarkCard),
                               colors =
                                   ButtonDefaults.outlinedButtonColors(
                                       contentColor = TextLight.copy(alpha = 0.8f))) {
@@ -244,7 +241,7 @@ fun FormFieldSection(
         colors =
             OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = AccentViolet,
-                unfocusedBorderColor = DarkDivider,
+                unfocusedBorderColor = MidDarkCard,
                 focusedTextColor = TextLight,
                 unfocusedTextColor = TextLight,
                 focusedLabelColor = Color.Transparent,
@@ -288,7 +285,7 @@ fun PriorityDropdownSection(priority: String, onPriorityChange: (String) -> Unit
               colors =
                   OutlinedTextFieldDefaults.colors(
                       focusedBorderColor = AccentViolet,
-                      unfocusedBorderColor = DarkDivider,
+                      unfocusedBorderColor = MidDarkCard,
                       focusedTextColor = TextLight,
                       unfocusedTextColor = TextLight,
                       focusedContainerColor = Gray.copy(alpha = 0.6f),

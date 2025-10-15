@@ -42,11 +42,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
+import com.android.sample.ui.theme.AccentMagenta
+import com.android.sample.ui.theme.AccentMint
 import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.DarkCardItem
-import com.android.sample.ui.theme.DarkViolet
-import com.android.sample.ui.theme.DarknightViolet
-import com.android.sample.ui.theme.LightBlueAccent
+import com.android.sample.ui.theme.DarkBlue
+import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,7 +80,7 @@ public fun AIRecommendationCard(recommendationText: String, onActionClick: () ->
               .background(
                   brush =
                       Brush.verticalGradient(
-                          colors = listOf(DarknightViolet, DarkViolet),
+                          colors = listOf(DarkBlue, AccentViolet),
                           startY = 0f,
                           endY = Float.POSITIVE_INFINITY),
                   shape = RoundedCornerShape(20.dp))
@@ -91,7 +91,7 @@ public fun AIRecommendationCard(recommendationText: String, onActionClick: () ->
                           colors =
                               listOf(
                                   AccentViolet.copy(alpha = 0.6f),
-                                  LightBlueAccent.copy(alpha = 0.4f),
+                                  AccentMint.copy(alpha = 0.4f),
                                   AccentViolet.copy(alpha = 0.6f))),
                   shape = RoundedCornerShape(20.dp))
               .drawBehind {
@@ -151,7 +151,7 @@ public fun AIRecommendationCard(recommendationText: String, onActionClick: () ->
                           Column {
                             Text(
                                 text = stringResource(R.string.ai_recommendation_title),
-                                color = LightBlueAccent,
+                                color = AccentMagenta,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp)
                             Text(
@@ -168,7 +168,7 @@ public fun AIRecommendationCard(recommendationText: String, onActionClick: () ->
                   modifier =
                       Modifier.fillMaxWidth()
                           .background(
-                              color = DarkCardItem.copy(alpha = 0.8f),
+                              color = MidDarkCard.copy(alpha = 0.8f),
                               shape = RoundedCornerShape(16.dp))
                           .padding(16.dp)) {
                     Text(

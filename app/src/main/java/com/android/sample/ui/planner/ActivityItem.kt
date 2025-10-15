@@ -44,11 +44,9 @@ import com.android.sample.R
 import com.android.sample.model.planner.Class
 import com.android.sample.model.planner.ClassAttendance
 import com.android.sample.model.planner.ClassType
+import com.android.sample.ui.theme.AccentMint
 import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.CustomBlue
-import com.android.sample.ui.theme.CustomGreen
-import com.android.sample.ui.theme.DarkCardItem
-import com.android.sample.ui.theme.LightBlueAccent
+import com.android.sample.ui.theme.Blue
 import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.time.format.DateTimeFormatter
@@ -74,8 +72,7 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
               .background(
                   Brush.verticalGradient(
                       colors =
-                          listOf(
-                              MidDarkCard.copy(alpha = 0.95f), DarkCardItem.copy(alpha = 0.98f))))
+                          listOf(MidDarkCard.copy(alpha = 0.95f), MidDarkCard.copy(alpha = 0.98f))))
               .border(
                   width = 1.dp,
                   brush =
@@ -106,8 +103,8 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
           Row(verticalAlignment = Alignment.CenterVertically) {
             val iconColor =
                 when (activity.type) {
-                  ClassType.LECTURE -> LightBlueAccent
-                  ClassType.EXERCISE -> CustomGreen
+                  ClassType.LECTURE -> Blue
+                  ClassType.EXERCISE -> AccentMint
                   ClassType.LAB -> AccentViolet
                 }
 
@@ -169,7 +166,7 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                         contentDescription =
                             stringResource(
                                 R.string.attended_status, ""), // Content desc for attended
-                        tint = CustomGreen, // Custom green color
+                        tint = AccentMint, // Custom green color
                         modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -180,7 +177,7 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                                     c ->
                                   c.uppercase()
                                 }),
-                        color = CustomGreen,
+                        color = AccentMint,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium)
                   }
@@ -191,7 +188,7 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                         contentDescription =
                             stringResource(
                                 R.string.completed_status, ""), // Content desc for completed
-                        tint = CustomBlue, // Custom blue color
+                        tint = Blue, // Custom blue color
                         modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -201,7 +198,7 @@ fun ActivityItem(activity: Class, attendanceRecord: ClassAttendance?, onClick: (
                                 it.completion.name.lowercase().replaceFirstChar { c ->
                                   c.uppercase()
                                 }),
-                        color = CustomBlue,
+                        color = Blue,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium)
                   }

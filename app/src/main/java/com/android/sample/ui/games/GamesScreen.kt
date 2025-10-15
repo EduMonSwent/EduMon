@@ -39,17 +39,14 @@ fun GamesScreen(navController: NavController) {
                   fontWeight = FontWeight.ExtraBold,
                   modifier = Modifier.padding(bottom = 24.dp))
 
-              GameCard("Memory Game", "Train your memory", Icons.Default.Memory, AccentBlue) {
+              GameCard("Memory Game", "Train your memory", Icons.Default.Memory, Blue) {
                 navController.navigate("memory")
               }
               GameCard("Reaction Test", "Test your reflexes", Icons.Default.FlashOn, AccentViolet) {
                 navController.navigate("reaction")
               }
               GameCard(
-                  "Focus Breathing",
-                  "Relax and breathe",
-                  Icons.Default.SelfImprovement,
-                  AccentBlue) {
+                  "Focus Breathing", "Relax and breathe", Icons.Default.SelfImprovement, Blue) {
                     navController.navigate("focus")
                   }
               GameCard(

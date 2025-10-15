@@ -1,7 +1,3 @@
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
-import org.gradle.testing.jacoco.tasks.JacocoReport
-import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
-
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
@@ -44,7 +40,7 @@ android {
     }
 
     testCoverage {
-        jacocoVersion = "0.8.11"
+        jacocoVersion = "0.8.8"
     }
 
     buildFeatures {
@@ -98,24 +94,16 @@ android {
 
 sonar {
     properties {
-        property("sonar.token", System.getenv("SONAR_TOKEN")?.trim() ?: "")
         property("sonar.projectKey", "EduMonSwent_EduMon")
         property("sonar.projectName", "EduMon")
         property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.gradle.skipCompile", "true") // pour éviter le warning de compilation
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
-        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugUnitTest/")
+        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
         // Paths to xml files with Android Lint issues. If the main flavor is changed, this file will have to be changed too.
         property("sonar.androidLint.reportPaths", "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml")
         // Paths to JaCoCo XML coverage report files.
         property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
-        property(
-            "sonar.coverage.exclusions",
-            "**/MainActivity.kt, **/ui/theme/**, **/*@*rememberInfiniteTransition*, **/*@*painterResource*, **/*@*Brush*"
-        )
-
-
     }
 }
 
@@ -130,8 +118,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-
-    // Jetpack Compose
     implementation(platform(libs.compose.bom))
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
@@ -142,7 +128,11 @@ dependencies {
     implementation(composeBom)
     globalTestImplementation(composeBom)
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation(platform("androidx.compose:compose-bom:2024.09.01"))
 
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.material:material-icons-extended")
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
@@ -154,31 +144,17 @@ dependencies {
     implementation(libs.compose.viewmodel)
     // Android Studio Preview support
     implementation(libs.compose.preview)
-    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation(libs.compose.tooling)
     // UI Tests
     globalTestImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
 
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.navigation.runtime.ktx)
-    implementation(libs.androidx.navigation.testing)
-    implementation(libs.compose.viewmodel)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-
-
-    // Tests
-    testImplementation(libs.junit)
-    globalTestImplementation(libs.androidx.junit)
-    globalTestImplementation(libs.androidx.espresso.core)
-
-    // Kaspresso
+    // --------- Kaspresso test framework ----------
     globalTestImplementation(libs.kaspresso)
     globalTestImplementation(libs.kaspresso.compose)
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
-    implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("com.google.android.gms:play-services-tasks:18.1.0")
@@ -204,9 +180,7 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.mockito:mockito-inline:5.2.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:<version>")
-
-
-
+    implementation("androidx.compose.material:material-icons-extended")
 }
 
 tasks.withType<Test> {
@@ -238,7 +212,6 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         exclude(fileFilter)
     }
 
-
     val mainSrc = "${project.layout.projectDirectory}/src/main/java"
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
@@ -246,15 +219,4 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
-
-    // ✅ Patch to remove invalid JaCoCo lines (nr="65535") that break Sonar coverage
-    doLast {
-        val reportFile = reports.xml.outputLocation.asFile.get()
-        if (reportFile.exists()) {
-            val content = reportFile.readText()
-            val cleanedContent = content.replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
-            reportFile.writeText(cleanedContent)
-        }
-    }
-
 }
