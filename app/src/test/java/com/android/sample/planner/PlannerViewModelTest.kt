@@ -19,12 +19,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * ✅ Test stable pour PlannerViewModel
- * - Pas de blocage 10s
- * - Pas besoin de modifier Gradle
- * - Utilise un FakeRepository à flux finis
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
