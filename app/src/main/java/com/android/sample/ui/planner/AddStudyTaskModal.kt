@@ -185,7 +185,8 @@ fun AddStudyTaskModal(
                                     deadline,
                                     priority)
                               },
-                              modifier = Modifier.weight(1f).height(52.dp).testTag("aaddTaskButton"),
+                              modifier =
+                                  Modifier.weight(1f).height(52.dp).testTag("aaddTaskButton"),
                               shape = RoundedCornerShape(14.dp),
                               colors =
                                   ButtonDefaults.buttonColors(
