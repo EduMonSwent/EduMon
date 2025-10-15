@@ -1,4 +1,4 @@
-package com.android.sample.todo.ui
+package com.android.sample.ui.todo
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -15,8 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow

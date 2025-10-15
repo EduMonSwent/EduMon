@@ -15,7 +15,7 @@ import com.android.sample.todo.ToDo
 import com.android.sample.todo.ToDoRepository
 import com.android.sample.todo.ToDoRepositoryLocal
 import com.android.sample.todo.ToDoRepositoryProvider
-import com.android.sample.todo.ui.TestTags
+import com.android.sample.ui.todo.TestTags
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 import org.junit.Before

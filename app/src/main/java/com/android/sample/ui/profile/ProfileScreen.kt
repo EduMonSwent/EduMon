@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.CreatureEnvironmentSection
 import com.android.sample.R
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
@@ -52,8 +53,15 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
       contentPadding = PaddingValues(vertical = 16.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-          PetSection(
-              level = user.level, modifier = Modifier.testTag(ProfileScreenTestTags.PET_SECTION))
+            CreatureEnvironmentSection(
+                creatureResId = R.drawable.edumon,
+                environmentResId = R.drawable.home,
+                level = user.level,
+                happiness = 90,
+                health = 75,
+                energy = 50,
+                modifier = Modifier.testTag(ProfileScreenTestTags.PET_SECTION)
+            )
         }
         item {
           GlowCard {

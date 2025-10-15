@@ -3,9 +3,13 @@ package com.android.sample.todo.ui
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import com.android.sample.todo.Priority
+import com.android.sample.todo.Status
 import com.android.sample.todo.ui.components.TodoForm
+import com.android.sample.ui.todo.TestTags
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 
 class DueDateFieldTest {
 
@@ -21,11 +25,11 @@ class DueDateFieldTest {
           onBack = {},
           title = "X",
           onTitleChange = {},
-          dueDate = java.time.LocalDate.now(),
+          dueDate = LocalDate.now(),
           onDueDateChange = {},
-          priority = com.android.sample.todo.Priority.MEDIUM,
+          priority = Priority.MEDIUM,
           onPriorityChange = {},
-          status = com.android.sample.todo.Status.TODO,
+          status = Status.TODO,
           onStatusChange = {},
           showOptionalInitial = false,
           location = null,

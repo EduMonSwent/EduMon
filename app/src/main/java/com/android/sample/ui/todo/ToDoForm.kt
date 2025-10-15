@@ -11,9 +11,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.sample.todo.Priority
 import com.android.sample.todo.Status
-import com.android.sample.todo.ui.DueDateField
-import com.android.sample.todo.ui.TestTags
-import com.android.sample.todo.ui.TodoColors
+import com.android.sample.ui.todo.DueDateField
+import com.android.sample.ui.todo.TestTags
+import com.android.sample.ui.todo.TodoColors
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)

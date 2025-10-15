@@ -44,7 +44,6 @@ fun CreatureEnvironmentSection(
     health: Int,
     energy: Int,
     modifier: Modifier = Modifier,
-    userStats: @Composable (Modifier) -> Unit = {} // kept for API stability; not used
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CreatureHouseCard(

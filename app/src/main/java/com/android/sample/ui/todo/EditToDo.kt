@@ -1,4 +1,4 @@
-package com.android.sample.todo.ui
+package com.android.sample.ui.todo
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext

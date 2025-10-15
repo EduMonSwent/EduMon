@@ -1,4 +1,4 @@
-package com.android.sample.screens
+package com.android.sample.ui.home
 
 // 🔽 Only dependency on creature UI:
 import android.content.res.Configuration

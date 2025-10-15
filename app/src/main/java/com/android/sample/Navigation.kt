@@ -18,12 +18,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.sample.R
-import com.android.sample.screens.AppDestination
-import com.android.sample.screens.EduMonHomeRoute
+import com.android.sample.ui.home.AppDestination
+import com.android.sample.ui.home.EduMonHomeRoute
 import com.android.sample.todo.ToDoRoutes
-import com.android.sample.todo.ui.AddToDoScreen
-import com.android.sample.todo.ui.EditToDoScreen
-import com.android.sample.todo.ui.OverviewScreen
+import com.android.sample.ui.todo.AddToDoScreen
+import com.android.sample.ui.todo.EditToDoScreen
+import com.android.sample.ui.todo.OverviewScreen
 import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.viewmodel.WeekDotsViewModel

@@ -5,6 +5,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import com.android.sample.todo.ToDo
 import com.android.sample.todo.testutils.ToDoTest
+import com.android.sample.ui.todo.AddToDoScreen
+import com.android.sample.ui.todo.TestTags
 import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Rule

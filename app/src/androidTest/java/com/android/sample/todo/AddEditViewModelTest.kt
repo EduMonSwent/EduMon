@@ -6,6 +6,8 @@ import com.android.sample.todo.Status
 import com.android.sample.todo.ToDo
 import com.android.sample.todo.ToDoRepository
 import com.android.sample.todo.ToDoRepositoryLocal
+import com.android.sample.ui.todo.AddToDoViewModel
+import com.android.sample.ui.todo.EditToDoViewModel
 import java.time.LocalDate
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
