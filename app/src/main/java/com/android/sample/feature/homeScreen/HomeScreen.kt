@@ -1,4 +1,4 @@
-package com.android.sample.screens
+package com.android.sample.feature.homeScreen
 
 // 🔽 Only dependency on creature UI:
 import android.content.res.Configuration
@@ -38,8 +38,6 @@ import com.android.sample.R
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
-import com.android.sample.repositories.HomeUiState
-import com.android.sample.repositories.HomeViewModel
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch

@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.widgets
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -35,8 +35,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.android.sample.ui.viewmodel.WeekProgressItem
+import com.android.sample.feature.weeks.viewmodel.WeekProgressItem
 
 @Composable
 fun WeekProgressSection(
@@ -173,8 +174,8 @@ private fun WeeksExpandedList(
 @Composable
 private fun SmallProgressRing(
     percent: Int,
-    ringSize: androidx.compose.ui.unit.Dp = 24.dp,
-    stroke: androidx.compose.ui.unit.Dp = 3.dp,
+    ringSize: Dp = 24.dp,
+    stroke: Dp = 3.dp,
     tag: String? = null
 ) {
   val pct = percent.coerceIn(0, 100)

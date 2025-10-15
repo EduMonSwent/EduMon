@@ -2,6 +2,7 @@ package com.android.sample
 
 import android.R
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -19,12 +20,12 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
-import com.android.sample.repositories.HomeRepository
-import com.android.sample.repositories.HomeUiState
-import com.android.sample.repositories.HomeViewModel
-import com.android.sample.screens.EduMonHomeRoute
-import com.android.sample.screens.EduMonHomeScreen
-import com.android.sample.screens.GlowCard
+import com.android.sample.feature.homeScreen.EduMonHomeRoute
+import com.android.sample.feature.homeScreen.EduMonHomeScreen
+import com.android.sample.feature.homeScreen.GlowCard
+import com.android.sample.feature.homeScreen.HomeRepository
+import com.android.sample.feature.homeScreen.HomeUiState
+import com.android.sample.feature.homeScreen.HomeViewModel
 import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
@@ -199,9 +200,7 @@ class HomeScreenTest {
 
   @Test
   fun glowCard_rendersChildContent() {
-    composeRule.setContent {
-      MaterialTheme { GlowCard { androidx.compose.material3.Text("Inside Glow") } }
-    }
+    composeRule.setContent { MaterialTheme { GlowCard { Text("Inside Glow") } } }
     composeRule.onNodeWithText("Inside Glow").assertIsDisplayed()
   }
 }

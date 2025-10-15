@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.widgets
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,13 +20,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.sample.ui.viewmodel.Objective
+import com.android.sample.feature.weeks.viewmodel.Objective
 
 @Composable
 fun DailyObjectivesSection(
@@ -179,7 +180,7 @@ private fun MetaChip(text: String) {
 private fun StartButton(onClick: () -> Unit, tag: String? = null) {
   val cs = MaterialTheme.colorScheme
   val gradient =
-      androidx.compose.ui.graphics.Brush.linearGradient(
+      Brush.linearGradient(
           listOf(cs.primary, cs.primary.copy(alpha = 0.85f)))
   Button(
       onClick = onClick,

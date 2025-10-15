@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.widgets
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,7 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.sample.ui.viewmodel.DayStatus
+import com.android.sample.feature.weeks.viewmodel.DayStatus
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale

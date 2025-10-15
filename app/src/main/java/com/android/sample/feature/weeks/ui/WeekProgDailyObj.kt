@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.widgets
 
 /*
  * WeekProgDailyObj (modularized)
@@ -21,7 +21,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.android.sample.ui.viewmodel.*
+import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
+import com.android.sample.feature.weeks.viewmodel.WeekDotsViewModel
+import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 
 @Composable
 fun WeekProgDailyObj(
