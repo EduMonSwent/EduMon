@@ -29,6 +29,7 @@ import com.android.sample.ui.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.viewmodel.WeekDotsViewModel
 import com.android.sample.ui.viewmodel.WeeksViewModel
 import com.android.sample.ui.widgets.WeekProgDailyObj
+import com.android.sample.ui.session.StudySessionScreen   // <-- NEW import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +45,6 @@ fun EduMonNavHost(modifier: Modifier = Modifier) {
                 environmentResId = R.drawable.home,
                 onNavigate = { route ->
                     nav.navigate(route) {
-                        // avoid building a tall stack and enable state restore
                         popUpTo(AppDestination.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
@@ -111,9 +111,7 @@ fun EduMonNavHost(modifier: Modifier = Modifier) {
 
         // ADD TODO
         composable(ToDoRoutes.Add) {
-            AddToDoScreen(
-                onBack = { nav.popBackStack() }
-            )
+            AddToDoScreen(onBack = { nav.popBackStack() })
         }
 
         // EDIT TODO (with argument)
@@ -124,22 +122,38 @@ fun EduMonNavHost(modifier: Modifier = Modifier) {
             val context = LocalContext.current
             val id = backStackEntry.arguments?.getString("id")
             if (id != null) {
-                EditToDoScreen(
-                    id = id,
-                    onBack = { nav.popBackStack() }
-                )
+                EditToDoScreen(id = id, onBack = { nav.popBackStack() })
             } else {
                 Toast.makeText(context, "To-Do id is missing or invalid", Toast.LENGTH_SHORT).show()
                 nav.popBackStack()
             }
         }
 
-        // --- Safe stubs so BottomNav clicks don’t crash even if not implemented yet ---
+        // --- Other stubs ---
         composable(AppDestination.Calendar.route) { SimpleStub("Calendar") }
         composable(AppDestination.Stats.route) { SimpleStub("Shop") }
         composable(AppDestination.Games.route) { SimpleStub("Games") }
         composable(AppDestination.Settings.route) { SimpleStub("Settings") }
-        composable(AppDestination.Study.route) { SimpleStub("Study") }
+
+        // STUDY SESSION -> StudySessionScreen
+        composable(AppDestination.Study.route) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Study Session") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    StudySessionScreen()   // <-- opens your StudySession screen (with Pomodoro inside)
+                }
+            }
+        }
     }
 }
 
