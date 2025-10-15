@@ -41,9 +41,7 @@ fun WeekProgDailyObj(
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
         Column(Modifier.padding(16.dp)) {
           // Week Progress Section
-          WeekProgressSection(
-              viewModel = weeksViewModel,
-              modifier = Modifier.fillMaxWidth())
+          WeekProgressSection(viewModel = weeksViewModel, modifier = Modifier.fillMaxWidth())
 
           Spacer(Modifier.height(18.dp))
 

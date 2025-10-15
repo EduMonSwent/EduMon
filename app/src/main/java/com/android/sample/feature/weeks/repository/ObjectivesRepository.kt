@@ -14,6 +14,9 @@ interface ObjectivesRepository {
   suspend fun removeObjective(index: Int): List<Objective>
 
   suspend fun moveObjective(fromIndex: Int, toIndex: Int): List<Objective>
+
+  // New: replace all objectives with the provided list and return the current list
+  suspend fun setObjectives(objs: List<Objective>): List<Objective>
 }
 
 object FakeObjectivesRepository : ObjectivesRepository {
@@ -66,6 +69,12 @@ object FakeObjectivesRepository : ObjectivesRepository {
     if (from == to) return items.toList()
     val item = items.removeAt(from)
     items.add(to, item)
+    return items.toList()
+  }
+
+  override suspend fun setObjectives(objs: List<Objective>): List<Objective> {
+    items.clear()
+    items.addAll(objs)
     return items.toList()
   }
 }

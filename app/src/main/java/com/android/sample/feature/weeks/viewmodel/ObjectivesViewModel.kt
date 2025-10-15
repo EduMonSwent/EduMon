@@ -25,7 +25,7 @@ class ObjectivesViewModel(
 
   // Removed auto-refresh to avoid races in tests; call refresh() from the screen if needed.
   init {
-      refresh()
+    refresh()
   }
   // Loads from repository
   fun refresh() {
@@ -43,7 +43,10 @@ class ObjectivesViewModel(
 
   // ---- Mutations ----
   fun setObjectives(objs: List<Objective>) {
-    _uiState.update { it.copy(objectives = objs) }
+    viewModelScope.launch {
+      val list = repository.setObjectives(objs)
+      _uiState.update { it.copy(objectives = list) }
+    }
   }
 
   fun addObjective(obj: Objective) {
