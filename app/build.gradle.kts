@@ -238,6 +238,7 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         exclude(fileFilter)
     }
 
+
     val mainSrc = "${project.layout.projectDirectory}/src/main/java"
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
@@ -255,4 +256,5 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
             reportFile.writeText(cleanedContent)
         }
     }
+
 }

@@ -2,6 +2,63 @@
     <string name="app_name">SampleApp</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="title_activity_second">SecondActivity</string>
+
+    <!-- Planner Screen -->
+    <string name="planner_screen">Planner Screen</string>
+    <string name="add_study_task">Add Study Task</string>
+    <string name="today_classes_title">Today\'s Classes</string>
+    <string name="no_activities_scheduled">No activities scheduled for today.</string>
+    <string name="wellness_campus_life_title">Wellness &amp; Campus Life</string>
+    <string name="wellness_campus_life_subtitle">Balance your studies with well-being!</string>
+    <string name="ai_recommendation_title">AI Study Assistant</string>
+    <string name="ai_recommendation_subtitle">Personalized Recommendation</string>
+    <string name="start_studying_session">Start Studying Session</string>
+    <string name="ai_recommendation_footer">Based on your schedule and performance patterns</string>
+    <string name="edumon_profile">Edumon Profile</string>
+
+    <!-- AI Recommendation Texts -->
+    <string name="ai_recommendation_calculus_example">Based on your schedule, start with the Calculus problem set (high priority, due tomorrow). Take a 10-minute break after 45 minutes.</string>
+
+    <!-- Add Study Task Modal -->
+    <string name="add_study_task_modal_title">Add Study Task</string>
+    <string name="add_study_task_modal_subtitle">Plan your study session</string>
+    <string name="subject_label">Subject *</string>
+    <string name="subject_placeholder">e.g., Data Structures</string>
+    <string name="task_title_label">Task Title *</string>
+    <string name="task_title_placeholder">e.g., Complete homework exercises</string>
+    <string name="duration_label">Duration (minutes) *</string>
+    <string name="duration_placeholder">60</string>
+    <string name="deadline_label">Deadline</string>
+    <string name="deadline_placeholder">dd.mm.yyyy</string>
+    <string name="priority_label">Priority</string>
+    <string name="priority_placeholder">Select priority</string>
+    <string name="add_task_button">Add Task</string>
+    <string name="priority_low">Low</string>
+    <string name="priority_medium">Medium</string>
+    <string name="priority_high">High</string>
+
+    <!-- Activity Item (Class) -->
+    <string name="attended_status">Attended: %1$s</string>
+    <string name="completed_status">Completed: %1$s</string>
+    <string name="details">Details</string>
+    <string name="lecture_type">Lecture</string>
+    <string name="exercise_type">Exercise</string>
+    <string name="lab_type">Lab</string>
+
+    <!-- Class Attendance Modal -->
+    <string name="confirm_attendance_completion">Confirm your attendance &amp; completion</string>
+    <string name="did_you_attend_class">Did you attend this class?</string>
+    <string name="did_you_review_lecture">Did you finish reviewing today’s lecture materials?</string>
+    <string name="did_you_finish_exercise">Did you finish the exercise?</string>
+    <string name="did_you_finish_lab">Did you finish the lab?</string>
+
+    <!-- Wellness Event Item -->
+    <string name="wellness_event_yoga_title">Yoga Session @ Sports Center</string>
+    <string name="wellness_event_yoga_time">17:00 _ 18:00</string>
+    <string name="wellness_event_yoga_description">Relax and recharge after classes. Sign up now!</string>
+    <string name="wellness_event_lecture_title">Guest Lecture: Future of AI</string>
+    <string name="wellness_event_lecture_time">19:30 _ 21:00</string>
+    <string name="wellness_event_lecture_description">EPFL Auditorium. Don\'t miss this insightful talk!</string>
     <!-- Calendar -->
     <string name="calendar_title">Calendar</string>
     <string name="calendar_subtitle">Long-term planning and events</string>
@@ -24,8 +81,6 @@
     <string name="add_time">Add Time</string>
     <string name="time_label">Time: %1$s</string>
     <string name="select_time">Select Time</string>
-    <string name="duration_label">Duration (minutes, optional)</string>
-    <string name="priority_label">Priority</string>
     <string name="type_label">Type</string>
     <string name="completed_label">Completed</string>
     <string name="delete">Delete</string>

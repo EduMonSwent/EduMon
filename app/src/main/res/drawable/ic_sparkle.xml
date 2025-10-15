@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Large sparkle -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M12,2 L13,8 L18,9 L13,10 L12,16 L11,10 L6,9 L11,8z"/>
+
+    <!-- Small sparkle (top right) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M18,4 L18.5,6 L20,6.5 L18.5,7 L18,9 L17.5,7 L16,6.5 L17.5,6z"/>
+
+    <!-- Small sparkle (bottom left) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M5,14 L5.5,16 L7,16.5 L5.5,17 L5,19 L4.5,17 L3,16.5 L4.5,16z"/>
+</vector>
