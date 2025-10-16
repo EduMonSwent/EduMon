@@ -1,164 +1,299 @@
-package com.android.sample
+package com.android.sample.navigation
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.EventNote
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.android.sample.R
+import com.android.sample.screens.AppDestination
+import com.android.sample.screens.EduMonHomeRoute
 import com.android.sample.ui.calendar.CalendarScreen
 import com.android.sample.ui.flashcards.FlashcardsApp
+import com.android.sample.ui.flashcards.data.StudyScreen
+import com.android.sample.ui.games.FlappyEduMonScreen
+import com.android.sample.ui.games.FocusBreathingScreen
 import com.android.sample.ui.games.GamesScreen
+import com.android.sample.ui.games.MemoryGameScreen
+import com.android.sample.ui.games.ReactionGameScreen
 import com.android.sample.ui.planner.PlannerScreen
-import com.android.sample.ui.pomodoro.PomodoroScreen
 import com.android.sample.ui.profile.ProfileScreen
-import com.android.sample.ui.session.StudySessionScreen
-import com.android.sample.ui.stats.StatsScreen
 import com.android.sample.ui.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.viewmodel.WeekDotsViewModel
 import com.android.sample.ui.viewmodel.WeeksViewModel
 import com.android.sample.ui.widgets.WeekProgDailyObj
+import com.android.sample.ui.session.StudySessionScreen   // <-- NEW import
+import com.android.sample.ui.stats.StatsScreen
+
+
+private object GameRoutes {
+    const val Memory = "memory"
+    const val Reaction = "reaction"
+    const val Focus = "focus"
+    const val Runner = "runner"
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EduMonNavHost(modifier: Modifier = Modifier) {
     val nav = rememberNavController()
-    val backStack by nav.currentBackStackEntryAsState()
-    val dest = backStack?.destination
 
-    Scaffold(
-        modifier = modifier,
-        topBar = { CenterAlignedTopAppBar(title = { Text(titleForDestination(dest)) }) },
-        bottomBar = {
-            BottomBar(
-                current = dest,
+    NavHost(navController = nav, startDestination = AppDestination.Home.route, modifier = modifier) {
+
+        // HOME
+        composable(AppDestination.Home.route) {
+            EduMonHomeRoute(
+                creatureResId = R.drawable.edumon,
+                environmentResId = R.drawable.home,
                 onNavigate = { route ->
                     nav.navigate(route) {
-                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                        popUpTo(AppDestination.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
                 }
             )
         }
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            NavHost(navController = nav, startDestination = Routes.Stats) {
-                // Home / Stats
-                composable(Routes.Stats) { StatsScreen() }
 
-                // Planner
-                composable(Routes.Planner) { PlannerScreen() }
+        // PLANNER -> WeekProgDailyObj
+        composable(AppDestination.Planner.route) {
 
-                // Study session (Pomodoro inside)
-                composable(Routes.Study) { StudySessionScreen() }
-
-                // Standalone Pomodoro (optional direct route)
-                composable(Routes.Pomodoro) { PomodoroScreen() }
-
-                // Calendar
-                composable(Routes.Calendar) { CalendarScreen() }
-
-                // Flashcards
-                composable(Routes.Flashcards) { FlashcardsApp() }
-
-                // Brain games (needs NavController in your API)
-                composable(Routes.Games) { GamesScreen(nav) }
-
-                // Profile
-                composable(Routes.Profile) { ProfileScreen() }
-
-                // Weekly progress widget (legacy slot)
-                composable(Routes.WeekProgress) {
-                    val weeksVM: WeeksViewModel = viewModel()
-                    val objectivesVM: ObjectivesViewModel = viewModel()
-                    val dotsVM: WeekDotsViewModel = viewModel()
-                    WeekProgDailyObj(
-                        weeksViewModel = weeksVM,
-                        objectivesViewModel = objectivesVM,
-                        dotsViewModel = dotsVM
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Planner") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
                     )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    PlannerScreen()
+                }
+            }
+        }
+
+        // PROFILE
+        composable(AppDestination.Profile.route) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Profile") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    ProfileScreen()
+                }
+            }
+        }
+
+        //Calendar
+        composable(AppDestination.Calendar.route) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Calendar") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    CalendarScreen()   // <-- opens your StudySession screen (with Pomodoro inside)
+                }
+            }
+        }
+
+        //Stats
+        composable(AppDestination.Stats.route) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Stats") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    StatsScreen()   // <-- opens your StudySession screen (with Pomodoro inside)
+                }
+            }
+        }
+
+        //Games
+        composable(AppDestination.Games.route) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Games") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    GamesScreen(nav)
+                }
+            }
+        }
+        // MEMORY
+        composable(GameRoutes.Memory) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Memory Game") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    MemoryGameScreen()
+                }
+            }
+        }
+
+        // REACTION
+        composable(GameRoutes.Reaction) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Reaction Test") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    ReactionGameScreen()
+                }
+            }
+        }
+
+        // FOCUS BREATHING
+        composable(GameRoutes.Focus) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Focus Breathing") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    FocusBreathingScreen()
+                }
+            }
+        }
+
+        // RUNNER
+        composable(GameRoutes.Runner) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("EduMon Runner") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    FlappyEduMonScreen()
+                }
+            }
+        }
+
+
+        // STUDY SESSION -> StudySessionScreen
+        composable(AppDestination.Study.route) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Study") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    StudySessionScreen()   // <-- opens your StudySession screen (with Pomodoro inside)
+                }
+            }
+        }
+
+        //flashcards
+        composable(AppDestination.Flashcards.route) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Study") },
+                        navigationIcon = {
+                            IconButton(onClick = { nav.popBackStack() }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                    FlashcardsApp()   // <-- opens your StudySession screen (with Pomodoro inside)
                 }
             }
         }
     }
 }
 
-/** App routes (single source of truth) */
-private object Routes {
-    const val Stats = "stats"
-    const val Planner = "planner"
-    const val Study = "study"
-    const val Pomodoro = "pomodoro"
-    const val Calendar = "calendar"
-    const val Flashcards = "flashcards"
-    const val Games = "games"
-    const val Profile = "profile"
-    const val WeekProgress = "week_progress"
-}
-
-/** Top bar title per screen */
 @Composable
-private fun titleForDestination(dest: NavDestination?): String =
-    when (dest?.route) {
-        Routes.Stats -> "Statistics"
-        Routes.Planner -> "Planner"
-        Routes.Study -> "Study Session"
-        Routes.Pomodoro -> "Pomodoro"
-        Routes.Calendar -> "Calendar"
-        Routes.Flashcards -> "Flashcards"
-        Routes.Games -> "Brain Games"
-        Routes.Profile -> "Profile"
-        Routes.WeekProgress -> "Weekly Progress"
-        else -> "EduMon"
-    }
-
-/** Bottom navigation with the main 4 tabs */
-@Composable
-private fun BottomBar(
-    current: NavDestination?,
-    onNavigate: (String) -> Unit
-) {
-    val items = listOf(
-        BottomItem(Routes.Stats, "Stats", Icons.Outlined.BarChart),
-        BottomItem(Routes.Planner, "Planner", Icons.Outlined.EventNote),
-        BottomItem(Routes.Study, "Study", Icons.Outlined.Timer),
-        BottomItem(Routes.Profile, "Profile", Icons.Outlined.Person),
-    )
-    NavigationBar {
-        items.forEach { item ->
-            val selected = current?.route == item.route
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onNavigate(item.route) },
-                icon = { Icon(item.icon, contentDescription = item.label) },
-                label = { Text(item.label) }
-            )
-        }
+private fun SimpleStub(title: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(title, style = MaterialTheme.typography.titleLarge)
     }
 }
-
-private data class BottomItem(
-    val route: String,
-    val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
-)
