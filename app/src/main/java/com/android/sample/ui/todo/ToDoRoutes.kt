@@ -1,9 +1,9 @@
 package com.android.sample.ui.todo
 
-/** Central place to define navigation routes for the To-Do feature. */
+/** Defines navigation routes for the To-Do feature. */
 object ToDoRoutes {
 
-  // Route name for the main To-Do list (Overview screen)
+  // Route name for the main To-Do list
   const val Todos = "todos"
 
   // Route name for the Add To-Do screen

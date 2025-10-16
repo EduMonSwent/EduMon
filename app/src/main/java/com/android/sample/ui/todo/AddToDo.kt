@@ -9,12 +9,10 @@ import com.android.sample.repositories.ToDoRepositoryProvider
 /**
  * Add To-Do screen:
  * - Creates the AddToDoViewModel (wired to the shared repository)
- * - Renders the shared TodoForm with the VM's state and callbacks
  */
 @Composable
 fun AddToDoScreen(onBack: () -> Unit) {
 
-  // Create a ViewModel instance with a custom factory so we can inject the repository
   val vm: AddToDoViewModel =
       viewModel(
           factory =

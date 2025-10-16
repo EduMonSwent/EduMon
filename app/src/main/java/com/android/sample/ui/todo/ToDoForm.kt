@@ -13,6 +13,10 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import java.time.LocalDate
 
+/**
+ * ToDoForm shared by AddToDo screen and EditToDoScreen. Some parts of this code have been generated
+ * by AI.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoForm(

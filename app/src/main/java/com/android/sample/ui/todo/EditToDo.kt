@@ -23,21 +23,16 @@ fun EditToDoScreen(id: String, onBack: () -> Unit) {
               object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                  return EditToDoViewModel(
-                      repo = ToDoRepositoryProvider.repository, // inject shared repo
-                      id = id // pass the ToDo ID to load data
-                      )
-                      as T
+                  return EditToDoViewModel(repo = ToDoRepositoryProvider.repository, id = id) as T
                 }
               })
 
-  // Reuse the same TodoForm UI used in AddToDoScreen
   TodoForm(
       titleTopBar = "Edit To-Do", // change top bar title
       saveButtonText = "Save changes", // change button text
       onBack = onBack,
 
-      // --- Required fields ---
+      // Required fields
       title = vm.title,
       onTitleChange = { vm.title = it },
       dueDate = vm.dueDate,
@@ -47,8 +42,8 @@ fun EditToDoScreen(id: String, onBack: () -> Unit) {
       status = vm.status,
       onStatusChange = { vm.status = it },
 
-      // --- Optional fields ---
-      showOptionalInitial = true, // optional section visible by default
+      // Optional fields
+      showOptionalInitial = true,
       location = vm.location,
       onLocationChange = { vm.location = it },
       linksText = vm.linksText,
@@ -57,8 +52,6 @@ fun EditToDoScreen(id: String, onBack: () -> Unit) {
       onNoteChange = { vm.note = it },
       notificationsEnabled = vm.notificationsEnabled,
       onNotificationsChange = { vm.notificationsEnabled = it },
-
-      // --- Save ---
       canSave = vm.canSave,
       onSave = { vm.save(onBack) } // update repo and go back
       )

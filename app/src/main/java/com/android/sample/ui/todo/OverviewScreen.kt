@@ -30,7 +30,8 @@ import com.android.sample.repositories.ToDoRepositoryProvider
  * The Overview screen shows the list of all To-Dos.
  * - Displays each To-Do in a card
  * - Lets you delete or open an item for editing
- * - Includes a FloatingActionButton (+) to add new To-Dos
+ * - Includes a FloatingActionButton to add new To-Dos Some parts of this code have been generated
+ *   by AI.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
