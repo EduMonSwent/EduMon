@@ -12,6 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.credentials.exceptions.NoCredentialException
+import android.provider.Settings
+import android.content.Intent
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -89,10 +93,10 @@ fun LoginScreen() {
                     }
 
             } catch (_: GetCredentialCancellationException) {
-                loading = false // l’utilisateur a fermé la feuille
+                loading = false
             } catch (e: GetCredentialException) {
                 loading = false
-                error = e.message ?: "Google indisponible"
+                error = e.message ?: "Google indisponible sur cet appareil (MAJ Play services ?)"
             } catch (e: Exception) {
                 loading = false
                 error = e.message ?: "Erreur inconnue"
