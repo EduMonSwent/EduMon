@@ -13,6 +13,8 @@ val Pink40 = Color(0xFF7D5260)
 val MidDarkCard = Color(0xFF232445) // cards, nav, drawer
 val TextLight = Color(0xFFE0E0E0) // text on dark
 val AccentViolet = Color(0xFF9333EA) // accent / primary
+val Glow = Color(0xFF7C3AED) // glow effect
+val AccentBlue = Color(0xFF3B82F6) // info
 
 val AccentMint = Color(0xFF10B981) // secondary
 val AccentMagenta = Color(0xFFDB2777) // tertiary

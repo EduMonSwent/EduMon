@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.android.sample.ui.flashcards.FlashcardsApp
-import com.android.sample.ui.theme.SampleAppTheme
+import com.android.sample.ui.theme.EduMonTheme
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    setContent { SampleAppTheme { Surface(modifier = Modifier.fillMaxSize()) { FlashcardsApp() } } }
+    setContent { EduMonTheme { Surface(modifier = Modifier.fillMaxSize()) { FlashcardsApp() } } }
   }
 }
