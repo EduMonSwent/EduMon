@@ -36,23 +36,21 @@ class CalendarViewModel(private val repository: PlannerRepository = PlannerRepos
           .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
   // ---- Calendar navigation ----
-  fun onNextMonthWeekClicked() {
+  fun onNavigateMonthWeek(forward: Boolean) {
+    val stepMonths = if (forward) 1 else -1
+    val stepWeeks = if (forward) 1 else -1
+
     if (_isMonthView.value) {
-      _currentDisplayMonth.value = _currentDisplayMonth.value.plusMonths(1)
+      _currentDisplayMonth.value = _currentDisplayMonth.value.plusMonths(stepMonths.toLong())
     } else {
-      _selectedDate.value = _selectedDate.value.plusWeeks(1)
+      _selectedDate.value = _selectedDate.value.plusWeeks(stepWeeks.toLong())
       _currentDisplayMonth.value = YearMonth.from(_selectedDate.value)
     }
   }
 
-  fun onPreviousMonthWeekClicked() {
-    if (_isMonthView.value) {
-      _currentDisplayMonth.value = _currentDisplayMonth.value.minusMonths(1)
-    } else {
-      _selectedDate.value = _selectedDate.value.minusWeeks(1)
-      _currentDisplayMonth.value = YearMonth.from(_selectedDate.value)
-    }
-  }
+  fun onNextMonthWeekClicked() = onNavigateMonthWeek(forward = true)
+
+  fun onPreviousMonthWeekClicked() = onNavigateMonthWeek(forward = false)
 
   fun onTodayClicked() {
     _selectedDate.value = LocalDate.now()

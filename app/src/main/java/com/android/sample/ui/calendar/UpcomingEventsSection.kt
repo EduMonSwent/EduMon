@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
 import com.android.sample.model.calendar.StudyItem
+import com.android.sample.model.calendar.TaskType
 import com.android.sample.ui.theme.Blue
 import com.android.sample.ui.theme.DarkBlue
 import com.android.sample.ui.theme.DarkerBlue
@@ -109,10 +110,10 @@ fun UpcomingEventsSection(
 @Composable
 private fun EventCard(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
   val tagColor =
-      when (task.type.name.lowercase()) {
-        "class" -> Blue
-        "todo" -> Pink
-        "event" -> VioletLilas
+      when (task.type) {
+        TaskType.STUDY -> Blue
+        TaskType.WORK -> Pink
+        TaskType.PERSONAL -> VioletLilas
         else -> PurpleCalendar
       }
 
