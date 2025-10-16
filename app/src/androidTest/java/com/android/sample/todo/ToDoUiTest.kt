@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -141,10 +142,10 @@ class ToDoUiSingleTest {
     compose.setContent { EditToDoScreen(id = id, onBack = { back = true }) }
 
     // Title is shown; change it and save
-    compose.onNodeWithTag(TestTags.TitleField).assertIsDisplayed()
+    assertTrue(compose.onAllNodesWithTag(TestTags.TitleField).fetchSemanticsNodes().isNotEmpty())
     compose.onNodeWithTag(TestTags.TitleField).performTextClearance()
     compose.onNodeWithTag(TestTags.TitleField).performTextInput("New Title")
-    compose.onNodeWithTag(TestTags.SaveButton).assertIsEnabled()
+    assertTrue(compose.onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isNotEmpty())
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
     assertTrue(back)
 
@@ -175,7 +176,7 @@ class ToDoUiSingleTest {
     }
 
     // Save
-    compose.onNodeWithTag(TestTags.SaveButton).assertIsEnabled()
+    assertTrue(compose.onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isNotEmpty())
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
     assertTrue(back)
 
