@@ -1,6 +1,5 @@
 package com.android.sample.ui.session
 
-import FakeStudySessionRepository
 import StudySessionRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,8 +18,8 @@ import kotlinx.coroutines.launch
 // Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
 
 data class StudySessionUiState(
-    val selectedTask: Task? = null,
-    val suggestedTasks: List<Task> = emptyList(),
+    val selectedTask: Task? = null, // TODO replace with real task class
+    val suggestedTasks: List<Task> = emptyList(), // TODO replace with real task class
     val pomodoroState: PomodoroState = PomodoroState.IDLE,
     val timeLeft: Int = 1500,
     val completedPomodoros: Int = 0,
@@ -29,12 +28,11 @@ data class StudySessionUiState(
     val isSessionActive: Boolean = false
 )
 
-class Task(val name: String) // temporary
+class Task(val name: String) // TODO replace with real task class
 
 class StudySessionViewModel(
-    private val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
-    private val repository: StudySessionRepository =
-        FakeStudySessionRepository() // temporary until merge then use repository from other branch
+    val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
+    private val repository: StudySessionRepository
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState
@@ -60,7 +58,7 @@ class StudySessionViewModel(
           }
 
           // Detect end of a work session to increment stats
-          if (phase == PomodoroPhase.WORK && state == PomodoroState.FINISHED) {
+          if (phase != PomodoroPhase.WORK && state == PomodoroState.FINISHED) {
             onPomodoroCompleted()
           }
         }
@@ -70,9 +68,11 @@ class StudySessionViewModel(
   private fun onPomodoroCompleted() {
     _uiState.update {
       it.copy(
-          completedPomodoros = it.completedPomodoros + 1,
-          totalMinutes = it.totalMinutes + 25,
-          streakCount = it.streakCount + 1)
+          completedPomodoros =
+              pomodoroViewModel.cycleCount
+                  .value, // TODO: update completed pomodoros with a repository call
+          totalMinutes = it.totalMinutes, // TODO: update total minutes with a repository call
+          streakCount = it.streakCount) // TODO: update streak count with a repository call
     }
     viewModelScope.launch { repository.saveCompletedSession(_uiState.value) }
   }

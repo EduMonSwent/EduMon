@@ -1,5 +1,6 @@
 package com.android.sample.ui.session
 
+import FakeStudySessionRepository
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
@@ -10,10 +11,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.ui.pomodoro.PomodoroScreen
-import com.android.sample.ui.pomodoro.PomodoroViewModel
+import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.session.components.SessionStatsPanel
 import com.android.sample.ui.session.components.SuggestedTasksList
 
@@ -30,8 +30,9 @@ object StudySessionTestTags {
 
 @Composable
 fun StudySessionScreen(
-    viewModel: StudySessionViewModel = viewModel(),
-    pomodoroViewModel: PomodoroViewModel = viewModel()
+    viewModel: StudySessionViewModel =
+        StudySessionViewModel(repository = FakeStudySessionRepository()),
+    pomodoroViewModel: PomodoroViewModelContract = viewModel.pomodoroViewModel
 ) {
   val uiState by viewModel.uiState.collectAsState()
 

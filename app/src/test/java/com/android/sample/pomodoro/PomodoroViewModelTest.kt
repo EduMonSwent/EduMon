@@ -14,6 +14,8 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
+// Parts of this code were written using ChatGPT and AndroidStudio Gemini tool
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class PomodoroViewModelTest {
 

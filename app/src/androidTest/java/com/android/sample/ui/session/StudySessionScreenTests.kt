@@ -1,6 +1,8 @@
 package com.android.sample.ui.session
 
+import FakeStudySessionRepository
 import android.content.Context
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertAny
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
@@ -83,5 +85,30 @@ class StudySessionScreenTest {
     composeTestRule.onNodeWithText("Task A").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task B").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task C").assertIsDisplayed()
+  }
+
+  @Test
+  fun selectedTaskText_displaysWhenTaskIsSelected_realViewModel() {
+    // Arrange: use a real StudySessionViewModel
+    val viewModel = StudySessionViewModel(repository = FakeStudySessionRepository())
+
+    val fakeTask = Task(name = "Read Chapter 3")
+    viewModel.selectTask(fakeTask)
+
+    // Compose the UI
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = viewModel, pomodoroViewModel = viewModel.pomodoroViewModel)
+      }
+    }
+
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val expectedText = context.getString(R.string.selected_task_txt) + " " + fakeTask.name
+
+    // Assert
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.SELECTED_TASK)
+        .assertIsDisplayed()
+        .assert(hasText(expectedText))
   }
 }
