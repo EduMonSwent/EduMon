@@ -1,9 +1,19 @@
 package com.android.sample.ui.session
 
+import FakeStudySessionRepository
+import android.content.Context
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertAny
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.test.core.app.ApplicationProvider
+import com.android.sample.R
+import com.android.sample.ui.session.components.SessionStatsPanel
+import com.android.sample.ui.session.components.SessionStatsPanelTestTags
 import com.android.sample.ui.theme.SampleAppTheme
 import org.junit.Rule
 import org.junit.Test
@@ -26,14 +36,42 @@ class StudySessionScreenTest {
 
   @Test
   fun statsPanel_displaysValuesCorrectly() {
-    composeTestRule.setContent {
-      com.android.sample.ui.session.components.SessionStatsPanel(
-          pomodoros = 3, totalMinutes = 75, streak = 5)
-    }
+    // Arrange
+    composeTestRule.setContent { SessionStatsPanel(pomodoros = 3, totalMinutes = 75, streak = 5) }
 
-    composeTestRule.onNodeWithText("Pomodoros Completed: 3").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Total Study Time: 75 min").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Current Streak: 5 days").assertIsDisplayed()
+    val context = ApplicationProvider.getApplicationContext<Context>()
+
+    // Assert each stat card displays correct text
+
+    // Pomodoros
+    composeTestRule
+        .onNodeWithTag(SessionStatsPanelTestTags.POMODOROS)
+        .onChildren()
+        .assertAny(hasText(context.getString(R.string.pomodoros_completed_txt)))
+    composeTestRule
+        .onNodeWithTag(SessionStatsPanelTestTags.POMODOROS)
+        .onChildren()
+        .assertAny(hasText("3"))
+
+    // Study time
+    composeTestRule
+        .onNodeWithTag(SessionStatsPanelTestTags.TIME)
+        .onChildren()
+        .assertAny(hasText(context.getString(R.string.pomodoro_time_txt)))
+    composeTestRule
+        .onNodeWithTag(SessionStatsPanelTestTags.TIME)
+        .onChildren()
+        .assertAny(hasText("75 " + context.getString(R.string.minute)))
+
+    // Streak
+    composeTestRule
+        .onNodeWithTag(SessionStatsPanelTestTags.STREAK)
+        .onChildren()
+        .assertAny(hasText(context.getString(R.string.current_streak)))
+    composeTestRule
+        .onNodeWithTag(SessionStatsPanelTestTags.STREAK)
+        .onChildren()
+        .assertAny(hasText("5 " + context.getString(R.string.days)))
   }
 
   @Test
@@ -47,5 +85,30 @@ class StudySessionScreenTest {
     composeTestRule.onNodeWithText("Task A").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task B").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task C").assertIsDisplayed()
+  }
+
+  @Test
+  fun selectedTaskText_displaysWhenTaskIsSelected_realViewModel() {
+    // Arrange: use a real StudySessionViewModel
+    val viewModel = StudySessionViewModel(repository = FakeStudySessionRepository())
+
+    val fakeTask = Task(name = "Read Chapter 3")
+    viewModel.selectTask(fakeTask)
+
+    // Compose the UI
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = viewModel, pomodoroViewModel = viewModel.pomodoroViewModel)
+      }
+    }
+
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val expectedText = context.getString(R.string.selected_task_txt) + " " + fakeTask.name
+
+    // Assert
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.SELECTED_TASK)
+        .assertIsDisplayed()
+        .assert(hasText(expectedText))
   }
 }

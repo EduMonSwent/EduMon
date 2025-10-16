@@ -20,10 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.R
 
 // Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
 
@@ -53,14 +55,14 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
 
   val phaseText =
       when (phase) {
-        PomodoroPhase.WORK -> "Work"
-        PomodoroPhase.SHORT_BREAK -> "Short Break"
-        PomodoroPhase.LONG_BREAK -> "Long Break"
+        PomodoroPhase.WORK -> stringResource(R.string.pomodoro_phase_work)
+        PomodoroPhase.SHORT_BREAK -> stringResource(R.string.pomodoro_phase_short_break)
+        PomodoroPhase.LONG_BREAK -> stringResource(R.string.pomodoro_phase_long_break)
       }
 
   val backgroundColor =
       when (phase) {
-        PomodoroPhase.WORK -> MaterialTheme.colorScheme.background
+        PomodoroPhase.WORK -> MaterialTheme.colorScheme.primaryContainer
         PomodoroPhase.SHORT_BREAK -> MaterialTheme.colorScheme.secondaryContainer
         PomodoroPhase.LONG_BREAK -> MaterialTheme.colorScheme.tertiaryContainer
       }
@@ -71,13 +73,13 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
           Text(
-              text = "Pomodoro Timer",
+              text = stringResource(R.string.pomodoro_timer_title),
               fontSize = 28.sp,
               fontWeight = FontWeight.Bold,
               modifier = Modifier.testTag(PomodoroScreenTestTags.TITLE))
           Spacer(modifier = Modifier.height(8.dp))
           Text(
-              "Phase: $phaseText",
+              stringResource(R.string.pomodoro_phase) + " " + phaseText,
               fontSize = 20.sp,
               modifier = Modifier.testTag(PomodoroScreenTestTags.PHASE_TEXT))
           Spacer(modifier = Modifier.height(16.dp))
@@ -88,7 +90,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
               modifier = Modifier.testTag(PomodoroScreenTestTags.TIMER))
           Spacer(modifier = Modifier.height(16.dp))
           Text(
-              "Cycles Completed: $cycleCount",
+              stringResource(R.string.pomodoros_completed_txt) + " $cycleCount",
               fontSize = 16.sp,
               modifier = Modifier.testTag(PomodoroScreenTestTags.CYCLE_COUNT))
           Spacer(modifier = Modifier.height(24.dp))
@@ -96,35 +98,35 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
           when (state) {
             PomodoroState.IDLE ->
                 PomodoroButton(
-                    "Start",
+                    stringResource(R.string.pomodoro_button_start),
                     { viewModel.startTimer() },
                     Modifier.testTag(PomodoroScreenTestTags.START_BUTTON))
             PomodoroState.RUNNING ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                   PomodoroButton(
-                      "Pause",
+                      stringResource(R.string.pomodoro_button_pause),
                       { viewModel.pauseTimer() },
                       Modifier.testTag(PomodoroScreenTestTags.PAUSE_BUTTON))
 
                   PomodoroButton(
-                      "Skip",
+                      stringResource(R.string.pomodoro_button_skip),
                       { viewModel.nextPhase() },
                       Modifier.testTag(PomodoroScreenTestTags.SKIP_BUTTON))
                 }
             PomodoroState.PAUSED ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                   PomodoroButton(
-                      "Resume",
+                      stringResource(R.string.pomodoro_button_resume),
                       { viewModel.resumeTimer() },
                       Modifier.testTag(PomodoroScreenTestTags.RESUME_BUTTON))
                   PomodoroButton(
-                      "Reset",
+                      stringResource(R.string.pomodoro_button_reset),
                       { viewModel.resetTimer() },
                       Modifier.testTag(PomodoroScreenTestTags.RESET_BUTTON))
                 }
             PomodoroState.FINISHED ->
                 PomodoroButton(
-                    "Next Phase",
+                    stringResource(R.string.pomodoro_Button_next_phase),
                     { viewModel.nextPhase() },
                     Modifier.testTag(PomodoroScreenTestTags.NEXT_PHASE_BUTTON))
           }
