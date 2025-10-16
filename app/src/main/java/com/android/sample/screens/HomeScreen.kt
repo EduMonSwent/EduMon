@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +42,25 @@ import com.android.sample.repositories.HomeViewModel
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
+
+/** ---------- Test tags used by UI tests ---------- */
+object HomeTestTags {
+    const val MENU_BUTTON = "home_menu_button"
+
+    // Drawer & bottom bar items (use route so tests can be generic)
+    fun drawerTag(route: String) = "drawer_$route"
+    fun bottomTag(route: String) = "bottom_$route"
+
+    // Cards / chips / actions
+    const val TODAY_SEE_ALL = "today_see_all"
+    const val CHIP_OPEN_PLANNER = "chip_open_planner"
+    const val CHIP_FOCUS_MODE = "chip_focus_mode"
+
+    const val QUICK_STUDY = "quick_study"
+    const val QUICK_BREAK = "quick_break"
+    const val QUICK_EXERCISE = "quick_exercise"
+    const val QUICK_SOCIAL = "quick_social"
+}
 
 // ---------- Destinations ----------
 enum class AppDestination(val route: String, val label: String, val icon: ImageVector) {
@@ -122,7 +142,10 @@ fun EduMonHomeScreen(
                                 unselectedIconColor = MaterialTheme.colorScheme.primary,
                                 selectedIconColor = MaterialTheme.colorScheme.primary,
                             ),
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+                        modifier = Modifier
+                            .padding(NavigationDrawerItemDefaults.ItemPadding)
+                            .testTag(HomeTestTags.drawerTag(dest.route))
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
             }
@@ -133,7 +156,10 @@ fun EduMonHomeScreen(
                 CenterAlignedTopAppBar(
                     title = {},
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                        IconButton(
+                            onClick = { scope.launch { drawerState.open() } },
+                            modifier = Modifier.testTag(HomeTestTags.MENU_BUTTON)
+                        ) {
                             Icon(Icons.Outlined.Menu, contentDescription = "Menu")
                         }
                     },
@@ -205,6 +231,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
                 onClick = { onNavigate(item.route) },
                 icon = { Icon(item.icon, contentDescription = item.label) },
                 label = { Text(item.label) },
+                modifier = Modifier.testTag(HomeTestTags.bottomTag(item.route)),
                 colors =
                     NavigationBarItemDefaults.colors(
                         indicatorColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -289,7 +316,9 @@ fun TodayTodosCard(
                 Text(
                     "See all",
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { onSeeAll() })
+                    modifier = Modifier
+                        .testTag(HomeTestTags.TODAY_SEE_ALL)
+                        .clickable { onSeeAll() })
             }
             Spacer(Modifier.height(6.dp))
 
@@ -366,11 +395,15 @@ fun AffirmationsAndRemindersCard(
                 AssistChip(
                     onClick = onOpenPlanner,
                     label = { Text("Open Planner") },
-                    leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) })
+                    leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
+                    modifier = Modifier.testTag(HomeTestTags.CHIP_OPEN_PLANNER)
+                )
                 AssistChip(
                     onClick = {},
                     label = { Text("Focus Mode") },
-                    leadingIcon = { Icon(Icons.Outlined.DoNotDisturbOn, contentDescription = null) })
+                    leadingIcon = { Icon(Icons.Outlined.DoNotDisturbOn, contentDescription = null) },
+                    modifier = Modifier.testTag(HomeTestTags.CHIP_FOCUS_MODE)
+                )
             }
         }
     }
@@ -394,12 +427,32 @@ fun QuickActionsCard(
             Spacer(Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    QuickButton("Study 30m", Icons.Outlined.MenuBook, Modifier.weight(1f), onStudy)
-                    QuickButton("Take Break", Icons.Outlined.Coffee, Modifier.weight(1f), onTakeBreak)
+                    QuickButton(
+                        "Study 30m",
+                        Icons.Outlined.MenuBook,
+                        Modifier.weight(1f).testTag(HomeTestTags.QUICK_STUDY),
+                        onStudy
+                    )
+                    QuickButton(
+                        "Take Break",
+                        Icons.Outlined.Coffee,
+                        Modifier.weight(1f).testTag(HomeTestTags.QUICK_BREAK),
+                        onTakeBreak
+                    )
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    QuickButton("Exercise", Icons.Outlined.FitnessCenter, Modifier.weight(1f), onExercise)
-                    QuickButton("Social Time", Icons.Outlined.Groups2, Modifier.weight(1f), onSocial)
+                    QuickButton(
+                        "Exercise",
+                        Icons.Outlined.FitnessCenter,
+                        Modifier.weight(1f).testTag(HomeTestTags.QUICK_EXERCISE),
+                        onExercise
+                    )
+                    QuickButton(
+                        "Social Time",
+                        Icons.Outlined.Groups2,
+                        Modifier.weight(1f).testTag(HomeTestTags.QUICK_SOCIAL),
+                        onSocial
+                    )
                 }
             }
         }
@@ -414,7 +467,10 @@ private fun QuickButton(
     onClick: () -> Unit,
 ) {
     Surface(
-        modifier = modifier.height(56.dp).clip(RoundedCornerShape(16.dp)).clickable { onClick() },
+        modifier = modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() },
         color = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
@@ -432,28 +488,26 @@ private fun QuickButton(
 @Composable
 fun GlowCard(content: @Composable () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition(label = "glowAnim")
-    val glowAlpha by
-    infiniteTransition.animateFloat(
+    val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.25f,
         targetValue = 0.6f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 2500, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse),
-        label = "glowAlpha")
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse),
+        label = "glowAlpha"
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth(0.9f).shadow(16.dp, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MidDarkCard)) {
         Box(
-            modifier =
-                Modifier.background(
-                    Brush.radialGradient(
-                        colors =
-                            listOf(AccentViolet.copy(alpha = glowAlpha), Color.Transparent)))) {
-            content()
-        }
+            modifier = Modifier.background(
+                Brush.radialGradient(
+                    colors = listOf(AccentViolet.copy(alpha = glowAlpha), Color.Transparent)
+                )
+            )
+        ) { content() }
     }
 }
 
@@ -462,7 +516,6 @@ fun GlowCard(content: @Composable () -> Unit) {
 @Composable
 private fun HomePreview() {
     MaterialTheme(colorScheme = darkColorScheme()) {
-        // Replace with your real drawables
         EduMonHomeRoute(
             creatureResId = R.drawable.edumon, environmentResId = R.drawable.home, onNavigate = {})
     }
