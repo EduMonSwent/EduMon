@@ -1,10 +1,10 @@
 package com.android.sample.todo
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -141,12 +141,35 @@ class ToDoUiSingleTest {
 
     assertTrue(back)
   }
-}
 
-// Small helper: avoid NoSuchElementException when a tag may or may not exist
-private fun SemanticsNodeInteraction.fetchSemanticsNodeOrNull() =
-    try {
-      fetchSemanticsNode()
-    } catch (_: AssertionError) {
-      null
+  // small helper so the assertions read cleanly
+  private fun assertHas(tag: String, useUnmergedTree: Boolean = true) {
+    val nodes = compose.onAllNodesWithTag(tag, useUnmergedTree).fetchSemanticsNodes()
+    assertTrue(nodes.isNotEmpty())
+  }
+
+  @Test
+  fun editToDoScreen_renders_core_components() {
+    // 1) Seed repo with an existing item that EditToDoScreen will load by id="1"
+    val repo = ToDoRepositoryProvider.repository
+    runBlocking {
+      repo.add(
+          ToDo(
+              id = "1",
+              title = "Original Title",
+              dueDate = LocalDate.now(),
+              status = Status.TODO,
+              priority = Priority.MEDIUM,
+          ))
     }
+    compose.setContent { EditToDoScreen(id = "1", onBack = {}) }
+    compose.waitForIdle()
+
+    assertHas(TestTags.TitleField)
+    assertHas(TestTags.DueDateField)
+    assertHas(TestTags.PriorityDropdown)
+    assertHas(TestTags.StatusDropdown)
+    assertHas(TestTags.OptionalToggle)
+    assertHas(TestTags.SaveButton)
+  }
+}
