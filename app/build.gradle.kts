@@ -43,7 +43,7 @@ extensions.configure<BaseAppModuleExtension>("android") {
     }
 
     testCoverage {
-        jacocoVersion = "0.8.8"
+        jacocoVersion = "0.8.11"
     }
 
     buildFeatures.compose = true
@@ -83,19 +83,30 @@ extensions.configure<BaseAppModuleExtension>("android") {
 
 sonar {
     properties {
+        property("sonar.token", System.getenv("SONAR_TOKEN")?.trim() ?: "")
         property("sonar.projectKey", "EduMonSwent_EduMon")
         property("sonar.projectName", "EduMon")
         property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
+        property("sonar.gradle.skipCompile", "true") // pour éviter le warning de compilation
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
-        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
+        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugUnitTest/")
         // Paths to xml files with Android Lint issues. If the main flavor is changed, this file will have to be changed too.
         property("sonar.androidLint.reportPaths", "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml")
         // Paths to JaCoCo XML coverage report files.
         property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+        property(
+            "sonar.coverage.exclusions",
+            "**/MainActivity.kt, **/ui/theme/**, **/*@*rememberInfiniteTransition*, **/*@*painterResource*, **/*@*Brush*"
+        )
+
+
     }
 }
 // Utilitaire global pour tests partagés
+
+
+// When a library is used both by robolectric and connected tests, use this function
 fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
     androidTestImplementation(dep)
     testImplementation(dep)
@@ -115,6 +126,7 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.viewmodel)
     implementation(libs.compose.preview)
+    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation(libs.compose.tooling)
     globalTestImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
