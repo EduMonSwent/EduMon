@@ -33,7 +33,8 @@ class Task(val name: String) // temporary
 
 class StudySessionViewModel(
     private val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
-    private val repository: StudySessionRepository = FakeStudySessionRepository()
+    private val repository: StudySessionRepository =
+        FakeStudySessionRepository() // temporary until merge then use repository from other branch
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState

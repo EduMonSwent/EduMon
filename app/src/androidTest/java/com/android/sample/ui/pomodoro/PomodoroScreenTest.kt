@@ -1,8 +1,11 @@
 package com.android.sample.ui.pomodoro
 
+import android.content.Context
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.lifecycle.ViewModel
+import androidx.test.core.app.ApplicationProvider
+import com.android.sample.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
@@ -33,10 +36,14 @@ class PomodoroScreenTest {
   fun showsPhaseNameCorrectly() {
     fakeViewModel.setPhase(PomodoroPhase.SHORT_BREAK)
     composeTestRule.waitForIdle()
+    val context = ApplicationProvider.getApplicationContext<Context>()
     composeTestRule.onNodeWithTag(PomodoroScreenTestTags.PHASE_TEXT).assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(PomodoroScreenTestTags.PHASE_TEXT)
-        .assertTextEquals("Phase: Short Break")
+        .assertTextEquals(
+            context.getString(R.string.pomodoro_phase) +
+                " " +
+                context.getString(R.string.pomodoro_phase_short_break))
   }
 
   @Test
@@ -172,9 +179,10 @@ class PomodoroScreenTest {
   fun showsCycleCountText() {
     fakeViewModel.setCycleCount(3)
     composeTestRule.waitForIdle()
+    val context = ApplicationProvider.getApplicationContext<Context>()
     composeTestRule
         .onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT)
-        .assertTextEquals("Cycles Completed: 3")
+        .assertTextEquals(context.getString(R.string.pomodoros_completed_txt) + " 3")
         .assertIsDisplayed()
   }
 
@@ -182,15 +190,16 @@ class PomodoroScreenTest {
   fun cycleCountUpdatesWhenChanged() {
     fakeViewModel.setCycleCount(1)
     composeTestRule.waitForIdle()
+    val context = ApplicationProvider.getApplicationContext<Context>()
     composeTestRule
         .onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT)
-        .assertTextEquals("Cycles Completed: 1")
+        .assertTextEquals(context.getString(R.string.pomodoros_completed_txt) + " 1")
 
     fakeViewModel.setCycleCount(5)
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(PomodoroScreenTestTags.CYCLE_COUNT)
-        .assertTextEquals("Cycles Completed: 5")
+        .assertTextEquals(context.getString(R.string.pomodoros_completed_txt) + " 5")
   }
 }
 
