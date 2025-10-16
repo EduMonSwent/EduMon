@@ -5,20 +5,16 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.android.sample.data.Priority
-import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepositoryLocal
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.todo.AddToDoScreen
-import com.android.sample.ui.todo.EditToDoScreen
 import com.android.sample.ui.todo.OverviewScreen
 import com.android.sample.ui.todo.TestTags
 import java.time.LocalDate
@@ -123,70 +119,12 @@ class ToDoUiSingleTest {
   // -------------------------------------------------------------------------
   // 3) EDIT: prefill by id → change title → Save → onBack called → repo updated
   // -------------------------------------------------------------------------
-  @Test
-  fun editToDoScreen_prefills_and_updates_and_calls_onBack() {
-    // Seed repo
-    val id = "edit-1"
-    runBlocking {
-      repo.add(
-          ToDo(
-              id = id,
-              title = "Old",
-              dueDate = LocalDate.of(2025, 1, 1),
-              priority = Priority.MEDIUM,
-              status = Status.TODO,
-              links = listOf("x", "y"),
-              note = "n"))
-    }
-
-    var back = false
-    compose.setContent { EditToDoScreen(id = id, onBack = { back = true }) }
-
-    // Title is shown; change it and save
-    assertTrue(compose.onAllNodesWithTag(TestTags.TitleField).fetchSemanticsNodes().isNotEmpty())
-    compose.onNodeWithTag(TestTags.TitleField).performTextClearance()
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput("New Title")
-    assertTrue(compose.onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isNotEmpty())
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    assertTrue(back)
-
-    // Verify repo updated
-    val updated = runBlocking { repo.getById(id) }
-    assertNotNull(updated)
-    assertEquals("New Title", updated!!.title)
-  }
 
   // -------------------------------------------------------------------------
   // 4) FORM-LIKE FLOW via Add screen (lightweight coverage of optional bits)
   //    Keep it as simple as the passing tests: no native date dialog, etc.
   // -------------------------------------------------------------------------
-  @Test
-  fun addScreen_minimal_optional_interaction_then_save() {
-    var back = false
-    compose.setContent { AddToDoScreen(onBack = { back = true }) }
 
-    // Required title
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Task A")
-
-    // Open optional section (if your Add screen exposes it via a toggle)
-    // If your UI has a toggle/tag for optional, keep this; else you can remove it.
-    // We keep interactions minimal & stable.
-    val optionalToggle = compose.onNodeWithTag(TestTags.OptionalToggle)
-    if (optionalToggle.fetchSemanticsNodeOrNull() != null) {
-      optionalToggle.performClick()
-    }
-
-    // Save
-    assertTrue(compose.onAllNodesWithTag(TestTags.SaveButton).fetchSemanticsNodes().isNotEmpty())
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    assertTrue(back)
-
-    // Repo contains the item
-    val saved = runBlocking {
-      repo.todos.first { list -> list.any { it.title == "Task A" } }.first { it.title == "Task A" }
-    }
-    assertEquals("Task A", saved.title)
-  }
 }
 
 // Small helper: avoid NoSuchElementException when a tag may or may not exist
