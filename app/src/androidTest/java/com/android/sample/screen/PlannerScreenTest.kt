@@ -7,6 +7,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.model.planner.*
 import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.planner.PlannerScreenTestTags
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,8 +78,10 @@ class PlannerScreenTest {
     // Check section header
     composeTestRule.onNodeWithText("Today's Classes", ignoreCase = true).assertExists()
 
-    // Check date display
-    composeTestRule.onNodeWithText("Wednesday, Oct 15", ignoreCase = true).assertExists()
+    val today = LocalDate.now()
+    val formattedDate = today.format(DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH))
+
+    composeTestRule.onNodeWithText(formattedDate, ignoreCase = true).assertExists()
   }
 
   @Test
