@@ -27,9 +27,9 @@ class FlashcardsFlowTest {
   @Test
   fun studyFlow_withPrepopulatedDeck_navigatesAndShowsContent() {
     InMemoryFlashcardsRepository.createDeck(
-      title = "CI Deck",
-      description = "Preloaded",
-      cards = listOf(Flashcard("","What is binary search?", "O(log n)")))
+        title = "CI Deck",
+        description = "Preloaded",
+        cards = listOf(Flashcard("", "What is binary search?", "O(log n)")))
 
     composeRule.setContent { EduMonTheme { FlashcardsApp() } }
 
@@ -50,4 +50,3 @@ class FlashcardsFlowTest {
     composeRule.onNodeWithText("Flashcards").assertIsDisplayed()
   }
 }
-
