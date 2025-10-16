@@ -148,6 +148,15 @@ dependencies {
     implementation(libs.firebase.database.ktx)
 
     implementation(libs.compose.material.icons.extended)
+
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.auth)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
 }
 
 
