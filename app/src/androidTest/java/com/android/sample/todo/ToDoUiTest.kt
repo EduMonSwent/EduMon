@@ -9,12 +9,15 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.android.sample.data.Priority
+import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepositoryLocal
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.todo.AddToDoScreen
+import com.android.sample.ui.todo.EditToDoScreen
 import com.android.sample.ui.todo.OverviewScreen
 import com.android.sample.ui.todo.TestTags
 import java.time.LocalDate
@@ -116,15 +119,36 @@ class ToDoUiSingleTest {
     assertNotNull(saved)
   }
 
-  // -------------------------------------------------------------------------
-  // 3) EDIT: prefill by id → change title → Save → onBack called → repo updated
-  // -------------------------------------------------------------------------
+  @Test
+  fun editToDoScreen_updatesItem_and_calls_onBack() {
+    var back = false
+    val existing =
+        ToDo(
+            id = "1",
+            title = "Original Title",
+            dueDate = LocalDate.now(),
+            priority = Priority.LOW,
+            status = Status.TODO)
+    runBlocking { repo.add(existing) }
 
-  // -------------------------------------------------------------------------
-  // 4) FORM-LIKE FLOW via Add screen (lightweight coverage of optional bits)
-  //    Keep it as simple as the passing tests: no native date dialog, etc.
-  // -------------------------------------------------------------------------
+    compose.setContent { EditToDoScreen(existing.id, onBack = { back = true }) }
 
+    val titleField = compose.onNodeWithTag(TestTags.TitleField)
+    titleField.performTextClearance()
+    titleField.performTextInput("Updated Title")
+
+    compose.onNodeWithTag(TestTags.SaveButton).assertIsEnabled().performClick()
+
+    assertTrue(back)
+
+    val updated = runBlocking {
+      repo.todos
+          .first { list -> list.any { it.title == "Updated Title" } }
+          .firstOrNull { it.title == "Updated Title" }
+    }
+    assertNotNull(updated)
+    assertEquals("Updated Title", updated!!.title)
+  }
 }
 
 // Small helper: avoid NoSuchElementException when a tag may or may not exist
