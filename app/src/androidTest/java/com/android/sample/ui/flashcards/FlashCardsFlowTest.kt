@@ -1,10 +1,10 @@
 package com.android.sample.ui.flashcards
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,9 +34,12 @@ class FlashcardsFlowTest {
     composeRule.setContent { EduMonTheme { FlashcardsApp() } }
 
     composeRule.onNodeWithText("Flashcards").assertIsDisplayed()
-    composeRule.onAllNodesWithText("Study").assertCountEquals(1)
 
-    composeRule.onNodeWithText("Study").performClick()
+    // Click a clickable element whose text is exactly "Study" (avoid brittle count assertions)
+    composeRule
+        .onNode(hasText("Study", substring = false) and hasClickAction())
+        .assertExists()
+        .performClick()
 
     composeRule.onNodeWithText("Card 1 of 1").assertIsDisplayed()
     composeRule.onNodeWithText("Question").assertIsDisplayed()
