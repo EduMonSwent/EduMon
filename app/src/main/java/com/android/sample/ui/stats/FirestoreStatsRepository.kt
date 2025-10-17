@@ -1,5 +1,6 @@
 package com.android.sample.ui.stats
 
+import com.android.sample.ui.stats.model.StudyStats
 import com.android.sample.ui.util.WeekUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -8,6 +9,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
+/**
+ * Deprecated: The app uses the FakeStatsRepository via StatsViewModel for the Stats screen. Keep
+ * this file only for future integration work; do not reference in production code.
+ */
+@Deprecated("Not used by the app. Use FakeStatsRepository through StatsViewModel instead.")
 class FirestoreStatsRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()

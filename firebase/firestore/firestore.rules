@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only rules for the "todos" collection
+    match /todos/{todoId} {
+
+      // Helpers
+      function signedIn() {
+        return request.auth != null;
+      }
+      function isOwnerDoc() {
+        // For reads/updates/deletes: compare caller to stored ownerId
+        return signedIn() && request.auth.uid == resource.data.ownerId;
+      }
+      function isOwnerForCreate() {
+        // For creates: compare caller to incoming ownerId
+        return signedIn() && request.auth.uid == request.resource.data.ownerId;
+      }
+
+      // READS (queries must filter to ownerId == request.auth.uid)
+      allow get, list: if isOwnerDoc();
+
+      // WRITES — ownership only, no schema checks
+      allow create: if isOwnerForCreate();
+      allow update: if isOwnerDoc()
+                    && request.resource.data.ownerId == resource.data.ownerId; // ownerId immutable
+      allow delete: if isOwnerDoc();
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
