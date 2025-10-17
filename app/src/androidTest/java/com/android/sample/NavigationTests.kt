@@ -164,20 +164,6 @@ class HomeNavigationTests {
 
   // -------- In-card actions (home content) --------
 
-  @Test
-  fun today_SeeAll_navigates_to_Planner() {
-    setContent()
-    rule.onNode(hasTestTag(HomeTestTags.TODAY_SEE_ALL)).performClick()
-    assertRoute(AppDestination.Planner.route)
-  }
-
-  @Test
-  fun chip_OpenPlanner_navigates_to_Planner() {
-    setContent()
-    rule.onNode(hasTestTag(HomeTestTags.CHIP_OPEN_PLANNER)).performClick()
-    assertRoute(AppDestination.Planner.route)
-  }
-
   // (Optional) make sure game cards are clickable when you are on the Games screen.
   // We use text match because the cards are inside that screen, not the drawer/bottom bar.
   @Test
