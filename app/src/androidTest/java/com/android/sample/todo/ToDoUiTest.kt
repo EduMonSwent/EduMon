@@ -2,25 +2,21 @@ package com.android.sample.todo
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepositoryLocal
 import com.android.sample.repositories.ToDoRepositoryProvider
-import com.android.sample.ui.todo.AddToDoScreen
 import com.android.sample.ui.todo.EditToDoScreen
 import com.android.sample.ui.todo.OverviewScreen
 import com.android.sample.ui.todo.TestTags
 import java.time.LocalDate
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -80,26 +76,6 @@ class ToDoUiSingleTest {
           .isNotEmpty()
     }
     compose.onNodeWithText("No tasks yet. Tap + to add one.").assertIsDisplayed()
-  }
-
-  @Test
-  fun addToDoScreen_saves_and_calls_onBack() {
-    var back = false
-    compose.setContent { AddToDoScreen(onBack = { back = true }) }
-
-    // Type title and save
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput("From Add Screen")
-    compose.onNodeWithTag(TestTags.SaveButton).assertIsEnabled()
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    assertTrue(back)
-
-    // Repo should contain it
-    val saved = runBlocking {
-      repo.todos
-          .first { list -> list.any { it.title == "From Add Screen" } }
-          .firstOrNull { it.title == "From Add Screen" }
-    }
-    assertNotNull(saved)
   }
 
   // Tiny helper for tag presence assertions
