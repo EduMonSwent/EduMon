@@ -2,9 +2,8 @@ package com.android.sample.ui.flashcards
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -36,10 +35,15 @@ class FlashcardsFlowTest {
     composeRule.onNodeWithText("Flashcards").assertIsDisplayed()
 
     // Click a clickable element whose text is exactly "Study" (avoid brittle count assertions)
-    composeRule
-        .onNode(hasText("Study", substring = false) and hasClickAction())
-        .assertExists()
-        .performClick()
+    // composeRule
+    //     .onNode(hasText("Study", substring = false) and hasClickAction())
+    //     .assertExists()
+    //     .performClick()
+
+    // Ensure there is at least one "Study" node, then click the first one
+    val studyNodes = composeRule.onAllNodesWithText("Study")
+    composeRule.waitUntil(3_000) { studyNodes.fetchSemanticsNodes().isNotEmpty() }
+    studyNodes[0].performClick()
 
     composeRule.onNodeWithText("Card 1 of 1").assertIsDisplayed()
     composeRule.onNodeWithText("Question").assertIsDisplayed()
