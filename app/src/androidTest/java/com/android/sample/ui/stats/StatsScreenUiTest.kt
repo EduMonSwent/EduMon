@@ -1,4 +1,3 @@
-
 // app/src/androidTest/java/com/android/sample/ui/stats/StatsScreenUiTest.kt
 package com.android.sample.ui.stats
 
@@ -19,6 +18,9 @@ class StatsScreenUiTest {
 
   @Test
   fun renders_stats_title_and_sections() {
+
+
+
     val repo = FakeStatsRepository()
     val stats = repo.stats.value
     val titles = repo.titles
@@ -36,6 +38,6 @@ class StatsScreenUiTest {
     // Sections may be below the fold on small CI devices: assert existence via nodes list
     assertTrue(rule.onAllNodesWithText("Répartition par cours").fetchSemanticsNodes().isNotEmpty())
     assertTrue(
-      rule.onAllNodesWithText("Progression sur 7 jours").fetchSemanticsNodes().isNotEmpty())
+        rule.onAllNodesWithText("Progression sur 7 jours").fetchSemanticsNodes().isNotEmpty())
   }
 }
