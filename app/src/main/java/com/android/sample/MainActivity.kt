@@ -13,6 +13,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.android.sample.screens.AppDestination
+import com.android.sample.screens.EduMonHomeRoute
+import com.android.sample.screens.EduMonHomeScreen
 import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
@@ -41,7 +44,7 @@ class MainActivity : ComponentActivity() {
           val l =
               FirebaseAuth.AuthStateListener { fa ->
                 val u = fa.currentUser
-                val goTo = if (u == null) "login" else "stats"
+                val goTo = if (u == null) "login" else "app"
                 user = u
                 // évite les doublons de back stack
                 nav.navigate(goTo) {
@@ -56,7 +59,7 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             topBar = {
               CenterAlignedTopAppBar(
-                  title = { Text(if (user == null) "EduMon — Connexion" else "EduMon — Stats") },
+                  title = { Text(if (user == null) "EduMon — Connexion" else "") },
                   actions = {
                     if (user != null) {
                       TextButton(onClick = { signOutAll() }) { Text("Déconnexion") }
@@ -66,18 +69,12 @@ class MainActivity : ComponentActivity() {
               Box(Modifier.fillMaxSize().padding(padding)) {
                 NavHost(
                     navController = nav,
-                    startDestination = if (user == null) "login" else "stats") {
+                    startDestination = if (user == null) "login" else "app") {
                       composable("login") {
-                        // Écran login — quand Google/Firebase connecte, l’AuthStateListener push
-                        // vers "stats"
                         LoginScreen()
                       }
 
-                      composable("stats") {
-                        // VM créée uniquement sur l’écran Stats (évite NPE quand pas loggé)
-                        val statsVm: StatsViewModel = viewModel()
-
-                        // Brancher Firestore en toute sécurité (après login)
+                      composable("app") {
                         LaunchedEffect(user?.uid) {
                           user?.let {
                             try {} catch (_: Exception) {
@@ -85,8 +82,7 @@ class MainActivity : ComponentActivity() {
                             }
                           }
                         }
-
-                        StatsRoute(viewModel = statsVm)
+                          EduMonNavHost()
                       }
                     }
               }
