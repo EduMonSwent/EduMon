@@ -14,7 +14,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
-import com.android.sample.ui.stats.FirestoreStatsRepository
 import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
 import com.android.sample.ui.theme.EduMonTheme
@@ -81,9 +80,7 @@ class MainActivity : ComponentActivity() {
                         // Brancher Firestore en toute sécurité (après login)
                         LaunchedEffect(user?.uid) {
                           user?.let {
-                            try {
-                              val repo = FirestoreStatsRepository()
-                            } catch (_: Exception) {
+                            try {} catch (_: Exception) {
                               // en cas d’erreur Firestore: l’UI reste sur le mode Scénarios (fake)
                             }
                           }
