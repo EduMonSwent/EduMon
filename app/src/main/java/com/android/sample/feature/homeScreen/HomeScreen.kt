@@ -1,6 +1,5 @@
-package com.android.sample.feature.homeScreen
+package com.android.sample.screens
 
-// 🔽 Only dependency on creature UI:
 import android.content.res.Configuration
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -26,6 +25,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,14 +33,35 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.CreatureEnvironmentSection
 import com.android.sample.R
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
+import com.android.sample.feature.homeScreen.HomeUiState
+import com.android.sample.feature.homeScreen.HomeViewModel
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
+
+/** ---------- Test tags used by UI tests ---------- */
+object HomeTestTags {
+  const val MENU_BUTTON = "home_menu_button"
+
+  // Drawer & bottom bar items (use route so tests can be generic)
+  fun drawerTag(route: String) = "drawer_$route"
+
+  fun bottomTag(route: String) = "bottom_$route"
+
+  // Cards / chips / actions
+  const val TODAY_SEE_ALL = "today_see_all"
+  const val CHIP_OPEN_PLANNER = "chip_open_planner"
+  const val CHIP_FOCUS_MODE = "chip_focus_mode"
+
+  const val QUICK_STUDY = "quick_study"
+  const val QUICK_BREAK = "quick_break"
+  const val QUICK_EXERCISE = "quick_exercise"
+  const val QUICK_SOCIAL = "quick_social"
+}
 
 // ---------- Destinations ----------
 enum class AppDestination(val route: String, val label: String, val icon: ImageVector) {
@@ -48,10 +69,10 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   Profile("profile", "Profile", Icons.Outlined.Person),
   Calendar("calendar", "Calendar", Icons.Outlined.CalendarMonth),
   Planner("planner", "Planner", Icons.Outlined.EventNote),
-  Study("study", "Study Session", Icons.Outlined.Timer),
-  Settings("settings", "Settings", Icons.Outlined.Settings),
+  Study("study", "Study", Icons.Outlined.Timer),
   Games("games", "Games", Icons.Outlined.Extension),
-  Stats("stats", "Stats", Icons.Outlined.BarChart),
+  Stats("stats", "Stats", Icons.Outlined.ShowChart),
+  Flashcards("flashcards", "Flashcards", Icons.Outlined.FlashOn),
 }
 
 // ---------- Route (hooks up VM to UI) ----------
@@ -122,7 +143,9 @@ fun EduMonHomeScreen(
                             unselectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                         ),
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+                    modifier =
+                        Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            .testTag(HomeTestTags.drawerTag(dest.route)))
               }
               Spacer(Modifier.height(8.dp))
             }
@@ -133,9 +156,11 @@ fun EduMonHomeScreen(
               CenterAlignedTopAppBar(
                   title = {},
                   navigationIcon = {
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                      Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                    }
+                    IconButton(
+                        onClick = { scope.launch { drawerState.open() } },
+                        modifier = Modifier.testTag(HomeTestTags.MENU_BUTTON)) {
+                          Icon(Icons.Outlined.Menu, contentDescription = "Menu")
+                        }
                   },
                   colors =
                       TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -150,19 +175,21 @@ fun EduMonHomeScreen(
                       .verticalScroll(rememberScrollState())
                       .padding(horizontal = 16.dp, vertical = 8.dp),
                   verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                    // 👇 Single call into the creature environment file
-                    CreatureEnvironmentSection(
+                    CreatureHouseCard(
                         creatureResId = creatureResId,
-                        environmentResId = environmentResId,
                         level = state.creatureStats.level,
-                        happiness = state.creatureStats.happiness,
-                        health = state.creatureStats.health,
-                        energy = state.creatureStats.energy,
-                        // Provide your UserStats card as a slot so layout stays the same
-                        userStats = { mod ->
-                          UserStatsCard(stats = state.userStats, modifier = mod)
-                        })
+                        environmentResId = environmentResId)
+
+                    Row(
+                        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                          CreatureStatsCard(
+                              stats = state.creatureStats,
+                              modifier = Modifier.weight(1f).fillMaxHeight())
+                          UserStatsCard(
+                              stats = state.userStats,
+                              modifier = Modifier.weight(1f).fillMaxHeight())
+                        }
 
                     AffirmationsAndRemindersCard(
                         quote = state.quote,
@@ -192,7 +219,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
       listOf(
           AppDestination.Home,
           AppDestination.Calendar,
-          AppDestination.Stats,
+          AppDestination.Study,
           AppDestination.Profile,
           AppDestination.Games,
       )
@@ -203,6 +230,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
           onClick = { onNavigate(item.route) },
           icon = { Icon(item.icon, contentDescription = item.label) },
           label = { Text(item.label) },
+          modifier = Modifier.testTag(HomeTestTags.bottomTag(item.route)),
           colors =
               NavigationBarItemDefaults.colors(
                   indicatorColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -287,7 +315,7 @@ fun TodayTodosCard(
             Text(
                 "See all",
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { onSeeAll() })
+                modifier = Modifier.testTag(HomeTestTags.TODAY_SEE_ALL).clickable { onSeeAll() })
           }
           Spacer(Modifier.height(6.dp))
 
@@ -364,11 +392,13 @@ fun AffirmationsAndRemindersCard(
             AssistChip(
                 onClick = onOpenPlanner,
                 label = { Text("Open Planner") },
-                leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) })
+                leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
+                modifier = Modifier.testTag(HomeTestTags.CHIP_OPEN_PLANNER))
             AssistChip(
                 onClick = {},
                 label = { Text("Focus Mode") },
-                leadingIcon = { Icon(Icons.Outlined.DoNotDisturbOn, contentDescription = null) })
+                leadingIcon = { Icon(Icons.Outlined.DoNotDisturbOn, contentDescription = null) },
+                modifier = Modifier.testTag(HomeTestTags.CHIP_FOCUS_MODE))
           }
         }
       }
@@ -392,12 +422,28 @@ fun QuickActionsCard(
           Spacer(Modifier.height(10.dp))
           Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-              QuickButton("Study 30m", Icons.Outlined.MenuBook, Modifier.weight(1f), onStudy)
-              QuickButton("Take Break", Icons.Outlined.Coffee, Modifier.weight(1f), onTakeBreak)
+              QuickButton(
+                  "Study 30m",
+                  Icons.Outlined.MenuBook,
+                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_STUDY),
+                  onStudy)
+              QuickButton(
+                  "Take Break",
+                  Icons.Outlined.Coffee,
+                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_BREAK),
+                  onTakeBreak)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-              QuickButton("Exercise", Icons.Outlined.FitnessCenter, Modifier.weight(1f), onExercise)
-              QuickButton("Social Time", Icons.Outlined.Groups2, Modifier.weight(1f), onSocial)
+              QuickButton(
+                  "Exercise",
+                  Icons.Outlined.FitnessCenter,
+                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_EXERCISE),
+                  onExercise)
+              QuickButton(
+                  "Social Time",
+                  Icons.Outlined.Groups2,
+                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_SOCIAL),
+                  onSocial)
             }
           }
         }
