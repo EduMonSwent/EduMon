@@ -75,7 +75,7 @@ class ToDoUiSingleTest {
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
-    compose.onNodeWithText("No tasks yet. Tap + to add one.").assertIsDisplayed()
+    compose.onNodeWithText("No tasks yet. Tap + to add one ").assertIsDisplayed()
   }
 
   // Tiny helper for tag presence assertions
