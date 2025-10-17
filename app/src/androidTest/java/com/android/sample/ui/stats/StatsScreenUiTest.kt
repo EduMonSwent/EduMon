@@ -1,3 +1,4 @@
+
 // app/src/androidTest/java/com/android/sample/ui/stats/StatsScreenUiTest.kt
 package com.android.sample.ui.stats
 
@@ -35,6 +36,6 @@ class StatsScreenUiTest {
     // Sections may be below the fold on small CI devices: assert existence via nodes list
     assertTrue(rule.onAllNodesWithText("Répartition par cours").fetchSemanticsNodes().isNotEmpty())
     assertTrue(
-        rule.onAllNodesWithText("Progression sur 7 jours").fetchSemanticsNodes().isNotEmpty())
+      rule.onAllNodesWithText("Progression sur 7 jours").fetchSemanticsNodes().isNotEmpty())
   }
 }
