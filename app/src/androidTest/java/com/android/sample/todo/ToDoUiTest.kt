@@ -71,7 +71,7 @@ class ToDoUiSingleTest {
     // Back to empty
     compose.waitUntil(timeoutMillis = 3_000) {
       compose
-          .onAllNodesWithText("No tasks yet. Tap + to add one.")
+          .onAllNodesWithText("No tasks yet. Tap + to add one. ")
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
