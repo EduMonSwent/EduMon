@@ -13,7 +13,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
-import com.android.sample.ui.stats.FirestoreStatsRepository
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -74,6 +73,7 @@ class MainActivity : ComponentActivity() {
                             }
                           }
                         }
+
                         EduMonNavHost()
                       }
                     }
