@@ -15,8 +15,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.stats.FirestoreStatsRepository
+import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.stats.StatsScreen
-import com.android.sample.ui.stats.StatsViewModel
+import com.android.sample.ui.stats.viewmodel.StatsViewModel
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -83,15 +84,13 @@ class MainActivity : ComponentActivity() {
                           user?.let {
                             try {
                               val repo = FirestoreStatsRepository()
-                              repo.ensureDefaults()
-                              statsVm.attachFirestore(repo.stats)
                             } catch (_: Exception) {
                               // en cas d’erreur Firestore: l’UI reste sur le mode Scénarios (fake)
                             }
                           }
                         }
 
-                        StatsScreen(viewModel = statsVm)
+                          StatsRoute(viewModel = statsVm)
                       }
                     }
               }

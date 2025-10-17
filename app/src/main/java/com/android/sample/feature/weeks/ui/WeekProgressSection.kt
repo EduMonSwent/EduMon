@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,6 +20,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,20 +36,20 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.android.sample.ui.viewmodel.WeekProgressItem
+import com.android.sample.feature.weeks.model.WeekProgressItem
+import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 
 @Composable
 fun WeekProgressSection(
-    weekProgressPercent: Int,
-    weeks: List<WeekProgressItem>,
-    selectedWeekIndex: Int,
-    onSelectWeek: (index: Int) -> Unit,
+    viewModel: WeeksViewModel,
     modifier: Modifier = Modifier,
 ) {
+  val ui by viewModel.uiState.collectAsState()
   val cs = MaterialTheme.colorScheme
   var weeksExpanded by rememberSaveable { mutableStateOf(false) }
-  val clampedPct = remember(weekProgressPercent) { weekProgressPercent.coerceIn(0, 100) }
+  val clampedPct = remember(ui.weekProgressPercent) { ui.weekProgressPercent.coerceIn(0, 100) }
 
   GlassSurface(modifier = modifier, testTag = WeekProgDailyObjTags.WEEK_PROGRESS_SECTION) {
     val rotation by
@@ -91,15 +92,15 @@ fun WeekProgressSection(
               trackColor = cs.primary.copy(alpha = 0.15f))
         }
 
-    if (weeks.isNotEmpty()) {
+    if (ui.weeks.isNotEmpty()) {
       AnimatedVisibility(
           visible = weeksExpanded,
           enter = fadeIn() + expandVertically(),
           exit = fadeOut() + shrinkVertically()) {
             WeeksExpandedList(
-                weeks = weeks,
-                selectedIndex = selectedWeekIndex,
-                onSelect = onSelectWeek,
+                weeks = ui.weeks,
+                selectedIndex = ui.selectedWeekIndex,
+                onSelect = { index -> viewModel.selectWeek(index) },
                 modifier = Modifier.padding(top = 12.dp).testTag(WeekProgDailyObjTags.WEEKS_LIST))
           }
     }
@@ -173,8 +174,8 @@ private fun WeeksExpandedList(
 @Composable
 private fun SmallProgressRing(
     percent: Int,
-    ringSize: androidx.compose.ui.unit.Dp = 24.dp,
-    stroke: androidx.compose.ui.unit.Dp = 3.dp,
+    ringSize: Dp = 24.dp,
+    stroke: Dp = 3.dp,
     tag: String? = null
 ) {
   val pct = percent.coerceIn(0, 100)

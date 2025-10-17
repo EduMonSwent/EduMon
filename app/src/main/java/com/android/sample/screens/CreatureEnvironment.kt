@@ -1,4 +1,4 @@
-package com.android.sample.screens
+package com.android.sample
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -9,33 +9,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocalHospital
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,8 +33,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.data.CreatureStats
 
+/**
+ * Single public entry point the Home screen calls. Home stays decoupled and just invokes this
+ * function.
+ *
+ * It renders:
+ * - Creature house (environment background + sprite)
+ * - A row with Creature stats (left) and a `userStats` slot (right)
+ */
 @Composable
-fun CreatureHouseCard(
+fun CreatureEnvironmentSection(
+    creatureResId: Int,
+    environmentResId: Int,
+    level: Int,
+    happiness: Int,
+    health: Int,
+    energy: Int,
+    modifier: Modifier = Modifier,
+    userStats: @Composable (Modifier) -> Unit = {}
+) {
+  Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    CreatureHouseCard(
+        creatureResId = creatureResId,
+        level = level,
+        environmentResId = environmentResId,
+    )
+
+    Row(
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+          CreatureStatsCard(
+              stats =
+                  CreatureStats(
+                      level = level, happiness = happiness, health = health, energy = energy),
+              modifier = Modifier.weight(1f).fillMaxHeight())
+          // Home provides this slot so creature module doesn't depend on user UI
+          Box(Modifier.weight(1f).fillMaxHeight()) { userStats(Modifier.matchParentSize()) }
+        }
+  }
+}
+
+@Composable
+private fun CreatureHouseCard(
     creatureResId: Int,
     level: Int,
     environmentResId: Int,
@@ -139,7 +160,7 @@ private fun CreatureSprite(resId: Int, modifier: Modifier = Modifier, size: Dp =
 }
 
 @Composable
-fun CreatureStatsCard(stats: CreatureStats, modifier: Modifier = Modifier) {
+private fun CreatureStatsCard(stats: CreatureStats, modifier: Modifier = Modifier) {
   ElevatedCard(
       modifier,
       colors =

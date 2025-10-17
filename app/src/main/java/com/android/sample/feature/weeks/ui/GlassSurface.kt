@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

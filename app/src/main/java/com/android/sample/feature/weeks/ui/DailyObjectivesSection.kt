@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,21 +20,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.sample.ui.viewmodel.Objective
+import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 
 @Composable
 fun DailyObjectivesSection(
-    objectives: List<Objective>,
-    showWhy: Boolean,
-    onStartObjective: (index: Int) -> Unit,
+    viewModel: ObjectivesViewModel,
     modifier: Modifier = Modifier,
 ) {
+  val ui by viewModel.uiState.collectAsState()
+  val objectives = ui.objectives
+  val showWhy = ui.showWhy
+
   val cs = MaterialTheme.colorScheme
   GlassSurface(modifier = modifier, testTag = WeekProgDailyObjTags.OBJECTIVES_SECTION) {
     var objectivesExpanded by rememberSaveable { mutableStateOf(false) }
@@ -86,7 +90,7 @@ fun DailyObjectivesSection(
           modifier = Modifier.testTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY))
     } else {
       ObjectiveRow(index = 0, objective = objectives.first(), showWhy = showWhy) {
-        onStartObjective(0)
+        viewModel.startObjective(0)
       }
 
       val remaining = objectives.drop(1)
@@ -101,7 +105,7 @@ fun DailyObjectivesSection(
                       modifier = Modifier.padding(vertical = 14.dp),
                       color = cs.onSurface.copy(alpha = 0.08f))
                   ObjectiveRow(index = idx + 1, objective = obj, showWhy = showWhy) {
-                    onStartObjective(idx + 1)
+                    viewModel.startObjective(idx + 1)
                   }
                 }
               }
@@ -141,15 +145,6 @@ private fun ObjectiveRow(index: Int, objective: Objective, showWhy: Boolean, onS
           MetaChip(objective.course)
           if (objective.estimateMinutes > 0) MetaChip("${objective.estimateMinutes}m")
         }
-    if (showWhy && objective.reason.isNotBlank()) {
-      Text(
-          objective.reason,
-          color = cs.onSurface.copy(alpha = 0.7f),
-          fontSize = 12.sp,
-          modifier =
-              Modifier.padding(top = 6.dp)
-                  .testTag(WeekProgDailyObjTags.OBJECTIVE_REASON_PREFIX + index))
-    }
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -178,9 +173,7 @@ private fun MetaChip(text: String) {
 @Composable
 private fun StartButton(onClick: () -> Unit, tag: String? = null) {
   val cs = MaterialTheme.colorScheme
-  val gradient =
-      androidx.compose.ui.graphics.Brush.linearGradient(
-          listOf(cs.primary, cs.primary.copy(alpha = 0.85f)))
+  val gradient = Brush.linearGradient(listOf(cs.primary, cs.primary.copy(alpha = 0.85f)))
   Button(
       onClick = onClick,
       colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),

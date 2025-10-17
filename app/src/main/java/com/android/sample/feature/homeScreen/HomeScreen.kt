@@ -1,5 +1,6 @@
-package com.android.sample.screens
+package com.android.sample.feature.homeScreen
 
+// 🔽 Only dependency on creature UI:
 import android.content.res.Configuration
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -32,12 +33,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.CreatureEnvironmentSection
 import com.android.sample.R
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
-import com.android.sample.repositories.HomeUiState
-import com.android.sample.repositories.HomeViewModel
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
@@ -46,13 +46,12 @@ import kotlinx.coroutines.launch
 enum class AppDestination(val route: String, val label: String, val icon: ImageVector) {
   Home("home", "Home", Icons.Outlined.Home),
   Profile("profile", "Profile", Icons.Outlined.Person),
-  Shop("shop", "Shop", Icons.Outlined.ShoppingBag),
   Calendar("calendar", "Calendar", Icons.Outlined.CalendarMonth),
   Planner("planner", "Planner", Icons.Outlined.EventNote),
   Study("study", "Study Session", Icons.Outlined.Timer),
-  Rankings("rankings", "Rankings", Icons.Outlined.Leaderboard),
   Settings("settings", "Settings", Icons.Outlined.Settings),
   Games("games", "Games", Icons.Outlined.Extension),
+  Stats("stats", "Stats", Icons.Outlined.BarChart),
 }
 
 // ---------- Route (hooks up VM to UI) ----------
@@ -151,21 +150,19 @@ fun EduMonHomeScreen(
                       .verticalScroll(rememberScrollState())
                       .padding(horizontal = 16.dp, vertical = 8.dp),
                   verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CreatureHouseCard(
-                        creatureResId = creatureResId,
-                        level = state.creatureStats.level,
-                        environmentResId = environmentResId)
 
-                    Row(
-                        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                          CreatureStatsCard(
-                              stats = state.creatureStats,
-                              modifier = Modifier.weight(1f).fillMaxHeight())
-                          UserStatsCard(
-                              stats = state.userStats,
-                              modifier = Modifier.weight(1f).fillMaxHeight())
-                        }
+                    // 👇 Single call into the creature environment file
+                    CreatureEnvironmentSection(
+                        creatureResId = creatureResId,
+                        environmentResId = environmentResId,
+                        level = state.creatureStats.level,
+                        happiness = state.creatureStats.happiness,
+                        health = state.creatureStats.health,
+                        energy = state.creatureStats.energy,
+                        // Provide your UserStats card as a slot so layout stays the same
+                        userStats = { mod ->
+                          UserStatsCard(stats = state.userStats, modifier = mod)
+                        })
 
                     AffirmationsAndRemindersCard(
                         quote = state.quote,
@@ -195,7 +192,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
       listOf(
           AppDestination.Home,
           AppDestination.Calendar,
-          AppDestination.Shop,
+          AppDestination.Stats,
           AppDestination.Profile,
           AppDestination.Games,
       )
@@ -463,7 +460,6 @@ fun GlowCard(content: @Composable () -> Unit) {
 @Composable
 private fun HomePreview() {
   MaterialTheme(colorScheme = darkColorScheme()) {
-    // Replace with your real drawables
     EduMonHomeRoute(
         creatureResId = R.drawable.edumon, environmentResId = R.drawable.home, onNavigate = {})
   }

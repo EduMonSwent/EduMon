@@ -17,32 +17,122 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.ui.theme.EduMonTheme
+import com.android.sample.ui.stats.model.StudyStats
+import com.android.sample.ui.stats.viewmodel.StatsViewModel
 import kotlin.math.pow
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
-/* ===================== DATA ===================== */
+// --- Route: wires ViewModel and passes data to the pure UI ---
+@Composable
+fun StatsRoute(viewModel: StatsViewModel = viewModel()) {
+  val stats by viewModel.stats.collectAsState()
+  val selected by viewModel.scenarioIndex.collectAsState()
+  val titles = viewModel.scenarioTitles
 
-data class StudyStats(
-    val totalTimeMin: Int = 0,
-    val courseTimesMin: Map<String, Int> = emptyMap(),
-    val completedGoals: Int = 0,
-    val progressByDayMin: List<Int> = List(7) { 0 },
-    val weeklyGoalMin: Int = 300
-)
+  val bg = MaterialTheme.colorScheme.background
 
-fun encouragement(stats: StudyStats): String {
+  if (stats == null) {
+    Box(Modifier.fillMaxSize().background(bg), contentAlignment = Alignment.Center) {
+      CircularProgressIndicator()
+    }
+    return
+  }
+
+  StatsScreen(
+      stats = stats!!,
+      selectedIndex = selected,
+      titles = titles,
+      onSelectScenario = viewModel::selectScenario,
+  )
+}
+
+// --- Pure UI screen: stateless except for local UI animations ---
+@Composable
+fun StatsScreen(
+    stats: StudyStats,
+    selectedIndex: Int,
+    titles: List<String>,
+    onSelectScenario: (Int) -> Unit,
+) {
+  val onSurf = MaterialTheme.colorScheme.onSurface
+  val cardBg = MaterialTheme.colorScheme.surface
+  val scroll = rememberScrollState()
+
+  // mapping stable "label -> couleur" partagé par donut + légende
+  val colorMap =
+      remember(stats.courseTimesMin.keys.toList()) { buildColorMap(stats.courseTimesMin) }
+
+  Column(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(MaterialTheme.colorScheme.background)
+              .verticalScroll(scroll)
+              .padding(16.dp),
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "Tes statistiques de la semaine",
+            style = MaterialTheme.typography.titleLarge,
+            color = onSurf,
+            fontWeight = FontWeight.Bold)
+
+        Spacer(Modifier.height(8.dp))
+
+        ScenarioSelector(
+            titles = titles, selectedIndex = selectedIndex, onSelect = onSelectScenario)
+
+        Spacer(Modifier.height(12.dp))
+
+        SummaryRow(
+            totalTimeMin = stats.totalTimeMin,
+            completedGoals = stats.completedGoals,
+            weeklyGoalMin = stats.weeklyGoalMin)
+
+        Spacer(Modifier.height(16.dp))
+
+        Card(shape = RoundedCornerShape(16.dp)) {
+          Column(Modifier.background(cardBg).padding(16.dp)) {
+            Text("Répartition par cours", fontWeight = FontWeight.SemiBold, color = onSurf)
+            Spacer(Modifier.height(12.dp))
+            PieChart(
+                data = stats.courseTimesMin,
+                colors = colorMap,
+                modifier = Modifier.fillMaxWidth().height(220.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            Legend(data = stats.courseTimesMin, colors = colorMap)
+          }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Card(shape = RoundedCornerShape(16.dp)) {
+          Column(Modifier.background(cardBg).padding(16.dp)) {
+            Text("Progression sur 7 jours", fontWeight = FontWeight.SemiBold, color = onSurf)
+            Spacer(Modifier.height(12.dp))
+            BarChart7Days(
+                values = stats.progressByDayMin,
+                modifier = Modifier.fillMaxWidth(),
+                barColor = MaterialTheme.colorScheme.primary,
+                gridColor = onSurf.copy(alpha = 0.08f),
+                axisColor = onSurf.copy(alpha = 0.2f),
+                unitLabel = "m",
+                perDayGoal = (stats.weeklyGoalMin / 7))
+          }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        EncouragementCard(text = encouragement(stats), accent = MaterialTheme.colorScheme.primary)
+      }
+}
+
+// --- UI helpers below (unchanged) ---
+
+private fun encouragement(stats: StudyStats): String {
   val ratio =
       if (stats.weeklyGoalMin == 0) 0f else stats.totalTimeMin.toFloat() / stats.weeklyGoalMin
   return when {
@@ -54,214 +144,11 @@ fun encouragement(stats: StudyStats): String {
   }
 }
 
-/* ===================== FAKE REPO (SCÉNARIOS) ===================== */
-
-class FakeStatsRepository {
-  private val scenarios: List<Pair<String, StudyStats>> =
-      listOf(
-          "Début de semaine" to
-              StudyStats(
-                  totalTimeMin = 0,
-                  courseTimesMin =
-                      linkedMapOf(
-                          "Analyse I" to 0,
-                          "Algèbre linéaire" to 0,
-                          "Physique mécanique" to 0,
-                          "AICC I" to 0),
-                  completedGoals = 0,
-                  progressByDayMin = listOf(0, 0, 0, 0, 0, 0, 0),
-                  weeklyGoalMin = 300),
-          "Semaine active" to
-              StudyStats(
-                  totalTimeMin = 145,
-                  courseTimesMin =
-                      linkedMapOf(
-                          "Analyse I" to 60,
-                          "Algèbre linéaire" to 45,
-                          "Physique mécanique" to 25,
-                          "AICC I" to 15),
-                  completedGoals = 2,
-                  progressByDayMin = listOf(0, 25, 30, 15, 50, 20, 5),
-                  weeklyGoalMin = 300),
-          "Objectif presque atteint" to
-              StudyStats(
-                  totalTimeMin = 235,
-                  courseTimesMin =
-                      linkedMapOf(
-                          "Analyse I" to 80,
-                          "Algèbre linéaire" to 70,
-                          "Physique mécanique" to 40,
-                          "AICC I" to 45),
-                  completedGoals = 5,
-                  progressByDayMin = listOf(20, 30, 45, 35, 50, 40, 15),
-                  weeklyGoalMin = 300),
-          "Objectif atteint" to
-              StudyStats(
-                  totalTimeMin = 320,
-                  courseTimesMin =
-                      linkedMapOf(
-                          "Analyse I" to 110,
-                          "Algèbre linéaire" to 95,
-                          "Physique mécanique" to 60,
-                          "AICC I" to 55),
-                  completedGoals = 7,
-                  progressByDayMin = listOf(40, 60, 55, 50, 45, 40, 30),
-                  weeklyGoalMin = 300),
-          "Full algèbre" to
-              StudyStats(
-                  totalTimeMin = 180,
-                  courseTimesMin =
-                      linkedMapOf(
-                          "Analyse I" to 20,
-                          "Algèbre linéaire" to 130,
-                          "Physique mécanique" to 15,
-                          "AICC I" to 15),
-                  completedGoals = 3,
-                  progressByDayMin = listOf(10, 25, 15, 60, 30, 20, 20),
-                  weeklyGoalMin = 300))
-
-  private val _stats = MutableStateFlow(scenarios.first().second)
-  val stats: StateFlow<StudyStats> = _stats
-
-  private val _selectedIndex = MutableStateFlow(0)
-  val selectedIndex: StateFlow<Int> = _selectedIndex
-
-  val titles: List<String>
-    get() = scenarios.map { it.first }
-
-  fun loadScenario(index: Int) {
-    val i = index.coerceIn(0, scenarios.lastIndex)
-    _selectedIndex.value = i
-    _stats.value = scenarios[i].second
-  }
-}
-
-/* ===================== VIEWMODEL ===================== */
-
-class StatsViewModel(private val fakeRepo: FakeStatsRepository = FakeStatsRepository()) :
-    ViewModel() {
-
-  private val _stats = MutableStateFlow<StudyStats?>(fakeRepo.stats.value)
-  val stats: StateFlow<StudyStats?> = _stats
-
-  val scenarioTitles
-    get() = fakeRepo.titles
-
-  val scenarioIndex
-    get() = fakeRepo.selectedIndex
-
-  fun selectScenario(i: Int) = fakeRepo.loadScenario(i)
-
-  init {
-    viewModelScope.launch { fakeRepo.stats.collect { _stats.value = it } }
-  }
-
-  /** Optionnel : branche un flux Firestore (StateFlow<StudyStats?>) */
-  fun attachFirestore(flow: StateFlow<StudyStats?>) {
-    viewModelScope.launch { flow.collect { it?.let { s -> _stats.value = s } } }
-  }
-}
-
-/* ===================== UI ===================== */
-
-@Composable
-fun StatsScreen(viewModel: StatsViewModel = viewModel()) {
-  EduMonTheme {
-    val stats by viewModel.stats.collectAsState()
-    val selected by viewModel.scenarioIndex.collectAsState()
-    val titles = viewModel.scenarioTitles
-
-    val bg = MaterialTheme.colorScheme.background
-    val onSurf = MaterialTheme.colorScheme.onSurface
-    val cardBg = MaterialTheme.colorScheme.surface
-    val scroll = rememberScrollState()
-
-    if (stats == null) {
-      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
-      }
-      return@EduMonTheme
-    }
-    val s = stats!!
-
-    val colorMap = remember(s.courseTimesMin.keys.toList()) { buildColorMap(s.courseTimesMin) }
-
-    Column(
-        modifier = Modifier.fillMaxSize().background(bg).verticalScroll(scroll).padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally) {
-          Text(
-              "Tes statistiques de la semaine",
-              style = MaterialTheme.typography.titleLarge,
-              color = onSurf,
-              fontWeight = FontWeight.Bold,
-              modifier = Modifier.testTag(StatsTestTags.Title))
-
-          Spacer(Modifier.height(8.dp))
-
-          ScenarioSelector(
-              titles = titles,
-              selectedIndex = selected,
-              onSelect = { viewModel.selectScenario(it) })
-
-          Spacer(Modifier.height(12.dp))
-
-          SummaryRow(
-              totalTimeMin = s.totalTimeMin,
-              completedGoals = s.completedGoals,
-              weeklyGoalMin = s.weeklyGoalMin)
-
-          Spacer(Modifier.height(16.dp))
-
-          Card(shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.background(cardBg).padding(16.dp)) {
-              Text("Répartition par cours", fontWeight = FontWeight.SemiBold, color = onSurf)
-              Spacer(Modifier.height(12.dp))
-              PieChart(
-                  data = s.courseTimesMin,
-                  colors = colorMap,
-                  modifier = Modifier.fillMaxWidth().height(220.dp).testTag(StatsTestTags.Donut))
-              Spacer(Modifier.height(8.dp))
-              Legend(
-                  data = s.courseTimesMin,
-                  colors = colorMap,
-                  modifier = Modifier.testTag(StatsTestTags.Legend))
-            }
-          }
-
-          Spacer(Modifier.height(16.dp))
-
-          Card(shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.background(cardBg).padding(16.dp)) {
-              Text("Progression sur 7 jours", fontWeight = FontWeight.SemiBold, color = onSurf)
-              Spacer(Modifier.height(12.dp))
-              BarChart7Days(
-                  values = s.progressByDayMin,
-                  modifier = Modifier.fillMaxWidth().testTag(StatsTestTags.Bars),
-                  barColor = MaterialTheme.colorScheme.primary,
-                  gridColor = onSurf.copy(alpha = 0.08f),
-                  axisColor = onSurf.copy(alpha = 0.2f),
-                  unitLabel = "m",
-                  perDayGoal = (s.weeklyGoalMin / 7))
-            }
-          }
-
-          Spacer(Modifier.height(16.dp))
-          EncouragementCard(
-              text = encouragement(s),
-              accent = MaterialTheme.colorScheme.primary,
-              modifier = Modifier.testTag(StatsTestTags.Encouragement))
-        }
-  }
-}
-
-/* ===================== COMPOSABLES ===================== */
-
 @Composable
 private fun ScenarioSelector(titles: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
   val rowScroll = rememberScrollState()
   Row(
-      modifier =
-          Modifier.fillMaxWidth().horizontalScroll(rowScroll).testTag(StatsTestTags.Scenarios),
+      modifier = Modifier.fillMaxWidth().horizontalScroll(rowScroll),
       horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         titles.forEachIndexed { i, label ->
           val selected = i == selectedIndex
@@ -287,15 +174,15 @@ private fun SummaryRow(totalTimeMin: Int, completedGoals: Int, weeklyGoalMin: In
     SummaryCard(
         title = "Total d’étude",
         value = formatMinutes(totalTimeMin),
-        modifier = Modifier.weight(1f).testTag(StatsTestTags.SummaryTotal))
+        modifier = Modifier.weight(1f))
     SummaryCard(
         title = "Objectifs faits",
         value = completedGoals.toString(),
-        modifier = Modifier.weight(1f).testTag(StatsTestTags.SummaryGoals))
+        modifier = Modifier.weight(1f))
     SummaryCard(
         title = "Objectif semaine",
         value = formatMinutes(weeklyGoalMin),
-        modifier = Modifier.weight(1f).testTag(StatsTestTags.SummaryWeekly))
+        modifier = Modifier.weight(1f))
   }
 }
 
@@ -313,16 +200,15 @@ private fun SummaryCard(title: String, value: String, modifier: Modifier = Modif
   }
 }
 
-/* ---- Couleurs stables donut + légende ---- */
-
 private val SliceColors =
     listOf(
-        Color(0xFF8B5CF6),
-        Color(0xFF22C55E),
-        Color(0xFFF59E0B),
-        Color(0xFF3B82F6),
-        Color(0xFFE11D48),
-        Color(0xFF06B6D4))
+        Color(0xFF8B5CF6), // violet
+        Color(0xFF22C55E), // vert
+        Color(0xFFF59E0B), // orange
+        Color(0xFF3B82F6), // bleu
+        Color(0xFFE11D48), // rouge
+        Color(0xFF06B6D4) // cyan
+        )
 
 private fun buildColorMap(data: Map<String, Int>): Map<String, Color> {
   val map = LinkedHashMap<String, Color>()
@@ -361,13 +247,9 @@ private fun PieChart(
 }
 
 @Composable
-private fun Legend(
-    data: Map<String, Int>,
-    colors: Map<String, Color>,
-    modifier: Modifier = Modifier
-) {
+private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
   val total = data.values.sum().coerceAtLeast(1)
-  Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+  Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
     data.entries
         .sortedByDescending { it.value }
         .forEach { (label, value) ->
@@ -520,8 +402,8 @@ private fun BarChart7Days(
 }
 
 @Composable
-private fun EncouragementCard(text: String, accent: Color, modifier: Modifier = Modifier) {
-  Card(modifier = modifier, shape = RoundedCornerShape(16.dp)) {
+private fun EncouragementCard(text: String, accent: Color) {
+  Card(shape = RoundedCornerShape(16.dp)) {
     Row(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically) {
@@ -532,8 +414,6 @@ private fun EncouragementCard(text: String, accent: Color, modifier: Modifier = 
   }
 }
 
-/* ===================== UTILS ===================== */
-
 private fun formatMinutes(totalMin: Int): String {
   val h = totalTimeHours(totalMin)
   val m = totalMin % 60
@@ -541,15 +421,3 @@ private fun formatMinutes(totalMin: Int): String {
 }
 
 private fun totalTimeHours(min: Int) = min / 60
-
-object StatsTestTags {
-  const val Title = "StatsTitle"
-  const val SummaryTotal = "SummaryTotal"
-  const val SummaryGoals = "SummaryGoals"
-  const val SummaryWeekly = "SummaryWeekly"
-  const val Donut = "DonutChart"
-  const val Legend = "Legend"
-  const val Bars = "BarChart7D"
-  const val Encouragement = "Encouragement"
-  const val Scenarios = "ScenarioRow"
-}

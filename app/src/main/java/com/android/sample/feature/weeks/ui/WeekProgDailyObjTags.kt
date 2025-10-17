@@ -1,4 +1,4 @@
-package com.android.sample.ui.widgets
+package com.android.sample.feature.weeks.ui
 
 // Centralized test tags for WeekProgDailyObj and its subcomponents.
 object WeekProgDailyObjTags {

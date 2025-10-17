@@ -1,32 +1,37 @@
 package com.android.sample.ui.widgets
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.model.WeekProgressItem
+import com.android.sample.feature.weeks.ui.WeekDotsRow
+import com.android.sample.feature.weeks.ui.WeekProgDailyObj
+import com.android.sample.feature.weeks.ui.WeekProgDailyObjTags
+import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
+import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 import com.android.sample.ui.theme.EduMonTheme
-import com.android.sample.ui.viewmodel.*
 import java.time.DayOfWeek
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** UI tests for [WeekProgDailyObj] using separated view models (weeks, objectives, dots). */
+/**
+ * UI tests for [com.android.sample.feature.weeks.ui.WeekProgDailyObj] using separated view models
+ * (weeks, objectives, dots).
+ */
 @RunWith(AndroidJUnit4::class)
 class WeekProgDailyObjTest {
 
   @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-  private fun setContent(
-      customize: (WeeksViewModel, ObjectivesViewModel, WeekDotsViewModel) -> Unit = { _, _, _ -> }
-  ) {
+  private fun setContent(customize: (WeeksViewModel, ObjectivesViewModel) -> Unit = { _, _ -> }) {
     val weeksVM = WeeksViewModel()
     val objVM = ObjectivesViewModel()
-    val dotsVM = WeekDotsViewModel()
 
     // Seed defaults similar to old WeekProgressViewModel
     weeksVM.setWeeks(
@@ -40,20 +45,23 @@ class WeekProgDailyObjTest {
 
     objVM.setObjectives(
         listOf(
-            Objective("Finish Quiz 3", "CS101", 30, "Due tomorrow • high impact"),
-            Objective("Read Chapter 5", "Math201", 25, "Prereq for next lecture")))
-
-    dotsVM.setDayStatuses(
-        listOf(
-            DayStatus(DayOfWeek.MONDAY, true),
-            DayStatus(DayOfWeek.TUESDAY, true),
-            DayStatus(DayOfWeek.WEDNESDAY, false),
-            DayStatus(DayOfWeek.THURSDAY, true)))
+            Objective(
+                "Finish Quiz 3",
+                "CS101",
+                estimateMinutes = 30,
+                completed = false,
+                day = DayOfWeek.MONDAY),
+            Objective(
+                "Read Chapter 5",
+                "Math201",
+                estimateMinutes = 25,
+                completed = false,
+                day = DayOfWeek.TUESDAY)))
 
     // Allow per-test overrides
-    customize(weeksVM, objVM, dotsVM)
+    customize(weeksVM, objVM)
 
-    compose.setContent { EduMonTheme { WeekProgDailyObj(weeksVM, objVM, dotsVM, Modifier) } }
+    compose.setContent { EduMonTheme { WeekProgDailyObj(weeksVM, objVM) } }
   }
 
   @Test
@@ -188,81 +196,27 @@ class WeekProgDailyObjTest {
 
   @Test
   fun objectives_emptyState_rendersWhenNoObjectives() {
-    setContent { _, objVM, _ -> objVM.setObjectives(emptyList()) }
+    setContent { _, objVM -> objVM.setObjectives(emptyList()) }
 
     compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY).assertExists().assertIsDisplayed()
   }
 
   @Test
-  fun objective_reason_isVisible_forFirstObjective_whenShowWhyTrue() {
-    setContent()
-
-    // With default seed, showWhy = true and first objective has a non-empty reason
-    compose
-        .onNodeWithTag(WeekProgDailyObjTags.OBJECTIVE_REASON_PREFIX + 0)
-        .assertExists()
-        .assertIsDisplayed()
-  }
-
-  @Test
-  fun weekDotsRow_rendersAllDays_withMetAndUnmetStates() {
-    val statuses =
+  fun weekDotsRow_rendersAllDays_withObjectivesVM() {
+    // Build a VM with minimal per-day objectives (some days empty)
+    val vm = ObjectivesViewModel()
+    vm.setObjectives(
         listOf(
-            DayStatus(DayOfWeek.MONDAY, true),
-            DayStatus(DayOfWeek.TUESDAY, false),
-            DayStatus(DayOfWeek.WEDNESDAY, true)
-            // rest will be filled as false by the composable
-            )
+            Objective("A", "CS", estimateMinutes = 5, completed = true, day = DayOfWeek.MONDAY),
+            Objective("B", "CS", estimateMinutes = 5, completed = false, day = DayOfWeek.TUESDAY),
+            Objective(
+                "C", "ENG", estimateMinutes = 5, completed = true, day = DayOfWeek.WEDNESDAY)))
 
-    compose.setContent { EduMonTheme { WeekDotsRow(statuses) } }
+    compose.setContent { EduMonTheme { WeekDotsRow(vm) } }
 
-    // All 7 dots exist by tag (the composable fills missing days)
     DayOfWeek.values().forEach { dow ->
       compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOT_PREFIX + dow.name).assertExists()
     }
-  }
-
-  @Test
-  fun dailyObjectives_empty_showsFriendlyMessage_andNoShowAllButton() {
-    compose.setContent {
-      EduMonTheme {
-        DailyObjectivesSection(objectives = emptyList(), showWhy = true, onStartObjective = {})
-      }
-    }
-
-    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY).assertIsDisplayed()
-    compose.onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_BUTTON).assertCountEquals(0)
-  }
-
-  @Test
-  fun dailyObjectives_showWhyFalse_hidesReasonEvenIfPresent() {
-    val objs = listOf(Objective("Task", "Course", 5, "Some reason"))
-    compose.setContent {
-      EduMonTheme {
-        DailyObjectivesSection(
-            objectives = objs,
-            showWhy = false, // hide why
-            onStartObjective = {})
-      }
-    }
-    compose.onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVE_REASON_PREFIX + 0).assertCountEquals(0)
-  }
-
-  @Test
-  fun weekProgress_noWeeks_doesNotShowExpandedList() {
-    compose.setContent {
-      EduMonTheme {
-        WeekProgressSection(
-            weekProgressPercent = 40,
-            weeks = emptyList(),
-            selectedWeekIndex = 0,
-            onSelectWeek = {},
-        )
-      }
-    }
-    // tapping the header shouldn't reveal a list since there are no weeks
-    compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE).performClick()
-    compose.onAllNodesWithTag(WeekProgDailyObjTags.WEEKS_LIST).assertCountEquals(0)
   }
 
   /**
