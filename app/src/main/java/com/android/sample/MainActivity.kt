@@ -69,9 +69,7 @@ class MainActivity : ComponentActivity() {
                       composable("app") {
                         LaunchedEffect(user?.uid) {
                           user?.let {
-                            try {
-                              val repo = FirestoreStatsRepository()
-                            } catch (_: Exception) {
+                            try {} catch (_: Exception) {
                               // en cas d’erreur Firestore: l’UI reste sur le mode Scénarios (fake)
                             }
                           }
