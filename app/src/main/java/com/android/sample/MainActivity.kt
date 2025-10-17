@@ -16,7 +16,6 @@ import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.stats.FirestoreStatsRepository
 import com.android.sample.ui.stats.StatsRoute
-import com.android.sample.ui.stats.StatsScreen
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -90,7 +89,7 @@ class MainActivity : ComponentActivity() {
                           }
                         }
 
-                          StatsRoute(viewModel = statsVm)
+                        StatsRoute(viewModel = statsVm)
                       }
                     }
               }

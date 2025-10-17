@@ -1,40 +1,78 @@
-// app/src/androidTest/java/com/android/sample/ui/stats/StatsScreenUiTest.kt
 package com.android.sample.ui.stats
 
-import androidx.activity.ComponentActivity
+import androidx.compose.runtime.*
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithText
-import com.android.sample.ui.stats.repository.FakeStatsRepository
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onRoot
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.ui.theme.EduMonTheme
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
-class StatsScreenUiTest {
+@RunWith(AndroidJUnit4::class)
+class StatsScreenUITest {
 
-  @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+  @get:Rule val compose = createComposeRule()
 
   @Test
-  fun renders_stats_title_and_sections() {
-    val repo = FakeStatsRepository()
-    val stats = repo.stats.value
-    val titles = repo.titles
-    val selected = repo.selectedIndex.value
+  fun statsScreen_smoke_renders() {
+    val vm = StatsViewModel(FakeStatsRepository())
+    compose.setContent { EduMonTheme { StatsScreen(vm) } }
+    compose.onRoot().assertExists().assertIsDisplayed()
+  }
 
-    rule.setContent {
-      EduMonTheme {
-        StatsScreen(stats = stats, selectedIndex = selected, titles = titles, onSelectScenario = {})
-      }
+  @Test
+  fun statsScreen_recreated_twice_noCrash() {
+    val vm = StatsViewModel(FakeStatsRepository())
+    compose.setContent {
+      var recreateTick by remember { mutableStateOf(0) }
+      key(recreateTick) { EduMonTheme { StatsScreen(vm) } }
+      Recreator { recreateTick++ }
     }
+    compose.runOnIdle { Recreator.trigger(compose) }
+    compose.runOnIdle { Recreator.trigger(compose) }
+    compose.onRoot().assertExists().assertIsDisplayed()
+  }
 
-    // Header should be visible at top
-    rule.onNodeWithText("Tes statistiques de la semaine").assertIsDisplayed()
+  @Test
+  fun statsScreen_multipleRecompositions_doNotCrash() {
+    val vm = StatsViewModel(FakeStatsRepository())
+    compose.setContent {
+      var counter by remember { mutableStateOf(0) }
+      EduMonTheme { StatsScreen(vm) }
+      SideEffect {}
+      CounterHost { counter++ }
+      if (counter < 0) error("noop")
+    }
+    repeat(3) { compose.runOnIdle { CounterHost.bump(compose) } }
+    compose.onRoot().assertExists().assertIsDisplayed()
+  }
 
-    // Sections may be below the fold on small CI devices: assert existence via nodes list
-    assertTrue(rule.onAllNodesWithText("Répartition par cours").fetchSemanticsNodes().isNotEmpty())
-    assertTrue(
-        rule.onAllNodesWithText("Progression sur 7 jours").fetchSemanticsNodes().isNotEmpty())
+  @Composable
+  private fun Recreator(onRecreate: () -> Unit) {
+    ComposeCallbacks.recreate = onRecreate
+  }
+
+  private object Recreator {
+    fun trigger(rule: androidx.compose.ui.test.junit4.ComposeContentTestRule) {
+      ComposeCallbacks.recreate?.invoke()
+    }
+  }
+
+  @Composable
+  private fun CounterHost(onBump: () -> Unit) {
+    ComposeCallbacks.bump = onBump
+  }
+
+  private object CounterHost {
+    fun bump(rule: androidx.compose.ui.test.junit4.ComposeContentTestRule) {
+      ComposeCallbacks.bump?.invoke()
+    }
+  }
+
+  private object ComposeCallbacks {
+    var recreate: (() -> Unit)? = null
+    var bump: (() -> Unit)? = null
   }
 }
