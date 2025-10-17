@@ -9,16 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.android.sample.screens.AppDestination
-import com.android.sample.screens.EduMonHomeRoute
-import com.android.sample.screens.EduMonHomeScreen
 import com.android.sample.ui.login.LoginScreen
+
 import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
+
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -68,11 +66,8 @@ class MainActivity : ComponentActivity() {
             }) { padding ->
               Box(Modifier.fillMaxSize().padding(padding)) {
                 NavHost(
-                    navController = nav,
-                    startDestination = if (user == null) "login" else "app") {
-                      composable("login") {
-                        LoginScreen()
-                      }
+                    navController = nav, startDestination = if (user == null) "login" else "app") {
+                      composable("login") { LoginScreen() }
 
                       composable("app") {
                         LaunchedEffect(user?.uid) {
@@ -82,7 +77,7 @@ class MainActivity : ComponentActivity() {
                             }
                           }
                         }
-                          EduMonNavHost()
+                        EduMonNavHost()
                       }
                     }
               }
