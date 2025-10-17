@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
 
+
 import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
 
@@ -77,6 +78,7 @@ class MainActivity : ComponentActivity() {
                             }
                           }
                         }
+
                         EduMonNavHost()
                       }
                     }
