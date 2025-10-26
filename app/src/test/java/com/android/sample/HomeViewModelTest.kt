@@ -5,10 +5,10 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
-import com.android.sample.repositories.FakeHomeRepository
-import com.android.sample.repositories.HomeRepository
-import com.android.sample.repositories.HomeUiState
-import com.android.sample.repositories.HomeViewModel
+import com.android.sample.feature.homeScreen.FakeHomeRepository
+import com.android.sample.feature.homeScreen.HomeRepository
+import com.android.sample.feature.homeScreen.HomeUiState
+import com.android.sample.feature.homeScreen.HomeViewModel
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

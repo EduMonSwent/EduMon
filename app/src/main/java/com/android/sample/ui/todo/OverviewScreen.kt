@@ -22,6 +22,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.repositories.ToDoRepositoryProvider
@@ -183,4 +188,34 @@ private fun PriorityChip(priority: Priority, modifier: Modifier = Modifier) {
       colors =
           AssistChipDefaults.assistChipColors(
               containerColor = chipColor.copy(alpha = 0.25f), labelColor = TodoColors.OnCard))
+}
+
+// routes local to this file
+private const val ROUTE_OVERVIEW = "overview"
+private const val ROUTE_ADD = "todo/add"
+private const val ROUTE_EDIT = "todo/edit/{id}"
+
+private fun editRoute(id: String) = "todo/edit/$id"
+
+/** Call this instead of OverviewScreen() from your Activity/entry point */
+@Composable
+fun TodoNavHostInThisFile() {
+  val nav = rememberNavController()
+
+  NavHost(navController = nav, startDestination = ROUTE_OVERVIEW) {
+    composable(ROUTE_OVERVIEW) {
+      OverviewScreen(
+          onAddClicked = { nav.navigate(ROUTE_ADD) },
+          onEditClicked = { id -> nav.navigate(editRoute(id)) })
+    }
+
+    composable(ROUTE_ADD) { AddToDoScreen(onBack = { nav.popBackStack() }) }
+
+    composable(
+        route = ROUTE_EDIT, arguments = listOf(navArgument("id") { type = NavType.StringType })) {
+            backStackEntry ->
+          val id = requireNotNull(backStackEntry.arguments?.getString("id"))
+          EditToDoScreen(id = id, onBack = { nav.popBackStack() })
+        }
+  }
 }

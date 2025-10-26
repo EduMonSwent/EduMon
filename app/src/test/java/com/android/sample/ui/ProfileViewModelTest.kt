@@ -1,8 +1,13 @@
 package com.android.sample.ui
 
 import com.android.sample.ui.profile.ProfileViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -11,10 +16,17 @@ import org.junit.Test
 class ProfileViewModelTest {
 
   private lateinit var viewModel: ProfileViewModel
+  private val mainDispatcher = UnconfinedTestDispatcher()
 
   @Before
   fun setup() {
+    Dispatchers.setMain(mainDispatcher)
     viewModel = ProfileViewModel()
+  }
+
+  @After
+  fun tearDown() {
+    Dispatchers.resetMain()
   }
 
   @Test
