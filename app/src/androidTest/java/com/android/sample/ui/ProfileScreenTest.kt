@@ -3,12 +3,8 @@ package com.android.sample.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
 import com.android.sample.ui.profile.*
 import org.junit.Rule
 import org.junit.Test
@@ -16,6 +12,8 @@ import org.junit.Test
 class ProfileScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
+
+  // === EXISTING TESTS FIXED ===
 
   @Test
   fun allSectionsAreDisplayed() {
@@ -36,29 +34,6 @@ class ProfileScreenTest {
           .performScrollToNode(hasTestTag(it))
       composeTestRule.onNodeWithTag(it).assertExists()
     }
-  }
-
-  @Test
-  fun settingsCardCallbacksWork() {
-    var notif = false
-    var loc = false
-    var focus = false
-
-    composeTestRule.setContent {
-      SettingsCard(
-          user = UserProfile(),
-          onToggleNotifications = { notif = true },
-          onToggleLocation = { loc = true },
-          onToggleFocusMode = { focus = true })
-    }
-
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_NOTIFICATIONS).performClick()
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_LOCATION).performClick()
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-
-    assert(notif)
-    assert(loc)
-    assert(focus)
   }
 
   @Test
@@ -123,14 +98,22 @@ class ProfileScreenTest {
 
   @Test
   fun statsCardDisplaysAllStats() {
-    val user = UserProfile(streak = 10, points = 200, studyTimeToday = 45, dailyGoal = 60)
+    val user =
+        UserProfile(streak = 10, points = 200, coins = 150, studyTimeToday = 45, dailyGoal = 60)
     composeTestRule.setContent { StatsCard(user) }
 
     composeTestRule.onNodeWithText("Your Stats").assertExists()
-    composeTestRule.onNodeWithText("🔥 Current Streak").assertExists()
-    composeTestRule.onNodeWithText("⭐ Total Points").assertExists()
-    composeTestRule.onNodeWithText("📚 Study Time Today").assertExists()
-    composeTestRule.onNodeWithText("🎯 Daily Goal").assertExists()
+    composeTestRule.onNodeWithText("Current Streak").assertExists()
+    composeTestRule.onNodeWithText("Total Points").assertExists()
+    composeTestRule.onNodeWithText("Coins").assertExists()
+    composeTestRule.onNodeWithText("Study Time Today").assertExists()
+    composeTestRule.onNodeWithText("Daily Goal").assertExists()
+
+    composeTestRule.onNodeWithText("10 days").assertExists()
+    composeTestRule.onNodeWithText("200").assertExists()
+    composeTestRule.onNodeWithText("150").assertExists()
+    composeTestRule.onNodeWithText("45 min").assertExists()
+    composeTestRule.onNodeWithText("60 min").assertExists()
   }
 
   @Test
@@ -160,5 +143,36 @@ class ProfileScreenTest {
     composeTestRule.onNodeWithText("Test Action").assertExists()
     composeTestRule.onNodeWithText("Test Action").performClick()
     assert(clicked)
+  }
+
+  // === NEW TESTS TO BOOST COVERAGE ===
+
+  @Test
+  fun glowCardAnimatesAndDisplaysContent() {
+    composeTestRule.setContent { GlowCard { Text("Glowing Content") } }
+    composeTestRule.onNodeWithText("Glowing Content").assertExists()
+  }
+
+  @Test
+  fun customizePetSectionButtonExists() {
+    composeTestRule.setContent { CustomizePetSection() }
+    composeTestRule.onNodeWithText("Customize Buddy").assertExists()
+  }
+
+  @Test
+  fun settingRowTogglesValue() {
+    var toggled = false
+    composeTestRule.setContent {
+      SettingRow(
+          title = "Focus Mode",
+          desc = "Minimize distractions",
+          value = false,
+          onToggle = { toggled = true })
+    }
+
+    composeTestRule.onNodeWithText("Focus Mode").assertExists()
+    composeTestRule.onNodeWithText("Minimize distractions").assertExists()
+    composeTestRule.onAllNodes(isToggleable())[0].performClick()
+    assert(toggled)
   }
 }

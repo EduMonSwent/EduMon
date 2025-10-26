@@ -18,55 +18,53 @@ data class UserProfile(
     val locationEnabled: Boolean = DEFAULT_LOCATION,
     val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE
 ) {
-    companion object {
-        const val DEFAULT_NAME = "Alex"
-        const val DEFAULT_EMAIL = "alex@university.edu"
-        const val DEFAULT_LEVEL = 5
-        const val DEFAULT_POINTS = 1250
-        const val DEFAULT_COINS = 0
-        const val DEFAULT_STREAK = 7
-        const val DEFAULT_STUDY_TIME = 45
-        const val DEFAULT_DAILY_GOAL = 180
-        const val DEFAULT_NOTIFICATIONS = true
-        const val DEFAULT_LOCATION = true
-        const val DEFAULT_FOCUS_MODE = false
-    }
+  companion object {
+    const val DEFAULT_NAME = "Alex"
+    const val DEFAULT_EMAIL = "alex@university.edu"
+    const val DEFAULT_LEVEL = 5
+    const val DEFAULT_POINTS = 1250
+    const val DEFAULT_COINS = 0
+    const val DEFAULT_STREAK = 7
+    const val DEFAULT_STUDY_TIME = 45
+    const val DEFAULT_DAILY_GOAL = 180
+    const val DEFAULT_NOTIFICATIONS = true
+    const val DEFAULT_LOCATION = true
+    const val DEFAULT_FOCUS_MODE = false
+  }
 }
 
-class ProfileViewModel(
-    private val repository: ProfileRepository = FakeProfileRepository()
-) : ViewModel() {
+class ProfileViewModel(private val repository: ProfileRepository = FakeProfileRepository()) :
+    ViewModel() {
 
-    val userProfile: StateFlow<UserProfile> = repository.profile
+  val userProfile: StateFlow<UserProfile> = repository.profile
 
-    fun toggleNotifications() {
-        val current = userProfile.value
-        viewModelScope.launch {
-            repository.updateProfile(current.copy(notificationsEnabled = !current.notificationsEnabled))
-        }
+  fun toggleNotifications() {
+    val current = userProfile.value
+    viewModelScope.launch {
+      repository.updateProfile(current.copy(notificationsEnabled = !current.notificationsEnabled))
     }
+  }
 
-    fun toggleLocation() {
-        val current = userProfile.value
-        viewModelScope.launch {
-            repository.updateProfile(current.copy(locationEnabled = !current.locationEnabled))
-        }
+  fun toggleLocation() {
+    val current = userProfile.value
+    viewModelScope.launch {
+      repository.updateProfile(current.copy(locationEnabled = !current.locationEnabled))
     }
+  }
 
-    fun toggleFocusMode() {
-        val current = userProfile.value
-        viewModelScope.launch {
-            repository.updateProfile(current.copy(focusModeEnabled = !current.focusModeEnabled))
-        }
+  fun toggleFocusMode() {
+    val current = userProfile.value
+    viewModelScope.launch {
+      repository.updateProfile(current.copy(focusModeEnabled = !current.focusModeEnabled))
     }
+  }
 
-
-    fun addCoins(amount: Int) {
-        if (amount <= 0) return
-        val current = userProfile.value
-        viewModelScope.launch {
-            val updated = current.copy(coins = current.coins + amount)
-            repository.updateProfile(updated)
-        }
+  fun addCoins(amount: Int) {
+    if (amount <= 0) return
+    val current = userProfile.value
+    viewModelScope.launch {
+      val updated = current.copy(coins = current.coins + amount)
+      repository.updateProfile(updated)
     }
+  }
 }
