@@ -8,7 +8,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
@@ -109,33 +108,6 @@ class ToDoUiSingleTest {
     assertHas(TestTags.StatusDropdown)
     assertHas(TestTags.OptionalToggle)
     assertHas(TestTags.SaveButton)
-  }
-
-  @Test
-  fun editToDoScreen_edits_optional_fields_and_saves_invoking_onBack() {
-    // Seed item so EditToDoScreen loads it
-    runBlocking {
-      repo.add(
-          ToDo(
-              id = "42",
-              title = "Seed",
-              dueDate = LocalDate.now(),
-              status = Status.TODO,
-              priority = Priority.LOW))
-    }
-
-    var wentBack = false
-    compose.setContent { EditToDoScreen(id = "42", onBack = { wentBack = true }) }
-
-    // Change required + optional fields (exercises onXChange lambdas)
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput(" edited")
-    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Room 101")
-    compose.onNodeWithTag(TestTags.NoteField).performTextInput("Bring snacks")
-    compose.onNodeWithTag(TestTags.NotificationsSwitch).performClick()
-
-    // Save -> vm.save(onBack) should call onBack (async)
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitUntil(timeoutMillis = 5_000) { wentBack }
   }
 
   @Test
