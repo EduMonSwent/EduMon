@@ -133,10 +133,9 @@ class ToDoUiSingleTest {
     compose.onNodeWithTag(TestTags.NoteField).performTextInput("Bring snacks")
     compose.onNodeWithTag(TestTags.NotificationsSwitch).performClick()
 
-    // Save -> vm.save(onBack) should call onBack
+    // Save -> vm.save(onBack) should call onBack (async)
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-    assertTrue(wentBack)
+    compose.waitUntil(timeoutMillis = 5_000) { wentBack }
   }
 
   @Test
