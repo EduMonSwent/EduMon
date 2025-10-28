@@ -27,6 +27,7 @@ import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.session.StudySessionScreen
 import com.android.sample.ui.stats.StatsRoute
+import com.android.sample.ui.todo.TodoNavHostInThisFile
 
 /** Stable tags used by UI tests */
 object NavigationTestTags {
@@ -292,6 +293,26 @@ fun EduMonNavHost(
                     })
               }) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) { FlashcardsApp() }
+              }
+        }
+
+        // Todos list
+        composable(AppDestination.Todo.route) {
+          Scaffold(
+              topBar = {
+                TopAppBar(
+                    title = {
+                      Text("Todo", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) { TodoNavHostInThisFile() }
               }
         }
       }

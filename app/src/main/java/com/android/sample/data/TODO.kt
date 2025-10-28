@@ -26,14 +26,10 @@ enum class Status {
 data class ToDo(
     // Unique ID generated for each task
     val id: String = UUID.randomUUID().toString(),
-
-    // ----- Mandatory fields -----
     val title: String, // short task name
     val dueDate: LocalDate, // deadline
     val priority: Priority, // importance level
     val status: Status = Status.TODO, // defaults to "TODO"
-
-    // ----- Optional fields -----
     val location: String? = null, // place related to task (optional)
     val links: List<String> = emptyList(), // related resources (optional)
     val note: String? = null, // extra description (optional)

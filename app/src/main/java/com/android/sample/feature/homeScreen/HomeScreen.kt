@@ -1,5 +1,6 @@
 package com.android.sample.screens
 
+// 🔽 Only dependency on creature UI:
 import android.content.res.Configuration
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -73,6 +74,7 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   Games("games", "Games", Icons.Outlined.Extension),
   Stats("stats", "Stats", Icons.Outlined.ShowChart),
   Flashcards("flashcards", "Flashcards", Icons.Outlined.FlashOn),
+  Todo("todo", "To-Do", Icons.Outlined.CheckBox)
 }
 
 // ---------- Route (hooks up VM to UI) ----------
