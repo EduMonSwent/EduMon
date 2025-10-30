@@ -5,21 +5,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /** Simple in-memory scenarios provider for Stats. */
-class FakeStatsRepository {
+class FakeStatsRepository : StatsRepository {
   private val scenarios: List<Pair<String, StudyStats>> =
       listOf(
-          "Début de semaine" to
-              StudyStats(
-                  totalTimeMin = 0,
-                  courseTimesMin =
-                      linkedMapOf(
-                          "Analyse I" to 0,
-                          "Algèbre linéaire" to 0,
-                          "Physique mécanique" to 0,
-                          "AICC I" to 0),
-                  completedGoals = 0,
-                  progressByDayMin = listOf(0, 0, 0, 0, 0, 0, 0),
-                  weeklyGoalMin = 300),
+          "Début de semaine" to StudyStats(
+              totalTimeMin = 0,
+              courseTimesMin = linkedMapOf(
+                  "Analyse I" to 0, "Algèbre linéaire" to 0, "Physique mécanique" to 0, "AICC I" to 0),
+              completedGoals = 0,
+              progressByDayMin = listOf(0,0,0,0,0,0,0),
+              weeklyGoalMin = 300),
           "Semaine active" to
               StudyStats(
                   totalTimeMin = 145,
@@ -70,17 +65,25 @@ class FakeStatsRepository {
                   weeklyGoalMin = 300))
 
   private val _stats = MutableStateFlow(scenarios.first().second)
-  val stats: StateFlow<StudyStats> = _stats
+  override val stats: StateFlow<StudyStats> = _stats
 
   private val _selectedIndex = MutableStateFlow(0)
-  val selectedIndex: StateFlow<Int> = _selectedIndex
+  override val selectedIndex: StateFlow<Int> = _selectedIndex
 
-  val titles: List<String>
+  override val titles: List<String>
     get() = scenarios.map { it.first }
 
-  fun loadScenario(index: Int) {
+  override fun loadScenario(index: Int) {
     val i = index.coerceIn(0, scenarios.lastIndex)
     _selectedIndex.value = i
     _stats.value = scenarios[i].second
+  }
+
+  override suspend fun refresh() {
+    // no-op for fake
+  }
+
+  override suspend fun update(stats: com.android.sample.ui.stats.model.StudyStats) {
+    _stats.value = stats
   }
 }
