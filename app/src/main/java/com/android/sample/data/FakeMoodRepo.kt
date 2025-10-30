@@ -5,7 +5,7 @@ import kotlin.collections.filter
 import kotlin.collections.set
 import kotlin.collections.sortedBy
 
-// --- a tiny in-test fake repo (in-memory) ---
+// fake repo used in MoodViewModel tests to make them fast
 class FakeMoodRepo : MoodRepositoryInterface {
   private val byEpoch = mutableMapOf<Long, MoodEntry>()
 

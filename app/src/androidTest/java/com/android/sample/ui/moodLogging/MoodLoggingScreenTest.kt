@@ -54,19 +54,14 @@ class MoodLoggingScreenTest {
           onChartMode = { mode = it })
     }
 
-    // Click emoji with tag "mood_4"
     composeRule.onNodeWithTag("mood_4").performClick()
 
-    // Type into the note field
     composeRule.onNodeWithTag("noteField").performTextInput("hello")
 
-    // Switch tab to Month
     composeRule.onNodeWithTag("tab_month").performClick()
 
-    // Save
     composeRule.onNodeWithTag("save_button").assertIsEnabled().performClick()
 
-    // Assertions on callback side-effects
     assert(selectedMood in 1..5)
     assert(note == "hello")
     assert(mode == ChartMode.MONTH)

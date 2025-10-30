@@ -8,6 +8,7 @@ import kotlin.collections.sortedBy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/** Real implementation of MoodRepositoryInterface that manages mood data using MoodStorage. */
 class MoodRepository(context: Context) : MoodRepositoryInterface {
   private val storage = MoodStorage(context)
 
