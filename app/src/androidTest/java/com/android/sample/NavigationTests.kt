@@ -10,8 +10,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
-import com.android.sample.screens.AppDestination
-import com.android.sample.screens.HomeTestTags
+import com.android.sample.feature.homeScreen.AppDestination
+import com.android.sample.feature.homeScreen.HomeTestTags
 import junit.framework.TestCase.assertEquals
 import org.junit.Rule
 import org.junit.Test

@@ -1,0 +1,275 @@
+package com.android.sample.ui.mood
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.data.MoodEntry
+import com.android.sample.data.MoodRepository
+import com.android.sample.ui.theme.*
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
+
+@Composable
+fun MoodLoggingRoute() {
+  val context = LocalContext.current
+  val repo = remember { MoodRepository(context) }
+
+  val vm: MoodLoggingViewModel =
+      viewModel(
+          factory =
+              object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                  return MoodLoggingViewModel(repo) as T
+                }
+              })
+
+  val state by vm.ui.collectAsState()
+
+  MoodLoggingScreen(
+      state = state,
+      onSelectMood = vm::onMoodSelected,
+      onNoteChanged = vm::onNoteChanged,
+      onSave = vm::saveToday,
+      onChartMode = vm::onChartMode)
+}
+
+@Composable
+fun MoodLoggingScreen(
+    state: MoodUiState,
+    onSelectMood: (Int) -> Unit,
+    onNoteChanged: (String) -> Unit,
+    onSave: () -> Unit,
+    onChartMode: (ChartMode) -> Unit
+) {
+  val emojis = listOf("😞", "🙁", "😐", "🙂", "😄") // 1..5
+
+  Column(modifier = Modifier.fillMaxSize().background(BackgroundDark).padding(16.dp)) {
+    Text(
+        text = "Daily Reflection",
+        style =
+            MaterialTheme.typography.headlineSmall.copy(
+                color = TextLight, fontWeight = FontWeight.Bold))
+    Spacer(Modifier.height(12.dp))
+
+    // ─────────────── Mood + Note ───────────────
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+        shape = RoundedCornerShape(20.dp)) {
+          Column(Modifier.padding(16.dp)) {
+            Text("How do you feel today?", color = TextLight)
+            Spacer(Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()) {
+                  (1..5).forEach { mood ->
+                    val selected = state.selectedMood == mood
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier =
+                            Modifier.size(if (selected) 56.dp else 48.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (selected) AccentViolet.copy(alpha = 0.2f)
+                                    else Color.Transparent)
+                                .border(
+                                    width = if (selected) 2.dp else 1.dp,
+                                    color = if (selected) AccentViolet else DarkDivider,
+                                    shape = CircleShape)
+                                .clickable(enabled = state.canEditToday) { onSelectMood(mood) }
+                                .testTag("mood_$mood") // ✅ Added testTag
+                        ) {
+                          Text(emojis[mood - 1])
+                        }
+                  }
+                }
+
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = state.note,
+                onValueChange = onNoteChanged,
+                enabled = state.canEditToday,
+                label = { Text("Short note (max 140 chars)", color = PurpleText) },
+                modifier = Modifier.fillMaxWidth().testTag("noteField"), // ✅ Added testTag
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentViolet,
+                        unfocusedBorderColor = DarkDivider,
+                        focusedTextColor = TextLight,
+                        unfocusedTextColor = TextLight,
+                        focusedLabelColor = AccentViolet,
+                        cursorColor = AccentViolet))
+
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onSave,
+                enabled = state.canEditToday,
+                modifier = Modifier.testTag("save_button"), // ✅ Added testTag
+                colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
+                  Text(
+                      if (state.existingToday == null) "Save today’s mood"
+                      else "Update today’s mood")
+                }
+          }
+        }
+
+    Spacer(Modifier.height(16.dp))
+
+    // ─────────────── Past 7 days ───────────────
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+        shape = RoundedCornerShape(20.dp)) {
+          Column(Modifier.padding(16.dp)) {
+            Text("Past 7 days", color = TextLight, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()) {
+                  state.last7Days.forEach { e ->
+                    val d = LocalDate.ofEpochDay(e.dateEpochDay)
+                    val emoji =
+                        when (e.mood) {
+                          1 -> "😞"
+                          2 -> "🙁"
+                          3 -> "😐"
+                          4 -> "🙂"
+                          5 -> "😄"
+                          else -> "—"
+                        }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                      Text(
+                          d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                          color = PurpleCalendar,
+                          style = MaterialTheme.typography.labelMedium)
+                      Spacer(Modifier.height(4.dp))
+                      Text(emoji, style = MaterialTheme.typography.titleLarge)
+                    }
+                  }
+                }
+          }
+        }
+
+    Spacer(Modifier.height(16.dp))
+
+    // ─────────────── Charts ───────────────
+    ChartCard(
+        weekly = state.last7Days,
+        monthly = state.monthEntries,
+        mode = state.chartMode,
+        onModeChange = onChartMode)
+  }
+}
+
+@Composable
+private fun ChartCard(
+    weekly: List<MoodEntry>,
+    monthly: List<MoodEntry>,
+    mode: ChartMode,
+    onModeChange: (ChartMode) -> Unit
+) {
+  Card(
+      modifier = Modifier.fillMaxWidth(),
+      colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+      shape = RoundedCornerShape(20.dp)) {
+        Column(Modifier.padding(16.dp)) {
+          Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.SpaceBetween,
+              modifier = Modifier.fillMaxWidth()) {
+                Text("Mood trend", color = TextLight, fontWeight = FontWeight.SemiBold)
+                ChartTabs(mode = mode, onModeChange = onModeChange)
+              }
+          Spacer(Modifier.height(12.dp))
+          val entries = if (mode == ChartMode.WEEK) weekly else monthly
+          MoodLineChart(entries = entries, modifier = Modifier.fillMaxWidth().height(180.dp))
+          Spacer(Modifier.height(8.dp))
+          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("1 = low", color = PurpleText, style = MaterialTheme.typography.labelSmall)
+            Text("5 = high", color = PurpleText, style = MaterialTheme.typography.labelSmall)
+          }
+        }
+      }
+}
+
+@Composable
+private fun ChartTabs(mode: ChartMode, onModeChange: (ChartMode) -> Unit) {
+  val tabs = listOf(ChartMode.WEEK to "Week", ChartMode.MONTH to "Month")
+  Row(modifier = Modifier.clip(RoundedCornerShape(50)).background(Gray).padding(2.dp)) {
+    tabs.forEach { (value, title) ->
+      val selected = mode == value
+      Box(
+          modifier =
+              Modifier.clip(RoundedCornerShape(50))
+                  .background(if (selected) AccentViolet else Color.Transparent)
+                  .clickable { onModeChange(value) }
+                  .padding(horizontal = 12.dp, vertical = 6.dp)
+                  .testTag("tab_${title.lowercase()}") // ✅ Added testTag (tab_week / tab_month)
+          ) {
+            Text(
+                title,
+                color = if (selected) TextLight else TextLight.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.labelLarge)
+          }
+    }
+  }
+}
+
+@Composable
+private fun MoodLineChart(entries: List<MoodEntry>, modifier: Modifier = Modifier) {
+  val stroke = 3f
+  val points = entries.mapIndexed { idx, e -> idx to e.mood.coerceIn(0, 5) }
+  val maxY = 5f
+  val n = points.size.coerceAtLeast(2)
+
+  Canvas(modifier = modifier.clip(RoundedCornerShape(16.dp)).background(DarkBlue)) {
+    // grid
+    val stepY = size.height / maxY
+    repeat(5) { i ->
+      val y = size.height - (i + 1) * stepY
+      drawLine(
+          color = DarkDivider, start = Offset(0f, y), end = Offset(size.width, y), strokeWidth = 1f)
+    }
+
+    val stepX = size.width / (n - 1).coerceAtLeast(1)
+    var lastPoint: Offset? = null
+
+    points.forEach { (idx, mood) ->
+      val x = idx * stepX
+      if (mood == 0) {
+        drawCircle(color = PurpleGrey80, radius = 4f, center = Offset(x, size.height))
+        lastPoint = null
+      } else {
+        val y = size.height - (mood / maxY) * size.height
+        val cur = Offset(x, y)
+        lastPoint?.let {
+          drawLine(color = AccentViolet, start = it, end = cur, strokeWidth = stroke)
+        }
+        drawCircle(color = AccentViolet, radius = 6f, center = cur)
+        lastPoint = cur
+      }
+    }
+  }
+}
