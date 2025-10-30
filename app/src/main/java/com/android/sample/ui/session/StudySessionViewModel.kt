@@ -1,8 +1,11 @@
 package com.android.sample.ui.session
 
-import StudySessionRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.data.Status
+import com.android.sample.data.ToDo
+import com.android.sample.repositories.ToDoRepositoryProvider
+import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
 import com.android.sample.ui.pomodoro.PomodoroViewModel
@@ -10,6 +13,7 @@ import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -28,7 +32,7 @@ data class StudySessionUiState(
     val isSessionActive: Boolean = false
 )
 
-class Task(val name: String) // TODO replace with real task class
+typealias Task = ToDo
 
 class StudySessionViewModel(
     val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
@@ -36,6 +40,7 @@ class StudySessionViewModel(
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState
+  private val toDoRepo = ToDoRepositoryProvider.repository
 
   init {
     observePomodoro()
@@ -77,10 +82,53 @@ class StudySessionViewModel(
     viewModelScope.launch { repository.saveCompletedSession(_uiState.value) }
   }
 
+  /*private fun loadSuggestedTasks() {
+    viewModelScope.launch {
+      val tasks = repository.getSuggestedTasks()
+      _uiState.update { it.copy(suggestedTasks = tasks) }
+    }
+  }*/
   private fun loadSuggestedTasks() {
     viewModelScope.launch {
       val tasks = repository.getSuggestedTasks()
       _uiState.update { it.copy(suggestedTasks = tasks) }
+      val selectedId = _uiState.value.selectedTask?.id
+      _uiState.update {
+        it.copy(suggestedTasks = tasks, selectedTask = tasks.find { t -> t.id == selectedId })
+      }
+    }
+  }
+
+  /** Set the status of the currently selected task, then refresh suggestions/selection. */
+  fun setSelectedTaskStatus(newStatus: Status) {
+    val selectedId = _uiState.value.selectedTask?.id ?: return
+    viewModelScope.launch {
+      val todo = toDoRepo.getById(selectedId) ?: return@launch
+      toDoRepo.update(todo.copy(status = newStatus))
+
+      // Refresh suggestions & selection
+      loadSuggestedTasks()
+      val updated = toDoRepo.todos.first().firstOrNull { it.id == selectedId }
+      _uiState.update { it.copy(selectedTask = updated) }
+    }
+  }
+
+  /** Optional: one-tap cycle like your Overview screen. */
+  fun cycleSelectedTaskStatus() {
+    val selectedId = _uiState.value.selectedTask?.id ?: return
+    viewModelScope.launch {
+      val todo = toDoRepo.getById(selectedId) ?: return@launch
+      val next =
+          when (todo.status) {
+            Status.TODO -> Status.IN_PROGRESS
+            Status.IN_PROGRESS -> Status.DONE
+            Status.DONE -> Status.TODO
+          }
+      toDoRepo.update(todo.copy(status = next))
+
+      loadSuggestedTasks()
+      val updated = toDoRepo.todos.first().firstOrNull { it.id == selectedId }
+      _uiState.update { it.copy(selectedTask = updated) }
     }
   }
 
