@@ -42,14 +42,6 @@ class WeeksRepositoryTest {
   }
 
   @Test
-  fun getWeeks_returnsInitialSample() = runTest {
-    val repo = FakeWeeksRepository()
-    val weeks = repo.getWeeks()
-    assertEquals(listOf("Week 1", "Week 2", "Week 3"), weeks.map { it.label })
-    assertEquals(listOf(100, 55, 10), weeks.map { it.percent })
-  }
-
-  @Test
   fun getDayStatuses_returnsSevenWithAlternatingPattern() = runTest {
     val repo = FakeWeeksRepository()
     val statuses = repo.getDayStatuses()

@@ -8,6 +8,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.model.WeekProgressItem
+import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
+import com.android.sample.feature.weeks.repository.FakeWeeksRepository
 import com.android.sample.feature.weeks.ui.WeekDotsRow
 import com.android.sample.feature.weeks.ui.WeekProgDailyObj
 import com.android.sample.feature.weeks.ui.WeekProgDailyObjTags
@@ -30,8 +32,9 @@ class WeekProgDailyObjTest {
   @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
   private fun setContent(customize: (WeeksViewModel, ObjectivesViewModel) -> Unit = { _, _ -> }) {
-    val weeksVM = WeeksViewModel()
-    val objVM = ObjectivesViewModel()
+    // Use fake repos so tests don't require Firebase auth or emulator networking
+    val weeksVM = WeeksViewModel(repository = FakeWeeksRepository())
+    val objVM = ObjectivesViewModel(repository = FakeObjectivesRepository)
 
     // Seed defaults similar to old WeekProgressViewModel
     weeksVM.setWeeks(
@@ -204,7 +207,7 @@ class WeekProgDailyObjTest {
   @Test
   fun weekDotsRow_rendersAllDays_withObjectivesVM() {
     // Build a VM with minimal per-day objectives (some days empty)
-    val vm = ObjectivesViewModel()
+    val vm = ObjectivesViewModel(repository = FakeObjectivesRepository)
     vm.setObjectives(
         listOf(
             Objective("A", "CS", estimateMinutes = 5, completed = true, day = DayOfWeek.MONDAY),

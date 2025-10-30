@@ -4,11 +4,11 @@ package com.android.sample.feature.weeks.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.model.Objective
-import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
-import com.google.firebase.ktx.Firebase
+import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,23 +18,25 @@ import kotlinx.coroutines.tasks.await // <- coroutines-play-services
 
 // Holds only objective-related UI state
 data class ObjectivesUiState(
-  val objectives: List<Objective> = emptyList(),
-  val showWhy: Boolean = true,
+    val objectives: List<Objective> = emptyList(),
+    val showWhy: Boolean = true,
 )
 
 class ObjectivesViewModel(
-  // Default to Firestore; tests can still pass a Fake repo by overriding this param
-  private val repository: ObjectivesRepository =
-    FirestoreObjectivesRepository(Firebase.firestore, Firebase.auth),
+    // Default to Firestore; tests can still pass a Fake repo by overriding this param
+    private val repository: ObjectivesRepository =
+        FirestoreObjectivesRepository(Firebase.firestore, Firebase.auth),
+    // When false, we won't attempt Firebase auth automatically (useful for tests)
+    private val requireAuth: Boolean = true,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
 
   init {
-    // Ensure we have a user, then load data
+    // Ensure we have a user (optionally), then load data
     viewModelScope.launch {
-      ensureSignedIn()      // remove this if you already sign in elsewhere
+      if (requireAuth) ensureSignedIn()
       refresh()
     }
   }

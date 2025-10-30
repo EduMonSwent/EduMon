@@ -8,13 +8,18 @@ import kotlinx.coroutines.flow.StateFlow
 class FakeStatsRepository : StatsRepository {
   private val scenarios: List<Pair<String, StudyStats>> =
       listOf(
-          "Début de semaine" to StudyStats(
-              totalTimeMin = 0,
-              courseTimesMin = linkedMapOf(
-                  "Analyse I" to 0, "Algèbre linéaire" to 0, "Physique mécanique" to 0, "AICC I" to 0),
-              completedGoals = 0,
-              progressByDayMin = listOf(0,0,0,0,0,0,0),
-              weeklyGoalMin = 300),
+          "Début de semaine" to
+              StudyStats(
+                  totalTimeMin = 0,
+                  courseTimesMin =
+                      linkedMapOf(
+                          "Analyse I" to 0,
+                          "Algèbre linéaire" to 0,
+                          "Physique mécanique" to 0,
+                          "AICC I" to 0),
+                  completedGoals = 0,
+                  progressByDayMin = listOf(0, 0, 0, 0, 0, 0, 0),
+                  weeklyGoalMin = 300),
           "Semaine active" to
               StudyStats(
                   totalTimeMin = 145,

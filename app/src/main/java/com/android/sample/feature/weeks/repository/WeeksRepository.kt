@@ -1,10 +1,10 @@
 package com.android.sample.feature.weeks.repository
 
-import com.android.sample.feature.weeks.model.DayStatus
-import com.android.sample.feature.weeks.model.WeekProgressItem
-import com.android.sample.feature.weeks.model.WeekContent
-import com.android.sample.feature.weeks.model.Exercise
 import com.android.sample.feature.weeks.model.CourseMaterial
+import com.android.sample.feature.weeks.model.DayStatus
+import com.android.sample.feature.weeks.model.Exercise
+import com.android.sample.feature.weeks.model.WeekContent
+import com.android.sample.feature.weeks.model.WeekProgressItem
 import java.time.DayOfWeek
 
 interface WeeksRepository {
@@ -17,13 +17,15 @@ interface WeeksRepository {
   // --- Content driven progress ---
   // Returns content (exercises + course materials) for a week index
   suspend fun getWeekContent(index: Int): WeekContent
-  // Mark a single exercise done/undone and recompute percent for that week. Returns full weeks list.
+  // Mark a single exercise done/undone and recompute percent for that week. Returns full weeks
+  // list.
   suspend fun markExerciseDone(
       weekIndex: Int,
       exerciseId: String,
       done: Boolean
   ): List<WeekProgressItem>
-  // Mark a single course material read/unread and recompute percent for that week. Returns full weeks list.
+  // Mark a single course material read/unread and recompute percent for that week. Returns full
+  // weeks list.
   suspend fun markCourseRead(
       weekIndex: Int,
       courseId: String,
@@ -39,37 +41,46 @@ class FakeWeeksRepository : WeeksRepository {
               percent = 100,
               content =
                   WeekContent(
-                      courses = listOf(
-                          CourseMaterial(id = "c1", title = "Intro to Android", read = true),
-                          CourseMaterial(id = "c2", title = "Compose Basics", read = true),
-                      ),
-                      exercises = listOf(
-                          Exercise(id = "e1", title = "Set up environment", done = true),
-                          Exercise(id = "e2", title = "Finish codelab", done = true),
-                      ))),
+                      courses =
+                          listOf(
+                              CourseMaterial(id = "c1", title = "Intro to Android", read = true),
+                              CourseMaterial(id = "c2", title = "Compose Basics", read = true),
+                          ),
+                      exercises =
+                          listOf(
+                              Exercise(id = "e1", title = "Set up environment", done = true),
+                              Exercise(id = "e2", title = "Finish codelab", done = true),
+                          ))),
           WeekProgressItem(
               label = "Week 2",
               percent = 55,
               content =
                   WeekContent(
-                      courses = listOf(
-                          CourseMaterial(id = "c3", title = "Compose Layouts", read = false),
-                          CourseMaterial(id = "c4", title = "State and Side-effects", read = true),
-                      ),
-                      exercises = listOf(
-                          Exercise(id = "e3", title = "Build layout challenge", done = false),
-                      ))),
+                      courses =
+                          listOf(
+                              CourseMaterial(id = "c3", title = "Compose Layouts", read = false),
+                              CourseMaterial(
+                                  id = "c4", title = "State and Side-effects", read = true),
+                          ),
+                      exercises =
+                          listOf(
+                              Exercise(id = "e3", title = "Build layout challenge", done = false),
+                          ))),
           WeekProgressItem(
               label = "Week 3",
               percent = 10,
               content =
                   WeekContent(
-                      courses = listOf(
-                          CourseMaterial(id = "c5", title = "Architecture guidance", read = false),
-                      ),
-                      exercises = listOf(
-                          Exercise(id = "e4", title = "Repository implementation", done = false),
-                      ))),
+                      courses =
+                          listOf(
+                              CourseMaterial(
+                                  id = "c5", title = "Architecture guidance", read = false),
+                          ),
+                      exercises =
+                          listOf(
+                              Exercise(
+                                  id = "e4", title = "Repository implementation", done = false),
+                          ))),
       )
 
   private val sampleStatuses =
@@ -105,8 +116,10 @@ class FakeWeeksRepository : WeeksRepository {
     if (weekIndex !in sampleWeeks.indices) return sampleWeeks.toList()
     val week = sampleWeeks[weekIndex]
     val current = week.content
-    val updated = current.copy(
-        exercises = current.exercises.map { if (it.id == exerciseId) it.copy(done = done) else it })
+    val updated =
+        current.copy(
+            exercises =
+                current.exercises.map { if (it.id == exerciseId) it.copy(done = done) else it })
     sampleWeeks[weekIndex] = week.copy(content = updated)
     recomputePercentFor(weekIndex)
     return sampleWeeks.toList()
@@ -120,8 +133,9 @@ class FakeWeeksRepository : WeeksRepository {
     if (weekIndex !in sampleWeeks.indices) return sampleWeeks.toList()
     val week = sampleWeeks[weekIndex]
     val current = week.content
-    val updated = current.copy(
-        courses = current.courses.map { if (it.id == courseId) it.copy(read = read) else it })
+    val updated =
+        current.copy(
+            courses = current.courses.map { if (it.id == courseId) it.copy(read = read) else it })
     sampleWeeks[weekIndex] = week.copy(content = updated)
     recomputePercentFor(weekIndex)
     return sampleWeeks.toList()

@@ -32,7 +32,7 @@ import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 
 @Composable
 fun DailyObjectivesSection(
-    viewModel: ObjectivesViewModel,
+    viewModel: ObjectivesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     modifier: Modifier = Modifier,
 ) {
   val ui by viewModel.uiState.collectAsState()

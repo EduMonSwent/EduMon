@@ -3,10 +3,13 @@ package com.android.sample.feature.weeks.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.model.DayStatus
-import com.android.sample.feature.weeks.model.WeekProgressItem
 import com.android.sample.feature.weeks.model.WeekContent
-import com.android.sample.feature.weeks.repository.FakeWeeksRepository
+import com.android.sample.feature.weeks.model.WeekProgressItem
+import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +28,8 @@ data class WeeksUiState(
 )
 
 class WeeksViewModel(
-    private val repository: WeeksRepository = FakeWeeksRepository(),
+    private val repository: WeeksRepository =
+        FirestoreWeeksRepository(Firebase.firestore, Firebase.auth),
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(WeeksUiState())
   val uiState = _uiState.asStateFlow()
@@ -98,8 +102,9 @@ class WeeksViewModel(
   }
 
   fun selectNextWeek() {
-    val next = (uiState.value.selectedWeekIndex + 1)
-        .coerceAtMost(uiState.value.weeks.lastIndex.coerceAtLeast(0))
+    val next =
+        (uiState.value.selectedWeekIndex + 1).coerceAtMost(
+            uiState.value.weeks.lastIndex.coerceAtLeast(0))
     selectWeek(next)
   }
 
@@ -136,7 +141,9 @@ class WeeksViewModel(
       val updatedWeeks = repository.markExerciseDone(idx, exerciseId, done)
       val header = updatedWeeks.getOrNull(idx)?.percent ?: uiState.value.weekProgressPercent
       val content = repository.getWeekContent(idx)
-      _uiState.update { it.copy(weeks = updatedWeeks, weekProgressPercent = header, currentWeekContent = content) }
+      _uiState.update {
+        it.copy(weeks = updatedWeeks, weekProgressPercent = header, currentWeekContent = content)
+      }
     }
   }
 
@@ -146,7 +153,9 @@ class WeeksViewModel(
       val updatedWeeks = repository.markCourseRead(idx, courseId, read)
       val header = updatedWeeks.getOrNull(idx)?.percent ?: uiState.value.weekProgressPercent
       val content = repository.getWeekContent(idx)
-      _uiState.update { it.copy(weeks = updatedWeeks, weekProgressPercent = header, currentWeekContent = content) }
+      _uiState.update {
+        it.copy(weeks = updatedWeeks, weekProgressPercent = header, currentWeekContent = content)
+      }
     }
   }
 }

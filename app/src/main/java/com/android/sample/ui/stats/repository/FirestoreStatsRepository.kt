@@ -72,13 +72,14 @@ class FirestoreStatsRepository(
     }
   }
 
-  private fun statsToPayload(stats: StudyStats): Map<String, Any> = hashMapOf(
-      "totalTimeMin" to stats.totalTimeMin,
-      "weeklyGoalMin" to stats.weeklyGoalMin,
-      "courseTimesMin" to stats.courseTimesMin,
-      "progressByDayMin" to stats.progressByDayMin,
-      "completedGoals" to stats.completedGoals,
-  )
+  private fun statsToPayload(stats: StudyStats): Map<String, Any> =
+      hashMapOf(
+          "totalTimeMin" to stats.totalTimeMin,
+          "weeklyGoalMin" to stats.weeklyGoalMin,
+          "courseTimesMin" to stats.courseTimesMin,
+          "progressByDayMin" to stats.progressByDayMin,
+          "completedGoals" to stats.completedGoals,
+      )
 
   private fun mapToStats(map: Map<*, *>?): StudyStats {
     if (map == null) return defaultStats()
@@ -111,15 +112,17 @@ class FirestoreStatsRepository(
     )
   }
 
-  private fun defaultStats() = StudyStats(
-      totalTimeMin = 5,
-      courseTimesMin = linkedMapOf(
-          "Analyse I" to 60,
-          "Algèbre linéaire" to 45,
-          "Physique mécanique" to 25,
-          "AICC I" to 15),
-      completedGoals = 10,
-      progressByDayMin = listOf(0, 25, 30, 15, 50, 20, 5),
-      weeklyGoalMin = 300,
-  )
+  private fun defaultStats() =
+      StudyStats(
+          totalTimeMin = 5,
+          courseTimesMin =
+              linkedMapOf(
+                  "Analyse I" to 60,
+                  "Algèbre linéaire" to 45,
+                  "Physique mécanique" to 25,
+                  "AICC I" to 15),
+          completedGoals = 10,
+          progressByDayMin = listOf(0, 25, 30, 15, 50, 20, 5),
+          weeklyGoalMin = 300,
+      )
 }
