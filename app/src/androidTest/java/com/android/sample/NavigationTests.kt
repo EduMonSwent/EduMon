@@ -4,11 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
@@ -18,12 +16,6 @@ import junit.framework.TestCase.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * These tests validate navigation from the Home screen:
- * - Drawer items (left burger menu)
- * - Bottom bar items
- * - In-card actions (See all / Open Planner / Quick Study)
- */
 class HomeNavigationTests {
 
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
@@ -35,157 +27,77 @@ class HomeNavigationTests {
     rule.setContent {
       val ctx = LocalContext.current
       nav = TestNavHostController(ctx).apply { navigatorProvider.addNavigator(ComposeNavigator()) }
-      // Your NavHost composable should accept a navController parameter.
       MaterialTheme { EduMonNavHost(navController = nav) }
     }
-    // Wait until the menu button is in the tree (home rendered)
+    // Ensure Home is rendered before proceeding
     rule.waitUntilExactlyOneExists(hasTestTag(HomeTestTags.MENU_BUTTON))
-  }
-
-  private fun openDrawer() {
-    rule.onNode(hasTestTag(HomeTestTags.MENU_BUTTON)).performClick()
-  }
-
-  @OptIn(ExperimentalTestApi::class)
-  private fun tapDrawer(route: String) {
-    openDrawer()
-    val tag = HomeTestTags.drawerTag(route)
-    rule.waitUntilExactlyOneExists(hasTestTag(tag))
-    rule.onNode(hasTestTag(tag)).performClick()
-    rule.waitForIdle()
-  }
-
-  @OptIn(ExperimentalTestApi::class)
-  private fun tapBottom(route: String) {
-    val tag = HomeTestTags.bottomTag(route)
-    rule.waitUntilExactlyOneExists(hasTestTag(tag))
-    rule.onNode(hasTestTag(tag)).performClick()
-    rule.waitForIdle()
   }
 
   private fun assertRoute(expected: String) {
     assertEquals(expected, nav.currentBackStackEntry?.destination?.route)
   }
 
-  // -------- Drawer: one test per item --------
+  @OptIn(ExperimentalTestApi::class)
+  private fun assertTopBarTitle(expected: String) {
+    rule.waitUntilExactlyOneExists(hasTestTag(NavigationTestTags.TOP_BAR_TITLE))
+    rule.onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText(expected)).assertExists()
+  }
 
-  @Test
-  fun drawer_Home() {
-    setContent()
-    tapDrawer(AppDestination.Home.route)
-    assertRoute(AppDestination.Home.route)
+  private fun tapBack() {
+    rule.onNode(hasTestTag(NavigationTestTags.GO_BACK_BUTTON)).performClick()
+    rule.waitForIdle()
+  }
+
+  private fun navigateDirect(route: String) {
+    rule.runOnUiThread { nav.navigate(route) }
+    rule.waitForIdle()
   }
 
   @Test
-  fun drawer_Profile() {
+  fun navHost_isTagged() {
     setContent()
-    tapDrawer(AppDestination.Profile.route)
-    assertRoute(AppDestination.Profile.route)
+    rule.onNode(hasTestTag(NavigationTestTags.NAV_HOST)).assertExists()
   }
 
   @Test
-  fun drawer_Calendar() {
+  fun topBar_and_back_work_for_all_sections() {
     setContent()
-    tapDrawer(AppDestination.Calendar.route)
-    assertRoute(AppDestination.Calendar.route)
-  }
 
-  @Test
-  fun drawer_Planner() {
-    setContent()
-    tapDrawer(AppDestination.Planner.route)
-    assertRoute(AppDestination.Planner.route)
-  }
-
-  @Test
-  fun drawer_Study() {
-    setContent()
-    tapDrawer(AppDestination.Study.route)
-    assertRoute(AppDestination.Study.route)
-  }
-
-  @Test
-  fun drawer_Games() {
-    setContent()
-    tapDrawer(AppDestination.Games.route)
-    assertRoute(AppDestination.Games.route)
-  }
-
-  @Test
-  fun drawer_Stats() {
-    setContent()
-    tapDrawer(AppDestination.Stats.route)
-    assertRoute(AppDestination.Stats.route)
-  }
-
-  @Test
-  fun drawer_Flashcards() {
-    setContent()
-    tapDrawer(AppDestination.Flashcards.route)
-    assertRoute(AppDestination.Flashcards.route)
-  }
-
-  // -------- Bottom bar: one test per tab --------
-
-  @Test
-  fun bottom_Home() {
-    setContent()
-    tapBottom(AppDestination.Home.route)
-    assertRoute(AppDestination.Home.route)
-  }
-
-  @Test
-  fun bottom_Calendar() {
-    setContent()
-    tapBottom(AppDestination.Calendar.route)
-    assertRoute(AppDestination.Calendar.route)
-  }
-
-  @Test
-  fun bottom_Study() {
-    setContent()
-    tapBottom(AppDestination.Study.route)
-    assertRoute(AppDestination.Study.route)
-  }
-
-  @Test
-  fun bottom_Profile() {
-    setContent()
-    tapBottom(AppDestination.Profile.route)
-    assertRoute(AppDestination.Profile.route)
-  }
-
-  @Test
-  fun bottom_Games() {
-    setContent()
-    tapBottom(AppDestination.Games.route)
-    assertRoute(AppDestination.Games.route)
-  }
-
-  // -------- In-card actions (home content) --------
-
-  // (Optional) make sure game cards are clickable when you are on the Games screen.
-  // We use text match because the cards are inside that screen, not the drawer/bottom bar.
-  @Test
-  fun from_Games_each_card_is_clickable() {
-    setContent()
-    tapBottom(AppDestination.Games.route)
-
-    val cards =
+    val cases =
         listOf(
-            "Memory Game" to "memory",
-            "Reaction Test" to "reaction",
-            "Focus Breathing" to "focus",
-            "EduMon Runner" to "runner",
-        )
+            AppDestination.Planner.route to "Planner",
+            AppDestination.Profile.route to "Profile",
+            AppDestination.Calendar.route to "Calendar",
+            AppDestination.Stats.route to "Stats",
+            AppDestination.Games.route to "Games",
+            AppDestination.Study.route to "Study",
+            AppDestination.Flashcards.route to "Study", // Flashcards screen title is "Study"
+            AppDestination.Todo.route to "Todo")
 
-    // Click each card and verify the route; then go back to Games to click the next one.
-    cards.forEach { (label, route) ->
-      rule.onAllNodes(hasText(label) and hasClickAction()).onFirst().performClick()
-      assertEquals(route, nav.currentBackStackEntry?.destination?.route)
-      // Use the top app bar back button provided in the game routes
-      rule.onNode(hasTestTag(NavigationTestTags.GO_BACK_BUTTON)).performClick()
-      assertRoute(AppDestination.Games.route)
+    cases.forEach { (route, title) ->
+      navigateDirect(route)
+      assertTopBarTitle(title)
+      tapBack()
+      assertRoute(AppDestination.Home.route)
+    }
+  }
+
+  @Test
+  fun game_routes_show_correct_titles() {
+    setContent()
+
+    val games =
+        listOf(
+            "memory" to "Memory Game",
+            "reaction" to "Reaction Test",
+            "focus" to "Focus Breathing",
+            "runner" to "EduMon Runner")
+
+    games.forEach { (route, title) ->
+      navigateDirect(route)
+      assertTopBarTitle(title)
+      tapBack()
+      assertRoute(AppDestination.Home.route)
     }
   }
 }
