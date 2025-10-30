@@ -1,0 +1,67 @@
+package com.android.sample.ui.moodLogging
+
+import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.test.core.app.ApplicationProvider
+import com.android.sample.data.MoodRepository
+import java.time.LocalDate
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
+
+// Create a test-only DataStore instance with the same schema
+private val Context.testMoodDataStore by
+    preferencesDataStore(name = "test_mood_store_${System.currentTimeMillis()}")
+
+class MoodRepositoryInstrumentedTest {
+
+  private lateinit var repo: MoodRepository
+  private lateinit var context: Context
+
+  @Before
+  fun setUp() = runBlocking {
+    context = ApplicationProvider.getApplicationContext()
+    context.testMoodDataStore.edit { it.clear() }
+    repo = MoodRepository(context)
+  }
+
+  @Test
+  fun upsert_and_getForDate_roundTrip() = runBlocking {
+    val today = LocalDate.now()
+    repo.upsertForDate(today, 4, "study focus")
+
+    val result = repo.getForDate(today)
+    assertNotNull(result)
+    assertEquals(4, result!!.mood)
+    assertEquals("study focus", result.note)
+  }
+
+  @Test
+  fun getRange_returns_entries_inclusive_and_sorted() = runBlocking {
+    val start = LocalDate.now().minusDays(6)
+    for (i in 0..6) {
+      val d = start.plusDays(i.toLong())
+      repo.upsertForDate(d, (i % 5) + 1, "day$i")
+    }
+
+    val range = repo.getRange(start, LocalDate.now())
+    assertEquals(7, range.size)
+    assertEquals(start.toEpochDay(), range.first().dateEpochDay)
+    assertEquals(LocalDate.now().toEpochDay(), range.last().dateEpochDay)
+    assertTrue(range.zipWithNext().all { (a, b) -> a.dateEpochDay <= b.dateEpochDay })
+  }
+
+  @Test
+  fun upserting_same_day_overwrites_previous_value() = runBlocking {
+    val today = LocalDate.now()
+    repo.upsertForDate(today, 2, "meh")
+    repo.upsertForDate(today, 5, "great")
+
+    val result = repo.getForDate(today)
+    assertNotNull(result)
+    assertEquals(5, result!!.mood)
+    assertEquals("great", result.note)
+  }
+}

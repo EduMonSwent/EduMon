@@ -72,7 +72,8 @@ class HomeNavigationTests {
             AppDestination.Games.route to "Games",
             AppDestination.Study.route to "Study",
             AppDestination.Flashcards.route to "Study", // Flashcards screen title is "Study"
-            AppDestination.Todo.route to "Todo")
+            AppDestination.Todo.route to "Todo",
+            AppDestination.Mood.route to "Daily Reflection")
 
     cases.forEach { (route, title) ->
       navigateDirect(route)
