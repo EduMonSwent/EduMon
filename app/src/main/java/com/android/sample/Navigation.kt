@@ -28,7 +28,6 @@ import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.session.StudySessionScreen
 import com.android.sample.ui.stats.StatsRoute
-import com.android.sample.ui.todo.TodoNavHostInThisFile
 
 /** Stable tags used by UI tests */
 object NavigationTestTags {
