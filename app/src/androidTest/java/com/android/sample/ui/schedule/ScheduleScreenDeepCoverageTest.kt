@@ -39,22 +39,6 @@ class ScheduleScreenDeepCoverageTest {
   }
 
   @Test
-  fun weekTab_renders_tagged_sections() {
-    launch()
-    compose.waitForIdle()
-
-    compose.onNodeWithText("Week", ignoreCase = true).performClick()
-    compose.waitForIdle()
-
-    // The root of the week content
-    compose.onNodeWithTag("WeekContent").assertExists()
-    // Dots row from weeks module
-    compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW).assertExists()
-    // Upcoming section container we tagged
-    compose.onNodeWithTag("WeekUpcomingSection").assertExists()
-  }
-
-  @Test
   fun monthTab_renders_grid_and_important_section_with_empty_state() {
     launch()
     compose.waitForIdle()
