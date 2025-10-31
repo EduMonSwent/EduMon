@@ -131,4 +131,41 @@ class ProfileViewModelTest {
         val baseAgain = vm.accentEffective.value
         assertTrue(baseAgain.alpha in 0f..1f)
       }
+  fun external_repo_update_is_observed_by_viewmodel() = runTest {
+    val repo = FakeProfileRepository()
+    val vm = ProfileViewModel(repository = repo)
+
+    repo.updateProfile(vm.userProfile.value.copy(name = "Taylor", points = 2000))
+
+    val p = vm.userProfile.value
+    assertEquals("Taylor", p.name)
+    assertEquals(2000, p.points)
+  }
+
+  // --- Reward system tests ---------------------------------------------------
+
+  @Test
+  fun addCoins_withPositiveAmount_increasesUserCoins() = runTest {
+    val repo = FakeProfileRepository()
+    val vm = ProfileViewModel(repository = repo)
+
+    val before = vm.userProfile.value.coins
+    vm.addCoins(100)
+    val after = vm.userProfile.value.coins
+
+    assertEquals(before + 100, after)
+  }
+
+  @Test
+  fun addCoins_withZeroOrNegativeAmount_doesNothing() = runTest {
+    val repo = FakeProfileRepository()
+    val vm = ProfileViewModel(repository = repo)
+
+    val before = vm.userProfile.value.coins
+    vm.addCoins(0) // should be ignored
+    vm.addCoins(-50) // should also be ignored
+    val after = vm.userProfile.value.coins
+
+    assertEquals(before, after)
+  }
 }

@@ -46,6 +46,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,8 +57,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -78,6 +84,12 @@ object ProfileScreenTestTags {
   const val SWITCH_FOCUS_MODE = "switchFocusMode"
 }
 
+// === constants ===
+private val CARD_CORNER_RADIUS = 16.dp
+private val SECTION_SPACING = 16.dp
+private val SCREEN_PADDING = 60.dp
+private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
+
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
   val user by viewModel.userProfile.collectAsState()
@@ -87,12 +99,12 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
   LazyColumn(
       modifier =
           Modifier.fillMaxSize()
-              .background(Brush.verticalGradient(listOf(Color(0xFF12122A), Color(0xFF181830))))
-              .padding(bottom = 60.dp)
+              .background(Brush.verticalGradient(GRADIENT_COLORS))
+              .padding(bottom = SCREEN_PADDING)
               .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
       horizontalAlignment = Alignment.CenterHorizontally,
-      contentPadding = PaddingValues(vertical = 16.dp),
-      verticalArrangement = Arrangement.spacedBy(16.dp)) {
+      contentPadding = PaddingValues(vertical = SECTION_SPACING),
+      verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
         item {
           PetSection(
               level = user.level,
@@ -271,10 +283,10 @@ fun GlowCard(content: @Composable () -> Unit) {
           Modifier.fillMaxWidth(0.9f)
               .shadow(
                   elevation = 16.dp,
-                  ambientColor = AccentViolet.copy(alpha = glow),
-                  spotColor = AccentViolet.copy(alpha = glow),
-                  shape = RoundedCornerShape(16.dp)),
-      shape = RoundedCornerShape(16.dp),
+                  ambientColor = AccentViolet.copy(alpha = glowAlpha),
+                  spotColor = AccentViolet.copy(alpha = glowAlpha),
+                  shape = RoundedCornerShape(CARD_CORNER_RADIUS)),
+      shape = RoundedCornerShape(CARD_CORNER_RADIUS),
       colors = CardDefaults.cardColors(containerColor = MidDarkCard)) {
         content()
       }
@@ -325,29 +337,35 @@ fun Badge(text: String, bg: Color, textColor: Color = Color.White) {
 
 @Composable
 fun StatsCard(user: UserProfile) {
-  // Samples en fallback si zéro
-  val sampleStreak = if (user.streak > 0) user.streak else 7
-  val samplePoints = if (user.points > 0) user.points else 1280
-  val sampleToday = if (user.studyTimeToday > 0) user.studyTimeToday else 54
-  val sampleGoal = if (user.dailyGoal > 0) user.dailyGoal else 60
-
-  Column(Modifier.padding(16.dp)) {
-    Text("Your Stats", fontWeight = FontWeight.SemiBold, color = TextLight.copy(alpha = 0.8f))
-    Spacer(Modifier.height(8.dp))
-    StatRow("🔥 Current Streak", "$sampleStreak days")
-    StatRow("⭐ Total Points", "$samplePoints")
-    StatRow("📚 Study Time Today", "$sampleToday min")
-    StatRow("🎯 Daily Goal", "$sampleGoal min")
+  Column(modifier = Modifier.padding(16.dp)) {
+    Text(
+        text = stringResource(id = R.string.stats_title),
+        fontWeight = FontWeight.SemiBold,
+        color = TextLight.copy(alpha = 0.8f))
+    Spacer(modifier = Modifier.height(8.dp))
+    StatRow(
+        Icons.Outlined.Whatshot, stringResource(id = R.string.stats_streak), "${user.streak} days")
+    StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${user.points}")
+    StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${user.coins}")
+    StatRow(
+        Icons.AutoMirrored.Outlined.MenuBook,
+        stringResource(id = R.string.stats_study_time),
+        "${user.studyTimeToday} min")
+    StatRow(Icons.Outlined.Flag, stringResource(id = R.string.stats_goal), "${user.dailyGoal} min")
   }
 }
 
 @Composable
-fun StatRow(label: String, value: String) {
+fun StatRow(icon: ImageVector, label: String, value: String) {
   Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = TextLight.copy(alpha = 0.9f))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(icon, contentDescription = null, tint = AccentViolet)
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(label, color = TextLight.copy(alpha = 0.9f))
+        }
         Text(value, color = TextLight, fontWeight = FontWeight.Medium)
       }
 }
@@ -504,26 +522,29 @@ fun SettingsCard(
     onToggleLocation: () -> Unit,
     onToggleFocusMode: () -> Unit
 ) {
-  Column(Modifier.padding(16.dp)) {
-    Text("Settings", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
-    Spacer(Modifier.height(8.dp))
+  Column(modifier = Modifier.padding(16.dp)) {
+    Text(
+        stringResource(id = R.string.settings_title),
+        color = TextLight.copy(alpha = 0.8f),
+        fontWeight = FontWeight.SemiBold)
+    Spacer(modifier = Modifier.height(8.dp))
     SettingRow(
-        "🔔 Notifications",
-        "Study reminders & updates",
+        stringResource(id = R.string.settings_notifications),
+        stringResource(id = R.string.settings_notifications_desc),
         user.notificationsEnabled,
         onToggleNotifications,
         Modifier.testTag(ProfileScreenTestTags.SWITCH_NOTIFICATIONS))
     androidx.compose.material3.Divider(color = DarkDivider)
     SettingRow(
-        "📍 Location Services",
-        "Study spot suggestions",
+        stringResource(id = R.string.settings_location),
+        stringResource(id = R.string.settings_location_desc),
         user.locationEnabled,
         onToggleLocation,
         Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
     androidx.compose.material3.Divider(color = DarkDivider)
     SettingRow(
-        "🎯 Focus Mode",
-        "Minimize distractions",
+        stringResource(id = R.string.settings_focus),
+        stringResource(id = R.string.settings_focus_desc),
         user.focusModeEnabled,
         onToggleFocusMode,
         Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
@@ -531,13 +552,7 @@ fun SettingsCard(
 }
 
 @Composable
-fun SettingRow(
-    title: String,
-    desc: String,
-    value: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun SettingRow(title: String, desc: String, value: Boolean, onToggle: () -> Unit) {
   Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
@@ -546,16 +561,17 @@ fun SettingRow(
           Text(title, color = TextLight)
           Text(desc, color = TextLight.copy(alpha = 0.6f), fontSize = 12.sp)
         }
-        Switch(checked = value, onCheckedChange = { onToggle() }, modifier = modifier)
+        Switch(checked = value, onCheckedChange = { onToggle() })
       }
 }
 
 @Composable
 fun AccountActionsSection() {
-  Column(Modifier.padding(12.dp)) {
-    ActionButton("Privacy Policy") {}
-    ActionButton("Terms of Service") {}
-    ActionButton("Logout", textColor = Color.Red) {}
+  Column(modifier = Modifier.padding(12.dp)) {
+    ActionButton(stringResource(id = R.string.account_privacy)) { /* navigateToPrivacy() */}
+    ActionButton(stringResource(id = R.string.account_terms)) { /* navigateToTerms() */}
+    ActionButton(
+        stringResource(id = R.string.account_logout), textColor = Color.Red) { /* logout() */}
   }
 }
 

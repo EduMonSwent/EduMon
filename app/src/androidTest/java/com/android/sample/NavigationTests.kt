@@ -10,8 +10,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
-import com.android.sample.screens.AppDestination
-import com.android.sample.screens.HomeTestTags
+import com.android.sample.feature.homeScreen.AppDestination
+import com.android.sample.feature.homeScreen.HomeTestTags
 import junit.framework.TestCase.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -72,7 +72,8 @@ class HomeNavigationTests {
             AppDestination.Games.route to "Games",
             AppDestination.Study.route to "Study",
             AppDestination.Flashcards.route to "Study", // Flashcards screen title is "Study"
-            AppDestination.Todo.route to "Todo")
+            AppDestination.Todo.route to "Todo",
+            AppDestination.Mood.route to "Daily Reflection")
 
     cases.forEach { (route, title) ->
       navigateDirect(route)
