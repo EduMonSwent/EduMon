@@ -3,6 +3,7 @@ package com.android.sample.session
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
 import com.android.sample.ui.pomodoro.PomodoroViewModelContract
@@ -12,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -20,12 +23,13 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class StudySessionViewModelTest {
   private lateinit var fakePomodoro: FakePomodoroViewModel
   private lateinit var fakeRepo: FakeStudySessionRepository
   private lateinit var viewModel: StudySessionViewModel
   private val testDispatcher = StandardTestDispatcher()
+  private val toDoRepo = ToDoRepositoryProvider.repository
+
 
   @Before
   fun setup() {
@@ -42,13 +46,6 @@ class StudySessionViewModelTest {
     assertNull(state.selectedTask)
     assertEquals(0, state.completedPomodoros)
   }
-
-  /*@Test
-  fun `loadSuggestedTasks populates the task list`() = runTest {
-    // Let init { loadSuggestedTasks() } complete
-    advanceUntilIdle()
-    assertTrue(viewModel.uiState.value.suggestedTasks.isNotEmpty())
-  }*/
 
   @Test
   fun `selectTask updates selectedTask`() = runTest {
@@ -70,6 +67,97 @@ class StudySessionViewModelTest {
     val state = viewModel.uiState.value
     assertEquals(PomodoroState.RUNNING, state.pomodoroState)
     assertTrue(state.isSessionActive)
+  }
+
+  @Test
+  fun `pomodoro RUNNING updates isSessionActive and timeLeft`() = runTest {
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
+    fakePomodoro.setTimeLeft(900)
+    advanceUntilIdle()
+
+    val state = viewModel.uiState.value
+    assertEquals(PomodoroState.RUNNING, state.pomodoroState)
+    assertTrue(state.isSessionActive)
+    assertEquals(900, state.timeLeft)
+  }
+
+  @Test
+  fun `pomodoro PAUSED clears isSessionActive`() = runTest {
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
+    advanceUntilIdle()
+    fakePomodoro.pauseTimer()
+    advanceUntilIdle()
+    assertFalse(viewModel.uiState.value.isSessionActive)
+    assertEquals(PomodoroState.PAUSED, viewModel.uiState.value.pomodoroState)
+  }
+
+  @Test
+  fun `onPomodoroCompleted triggers only when NOT WORK and FINISHED`() = runTest {
+    // FINISHED while WORK -> should NOT save
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.FINISHED)
+    advanceUntilIdle()
+    assertEquals(0, fakeRepo.getSavedSessions().size)
+
+    // FINISHED during SHORT_BREAK -> should save
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.SHORT_BREAK, PomodoroState.FINISHED)
+    advanceUntilIdle()
+    assertEquals(1, fakeRepo.getSavedSessions().size)
+  }
+
+  @Test
+  fun `setSelectedTaskStatus updates repo and ui selection`() = runTest {
+    val todo = ToDo(
+      title = "Test Task",
+      dueDate = LocalDate.of(2025, 1, 1),
+      priority = Priority.LOW,
+      status = Status.TODO)
+    runBlocking { toDoRepo.add(todo) }
+
+    viewModel = StudySessionViewModel(fakePomodoro, DelegatingRepoToTodos())
+    viewModel.selectTask(todo)
+
+    viewModel.setSelectedTaskStatus(Status.IN_PROGRESS)
+    advanceUntilIdle()
+
+    val updated = runBlocking { toDoRepo.getById(todo.id)!! }
+    assertEquals(Status.IN_PROGRESS, updated.status)
+    assertEquals(Status.IN_PROGRESS, viewModel.uiState.value.selectedTask?.status)
+  }
+
+  @Test
+  fun `cycleSelectedTaskStatus cycles TODO - IN_PROGRESS - DONE - TODO`() = runTest {
+    val todo =ToDo(
+      title = "Test Task",
+      dueDate = LocalDate.of(2025, 1, 1),
+      priority = Priority.LOW,
+      status = Status.TODO)
+    runBlocking { toDoRepo.add(todo) }
+
+    viewModel = StudySessionViewModel(fakePomodoro, DelegatingRepoToTodos())
+    viewModel.selectTask(todo)
+
+    viewModel.cycleSelectedTaskStatus(); advanceUntilIdle()
+    assertEquals(Status.IN_PROGRESS, viewModel.uiState.value.selectedTask?.status)
+
+    viewModel.cycleSelectedTaskStatus(); advanceUntilIdle()
+    assertEquals(Status.DONE, viewModel.uiState.value.selectedTask?.status)
+
+    viewModel.cycleSelectedTaskStatus(); advanceUntilIdle()
+    assertEquals(Status.TODO, viewModel.uiState.value.selectedTask?.status)
+  }
+
+
+
+  @Test
+  fun `setSelectedTaskStatus no-op when nothing selected`() = runTest {
+    // Let suggestions load
+    advanceUntilIdle()
+    val before = viewModel.uiState.value.suggestedTasks
+    viewModel.setSelectedTaskStatus(Status.DONE) // no selection -> should not crash nor change suggested list
+    advanceUntilIdle()
+    val after = viewModel.uiState.value.suggestedTasks
+    assertEquals(before, after)
+    assertNull(viewModel.uiState.value.selectedTask)
   }
 
   @Test
@@ -142,4 +230,21 @@ class FakePomodoroViewModel : PomodoroViewModelContract {
   fun setTimeLeft(seconds: Int) {
     _timeLeft.value = seconds
   }
+}
+
+private class RepoWithItems(
+  private val items: List<ToDo>
+) : StudySessionRepository {
+  override suspend fun saveCompletedSession(session: com.android.sample.ui.session.StudySessionUiState) {}
+  override suspend fun getSuggestedTasks(): List<ToDo> = items
+}
+
+private class DelegatingRepoToTodos :
+  StudySessionRepository {
+    override suspend fun saveCompletedSession(
+      session: com.android.sample.ui.session.StudySessionUiState
+    ) { /* no-op */ }
+
+    override suspend fun getSuggestedTasks(): List<ToDo> =
+      ToDoRepositoryProvider.repository.todos.first()
 }
