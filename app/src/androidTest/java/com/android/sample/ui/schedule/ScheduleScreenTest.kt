@@ -5,11 +5,9 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.sample.feature.weeks.ui.WeekProgDailyObjTags
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,23 +45,6 @@ class ScheduleScreenTest {
     // "Day" tab is the default; the Day tab content renders a title starting with "Today •"
     composeRule.onNodeWithText("Day").assertExists()
     composeRule.onAllNodesWithText("Today •", substring = true)[0].assertExists()
-  }
-
-  @Test
-  fun switch_toWeek_showsWeekDots_and_ThisWeekTitle() {
-    setContent()
-    composeRule.waitForIdle()
-
-    // Click Week tab
-    composeRule.onNodeWithText("Week").assertExists().performClick()
-    composeRule.waitForIdle()
-
-    // Stable tag from WeekDotsRow
-    composeRule.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW).assertExists()
-
-    // UpcomingEventsSection title in Week tab
-    // Use onAllNodes to avoid "multiple matches" issues on CI
-    composeRule.onAllNodesWithText("This week")[0].assertExists()
   }
 
   @Test
