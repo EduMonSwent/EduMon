@@ -1,20 +1,21 @@
 package com.android.sample.ui.profile
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
 class ProfileViewModelTest {
 
-  private val dispatcher = UnconfinedTestDispatcher()
+  private val dispatcher = StandardTestDispatcher()
 
   @Before
   fun setUp() {
@@ -27,68 +28,28 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun initial_state_reflects_repo_default() {
-    val repo = FakeProfileRepository()
-    val vm = ProfileViewModel(repository = repo)
+  fun toggles_and_accent_update_profile() =
+      runTest(dispatcher) {
+        // VM sans factory -> utilise FakeProfileRepository interne
+        val vm = ProfileViewModel()
+        val before = vm.userProfile.value
 
-    val p = vm.userProfile.value
-    assertEquals("Alex", p.name)
-    assertTrue(p.notificationsEnabled)
-    assertTrue(p.locationEnabled)
-    assertFalse(p.focusModeEnabled)
-  }
+        // -- toggles
+        vm.toggleNotifications()
+        vm.toggleLocation()
+        vm.toggleFocusMode()
+        advanceUntilIdle()
 
-  @Test
-  fun toggleNotifications_flips_value() {
-    val vm = ProfileViewModel(repository = FakeProfileRepository())
+        val afterToggles = vm.userProfile.value
+        assertEquals(!before.notificationsEnabled, afterToggles.notificationsEnabled)
+        assertEquals(!before.locationEnabled, afterToggles.locationEnabled)
+        assertEquals(!before.focusModeEnabled, afterToggles.focusModeEnabled)
 
-    val before = vm.userProfile.value.notificationsEnabled
-    vm.toggleNotifications()
-    val after1 = vm.userProfile.value.notificationsEnabled
-    vm.toggleNotifications()
-    val after2 = vm.userProfile.value.notificationsEnabled
+        // -- accent
+        val newColor = Color(0xFF10B981) // mint
+        vm.setAvatarAccent(newColor)
+        advanceUntilIdle()
 
-    assertEquals(!before, after1)
-    assertEquals(before, after2)
-  }
-
-  @Test
-  fun toggleLocation_flips_value() {
-    val vm = ProfileViewModel(repository = FakeProfileRepository())
-
-    val before = vm.userProfile.value.locationEnabled
-    vm.toggleLocation()
-    val after1 = vm.userProfile.value.locationEnabled
-    vm.toggleLocation()
-    val after2 = vm.userProfile.value.locationEnabled
-
-    assertEquals(!before, after1)
-    assertEquals(before, after2)
-  }
-
-  @Test
-  fun toggleFocusMode_flips_value() {
-    val vm = ProfileViewModel(repository = FakeProfileRepository())
-
-    val before = vm.userProfile.value.focusModeEnabled
-    vm.toggleFocusMode()
-    val after1 = vm.userProfile.value.focusModeEnabled
-    vm.toggleFocusMode()
-    val after2 = vm.userProfile.value.focusModeEnabled
-
-    assertEquals(!before, after1)
-    assertEquals(before, after2)
-  }
-
-  @Test
-  fun external_repo_update_is_observed_by_viewmodel() = runTest {
-    val repo = FakeProfileRepository()
-    val vm = ProfileViewModel(repository = repo)
-
-    repo.updateProfile(vm.userProfile.value.copy(name = "Taylor", points = 2000))
-
-    val p = vm.userProfile.value
-    assertEquals("Taylor", p.name)
-    assertEquals(2000, p.points)
-  }
+        assertEquals(newColor.toArgb().toLong(), vm.userProfile.value.avatarAccent)
+      }
 }

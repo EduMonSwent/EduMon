@@ -10,5 +10,7 @@ data class UserProfile(
     val dailyGoal: Int = 180,
     val notificationsEnabled: Boolean = true,
     val locationEnabled: Boolean = true,
-    val focusModeEnabled: Boolean = false
+    val focusModeEnabled: Boolean = false,
+    val avatarAccent: Long = 0xFF9333EAL,
+    val accessories: List<String> = emptyList()
 )
