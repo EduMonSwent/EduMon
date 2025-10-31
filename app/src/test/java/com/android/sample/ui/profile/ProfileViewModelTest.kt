@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -175,5 +176,119 @@ class ProfileViewModelTest {
     val after = vm.userProfile.value.coins
 
     assertEquals(before, after)
+  }
+
+  // Color tests
+
+  @Test
+  fun light_blend_matches_expected_math() = runTest {
+    val vm = ProfileViewModel()
+
+    val job = launch { vm.accentEffective.collect {} }
+
+    val base = Color(0xFF336699)
+    vm.setAvatarAccent(base)
+    advanceUntilIdle()
+    vm.setAccentVariant(AccentVariant.Light)
+    advanceUntilIdle()
+
+    val got = vm.accentEffective.value
+    val r = 0x33 / 255f
+    val g = 0x66 / 255f
+    val b = 0x99 / 255f
+    val t = 0.25f
+    fun blend(a: Float, b: Float) = a + (b - a) * t
+    val expR = blend(r, 1f)
+    val expG = blend(g, 1f)
+    val expB = blend(b, 1f)
+
+    assertEquals(expR, got.red, 0.002f)
+    assertEquals(expG, got.green, 0.002f)
+    assertEquals(expB, got.blue, 0.002f)
+
+    job.cancel()
+  }
+
+  @Test
+  fun dark_blend_scales_toward_black_by_factor_0_75() = runTest {
+    val vm = ProfileViewModel()
+    val job = launch { vm.accentEffective.collect {} }
+
+    val base = Color(0xFF336699)
+    vm.setAvatarAccent(base)
+    advanceUntilIdle()
+    vm.setAccentVariant(AccentVariant.Dark)
+    advanceUntilIdle()
+
+    val got = vm.accentEffective.value
+    assertEquals((0x33 / 255f) * 0.75f, got.red, 0.002f)
+    assertEquals((0x66 / 255f) * 0.75f, got.green, 0.002f)
+    assertEquals((0x99 / 255f) * 0.75f, got.blue, 0.002f)
+
+    job.cancel()
+  }
+
+  @Test
+  fun vibrant_preserves_black_and_clamps_to_one() = runTest {
+    val vm = ProfileViewModel()
+    val job = launch { vm.accentEffective.collect {} }
+
+    vm.setAvatarAccent(Color.Black)
+    advanceUntilIdle()
+    vm.setAccentVariant(AccentVariant.Vibrant)
+    advanceUntilIdle()
+    val blackV = vm.accentEffective.value
+    assertEquals(0f, blackV.red, 0.0f)
+    assertEquals(0f, blackV.green, 0.0f)
+    assertEquals(0f, blackV.blue, 0.0f)
+
+    val nearWhite = Color(red = 0.98f, green = 0.95f, blue = 0.96f, alpha = 1f)
+    vm.setAvatarAccent(nearWhite)
+    advanceUntilIdle()
+    vm.setAccentVariant(AccentVariant.Vibrant)
+    advanceUntilIdle()
+    val whiteish = vm.accentEffective.value
+    listOf(whiteish.red, whiteish.green, whiteish.blue).forEach { c -> assertTrue(c in 0f..1f) }
+
+    job.cancel()
+  }
+
+  @Test
+  fun base_variant_returns_exact_base_color_even_with_alpha() = runTest {
+    val vm = ProfileViewModel()
+    val job = launch { vm.accentEffective.collect {} }
+
+    val base = Color(0.2f, 0.4f, 0.6f, 0.5f)
+    vm.setAvatarAccent(base)
+    advanceUntilIdle()
+    vm.setAccentVariant(AccentVariant.Base)
+    advanceUntilIdle()
+
+    val got = vm.accentEffective.value
+    assertEquals(base.red, got.red, 0.01f)
+    assertEquals(base.green, got.green, 0.01f)
+    assertEquals(base.blue, got.blue, 0.01f)
+    assertEquals(base.alpha, got.alpha, 0.01f)
+
+    job.cancel()
+  }
+
+  @Test
+  fun vibrant_changes_channels_for_non_greyscale_non_black() = runTest {
+    val vm = ProfileViewModel()
+    val job = launch { vm.accentEffective.collect {} }
+
+    val base = Color(0.4f, 0.2f, 0.8f, 1f)
+    vm.setAvatarAccent(base)
+    advanceUntilIdle()
+    vm.setAccentVariant(AccentVariant.Vibrant)
+    advanceUntilIdle()
+
+    val got = vm.accentEffective.value
+    assertNotEquals(base.red, got.red, 0.0f)
+    assertNotEquals(base.green, got.green, 0.0f)
+    assertNotEquals(base.blue, got.blue, 0.0f)
+
+    job.cancel()
   }
 }

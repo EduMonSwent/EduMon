@@ -197,7 +197,6 @@ fun PetSection(
                               remember(accessories) {
                                 fun norm(s: String) =
                                     when (s) {
-                                      "hand" -> "hands"
                                       "leg" -> "legs"
                                       else -> s
                                     }
