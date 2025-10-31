@@ -3,7 +3,7 @@ package com.android.sample.ui.profile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/** Abstraction for loading and updating the user profile. */
+/** Abstraction for loading and updating the user profile (Profile feature only). */
 interface ProfileRepository {
   val profile: StateFlow<UserProfile>
 
