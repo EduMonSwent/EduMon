@@ -29,8 +29,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
-import com.android.sample.model.calendar.StudyItem
-import com.android.sample.model.calendar.TaskType
+import com.android.sample.model.StudyItem
+import com.android.sample.model.TaskType
+import com.android.sample.model.calendar.PlannerRepositoryImpl
+import com.android.sample.model.planner.FakePlannerRepository
+import com.android.sample.model.schedule.EventKind
+import com.android.sample.model.schedule.Priority
+import com.android.sample.model.schedule.ScheduleEvent
+import com.android.sample.model.schedule.ScheduleRepositoryImpl
+import com.android.sample.model.schedule.SourceTag
+import com.android.sample.model.schedule.StudyItemMapper
+import com.android.sample.ui.planner.AddStudyTaskModal
+import com.android.sample.ui.schedule.ScheduleViewModel
 import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
 import com.android.sample.ui.theme.Blue
@@ -59,11 +69,31 @@ object CalendarScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
+fun CalendarScreen() {
+  // --- Schedule wiring (repo + VM) ---
+  val taskRepo = remember { PlannerRepositoryImpl() } // tasks
+  val classRepo = remember { FakePlannerRepository() } // classes
+  val scheduleRepo = remember { ScheduleRepositoryImpl(taskRepo, classRepo) }
+  val vm: ScheduleViewModel =
+      viewModel( // explicit type fixes inference
+          key = "ScheduleVM",
+          factory =
+              object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                  return ScheduleViewModel(scheduleRepo) as T
+                }
+              })
+
+  // --- read Schedule state (same shape as before) ---
   val selectedDate by vm.selectedDate.collectAsState()
   val currentMonth by vm.currentDisplayMonth.collectAsState()
   val isMonthView by vm.isMonthView.collectAsState()
-  val allTasks by vm.allTasks.collectAsState()
+  val allEvents by vm.allEvents.collectAsState()
+
+  // Adapt events -> StudyItem for existing UI components
+  val allTasks: List<StudyItem> =
+      remember(allEvents) { allEvents.map(StudyItemMapper::fromScheduleEvent) }
 
   Box(
       modifier =
@@ -162,12 +192,49 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
                   if (isMonthView) stringResource(R.string.upcoming_events)
                   else stringResource(R.string.upcoming_events_week)
 
+              var showAddModal by remember { mutableStateOf(false) }
+              var addDate by remember { mutableStateOf<LocalDate?>(null) }
+
               UpcomingEventsSection(
                   tasks = displayedTasks.sortedBy { it.date },
                   selectedDate = selectedDate,
-                  onAddTaskClick = { vm.onAddTaskClicked(it) },
-                  onTaskClick = { vm.onEditTaskClicked(it) },
+                  onAddTaskClick = { date ->
+                    addDate = date
+                    showAddModal = true
+                  },
+                  onTaskClick = { task ->
+                    // TODO: ouvrir un modal de détails/édition si tu veux
+                    // (pour l’instant on ne fait rien)
+                  },
                   title = sectionTitle)
+
+              if (showAddModal && addDate != null) {
+                AddStudyTaskModal(
+                    onDismiss = {
+                      showAddModal = false
+                      addDate = null
+                    },
+                    onAddTask = { subject, title, duration, deadline, priority ->
+                      val event =
+                          ScheduleEvent(
+                              title = if (title.isNotBlank()) title else subject,
+                              date =
+                                  addDate!!, // on utilise la date passée par UpcomingEventsSection
+                              time = null,
+                              durationMinutes = duration,
+                              kind = EventKind.STUDY, // adapte si tu veux d’autres types
+                              priority =
+                                  when (priority.lowercase()) {
+                                    "low" -> Priority.LOW
+                                    "high" -> Priority.HIGH
+                                    else -> Priority.MEDIUM
+                                  },
+                              sourceTag = SourceTag.Task)
+                      vm.save(event) // <- enregistre via ScheduleRepository
+                      showAddModal = false
+                      addDate = null
+                    })
+              }
             }
       }
 }
@@ -221,7 +288,7 @@ fun MonthGrid(
         columns = GridCells.Fixed(7),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()) {
+        modifier = Modifier.fillMaxWidth().height(400.dp)) {
           items(displayDays.size) { index ->
             val day = displayDays[index]
             if (day != null) {
