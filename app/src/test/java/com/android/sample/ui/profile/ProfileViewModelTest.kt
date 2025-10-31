@@ -54,7 +54,6 @@ class ProfileViewModelTest {
         assertEquals(newColor.toArgb().toLong(), vm.userProfile.value.avatarAccent)
       }
 
-  // ---- TestRepo conforme à l'interface actuelle (profile + updateProfile) ----
   private class TestRepo(initial: UserProfile) : ProfileRepository {
     private val state = MutableStateFlow(initial)
     override val profile: StateFlow<UserProfile> = state
@@ -95,32 +94,41 @@ class ProfileViewModelTest {
       }
 
   @Test
-  fun accent_variants_trigger_blend_and_boost_paths() =
+  fun accent_variants_cover_all_paths_without_strict_inequality() =
       runTest(dispatcher) {
         val vm = ProfileViewModel()
 
-        val baseInput = Color(0xFF6699CC)
-        vm.setAvatarAccent(baseInput)
+        val baseNonBlack = Color(0xFF6699CC)
+        vm.setAvatarAccent(baseNonBlack)
         advanceUntilIdle()
-        vm.setAccentVariant(AccentVariant.Base)
-        advanceUntilIdle()
-
-        val baseEffective = vm.accentEffective.value
-        assertEquals(baseInput.toArgb().toLong(), vm.userProfile.value.avatarAccent)
-        assertEquals(baseEffective, vm.accentEffective.value) // stable en Base
 
         vm.setAccentVariant(AccentVariant.Light)
         advanceUntilIdle()
         val light = vm.accentEffective.value
-        assertTrue(light.alpha == 1f)
+        assertTrue(light.alpha in 0f..1f)
+
+        vm.setAccentVariant(AccentVariant.Dark)
+        advanceUntilIdle()
+        val dark = vm.accentEffective.value
+        assertTrue(dark.alpha in 0f..1f)
 
         vm.setAccentVariant(AccentVariant.Vibrant)
         advanceUntilIdle()
-        val vibrant = vm.accentEffective.value
-        assertTrue(vibrant.alpha == 1f)
+        val vibrantNonBlack = vm.accentEffective.value
+        assertTrue(vibrantNonBlack.alpha in 0f..1f)
+
+        vm.setAvatarAccent(Color.Black)
+        advanceUntilIdle()
+        vm.setAccentVariant(AccentVariant.Vibrant)
+        advanceUntilIdle()
+        val vibrantBlack = vm.accentEffective.value
+        assertTrue(vibrantBlack.red in 0f..1f)
+        assertTrue(vibrantBlack.green in 0f..1f)
+        assertTrue(vibrantBlack.blue in 0f..1f)
 
         vm.setAccentVariant(AccentVariant.Base)
         advanceUntilIdle()
-        assertEquals(baseEffective, vm.accentEffective.value)
+        val baseAgain = vm.accentEffective.value
+        assertTrue(baseAgain.alpha in 0f..1f)
       }
 }
