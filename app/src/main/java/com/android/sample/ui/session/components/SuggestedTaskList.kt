@@ -22,10 +22,10 @@ fun SuggestedTasksList(
 ) {
   LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier.fillMaxWidth()) {
     items(tasks) { task ->
-      val isSelected = task == selectedTask
+      val isSelected = selectedTask?.id == task.id
       AssistChip(
           onClick = { onTaskSelected(task) },
-          label = { Text(task.name) },
+          label = { Text(task.title) },
           colors =
               AssistChipDefaults.assistChipColors(
                   containerColor =

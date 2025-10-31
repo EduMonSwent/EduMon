@@ -1,7 +1,7 @@
 package com.android.sample.ui.session
 
-import FakeStudySessionRepository
 import android.content.Context
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertAny
 import androidx.compose.ui.test.assertIsDisplayed
@@ -10,15 +10,29 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
+import com.android.sample.data.Priority
+import com.android.sample.data.Status
+import com.android.sample.data.ToDo
+import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.session.components.SessionStatsPanel
 import com.android.sample.ui.session.components.SessionStatsPanelTestTags
 import com.android.sample.ui.theme.SampleAppTheme
+import java.time.LocalDate
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
 // Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
+private class RepoWithSuggestions(private val items: List<ToDo>) : StudySessionRepository {
+  override suspend fun saveCompletedSession(session: StudySessionUiState) {
+    /* no-op */
+  }
+
+  override suspend fun getSuggestedTasks(): List<ToDo> = items
+}
 
 class StudySessionScreenTest {
 
@@ -26,8 +40,21 @@ class StudySessionScreenTest {
 
   @Test
   fun studySessionScreen_displaysTitleAndComponents() {
-    composeTestRule.setContent { SampleAppTheme { StudySessionScreen() } }
+    val items =
+        listOf(
+            ToDo(
+                title = "A",
+                dueDate = LocalDate.of(2025, 1, 1),
+                priority = Priority.LOW,
+                status = Status.TODO))
+    val vm = StudySessionViewModel(repository = RepoWithSuggestions(items))
 
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(StudySessionTestTags.TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(StudySessionTestTags.TASK_LIST).assertIsDisplayed()
     composeTestRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertIsDisplayed()
@@ -37,8 +64,11 @@ class StudySessionScreenTest {
   @Test
   fun statsPanel_displaysValuesCorrectly() {
     // Arrange
-    composeTestRule.setContent { SessionStatsPanel(pomodoros = 3, totalMinutes = 75, streak = 5) }
-
+    composeTestRule.setContent {
+      SampleAppTheme { // or MaterialTheme { ... }
+        SessionStatsPanel(pomodoros = 3, totalMinutes = 75, streak = 5)
+      }
+    }
     val context = ApplicationProvider.getApplicationContext<Context>()
 
     // Assert each stat card displays correct text
@@ -76,36 +106,75 @@ class StudySessionScreenTest {
 
   @Test
   fun suggestedTasksList_displaysTasksAndHandlesSelection() {
-    val tasks = listOf(Task("Task A"), Task("Task B"), Task("Task C"))
+    // Arrange: build ToDo items (titles are what the chips render)
+    val tasks =
+        listOf(
+            ToDo(
+                title = "Task A",
+                dueDate = LocalDate.of(2025, 1, 1),
+                priority = Priority.LOW,
+                status = Status.TODO),
+            ToDo(
+                title = "Task B",
+                dueDate = LocalDate.of(2025, 1, 2),
+                priority = Priority.MEDIUM,
+                status = Status.TODO),
+            ToDo(
+                title = "Task C",
+                dueDate = LocalDate.of(2025, 1, 3),
+                priority = Priority.HIGH,
+                status = Status.IN_PROGRESS))
+
+    var selected = tasks[1] // preselect "Task B"
+    var lastSelectedTitle: String? = selected.title
+
     composeTestRule.setContent {
-      com.android.sample.ui.session.components.SuggestedTasksList(
-          tasks = tasks, selectedTask = tasks[1], onTaskSelected = {})
+      MaterialTheme {
+        com.android.sample.ui.session.components.SuggestedTasksList(
+            tasks = tasks,
+            selectedTask = selected,
+            onTaskSelected = {
+              selected = it
+              lastSelectedTitle = it.title
+            })
+      }
     }
 
+    // Assert: all titles are shown
     composeTestRule.onNodeWithText("Task A").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task B").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task C").assertIsDisplayed()
+
+    // Act: select "Task C"
+    composeTestRule.onNodeWithText("Task C").performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: callback received the new selection
+    assertEquals("Task C", lastSelectedTitle)
   }
 
   @Test
   fun selectedTaskText_displaysWhenTaskIsSelected_realViewModel() {
-    // Arrange: use a real StudySessionViewModel
-    val viewModel = StudySessionViewModel(repository = FakeStudySessionRepository())
+    val fakeTask =
+        ToDo(
+            title = "Read Chapter 3",
+            dueDate = LocalDate.of(2025, 1, 1),
+            priority = Priority.MEDIUM,
+            status = Status.TODO)
+    val vm = StudySessionViewModel(repository = RepoWithSuggestions(listOf(fakeTask)))
+    vm.selectTask(fakeTask)
 
-    val fakeTask = Task(name = "Read Chapter 3")
-    viewModel.selectTask(fakeTask)
-
-    // Compose the UI
     composeTestRule.setContent {
       SampleAppTheme {
-        StudySessionScreen(viewModel = viewModel, pomodoroViewModel = viewModel.pomodoroViewModel)
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
       }
     }
+    composeTestRule.waitForIdle()
 
     val context = ApplicationProvider.getApplicationContext<Context>()
-    val expectedText = context.getString(R.string.selected_task_txt) + " " + fakeTask.name
+    val expectedText = context.getString(R.string.selected_task_txt) + " " + fakeTask.title
 
-    // Assert
+    // Assert the selected-task text is shown
     composeTestRule
         .onNodeWithTag(StudySessionTestTags.SELECTED_TASK)
         .assertIsDisplayed()
