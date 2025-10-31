@@ -19,40 +19,38 @@ class ScheduleScreenRobolectricTest {
     compose.setContent { ScheduleScreen() }
     compose.waitForIdle()
 
-    // Tabs should exist (pure text queries, no Activity/resources)
+    // Tabs exist
     compose.onNodeWithText("Day", ignoreCase = true).assertExists()
     compose.onNodeWithText("Week", ignoreCase = true).assertExists()
     compose.onNodeWithText("Month", ignoreCase = true).assertExists()
     compose.onNodeWithText("Agenda", ignoreCase = true).assertExists()
 
-    // Switch to Week and confirm UI is still alive by checking the tab again.
-    // (Avoid strict content checks that are flaky on CI).
+    // Switch Week
     compose.onNodeWithText("Week", ignoreCase = true).performClick()
     compose.waitForIdle()
     compose.onNodeWithText("Week", ignoreCase = true).assertExists()
 
-    // Switch to Month; sanity check a generic section label likely present somewhere.
+    // Switch Month, look for generic section words (copy may vary)
     compose.onNodeWithText("Month", ignoreCase = true).performClick()
     compose.waitForIdle()
-    assertAnyTextPresent("Most important", "This month", "Month")(compose)
+    assertAnyTextPresent("Most important", "Month", "Upcoming")(compose)
 
-    // Switch to Agenda; look for “Agenda” within content (there may be two: tab + section)
+    // Switch Agenda
     compose.onNodeWithText("Agenda", ignoreCase = true).performClick()
     compose.waitForIdle()
     assertAnyTextPresent("Agenda", "Upcoming", "Events")(compose)
 
-    // FAB should exist by content description
+    // FAB present
     compose.onNode(hasContentDescription("Add")).assertExists()
   }
 }
 
-/** --- tiny helper to make tests resilient to copy changes --- */
 private fun assertAnyTextPresent(vararg candidates: String): (ComposeContentTestRule) -> Unit =
     { rule ->
       val found =
-          candidates.any { text ->
+          candidates.any { t ->
             rule
-                .onAllNodes(hasText(text, substring = true, ignoreCase = true))
+                .onAllNodes(hasText(t, substring = true, ignoreCase = true))
                 .fetchSemanticsNodes()
                 .isNotEmpty()
           }

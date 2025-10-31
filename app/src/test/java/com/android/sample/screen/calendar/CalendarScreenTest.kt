@@ -19,9 +19,8 @@ class CalendarScreenRobolectricTest {
     compose.setContent { CalendarScreen() }
     compose.waitForIdle()
 
-    // Avoid resources/Activity. Be tolerant to copy:
-    // look for common section headings that appear in both month/week variants.
-    assertAnyTextPresent("Upcoming", "This week", "Agenda", "This month")(compose)
+    // Avoid getString(); just check generic labels likely on both modes
+    assertAnyTextPresent("Upcoming", "This week", "This month", "Agenda")(compose)
   }
 
   @Test
@@ -45,21 +44,20 @@ class CalendarScreenRobolectricTest {
     } else if (monthNodes.isNotEmpty()) {
       compose.onNodeWithText("Month", ignoreCase = true).performClick()
       compose.waitForIdle()
-      assertAnyTextPresent("Most important", "Upcoming", "This month")(compose)
+      assertAnyTextPresent("Most important", "This month", "Upcoming")(compose)
     } else {
-      // No mode toggle present in this build; just ensure screen is alive:
+      // No toggle in this build; ensure screen is alive:
       assertAnyTextPresent("Upcoming", "Agenda", "Events")(compose)
     }
   }
 }
 
-/** --- shared helper --- */
 private fun assertAnyTextPresent(vararg candidates: String): (ComposeContentTestRule) -> Unit =
     { rule ->
       val found =
-          candidates.any { text ->
+          candidates.any { t ->
             rule
-                .onAllNodes(hasText(text, substring = true, ignoreCase = true))
+                .onAllNodes(hasText(t, substring = true, ignoreCase = true))
                 .fetchSemanticsNodes()
                 .isNotEmpty()
           }
