@@ -173,4 +173,25 @@ class ScheduleViewModelTest {
     val movesForN1 = repo.moved.filter { it.first == "n1" }
     assertEquals(1, movesForN1.size)
   }
+
+  @Test
+  fun filters_and_modes_and_completion_false_dontAdjust() = runTest {
+    val repo = FakeScheduleRepository()
+    val vm = ScheduleViewModel(repo)
+
+    vm.setWeekMode()
+    assertFalse(vm.isMonthView.value)
+    vm.setMonthMode()
+    assertTrue(vm.isMonthView.value)
+
+    vm.setFilters(setOf(EventKind.STUDY))
+    assertEquals(setOf(EventKind.STUDY), vm.activeKinds.value)
+
+    // completion=false → update only, no adjust call path required
+    val e = ScheduleEvent(id = "x", title = "t", date = LocalDate.now(), kind = EventKind.STUDY)
+    repo.emit(e)
+    vm.onTaskCompletionChanged("x", completed = false)
+    advanceUntilIdle()
+    assertTrue(repo.updated.any { it.id == "x" && !it.isCompleted })
+  }
 }

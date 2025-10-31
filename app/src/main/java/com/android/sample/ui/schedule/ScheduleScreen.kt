@@ -278,7 +278,7 @@ private fun WeekTabContent(
         }
 
         item(key = "week-upcoming") {
-          FramedSection {
+          FramedSection(modifier = Modifier.testTag("WeekUpcomingSection")) {
             val start = vm.startOfWeek(selectedDate)
             val end = start.plusDays(6)
             val weekTasks = allTasks.filter { it.date in start..end }
@@ -305,11 +305,12 @@ private fun MonthTabContent(
   Column(
       modifier =
           Modifier.fillMaxSize()
+              .testTag("MonthContent")
               .verticalScroll(rememberScrollState()) // Add scroll if needed
               .padding(bottom = 96.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Month Grid
-        FramedSection {
+        FramedSection(modifier = Modifier.testTag("MonthImportantSection")) {
           MonthGrid(
               currentMonth = currentMonth,
               selectedDate = selectedDate,
@@ -353,11 +354,11 @@ private fun AgendaTabContent(
     selectedDate: LocalDate
 ) {
   LazyColumn(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier.fillMaxSize().testTag("AgendaContent"),
       verticalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(bottom = 96.dp)) {
         item(key = "agenda-list") {
-          FramedSection {
+          FramedSection(modifier = Modifier.testTag("AgendaSection")) {
             val upcoming = allTasks.filter { it.date >= selectedDate }
             UpcomingEventsSection(
                 tasks =
