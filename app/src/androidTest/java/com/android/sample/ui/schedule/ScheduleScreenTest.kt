@@ -34,29 +34,39 @@ class ScheduleScreenTest {
   fun switch_toWeek_showsWeekDotsAndUpcomingSection() {
     setContent()
 
-    // Switch to Week tab
+    // Tap Week tab
     composeRule.onNodeWithText("Week").performClick()
-    composeRule.waitForIdle()
 
-    // Try to scroll the Week tab’s list to reach the WeekDotsRow
-    composeRule
-        .onNodeWithTag("WeekRoot")
-        .performScrollToNode(hasTestTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
-
-    // This may fail on CI if the layout changes (expected in your logs)
-    composeRule.waitUntil(timeoutMillis = 3_000) {
+    // Wait for the Week tab content to render — up to 7s on slow CI
+    composeRule.waitUntil(timeoutMillis = 7000) {
       composeRule
-          .onAllNodesWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW)
+          .onAllNodes(hasTestTag(WeekProgDailyObjTags.WEEK_DOTS_ROW), useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
+
+    // Scroll to ensure visibility
+    composeRule
+        .onNodeWithTag("WeekContent")
+        .performScrollToNode(hasTestTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
+
+    // Then assert the dots section is visible
     composeRule
         .onNodeWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW, useUnmergedTree = true)
         .assertExists()
         .assertIsDisplayed()
 
-    // Also ensure “This week” section title is visible
-    composeRule.onNodeWithText("This week").assertIsDisplayed()
+    // Also check that the "This week" section is visible
+    composeRule.waitUntil(timeoutMillis = 5000) {
+      composeRule
+          .onAllNodesWithText("This week", useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    composeRule
+        .onAllNodesWithText("This week", useUnmergedTree = true)
+        .onFirst()
+        .assertIsDisplayed()
   }
 
   @Test

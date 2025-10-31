@@ -244,13 +244,13 @@ private fun DayTabContent(
 @Composable
 private fun WeekTabContent(
     vm: ScheduleViewModel,
-    weeksVm: com.android.sample.feature.weeks.viewmodel.WeeksViewModel,
-    objectivesVm: com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel,
-    allTasks: List<com.android.sample.model.StudyItem>,
+    weeksVm: WeeksViewModel,
+    objectivesVm: ObjectivesViewModel,
+    allTasks: List<StudyItem>,
     selectedDate: LocalDate
 ) {
   LazyColumn(
-      modifier = Modifier.fillMaxSize().testTag("WeekRoot"),
+      modifier = Modifier.fillMaxSize().testTag("WeekContent"),
       verticalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(bottom = 96.dp)) {
         item(key = "week-row") {
