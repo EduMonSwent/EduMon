@@ -44,7 +44,16 @@ class ScheduleScreenTest {
         .performScrollToNode(hasTestTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
 
     // This may fail on CI if the layout changes (expected in your logs)
-    composeRule.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW).assertIsDisplayed()
+    composeRule.waitUntil(timeoutMillis = 3_000) {
+      composeRule
+          .onAllNodesWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    composeRule
+        .onNodeWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW, useUnmergedTree = true)
+        .assertExists()
+        .assertIsDisplayed()
 
     // Also ensure “This week” section title is visible
     composeRule.onNodeWithText("This week").assertIsDisplayed()
