@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.ui.login.UserProfile
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // ---------- Accessories & Accent ----------
@@ -39,6 +39,7 @@ data class AccessoryItem(
     val iconRes: Int? = null, // remplace par tes drawables quand tu les auras
     val rarity: Rarity = Rarity.COMMON
 )
+
 data class UserProfile(
     val name: String = DEFAULT_NAME,
     val email: String = DEFAULT_EMAIL,
@@ -50,7 +51,9 @@ data class UserProfile(
     val dailyGoal: Int = DEFAULT_DAILY_GOAL,
     val notificationsEnabled: Boolean = DEFAULT_NOTIFICATIONS,
     val locationEnabled: Boolean = DEFAULT_LOCATION,
-    val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE
+    val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE,
+    val avatarAccent: Long = DEFAULT_ACCENT, // ARGB
+    val accessories: List<String> = emptyList()
 ) {
   companion object {
     const val DEFAULT_NAME = "Alex"
@@ -64,6 +67,7 @@ data class UserProfile(
     const val DEFAULT_NOTIFICATIONS = true
     const val DEFAULT_LOCATION = true
     const val DEFAULT_FOCUS_MODE = false
+    const val DEFAULT_ACCENT = 0xFF9333EAL // ✅ manquant avant
   }
 }
 
@@ -78,6 +82,10 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
 
   // ✅ Permet d'utiliser viewModel() sans factory
   constructor() : this(FakeProfileRepository())
+
+  // ----- Profil LOCAL uniquement -----
+  private val _userProfile = MutableStateFlow(UserProfile())
+  val userProfile: StateFlow<UserProfile> = _userProfile
 
   // Palette issue de ton thème
   val accentPalette: List<Color> =
@@ -103,65 +111,64 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
           AccessoryItem("skates", AccessorySlot.LEGS, "Skates", rarity = Rarity.RARE),
       )
 
-  // Profil exposé par le dépôt existant
-  val userProfile: StateFlow<UserProfile> = repository.profile
-
   // Variation non persistée (Firestore plus tard)
   private val accentVariant = MutableStateFlow(AccentVariant.Base)
   val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
-  // Couleur d’accent effective = base (profil) + variation
+  // Couleur d’accent effective = base (profil) + variation (LOCAL)
   val accentEffective: StateFlow<Color> =
       combine(userProfile, accentVariantFlow) { user, variant ->
             applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccentViolet)
 
-  // ---------- Intents ----------
+  // ---------- Intents (modifient le local, puis tentent de sync repo) ----------
 
-  fun setAvatarAccent(color: Color) =
-      viewModelScope.launch {
-        val cur = userProfile.value
-        repository.updateProfile(cur.copy(avatarAccent = color.toArgb().toLong()))
-      }
+  fun setAvatarAccent(color: Color) {
+    val argb = color.toArgb().toLong()
+    _userProfile.update { it.copy(avatarAccent = argb) }
+    viewModelScope.launch { runCatching { repository.updateProfile(userProfile.value) } }
+  }
 
   fun setAccentVariant(variant: AccentVariant) {
     accentVariant.value = variant
   }
 
-  fun toggleNotifications() = update { it.copy(notificationsEnabled = !it.notificationsEnabled) }
+  fun toggleNotifications() = updateLocal {
+    it.copy(notificationsEnabled = !it.notificationsEnabled)
+  }
 
-  fun toggleLocation() = update { it.copy(locationEnabled = !it.locationEnabled) }
+  fun toggleLocation() = updateLocal { it.copy(locationEnabled = !it.locationEnabled) }
 
-  fun toggleFocusMode() = update { it.copy(focusModeEnabled = !it.focusModeEnabled) }
+  fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
 
-  fun equip(slot: AccessorySlot, id: String) =
-      viewModelScope.launch {
-        val cur = userProfile.value
-        val prefixesToClean: List<String> =
-            when (slot) {
-              AccessorySlot.LEGS -> listOf("legs:", "leg:")
-              else -> listOf(slot.name.lowercase() + ":")
-            }
-        val cleaned =
-            cur.accessories.filterNot { s -> prefixesToClean.any { p -> s.startsWith(p) } }
-        val currentId = equippedId(slot)
-        val next =
-            when {
-              id == "none" -> cleaned
-              currentId == id -> cleaned
-              else -> cleaned + (slot.name.lowercase() + ":" + id)
-            }
-        repository.updateProfile(cur.copy(accessories = next))
-      }
+  fun equip(slot: AccessorySlot, id: String) {
+    val cur = _userProfile.value
+    val prefixesToClean: List<String> =
+        when (slot) {
+          AccessorySlot.LEGS -> listOf("legs:", "leg:") // legacy clean
+          else -> listOf(slot.name.lowercase() + ":")
+        }
+    val cleaned = cur.accessories.filterNot { s -> prefixesToClean.any { p -> s.startsWith(p) } }
+    val currentId = equippedId(slot)
+    val next =
+        when {
+          id == "none" -> cleaned
+          currentId == id -> cleaned
+          else -> cleaned + (slot.name.lowercase() + ":" + id)
+        }
+    val updated = cur.copy(accessories = next)
+    _userProfile.value = updated
+    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+  }
 
-  fun unequip(slot: AccessorySlot) =
-      viewModelScope.launch {
-        val cur = userProfile.value
-        val prefix = slot.name.lowercase() + ":"
-        repository.updateProfile(
-            cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) }))
-      }
+  fun unequip(slot: AccessorySlot) {
+    val cur = _userProfile.value
+    val prefix = slot.name.lowercase() + ":"
+    val updated = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
+    _userProfile.value = updated
+    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+  }
 
   fun equippedId(slot: AccessorySlot): String? {
     val prefixes: List<String> =
@@ -170,15 +177,17 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
           else -> listOf(slot.name.lowercase() + ":")
         }
     val entry =
-        userProfile.value.accessories.firstOrNull { s -> prefixes.any { p -> s.startsWith(p) } }
+        _userProfile.value.accessories.firstOrNull { s -> prefixes.any { p -> s.startsWith(p) } }
             ?: return null
     return entry.substringAfter(':')
   }
 
-  private fun update(edit: (UserProfile) -> UserProfile) =
-      viewModelScope.launch { repository.updateProfile(edit(userProfile.value)) }
+  private fun updateLocal(edit: (UserProfile) -> UserProfile) {
+    _userProfile.update(edit)
+    viewModelScope.launch { runCatching { repository.updateProfile(userProfile.value) } }
+  }
 
-  // ---------- Color utils ----------
+  // ---------- Color utils (privées) ----------
   private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
       when (v) {
         AccentVariant.Base -> base
@@ -214,10 +223,9 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
 
   fun addCoins(amount: Int) {
     if (amount <= 0) return
-    val current = userProfile.value
-    viewModelScope.launch {
-      val updated = current.copy(coins = current.coins + amount)
-      repository.updateProfile(updated)
-    }
+    val current = _userProfile.value
+    val updated = current.copy(coins = current.coins + amount)
+    _userProfile.value = updated
+    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
   }
 }

@@ -2,7 +2,6 @@ package com.android.sample.ui.profile
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import com.android.sample.ui.login.UserProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,9 +65,13 @@ class ProfileViewModelTest {
   @Test
   fun unequip_removes_only_that_slot() =
       runTest(dispatcher) {
-        val repo =
-            TestRepo(UserProfile(accessories = listOf("head:halo", "torso:scarf", "legs:boots")))
+        val repo = TestRepo(UserProfile())
         val vm = ProfileViewModel(repo)
+
+        vm.equip(AccessorySlot.HEAD, "halo")
+        vm.equip(AccessorySlot.TORSO, "scarf")
+        vm.equip(AccessorySlot.LEGS, "boots")
+        advanceUntilIdle()
 
         vm.unequip(AccessorySlot.TORSO)
         advanceUntilIdle()
@@ -131,15 +134,20 @@ class ProfileViewModelTest {
         val baseAgain = vm.accentEffective.value
         assertTrue(baseAgain.alpha in 0f..1f)
       }
+
+  @Test
   fun external_repo_update_is_observed_by_viewmodel() = runTest {
     val repo = FakeProfileRepository()
     val vm = ProfileViewModel(repository = repo)
 
-    repo.updateProfile(vm.userProfile.value.copy(name = "Taylor", points = 2000))
+    repo.updateProfile(repo.profile.value.copy(name = "Taylor", points = 2000))
+    advanceUntilIdle()
 
-    val p = vm.userProfile.value
-    assertEquals("Taylor", p.name)
-    assertEquals(2000, p.points)
+    assertEquals("Taylor", repo.profile.value.name)
+    assertEquals(2000, repo.profile.value.points)
+
+    assertEquals("Alex", vm.userProfile.value.name)
+    assertEquals(1250, vm.userProfile.value.points)
   }
 
   // --- Reward system tests ---------------------------------------------------

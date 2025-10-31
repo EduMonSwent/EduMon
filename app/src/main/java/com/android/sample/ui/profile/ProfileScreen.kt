@@ -30,11 +30,13 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
@@ -46,10 +48,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,7 +66,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
-import com.android.sample.ui.login.UserProfile
 import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
@@ -156,13 +153,11 @@ fun PetSection(
     variant: AccentVariant,
     modifier: Modifier = Modifier
 ) {
-
   Box(
       modifier =
           modifier
               .fillMaxWidth()
-              .background(
-                  brush = Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
+              .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
               .padding(vertical = 20.dp, horizontal = 16.dp)
               .testTag(ProfileScreenTestTags.PET_SECTION)) {
         Row(
@@ -181,7 +176,7 @@ fun PetSection(
                     Box(
                         modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
                         contentAlignment = Alignment.Center) {
-                          // aura (fond)
+                          // aura
                           Box(
                               Modifier.fillMaxSize()
                                   .background(
@@ -191,13 +186,13 @@ fun PetSection(
                                                   listOf(
                                                       accent.copy(alpha = 0.55f),
                                                       Color.Transparent))))
-                          // avatar au-dessus
+                          // avatar
                           Image(
                               painter = painterResource(id = R.drawable.edumon),
                               contentDescription = "EduMon",
                               modifier = Modifier.size(100.dp).zIndex(1f))
 
-                          // --- overlays par slot (dans le Box du pet) ---
+                          // overlays
                           val equipped =
                               remember(accessories) {
                                 fun norm(s: String) =
@@ -212,8 +207,8 @@ fun PetSection(
                                 }
                               }
 
-                          // LEGS (sol)
-                          equipped["legs"]?.let { _: String ->
+                          // LEGS
+                          equipped["legs"]?.let {
                             Box(
                                 Modifier.align(Alignment.BottomCenter)
                                     .padding(bottom = 6.dp)
@@ -224,7 +219,7 @@ fun PetSection(
                           }
 
                           // TORSO
-                          equipped["torso"]?.let { _: String ->
+                          equipped["torso"]?.let {
                             Icon(
                                 Icons.Filled.AutoAwesome,
                                 contentDescription = "torso",
@@ -233,7 +228,7 @@ fun PetSection(
                           }
 
                           // HEAD
-                          equipped["head"]?.let { _: String ->
+                          equipped["head"]?.let {
                             Icon(
                                 Icons.Filled.Star,
                                 contentDescription = "head",
@@ -278,13 +273,14 @@ fun GlowCard(content: @Composable () -> Unit) {
               animationSpec =
                   infiniteRepeatable(tween(2500, easing = LinearEasing), RepeatMode.Reverse),
               label = "glowVal")
+
   Card(
       modifier =
           Modifier.fillMaxWidth(0.9f)
               .shadow(
                   elevation = 16.dp,
-                  ambientColor = AccentViolet.copy(alpha = glowAlpha),
-                  spotColor = AccentViolet.copy(alpha = glowAlpha),
+                  ambientColor = AccentViolet.copy(alpha = glow),
+                  spotColor = AccentViolet.copy(alpha = glow),
                   shape = RoundedCornerShape(CARD_CORNER_RADIUS)),
       shape = RoundedCornerShape(CARD_CORNER_RADIUS),
       colors = CardDefaults.cardColors(containerColor = MidDarkCard)) {
@@ -396,8 +392,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
                         CircleShape)
                     .clickable { viewModel.setAvatarAccent(c) },
             contentAlignment = Alignment.Center) {
-              if (selected)
-                  androidx.compose.material3.Icon(Icons.Outlined.Check, null, tint = Color.White)
+              if (selected) Icon(Icons.Outlined.Check, null, tint = Color.White)
             }
       }
     }
@@ -416,7 +411,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 
     Spacer(Modifier.height(20.dp))
 
-    // Inventaire par slot
+    // Inventaire
     Text("Inventory", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(10.dp))
 
@@ -457,7 +452,7 @@ private fun AccessoriesGrid(
 ) {
   LazyVerticalGrid(
       columns = GridCells.Adaptive(minSize = 96.dp),
-      modifier = Modifier.fillMaxWidth().height(200.dp), // borné pour éviter scroll infini
+      modifier = Modifier.fillMaxWidth().height(200.dp),
       userScrollEnabled = false) {
         items(items, key = { "${it.slot}-${it.id}" }) { item ->
           val on = selectedId == item.id || (selectedId == null && item.id == "none")
@@ -483,7 +478,6 @@ private fun AccessoriesGrid(
                       .clickable { onSelect(item.id) }
                       .border(1.dp, stroke, RoundedCornerShape(16.dp))) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                  // Icône (drawable si fourni, sinon fallback)
                   if (item.iconRes != null) {
                     Image(
                         painter = painterResource(id = item.iconRes),
@@ -496,14 +490,12 @@ private fun AccessoriesGrid(
                           AccessorySlot.TORSO -> Icons.Filled.AutoAwesome
                           AccessorySlot.LEGS -> Icons.Filled.Star
                         }
-                    androidx.compose.material3.Icon(
+                    Icon(
                         fallback,
                         contentDescription = item.label,
                         tint = stroke,
                         modifier = Modifier.size(26.dp))
                   }
-
-                  // Label
                   Text(
                       item.label,
                       color = TextLight,
@@ -533,26 +525,32 @@ fun SettingsCard(
         stringResource(id = R.string.settings_notifications_desc),
         user.notificationsEnabled,
         onToggleNotifications,
-        Modifier.testTag(ProfileScreenTestTags.SWITCH_NOTIFICATIONS))
-    androidx.compose.material3.Divider(color = DarkDivider)
+        modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_NOTIFICATIONS))
+    Divider(color = DarkDivider)
     SettingRow(
         stringResource(id = R.string.settings_location),
         stringResource(id = R.string.settings_location_desc),
         user.locationEnabled,
         onToggleLocation,
-        Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
-    androidx.compose.material3.Divider(color = DarkDivider)
+        modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
+    Divider(color = DarkDivider)
     SettingRow(
         stringResource(id = R.string.settings_focus),
         stringResource(id = R.string.settings_focus_desc),
         user.focusModeEnabled,
         onToggleFocusMode,
-        Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
+        modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
   }
 }
 
 @Composable
-fun SettingRow(title: String, desc: String, value: Boolean, onToggle: () -> Unit) {
+fun SettingRow(
+    title: String,
+    desc: String,
+    value: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
   Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
@@ -561,17 +559,16 @@ fun SettingRow(title: String, desc: String, value: Boolean, onToggle: () -> Unit
           Text(title, color = TextLight)
           Text(desc, color = TextLight.copy(alpha = 0.6f), fontSize = 12.sp)
         }
-        Switch(checked = value, onCheckedChange = { onToggle() })
+        Switch(checked = value, onCheckedChange = { onToggle() }, modifier = modifier)
       }
 }
 
 @Composable
 fun AccountActionsSection() {
   Column(modifier = Modifier.padding(12.dp)) {
-    ActionButton(stringResource(id = R.string.account_privacy)) { /* navigateToPrivacy() */}
-    ActionButton(stringResource(id = R.string.account_terms)) { /* navigateToTerms() */}
-    ActionButton(
-        stringResource(id = R.string.account_logout), textColor = Color.Red) { /* logout() */}
+    ActionButton(stringResource(id = R.string.account_privacy)) {}
+    ActionButton(stringResource(id = R.string.account_terms)) {}
+    ActionButton(stringResource(id = R.string.account_logout), textColor = Color.Red) {}
   }
 }
 
