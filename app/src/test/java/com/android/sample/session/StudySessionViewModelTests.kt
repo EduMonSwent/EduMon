@@ -10,7 +10,6 @@ import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.session.StudySessionViewModel
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -29,7 +28,6 @@ class StudySessionViewModelTest {
   private lateinit var viewModel: StudySessionViewModel
   private val testDispatcher = StandardTestDispatcher()
   private val toDoRepo = ToDoRepositoryProvider.repository
-
 
   @Before
   fun setup() {
@@ -106,11 +104,12 @@ class StudySessionViewModelTest {
 
   @Test
   fun `setSelectedTaskStatus updates repo and ui selection`() = runTest {
-    val todo = ToDo(
-      title = "Test Task",
-      dueDate = LocalDate.of(2025, 1, 1),
-      priority = Priority.LOW,
-      status = Status.TODO)
+    val todo =
+        ToDo(
+            title = "Test Task",
+            dueDate = LocalDate.of(2025, 1, 1),
+            priority = Priority.LOW,
+            status = Status.TODO)
     runBlocking { toDoRepo.add(todo) }
 
     viewModel = StudySessionViewModel(fakePomodoro, DelegatingRepoToTodos())
@@ -126,34 +125,37 @@ class StudySessionViewModelTest {
 
   @Test
   fun `cycleSelectedTaskStatus cycles TODO - IN_PROGRESS - DONE - TODO`() = runTest {
-    val todo =ToDo(
-      title = "Test Task",
-      dueDate = LocalDate.of(2025, 1, 1),
-      priority = Priority.LOW,
-      status = Status.TODO)
+    val todo =
+        ToDo(
+            title = "Test Task",
+            dueDate = LocalDate.of(2025, 1, 1),
+            priority = Priority.LOW,
+            status = Status.TODO)
     runBlocking { toDoRepo.add(todo) }
 
     viewModel = StudySessionViewModel(fakePomodoro, DelegatingRepoToTodos())
     viewModel.selectTask(todo)
 
-    viewModel.cycleSelectedTaskStatus(); advanceUntilIdle()
+    viewModel.cycleSelectedTaskStatus()
+    advanceUntilIdle()
     assertEquals(Status.IN_PROGRESS, viewModel.uiState.value.selectedTask?.status)
 
-    viewModel.cycleSelectedTaskStatus(); advanceUntilIdle()
+    viewModel.cycleSelectedTaskStatus()
+    advanceUntilIdle()
     assertEquals(Status.DONE, viewModel.uiState.value.selectedTask?.status)
 
-    viewModel.cycleSelectedTaskStatus(); advanceUntilIdle()
+    viewModel.cycleSelectedTaskStatus()
+    advanceUntilIdle()
     assertEquals(Status.TODO, viewModel.uiState.value.selectedTask?.status)
   }
-
-
 
   @Test
   fun `setSelectedTaskStatus no-op when nothing selected`() = runTest {
     // Let suggestions load
     advanceUntilIdle()
     val before = viewModel.uiState.value.suggestedTasks
-    viewModel.setSelectedTaskStatus(Status.DONE) // no selection -> should not crash nor change suggested list
+    viewModel.setSelectedTaskStatus(
+        Status.DONE) // no selection -> should not crash nor change suggested list
     advanceUntilIdle()
     val after = viewModel.uiState.value.suggestedTasks
     assertEquals(before, after)
@@ -232,19 +234,21 @@ class FakePomodoroViewModel : PomodoroViewModelContract {
   }
 }
 
-private class RepoWithItems(
-  private val items: List<ToDo>
-) : StudySessionRepository {
-  override suspend fun saveCompletedSession(session: com.android.sample.ui.session.StudySessionUiState) {}
+private class RepoWithItems(private val items: List<ToDo>) : StudySessionRepository {
+  override suspend fun saveCompletedSession(
+      session: com.android.sample.ui.session.StudySessionUiState
+  ) {}
+
   override suspend fun getSuggestedTasks(): List<ToDo> = items
 }
 
-private class DelegatingRepoToTodos :
-  StudySessionRepository {
-    override suspend fun saveCompletedSession(
+private class DelegatingRepoToTodos : StudySessionRepository {
+  override suspend fun saveCompletedSession(
       session: com.android.sample.ui.session.StudySessionUiState
-    ) { /* no-op */ }
+  ) {
+    /* no-op */
+  }
 
-    override suspend fun getSuggestedTasks(): List<ToDo> =
+  override suspend fun getSuggestedTasks(): List<ToDo> =
       ToDoRepositoryProvider.repository.todos.first()
 }
