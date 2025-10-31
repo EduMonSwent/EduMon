@@ -17,6 +17,13 @@ object WeekProgDailyObjTags {
   const val WEEK_PERCENT_PREFIX = "WEEK_PERCENT_"
   const val WEEK_STATUS_PREFIX = "WEEK_STATUS_"
 
+  // Expanded week content (index appended)
+  const val WEEK_CONTENT_PREFIX = "WEEK_CONTENT_"
+  const val WEEK_COURSES_HEADER_PREFIX = "WEEK_COURSES_HEADER_"
+  const val WEEK_EXERCISES_HEADER_PREFIX = "WEEK_EXERCISES_HEADER_"
+  const val WEEK_COURSE_ITEM_PREFIX = "WEEK_COURSE_ITEM_" // + index + _ + id
+  const val WEEK_EXERCISE_ITEM_PREFIX = "WEEK_EXERCISE_ITEM_" // + index + _ + id
+
   // Objectives section
   const val OBJECTIVES_SECTION = "OBJECTIVES_SECTION"
   const val OBJECTIVES_TOGGLE = "OBJECTIVES_TOGGLE"

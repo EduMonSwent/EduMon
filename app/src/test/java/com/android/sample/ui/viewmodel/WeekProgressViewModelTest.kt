@@ -2,6 +2,7 @@ package com.android.sample.ui.viewmodel
 
 import com.android.sample.feature.weeks.model.DayStatus
 import com.android.sample.feature.weeks.model.WeekProgressItem
+import com.android.sample.feature.weeks.repository.FakeWeeksRepository
 import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 import com.android.sample.testing.MainDispatcherRule
 import java.time.DayOfWeek
@@ -22,7 +23,7 @@ class WeeksAndObjectivesViewModelsTest {
 
   @Test
   fun weeks_initial_and_selection_updates_headerPercent() = runTest {
-    val vm = WeeksViewModel()
+    val vm = WeeksViewModel(repository = FakeWeeksRepository())
     // Wait for init refresh coroutine
     advanceUntilIdle()
 
@@ -48,7 +49,7 @@ class WeeksAndObjectivesViewModelsTest {
 
   @Test
   fun updateWeekPercent_syncs_header_when_selected() = runTest {
-    val vm = WeeksViewModel()
+    val vm = WeeksViewModel(repository = FakeWeeksRepository())
     advanceUntilIdle()
 
     vm.setWeeks(
@@ -64,7 +65,7 @@ class WeeksAndObjectivesViewModelsTest {
 
   @Test
   fun next_prev_clamped() = runTest {
-    val vm = WeeksViewModel()
+    val vm = WeeksViewModel(repository = FakeWeeksRepository())
     advanceUntilIdle()
 
     vm.setWeeks(
@@ -96,7 +97,7 @@ class WeeksAndObjectivesViewModelsTest {
 
   @Test
   fun dayStatuses_toggle_only_target_day() = runTest {
-    val vm = WeeksViewModel()
+    val vm = WeeksViewModel(repository = FakeWeeksRepository())
     advanceUntilIdle()
 
     vm.setDayStatuses(

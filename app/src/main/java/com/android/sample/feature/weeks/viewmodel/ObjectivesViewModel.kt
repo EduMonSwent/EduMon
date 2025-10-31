@@ -1,15 +1,20 @@
+// app/src/main/java/com/android/sample/feature/weeks/viewmodel/ObjectivesViewModel.kt
 package com.android.sample.feature.weeks.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.model.Objective
-import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
+import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await // <- coroutines-play-services
 
 // Holds only objective-related UI state
 data class ObjectivesUiState(
@@ -18,15 +23,31 @@ data class ObjectivesUiState(
 )
 
 class ObjectivesViewModel(
-    private val repository: ObjectivesRepository = FakeObjectivesRepository,
+    // Default to Firestore; tests can still pass a Fake repo by overriding this param
+    private val repository: ObjectivesRepository =
+        FirestoreObjectivesRepository(Firebase.firestore, Firebase.auth),
+    // When false, we won't attempt Firebase auth automatically (useful for tests)
+    private val requireAuth: Boolean = true,
 ) : ViewModel() {
+
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
 
-  // Removed auto-refresh to avoid races in tests; call refresh() from the screen if needed.
   init {
-    refresh()
+    // Ensure we have a user (optionally), then load data
+    viewModelScope.launch {
+      if (requireAuth) ensureSignedIn()
+      refresh()
+    }
   }
+
+  private suspend fun ensureSignedIn() {
+    if (Firebase.auth.currentUser == null) {
+      // For quick testing; swap with your real auth flow in production
+      Firebase.auth.signInAnonymously().await()
+    }
+  }
+
   // Loads from repository
   fun refresh() {
     viewModelScope.launch {
