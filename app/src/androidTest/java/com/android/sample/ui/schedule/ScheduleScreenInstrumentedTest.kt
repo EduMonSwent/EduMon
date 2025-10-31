@@ -52,4 +52,14 @@ class ScheduleScreenInstrumentedTest {
     // We don’t assert dialog contents (keeps CI stable)
     compose.waitForIdle()
   }
+
+  @Test
+  fun switching_tabs_reacts_without_crash() {
+    compose.setContent { ScheduleScreen() }
+    compose.waitForIdle()
+    listOf("Day", "Week", "Month", "Agenda").forEach { tab ->
+      compose.onNodeWithText(tab, ignoreCase = true).performClick()
+      compose.waitForIdle()
+    }
+  }
 }

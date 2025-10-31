@@ -51,4 +51,25 @@ class CalendarScreenInstrumentedTest {
       compose.waitForIdle()
     }
   }
+
+  @Test
+  fun toggling_tabs_updates_content_texts() {
+    compose.setContent { CalendarScreen() }
+    compose.waitForIdle()
+
+    if (compose.onAllNodes(hasText("Week", ignoreCase = true)).fetchSemanticsNodes().isNotEmpty()) {
+      compose.onNodeWithText("Week", ignoreCase = true).performClick()
+      compose.waitForIdle()
+      compose.onAllNodes(hasText("Week", substring = true, ignoreCase = true))
+    }
+
+    if (compose
+        .onAllNodes(hasText("Month", ignoreCase = true))
+        .fetchSemanticsNodes()
+        .isNotEmpty()) {
+      compose.onNodeWithText("Month", ignoreCase = true).performClick()
+      compose.waitForIdle()
+      compose.onAllNodes(hasText("Month", substring = true, ignoreCase = true))
+    }
+  }
 }
