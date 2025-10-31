@@ -1,19 +1,9 @@
 package com.android.sample.ui.schedule
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasScrollAction
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.feature.weeks.ui.WeekProgDailyObjTags
 import org.junit.Rule
@@ -33,51 +23,54 @@ class ScheduleScreenTest {
   fun default_showsDayTabContent() {
     setContent()
 
-    // Day tab is selected by default; it renders a title that starts with "Today •"
+    // Default tab should be Day
     composeRule.onNodeWithText("Day").assertIsDisplayed()
 
-    // This text is produced by DayTabContent()
-    composeRule.onNodeWithText(/* partial match */ "Today •", substring = true).assertIsDisplayed()
+    // DayTabContent contains the text "Today •"
+    composeRule.onNodeWithText("Today •", substring = true).assertIsDisplayed()
   }
 
   @Test
   fun switch_toWeek_showsWeekDotsAndUpcomingSection() {
     setContent()
 
-    // Click Week tab
+    // Switch to Week tab
     composeRule.onNodeWithText("Week").performClick()
+    composeRule.waitForIdle()
 
-    // The Week tab content includes WeekDotsRow with a stable testTag
+    // Try to scroll the Week tab’s list to reach the WeekDotsRow
+    composeRule
+        .onNodeWithTag("WeekRoot")
+        .performScrollToNode(hasTestTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
+
+    // This may fail on CI if the layout changes (expected in your logs)
     composeRule.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW).assertIsDisplayed()
 
-    // The Week tab also renders "This week" title in UpcomingEventsSection
+    // Also ensure “This week” section title is visible
     composeRule.onNodeWithText("This week").assertIsDisplayed()
   }
 
   @Test
   fun switch_toMonth_showsMonthHeaderAndSection() {
     setContent()
-
     composeRule.onNodeWithText("Month").performClick()
     composeRule.waitForIdle()
 
-    // Try each scrollable until the header is visible
+    // Try scrolling to the month section header
     composeRule.scrollAnyScrollableTo(hasText("Most important this month"))
 
+    // This may trigger CI’s “Expected exactly 1 node but found 2” if scrollables overlap
     composeRule.onAllNodesWithText("Most important this month").onFirst().assertIsDisplayed()
   }
 
   @Test
   fun switch_toAgenda_showsAgendaSection_onlySectionNotTab() {
     setContent()
-
-    // Go to Agenda tab
     composeRule.onNodeWithText("Agenda").performClick()
     composeRule.waitForIdle()
 
-    // There are TWO "Agenda" nodes (tab label + section title). Pick the section title.
-    val agendaNodes = composeRule.onAllNodesWithText("Agenda", substring = false)
-    // Index 0 is the tab label; index 1 should be the section title inside content
+    // There are two “Agenda” texts (tab + section)
+    val agendaNodes = composeRule.onAllNodesWithText("Agenda")
     agendaNodes[1].assertIsDisplayed()
   }
 
@@ -85,22 +78,22 @@ class ScheduleScreenTest {
   fun fab_isVisible_and_opensAddDialog() {
     setContent()
 
-    // FAB is always present; icon contentDescription is "Add"
+    // Check FAB and click it
     composeRule.onNode(hasContentDescription("Add")).assertIsDisplayed().performClick()
-
     composeRule.waitForIdle()
   }
 
+  // Helper: scroll any scrollable container until a node is found
   private fun ComposeContentTestRule.scrollAnyScrollableTo(matcher: SemanticsMatcher) {
     val scrollables = onAllNodes(hasScrollAction())
     val nodes = scrollables.fetchSemanticsNodes()
-    require(nodes.isNotEmpty()) { "No scrollables found in the hierarchy." }
+    require(nodes.isNotEmpty()) { "No scrollables found in hierarchy" }
     for (i in nodes.indices) {
       try {
         scrollables[i].performScrollToNode(matcher)
         return
       } catch (_: AssertionError) {
-        // try the next scrollable
+        // try next
       }
     }
     throw AssertionError("No scrollable could reach node matching: $matcher")
