@@ -18,39 +18,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Firestore implementation of WeeksRepository storing data under: users/{uid}/weeks (ordered by
- * 'order') users/{uid}/dayStatuses (documents per day)
+ * Firestore implementation of WeeksRepository storing data under:
+ * - users/{uid}/weeks (ordered by 'order')
+ * - users/{uid}/dayStatuses (documents per day)
  */
 class FirestoreWeeksRepository(
     private val db: FirebaseFirestore,
     private val auth: FirebaseAuth,
 ) : WeeksRepository {
-
-  // In-memory fallbacks when auth.currentUser == null
-  private data class ExerciseFs(
-      val id: String = "",
-      val title: String = "",
-      val done: Boolean = false,
-  )
-
-  private data class CourseFs(
-      val id: String = "",
-      val title: String = "",
-      val read: Boolean = false,
-  )
-
-  private data class WeekFs(
-      val label: String = "",
-      val percent: Int = 0,
-      val order: Long = 0L,
-      val exercises: List<ExerciseFs> = emptyList(),
-      val courses: List<CourseFs> = emptyList(),
-  )
-
-  private data class DayStatusFs(
-      val day: String = DayOfWeek.MONDAY.name,
-      val metTarget: Boolean = false,
-  )
 
   // --- Firestore helpers ---
   private fun isSignedIn(): Boolean = auth.currentUser != null
@@ -69,15 +44,33 @@ class FirestoreWeeksRepository(
     return db.collection("users").document(uid).collection("dayStatuses")
   }
 
-  // Map Firestore WeekFs to domain
+  // Map Firestore doc to domain using direct field access (avoids duplicate DTOs)
   private fun DocumentSnapshot.toDomainWeek(): WeekProgressItem {
-    val w = this.toObject(WeekFs::class.java) ?: WeekFs()
-    val exercises = w.exercises.map { Exercise(it.id, it.title, it.done) }
-    val courses = w.courses.map { CourseMaterial(it.id, it.title, it.read) }
+    val label = getString("label") ?: ""
+    val percent = (getLong("percent") ?: 0L).toInt().coerceIn(0, 100)
+
+    val exercises: List<Exercise> =
+        (get("exercises") as? List<*>)
+            ?.mapNotNull { it as? Map<*, *> }
+            ?.map {
+              val id = it["id"] as? String ?: ""
+              val title = it["title"] as? String ?: ""
+              val done = it["done"] as? Boolean ?: false
+              Exercise(id = id, title = title, done = done)
+            } ?: emptyList()
+
+    val courses: List<CourseMaterial> =
+        (get("courses") as? List<*>)
+            ?.mapNotNull { it as? Map<*, *> }
+            ?.map {
+              val id = it["id"] as? String ?: ""
+              val title = it["title"] as? String ?: ""
+              val read = it["read"] as? Boolean ?: false
+              CourseMaterial(id = id, title = title, read = read)
+            } ?: emptyList()
+
     return WeekProgressItem(
-        label = w.label,
-        percent = w.percent,
-        content = WeekContent(exercises = exercises, courses = courses))
+        label = label, percent = percent, content = WeekContent(exercises, courses))
   }
 
   private fun WeekProgressItem.toWriteMap(order: Long): Map<String, Any?> =
@@ -210,13 +203,11 @@ class FirestoreWeeksRepository(
         val docs = snap.documents
         if (docs.isEmpty()) {
           // Seed defaults similar to FakeWeeksRepository
-          val defaults =
-              DayOfWeek.values().mapIndexed { idx, d -> DayStatusFs(d.name, idx % 2 == 0) }
           Tasks.await(
               db.runBatch { b ->
-                defaults.forEach { fs ->
-                  val ref = colDayStatuses().document(fs.day)
-                  b.set(ref, fs)
+                DayOfWeek.values().forEachIndexed { idx, d ->
+                  val ref = colDayStatuses().document(d.name)
+                  b.set(ref, mapOf("day" to d.name, "metTarget" to (idx % 2 == 0)))
                 }
               })
           return@withContext DayOfWeek.values().mapIndexed { idx, d ->
@@ -224,9 +215,10 @@ class FirestoreWeeksRepository(
           }
         }
         docs.map { d ->
-          val fs = d.toObject(DayStatusFs::class.java) ?: DayStatusFs(d.id, false)
-          val day = runCatching { DayOfWeek.valueOf(fs.day) }.getOrElse { DayOfWeek.MONDAY }
-          DayStatus(dayOfWeek = day, metTarget = fs.metTarget)
+          val dayStr = d.getString("day") ?: d.id
+          val met = d.getBoolean("metTarget") ?: false
+          val day = runCatching { DayOfWeek.valueOf(dayStr) }.getOrElse { DayOfWeek.MONDAY }
+          DayStatus(dayOfWeek = day, metTarget = met)
         }
       }
 
