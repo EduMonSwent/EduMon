@@ -1,6 +1,9 @@
 package com.android.sample.planner
 
 import androidx.lifecycle.viewModelScope
+import com.android.sample.data.Priority
+import com.android.sample.data.Status
+import com.android.sample.data.ToDo
 import com.android.sample.model.planner.*
 import com.android.sample.ui.viewmodel.PlannerViewModel
 import java.time.LocalTime
@@ -131,5 +134,149 @@ class PlannerViewModelTest {
         val state = withTimeout(2000) { viewModel.uiState.first() }
         assertFalse(state.showAttendanceModal)
         assertNull(state.selectedClass)
+      }
+
+  @Test
+  fun `recommendNextTask should return null when list is empty`() =
+      runTest(dispatcher) {
+        val method = viewModel.javaClass.getDeclaredMethod("recommendNextTask", List::class.java)
+        method.isAccessible = true
+
+        val result = method.invoke(viewModel, emptyList<ToDo>()) as ToDo?
+        assertNull(result)
+      }
+
+  @Test
+  fun `recommendNextTask should prioritize by HIGH priority first`() =
+      runTest(dispatcher) {
+        val high =
+            ToDo(title = "High", dueDate = java.time.LocalDate.now(), priority = Priority.HIGH)
+        val low = ToDo(title = "Low", dueDate = java.time.LocalDate.now(), priority = Priority.LOW)
+        val medium =
+            ToDo(title = "Medium", dueDate = java.time.LocalDate.now(), priority = Priority.MEDIUM)
+
+        val method = viewModel.javaClass.getDeclaredMethod("recommendNextTask", List::class.java)
+        method.isAccessible = true
+        val result = method.invoke(viewModel, listOf(low, medium, high)) as ToDo?
+
+        assertNotNull(result)
+        assertEquals("High", result?.title)
+      }
+
+  @Test
+  fun `recommendNextTask should prefer earlier due date when priorities are equal`() =
+      runTest(dispatcher) {
+        val today = java.time.LocalDate.now()
+        val tomorrow = today.plusDays(1)
+
+        val task1 = ToDo(title = "Earlier", dueDate = today, priority = Priority.MEDIUM)
+        val task2 = ToDo(title = "Later", dueDate = tomorrow, priority = Priority.MEDIUM)
+
+        val method = viewModel.javaClass.getDeclaredMethod("recommendNextTask", List::class.java)
+        method.isAccessible = true
+        val result = method.invoke(viewModel, listOf(task2, task1)) as ToDo?
+
+        assertEquals("Earlier", result?.title)
+      }
+
+  @Test
+  fun `recommendNextTask should prefer IN_PROGRESS over TODO for same priority`() =
+      runTest(dispatcher) {
+        val taskTodo =
+            ToDo(
+                title = "TodoTask",
+                dueDate = java.time.LocalDate.now(),
+                priority = Priority.HIGH,
+                status = Status.TODO)
+        val taskProgress =
+            ToDo(
+                title = "ProgressTask",
+                dueDate = java.time.LocalDate.now(),
+                priority = Priority.HIGH,
+                status = Status.IN_PROGRESS)
+
+        val method = viewModel.javaClass.getDeclaredMethod("recommendNextTask", List::class.java)
+        method.isAccessible = true
+        val result = method.invoke(viewModel, listOf(taskTodo, taskProgress)) as ToDo?
+
+        assertEquals("ProgressTask", result?.title)
+      }
+
+  @Test
+  fun `observeToDos should update uiState with todos and recommended task`() =
+      runTest(dispatcher) {
+        // Fake repository emitting 2 tasks
+        val fakeRepo =
+            object : com.android.sample.repositories.ToDoRepository {
+              override val todos =
+                  kotlinx.coroutines.flow.flowOf(
+                      listOf(
+                          ToDo(
+                              title = "Finish report",
+                              dueDate = java.time.LocalDate.now(),
+                              priority = Priority.HIGH),
+                          ToDo(
+                              title = "Read chapter",
+                              dueDate = java.time.LocalDate.now().plusDays(1),
+                              priority = Priority.MEDIUM)))
+
+              override suspend fun add(todo: ToDo) {}
+
+              override suspend fun update(todo: ToDo) {}
+
+              override suspend fun remove(id: String) {}
+
+              override suspend fun getById(id: String) = null
+            }
+
+        val vm = com.android.sample.ui.viewmodel.PlannerViewModel(FakePlannerRepository())
+        // Inject toDoRepository via reflection (since it's private)
+        val repoField = vm.javaClass.getDeclaredField("toDoRepository")
+        repoField.isAccessible = true
+        repoField.set(vm, fakeRepo)
+
+        // Call private observeToDos()
+        val method = vm.javaClass.getDeclaredMethod("observeToDos")
+        method.isAccessible = true
+        method.invoke(vm)
+
+        delay(100) // allow collection to emit
+
+        val state = vm.uiState.first()
+        assertEquals(2, state.todos.size)
+        assertEquals("Finish report", state.recommendedTask?.title)
+      }
+
+  @Test
+  fun `observeToDos should catch errors from repository flow`() =
+      runTest(dispatcher) {
+        val failingRepo =
+            object : com.android.sample.repositories.ToDoRepository {
+              override val todos =
+                  kotlinx.coroutines.flow.flow<List<ToDo>> { throw RuntimeException("Repo error!") }
+
+              override suspend fun add(todo: ToDo) {}
+
+              override suspend fun update(todo: ToDo) {}
+
+              override suspend fun remove(id: String) {}
+
+              override suspend fun getById(id: String) = null
+            }
+
+        val vm = com.android.sample.ui.viewmodel.PlannerViewModel(FakePlannerRepository())
+        val repoField = vm.javaClass.getDeclaredField("toDoRepository")
+        repoField.isAccessible = true
+        repoField.set(vm, failingRepo)
+
+        val method = vm.javaClass.getDeclaredMethod("observeToDos")
+        method.isAccessible = true
+        method.invoke(vm)
+
+        delay(100)
+
+        val state = vm.uiState.first()
+        assertNotNull(state.errorMessage)
+        assertTrue(state.errorMessage!!.contains("Repo error"))
       }
 }

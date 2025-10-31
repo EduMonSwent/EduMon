@@ -21,9 +21,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
+import com.android.sample.data.Priority
 import com.android.sample.model.planner.*
 import com.android.sample.ui.theme.*
 import com.android.sample.ui.viewmodel.PlannerViewModel
@@ -82,7 +84,25 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
                 PlannerGlowCard {
                   AIRecommendationCard(
                       recommendationText =
-                          stringResource(R.string.ai_recommendation_calculus_example),
+                          if (uiState.recommendedTask == null) {
+                            stringResource(R.string.ai_recommendation_none)
+                          } else {
+                            stringResource(R.string.ai_recommendation_top) +
+                                " " +
+                                uiState.recommendedTask!!.title +
+                                " " +
+                                stringResource(R.string.ai_recommendation_priority) +
+                                " " +
+                                when (uiState.recommendedTask!!.priority) {
+                                  Priority.LOW -> stringResource(R.string.priority_low)
+                                  Priority.MEDIUM -> stringResource(R.string.priority_medium)
+                                  Priority.HIGH -> stringResource(R.string.priority_high)
+                                } +
+                                " " +
+                                stringResource(R.string.ai_recommendation_due_date) +
+                                " " +
+                                uiState.recommendedTask!!.dueDateFormatted()
+                          },
                       onActionClick = {})
                 }
               }
@@ -225,4 +245,10 @@ fun PlannerGlowCard(content: @Composable () -> Unit) {
               content()
             }
       }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlannerScreenPreview() {
+  EduMonTheme { PlannerScreen() }
 }
