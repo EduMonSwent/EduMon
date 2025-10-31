@@ -14,8 +14,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.android.sample.screens.AppDestination
-import com.android.sample.screens.EduMonHomeRoute
+import com.android.sample.feature.homeScreen.AppDestination
+import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.ui.calendar.CalendarScreen
 import com.android.sample.ui.flashcards.FlashcardsApp
 import com.android.sample.ui.games.FlappyEduMonScreen
@@ -23,10 +23,12 @@ import com.android.sample.ui.games.FocusBreathingScreen
 import com.android.sample.ui.games.GamesScreen
 import com.android.sample.ui.games.MemoryGameScreen
 import com.android.sample.ui.games.ReactionGameScreen
+import com.android.sample.ui.mood.MoodLoggingRoute
 import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.session.StudySessionScreen
 import com.android.sample.ui.stats.StatsRoute
+import com.android.sample.ui.todo.TodoNavHostInThisFile
 
 /** Stable tags used by UI tests */
 object NavigationTestTags {
@@ -275,7 +277,7 @@ fun EduMonNavHost(
               }
         }
 
-        // FLASHCARDS (your app titles it "Study")
+        // FLASHCARDS
         composable(AppDestination.Flashcards.route) {
           Scaffold(
               topBar = {
@@ -292,6 +294,48 @@ fun EduMonNavHost(
                     })
               }) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) { FlashcardsApp() }
+              }
+        }
+
+        // Todos list
+        composable(AppDestination.Todo.route) {
+          Scaffold(
+              topBar = {
+                TopAppBar(
+                    title = {
+                      Text("Todo", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) { TodoNavHostInThisFile() }
+              }
+        }
+
+        // 👉 MOOD (Daily Reflection)
+        composable(AppDestination.Mood.route) {
+          Scaffold(
+              topBar = {
+                TopAppBar(
+                    title = {
+                      Text(
+                          "Daily Reflection",
+                          modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) { MoodLoggingRoute() }
               }
         }
       }

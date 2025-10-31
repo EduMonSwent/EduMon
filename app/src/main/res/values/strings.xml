@@ -112,4 +112,31 @@
     <string name="update">Update</string>
     <string name="ok">OK</string>
     <string name="default_web_client_id">154991771075-mluie21sbgjbjuv66l4jrl1oqofk824n.apps.googleusercontent.com</string>
+    <!-- Profile Screen Stats -->
+    <string name="stats_title">Your Stats</string>
+    <string name="stats_streak">Current Streak</string>
+    <string name="stats_points">Total Points</string>
+    <string name="stats_coins">Coins</string>
+    <string name="stats_study_time">Study Time Today</string>
+    <string name="stats_goal">Daily Goal</string>
+
+    <!-- Customize Pet Section -->
+    <string name="customize_pet_title">Customize Pet</string>
+    <string name="customize_pet_desc">Change your pet\'s appearance</string>
+    <string name="customize_pet_button">Customize Buddy</string>
+
+    <!-- Settings Section -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_desc">Study reminders &amp; updates</string>
+    <string name="settings_location">Location Services</string>
+    <string name="settings_location_desc">Study spot suggestions</string>
+    <string name="settings_focus">Focus Mode</string>
+    <string name="settings_focus_desc">Minimize distractions</string>
+
+    <!-- Account Actions Section -->
+    <string name="account_privacy">Privacy Policy</string>
+    <string name="account_terms">Terms of Service</string>
+    <string name="account_logout">Logout</string>
+
 </resources>

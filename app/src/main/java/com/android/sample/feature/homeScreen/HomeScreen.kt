@@ -1,5 +1,7 @@
-package com.android.sample.screens
+package com.android.sample.feature.homeScreen
 
+// 🔽 Only dependency on creature UI:
+import android.content.res.Configuration
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -34,8 +36,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
-import com.android.sample.feature.homeScreen.HomeUiState
-import com.android.sample.feature.homeScreen.HomeViewModel
+import com.android.sample.screens.CreatureHouseCard
+import com.android.sample.screens.CreatureStatsCard
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
@@ -53,6 +55,7 @@ object HomeTestTags {
   const val TODAY_SEE_ALL = "today_see_all"
   const val CHIP_OPEN_PLANNER = "chip_open_planner"
   const val CHIP_FOCUS_MODE = "chip_focus_mode"
+  const val CHIP_MOOD = "chip_mood" // NEW
 
   const val QUICK_STUDY = "quick_study"
   const val QUICK_BREAK = "quick_break"
@@ -70,6 +73,9 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   Games("games", "Games", Icons.Outlined.Extension),
   Stats("stats", "Stats", Icons.Outlined.ShowChart),
   Flashcards("flashcards", "Flashcards", Icons.Outlined.FlashOn),
+  Todo("todo", "To-Do", Icons.Outlined.CheckBox),
+  // NEW: Daily Reflection / Mood
+  Mood("mood", "Daily Reflection", Icons.Outlined.Mood),
 }
 
 // ---------- Route (hooks up VM to UI) ----------
@@ -189,6 +195,8 @@ fun EduMonHomeScreen(
                     AffirmationsAndRemindersCard(
                         quote = state.quote,
                         onOpenPlanner = { onNavigate(AppDestination.Planner.route) },
+                        // NEW: quick entry point to Mood screen
+                        onOpenMood = { onNavigate(AppDestination.Mood.route) },
                     )
 
                     TodayTodosCard(
@@ -370,6 +378,7 @@ fun TodayTodosCard(
 fun AffirmationsAndRemindersCard(
     quote: String,
     onOpenPlanner: () -> Unit,
+    onOpenMood: () -> Unit, // NEW
     modifier: Modifier = Modifier
 ) {
   ElevatedCard(
@@ -389,6 +398,11 @@ fun AffirmationsAndRemindersCard(
                 label = { Text("Open Planner") },
                 leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
                 modifier = Modifier.testTag(HomeTestTags.CHIP_OPEN_PLANNER))
+            AssistChip(
+                onClick = onOpenMood,
+                label = { Text("Daily Reflection") },
+                leadingIcon = { Icon(Icons.Outlined.Mood, contentDescription = null) },
+                modifier = Modifier.testTag(HomeTestTags.CHIP_MOOD))
             AssistChip(
                 onClick = {},
                 label = { Text("Focus Mode") },

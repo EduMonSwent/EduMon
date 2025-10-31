@@ -91,4 +91,31 @@ class ProfileViewModelTest {
     assertEquals("Taylor", p.name)
     assertEquals(2000, p.points)
   }
+
+  // --- Reward system tests ---------------------------------------------------
+
+  @Test
+  fun addCoins_withPositiveAmount_increasesUserCoins() = runTest {
+    val repo = FakeProfileRepository()
+    val vm = ProfileViewModel(repository = repo)
+
+    val before = vm.userProfile.value.coins
+    vm.addCoins(100)
+    val after = vm.userProfile.value.coins
+
+    assertEquals(before + 100, after)
+  }
+
+  @Test
+  fun addCoins_withZeroOrNegativeAmount_doesNothing() = runTest {
+    val repo = FakeProfileRepository()
+    val vm = ProfileViewModel(repository = repo)
+
+    val before = vm.userProfile.value.coins
+    vm.addCoins(0) // should be ignored
+    vm.addCoins(-50) // should also be ignored
+    val after = vm.userProfile.value.coins
+
+    assertEquals(before, after)
+  }
 }

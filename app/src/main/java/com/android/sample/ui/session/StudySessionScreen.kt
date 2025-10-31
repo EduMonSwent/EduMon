@@ -1,6 +1,5 @@
 package com.android.sample.ui.session
 
-import FakeStudySessionRepository
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
@@ -12,6 +11,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
+import com.android.sample.data.Status
+import com.android.sample.session.ToDoBackedStudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroScreen
 import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.session.components.SessionStatsPanel
@@ -31,7 +32,7 @@ object StudySessionTestTags {
 @Composable
 fun StudySessionScreen(
     viewModel: StudySessionViewModel =
-        StudySessionViewModel(repository = FakeStudySessionRepository()),
+        StudySessionViewModel(repository = ToDoBackedStudySessionRepository()),
     pomodoroViewModel: PomodoroViewModelContract = viewModel.pomodoroViewModel
 ) {
   val uiState by viewModel.uiState.collectAsState()
@@ -62,9 +63,26 @@ fun StudySessionScreen(
                 // --- Selected Task ---
                 uiState.selectedTask?.let { task ->
                   Text(
-                      text = stringResource(R.string.selected_task_txt) + " " + task.name,
+                      text = stringResource(R.string.selected_task_txt) + " " + task.title,
                       style = MaterialTheme.typography.bodyLarge,
                       modifier = Modifier.testTag(StudySessionTestTags.SELECTED_TASK))
+                  Spacer(Modifier.height(8.dp))
+
+                  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Status.values().forEach { status ->
+                      AssistChip(
+                          onClick = {
+                            viewModel.setSelectedTaskStatus(status)
+                          }, // requires VM method you added
+                          label = { Text(status.name.replace('_', ' ')) },
+                          colors =
+                              AssistChipDefaults.assistChipColors(
+                                  containerColor =
+                                      if (task.status == status)
+                                          MaterialTheme.colorScheme.primaryContainer
+                                      else MaterialTheme.colorScheme.surfaceVariant))
+                    }
+                  }
                 }
               }
 

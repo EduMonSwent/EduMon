@@ -20,12 +20,12 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
+import com.android.sample.feature.homeScreen.EduMonHomeRoute
+import com.android.sample.feature.homeScreen.EduMonHomeScreen
+import com.android.sample.feature.homeScreen.GlowCard
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
 import com.android.sample.feature.homeScreen.HomeViewModel
-import com.android.sample.screens.EduMonHomeRoute
-import com.android.sample.screens.EduMonHomeScreen
-import com.android.sample.screens.GlowCard
 import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
