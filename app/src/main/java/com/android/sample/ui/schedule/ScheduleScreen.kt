@@ -250,7 +250,7 @@ private fun WeekTabContent(
     selectedDate: LocalDate
 ) {
   LazyColumn(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier.fillMaxSize().testTag("WeekRoot"),
       verticalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(bottom = 96.dp)) {
         item(key = "week-row") {
