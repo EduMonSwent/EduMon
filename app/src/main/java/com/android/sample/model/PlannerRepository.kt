@@ -1,5 +1,7 @@
 package com.android.sample.model.calendar
 
+import com.android.sample.model.StudyItem
+import com.android.sample.model.TaskType
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.flow.MutableStateFlow

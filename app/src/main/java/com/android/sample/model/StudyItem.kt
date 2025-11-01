@@ -1,4 +1,4 @@
-package com.android.sample.model.calendar
+package com.android.sample.model
 
 import java.time.LocalDate
 import java.time.LocalTime
@@ -13,7 +13,7 @@ data class StudyItem(
     val time: LocalTime? = null,
     val durationMinutes: Int? = null,
     val isCompleted: Boolean = false,
-    val priority: Priority = Priority.MEDIUM, // Example
+    val priority: Priority = Priority.MEDIUM,
     val type: TaskType
 )
 

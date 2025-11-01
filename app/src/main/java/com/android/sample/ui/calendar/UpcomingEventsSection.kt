@@ -19,8 +19,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
-import com.android.sample.model.calendar.StudyItem
-import com.android.sample.model.calendar.TaskType
+import com.android.sample.model.StudyItem
+import com.android.sample.model.TaskType
 import com.android.sample.ui.theme.Blue
 import com.android.sample.ui.theme.DarkBlue
 import com.android.sample.ui.theme.DarkerBlue

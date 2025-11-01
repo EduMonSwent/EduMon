@@ -9,8 +9,8 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.sample.model.calendar.StudyItem
-import com.android.sample.model.calendar.TaskType
+import com.android.sample.model.StudyItem
+import com.android.sample.model.TaskType
 import com.android.sample.ui.calendar.MonthGrid
 import java.time.LocalDate
 import java.time.YearMonth

@@ -1,8 +1,8 @@
 package com.android.sample.screen.calendar
 
-import com.android.sample.model.calendar.Priority
-import com.android.sample.model.calendar.StudyItem
-import com.android.sample.model.calendar.TaskType
+import com.android.sample.model.Priority
+import com.android.sample.model.StudyItem
+import com.android.sample.model.TaskType
 import java.time.LocalDate
 import junit.framework.TestCase.assertEquals
 import org.junit.Test

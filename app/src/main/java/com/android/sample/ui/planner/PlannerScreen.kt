@@ -25,6 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.model.planner.*
+import com.android.sample.model.schedule.EventKind
+import com.android.sample.model.schedule.Priority
+import com.android.sample.model.schedule.ScheduleEvent
+import com.android.sample.model.schedule.SourceTag
+import com.android.sample.ui.schedule.ScheduleViewModel
 import com.android.sample.ui.theme.*
 import com.android.sample.ui.viewmodel.PlannerViewModel
 import java.time.LocalDate
@@ -47,6 +52,25 @@ object PlannerScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
+  val taskRepo = remember { com.android.sample.model.calendar.PlannerRepositoryImpl() }
+  val classRepo = remember { com.android.sample.model.planner.FakePlannerRepository() }
+  val scheduleRepo = remember {
+    com.android.sample.model.schedule.ScheduleRepositoryImpl(taskRepo, classRepo)
+  }
+
+  val scheduleVm: ScheduleViewModel =
+      viewModel(
+          key = "ScheduleVM",
+          factory =
+              object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(
+                    modelClass: java.lang.Class<T>
+                ): T {
+                  return ScheduleViewModel(scheduleRepo) as T
+                }
+              })
+
   val uiState by viewModel.uiState.collectAsState()
   val snackbarHostState = remember { SnackbarHostState() }
   Scaffold(
@@ -171,7 +195,28 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
         if (uiState.showAddTaskModal) {
           AddStudyTaskModal(
               onDismiss = { viewModel.onDismissAddStudyTaskModal() },
-              onAddTask = { _, _, _, _, _ -> viewModel.onDismissAddStudyTaskModal() },
+              // onAddTask = { _, _, _, _, _ -> viewModel.onDismissAddStudyTaskModal() },
+              // AFTER — call into Schedule
+              onAddTask = { subject, title, duration, deadline, priority ->
+                val event =
+                    ScheduleEvent(
+                        title = title.ifBlank { subject },
+                        date = LocalDate.now(), // or parse 'deadline'
+                        time = null,
+                        durationMinutes = duration,
+                        kind = EventKind.STUDY,
+                        priority =
+                            when (priority.lowercase()) {
+                              "low" -> Priority.LOW
+                              "high" -> Priority.HIGH
+                              else -> Priority.MEDIUM
+                            },
+                        sourceTag = SourceTag.Task)
+                // You need a reference to ScheduleViewModel here (pass it in as a parameter or via
+                // a shared owner)
+                scheduleVm.save(event)
+                viewModel.onDismissAddStudyTaskModal()
+              },
               modifier = Modifier.testTag(PlannerScreenTestTags.ADD_TASK_MODAL))
         }
         uiState.selectedClass?.let { classItem ->
