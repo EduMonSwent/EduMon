@@ -37,11 +37,17 @@ data class ScheduleEvent(
     val priority: Priority? = null,
     val courseCode: String? = null,
     val location: String? = null,
-    // Used internally for routing saves/deletes back to the right underlying repo
-    val sourceTag: SourceTag = SourceTag.Task // default is tasks
+    val sourceTag: SourceTag = SourceTag.Task
 )
 
 enum class SourceTag {
   Task,
   Class
+}
+
+enum class ScheduleTab {
+  DAY,
+  WEEK,
+  MONTH,
+  AGENDA
 }

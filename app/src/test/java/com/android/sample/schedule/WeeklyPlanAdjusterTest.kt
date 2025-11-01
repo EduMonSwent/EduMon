@@ -109,13 +109,9 @@ class WeeklyPlanAdjusterTest {
   fun no_missed_and_no_completed_early_makes_no_changes() = runTest {
     val repo = FakePlannerRepository()
     val today = LocalDate.of(2025, 3, 6)
-
-    // Only a current-week, not-completed task
     repo.seed(task("a", today, completed = false))
 
     WeeklyPlanAdjuster(repo).rebalance(today)
-
-    // Nothing should be saved (no rescheduling)
     assertTrue("Expected no changes", repo.saved.isEmpty())
   }
 }

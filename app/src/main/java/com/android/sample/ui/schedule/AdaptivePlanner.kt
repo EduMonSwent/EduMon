@@ -28,11 +28,9 @@ object AdaptivePlanner {
     val start = weekStart(today)
     val nextStart = start.plusWeeks(1)
 
-    // Consider only Task-origin events for adjustments
     val currentTasks = currentWeekEvents.filter { it.sourceTag == SourceTag.Task }
     val nextTasks = nextWeekEvents.filter { it.sourceTag == SourceTag.Task }
 
-    // 1) Missed tasks => move to next week start
     val missed = currentTasks.filter { !it.isCompleted && it.date.isBefore(today) }
     val completedEarly = currentTasks.any { it.isCompleted && it.date.isAfter(today) }
 

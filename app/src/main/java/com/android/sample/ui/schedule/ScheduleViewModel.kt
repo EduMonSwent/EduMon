@@ -11,8 +11,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : ViewModel() {
-
-  // --- Calendar state (lifted from CalendarViewModel) ---
   private val _selectedDate = MutableStateFlow(LocalDate.now())
   val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
@@ -22,7 +20,6 @@ class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : Vi
   private val _isMonthView = MutableStateFlow(true)
   val isMonthView: StateFlow<Boolean> = _isMonthView.asStateFlow()
 
-  // --- Filters ---
   private val _activeKinds = MutableStateFlow<Set<EventKind>>(emptySet()) // empty = All
   val activeKinds: StateFlow<Set<EventKind>> = _activeKinds.asStateFlow()
 
@@ -34,33 +31,8 @@ class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : Vi
   private val _lastAdjustment = MutableStateFlow<LocalDate?>(null)
   val lastAdjustment: StateFlow<LocalDate?> = _lastAdjustment.asStateFlow()
 
-  val eventsForSelectedDate: StateFlow<List<ScheduleEvent>> =
-      combine(selectedDate, allEvents, activeKinds) { date, all, kinds ->
-            val base = all.filter { it.date == date }
-            if (kinds.isEmpty()) base else base.filter { it.kind in kinds }
-          }
-          .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-  val eventsForSelectedWeek: StateFlow<List<ScheduleEvent>> =
-      combine(selectedDate, allEvents, activeKinds) { date, all, kinds ->
-            val start = date.with(java.time.DayOfWeek.MONDAY)
-            val end = start.plusDays(6)
-            val base = all.filter { it.date >= start && it.date <= end }
-            if (kinds.isEmpty()) base else base.filter { it.kind in kinds }
-          }
-          .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-  // --- Actions ---
   fun onDateSelected(date: LocalDate) {
     _selectedDate.value = date
-  }
-
-  fun goToPreviousMonth() {
-    _currentDisplayMonth.value = _currentDisplayMonth.value.minusMonths(1)
-  }
-
-  fun goToNextMonth() {
-    _currentDisplayMonth.value = _currentDisplayMonth.value.plusMonths(1)
   }
 
   fun onPreviousMonthWeekClicked() {
@@ -83,7 +55,6 @@ class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : Vi
     if (_isMonthView.value) {
       _currentDisplayMonth.value = _currentDisplayMonth.value.plusMonths(1)
       val newMonth = _currentDisplayMonth.value
-      // keep selectedDate within this month
       _selectedDate.value =
           _selectedDate.value
               .withDayOfMonth(_selectedDate.value.dayOfMonth.coerceAtMost(newMonth.lengthOfMonth()))
@@ -95,7 +66,6 @@ class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : Vi
     }
   }
 
-  // ScheduleViewModel.kt
   fun setWeekMode() {
     _isMonthView.value = false
   }
@@ -137,7 +107,6 @@ class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : Vi
         adj.movedMissed.forEach { ev -> scheduleRepository.moveEventDate(ev.id, nextStart) }
 
         adj.pulledEarlier.forEach { ev ->
-          // Distribute pulled tasks throughout remaining week days
           val targetDate = findOptimalDateInCurrentWeek(today, currentWeek)
           scheduleRepository.moveEventDate(ev.id, targetDate)
         }
@@ -153,15 +122,12 @@ class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : Vi
       today: LocalDate,
       currentWeek: List<ScheduleEvent>
   ): LocalDate {
-    val weekStart = AdaptivePlanner.weekStart(today)
     val weekEnd = AdaptivePlanner.weekEnd(today)
 
     val remainingDates =
         generateSequence(today) { it.plusDays(1) }.takeWhile { !it.isAfter(weekEnd) }.toList()
 
     val tasksByDate = currentWeek.filter { it.date in remainingDates }.groupBy { it.date }
-
-    // Find date with minimum tasks
     return remainingDates.minByOrNull { date -> tasksByDate[date]?.size ?: 0 } ?: today
   }
 
@@ -174,9 +140,5 @@ class ScheduleViewModel(private val scheduleRepository: ScheduleRepository) : Vi
         adjustWeeklyPlan(LocalDate.now())
       }
     }
-  }
-
-  fun refreshWeeklyPlan() {
-    adjustWeeklyPlan(LocalDate.now())
   }
 }

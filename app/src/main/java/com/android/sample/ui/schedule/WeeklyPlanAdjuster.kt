@@ -8,12 +8,10 @@ class WeeklyPlanAdjuster(private val taskRepo: PlannerRepository) {
   suspend fun rebalance(today: LocalDate = LocalDate.now()) {
     val tasks = taskRepo.getAllTasks()
 
-    // Move missed tasks to same weekday next week
     tasks
         .filter { it.date.isBefore(today) && !it.isCompleted }
         .forEach { missed -> taskRepo.saveTask(missed.copy(date = missed.date.plusWeeks(1))) }
 
-    // If something was completed early, pull one from next week into this week
     val completedEarly = tasks.any { it.date.isAfter(today) && it.isCompleted }
     if (completedEarly) {
       val nextWeekStart = today.plusWeeks(1).with(java.time.DayOfWeek.MONDAY)

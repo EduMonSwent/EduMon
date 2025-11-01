@@ -8,11 +8,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-/**
- * One repository that merges:
- * - Tasks (StudyItem) from com.android.sample.model.calendar.PlannerRepository
- * - Classes (Class) from com.android.sample.model.planner.PlannerRepository
- */
 interface ScheduleRepository {
   val events: StateFlow<List<ScheduleEvent>>
 
@@ -44,7 +39,6 @@ class ScheduleRepositoryImpl(
   private val tasksFlow: Flow<List<ScheduleEvent>> =
       taskRepo.tasksFlow.map { it.map(StudyItemMapper::toScheduleEvent) }
 
-  // We only surface today’s classes as events (classes are read-only here)
   private val classesTodayFlow: Flow<List<ScheduleEvent>> =
       classRepo.getTodayClassesFlow().map { it.map(ClassMapper::toScheduleEvent) }
 
@@ -65,7 +59,7 @@ class ScheduleRepositoryImpl(
     when (event.sourceTag) {
       SourceTag.Task -> {
         val study = StudyItemMapper.fromScheduleEvent(event)
-        taskRepo.saveTask(study) // save or upsert in your underlying repo
+        taskRepo.saveTask(study)
       }
       SourceTag.Class -> {
         // Classes are read-only in FakePlannerRepository (no-op for now)

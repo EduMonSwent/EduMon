@@ -1,4 +1,3 @@
-// src/test/java/com/android/sample/schedule/ScheduleViewModelTest.kt
 @file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 
 package com.android.sample.schedule

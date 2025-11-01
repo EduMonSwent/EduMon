@@ -73,7 +73,6 @@ object StudyItemMapper {
         Priority.HIGH -> TaskPriority.HIGH
       }
 
-  // Lightweight heuristics so you get useful kinds immediately.
   private fun guessWorkKind(item: StudyItem): EventKind {
     val t = "${item.title} ${item.description ?: ""}".lowercase(Locale.getDefault())
     return when {
@@ -115,13 +114,10 @@ object ClassMapper {
         durationMinutes = durationMinutes,
         kind = kind,
         description = null,
-        isCompleted = false, // tracked via attendance modal separately
+        isCompleted = false,
         priority = null,
         courseCode = null,
         location = c.location,
         sourceTag = SourceTag.Class)
   }
-
-  // If/when you add class editing/saving, implement reverse mapping here.
-  // fun fromScheduleEvent(ev: ScheduleEvent): Class = ...
 }
