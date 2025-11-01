@@ -234,14 +234,6 @@ class FakePomodoroViewModel : PomodoroViewModelContract {
   }
 }
 
-private class RepoWithItems(private val items: List<ToDo>) : StudySessionRepository {
-  override suspend fun saveCompletedSession(
-      session: com.android.sample.ui.session.StudySessionUiState
-  ) {}
-
-  override suspend fun getSuggestedTasks(): List<ToDo> = items
-}
-
 private class DelegatingRepoToTodos : StudySessionRepository {
   override suspend fun saveCompletedSession(
       session: com.android.sample.ui.session.StudySessionUiState
