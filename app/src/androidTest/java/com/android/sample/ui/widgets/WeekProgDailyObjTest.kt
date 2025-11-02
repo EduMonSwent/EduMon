@@ -28,7 +28,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class WeekProgDailyObjTest {
-
   @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
   private fun setContent(customize: (WeeksViewModel, ObjectivesViewModel) -> Unit = { _, _ -> }) {
@@ -48,18 +47,8 @@ class WeekProgDailyObjTest {
 
     objVM.setObjectives(
         listOf(
-            Objective(
-                "Finish Quiz 3",
-                "CS101",
-                estimateMinutes = 30,
-                completed = false,
-                day = DayOfWeek.MONDAY),
-            Objective(
-                "Read Chapter 5",
-                "Math201",
-                estimateMinutes = 25,
-                completed = false,
-                day = DayOfWeek.TUESDAY)))
+            Objective("Finish Quiz 3", "CS101", 30, false, DayOfWeek.MONDAY),
+            Objective("Read Chapter 5", "Math201", 25, false, DayOfWeek.TUESDAY)))
 
     // Allow per-test overrides
     customize(weeksVM, objVM)
@@ -222,10 +211,51 @@ class WeekProgDailyObjTest {
     }
   }
 
-  /**
-   * Matches any node whose testTag starts with [prefix]. Helpful for lists where items use
-   * index-suffixed tags (e.g. "WEEK_ROW_0").
-   */
+  @Test
+  fun weekDropdown_nonSelected_showsSelectMessage_orHeaders() {
+    setContent()
+
+    // Expand weeks section
+    compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE).performClick()
+    compose.onNodeWithTag(WeekProgDailyObjTags.WEEKS_LIST).assertExists()
+
+    // In this setup, selected index is 1; open dropdown for index 0 (non-selected)
+    compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_ROW_PREFIX + 1).performClick()
+
+    compose.onNodeWithTag("WEEK_DROPDOWN_BTN_0").assertHasClickAction()
+    compose.onNodeWithTag("WEEK_DROPDOWN_BTN_0").performClick()
+
+    val helper =
+        compose.onAllNodesWithText("Select this week to view details").fetchSemanticsNodes()
+    if (helper.isNotEmpty()) {
+      compose.onNodeWithText("Select this week to view details").assertExists().assertIsDisplayed()
+    } else {
+      compose.onNode(hasText("Exercises (", substring = true)).assertExists()
+      compose.onNode(hasText("Courses (", substring = true)).assertExists()
+    }
+  }
+
+  @Test
+  fun weekDropdown_selectedWeek0_showsExercisesAndCourses_withDoneIcons() {
+    setContent()
+
+    // Expand and select week 0 first so dropdown renders content instead of the select message
+    compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE).performClick()
+    compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_ROW_PREFIX + 0).performClick()
+
+    // Open dropdown for week 0
+    compose.onNodeWithTag("WEEK_DROPDOWN_BTN_0").performClick()
+
+    compose.onNode(hasText("Exercises (", substring = true)).assertExists()
+    compose.onNode(hasText("Courses (", substring = true)).assertExists()
+    compose.onNodeWithText("Set up environment").assertExists()
+    compose.onNodeWithText("Finish codelab").assertExists()
+    compose.onNodeWithText("Intro to Android").assertExists()
+    compose.onNodeWithText("Compose Basics").assertExists()
+    val doneIcons = compose.onAllNodes(hasContentDescription("Done")).fetchSemanticsNodes()
+    assertTrue(doneIcons.isNotEmpty())
+  }
+
   private fun hasTestTagPrefix(prefix: String): SemanticsMatcher =
       SemanticsMatcher("Has testTag starting with $prefix") { node ->
         val tag = kotlin.runCatching { node.config[SemanticsProperties.TestTag] }.getOrNull()

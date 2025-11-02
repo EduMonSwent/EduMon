@@ -349,8 +349,3 @@ private fun SmallProgressRing(
 }
 
 // ---------- UI models for the dropdown content ----------
-data class WeekContent(val exercises: List<Exercise>, val courses: List<CourseMaterial>)
-
-data class Exercise(val id: String, val title: String, val done: Boolean)
-
-data class CourseMaterial(val id: String, val title: String, val read: Boolean)
