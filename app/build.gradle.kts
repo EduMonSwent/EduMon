@@ -114,6 +114,7 @@ dependencies {
 
     // Jetpack Compose
     implementation(platform(libs.compose.bom))
+    implementation(libs.play.services.maps)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
@@ -223,6 +224,10 @@ dependencies {
 
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.3")
+    // === Ajouts pour la localisation (task #70) ===
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.location)
+    implementation(libs.accompanist.permissions)
 }
 
 tasks.withType<Test> {

@@ -29,6 +29,7 @@ gms = "4.4.2"
 navigationRuntimeKtx = "2.7.7"
 navigationCompose = "2.7.7"
 navigationTestingAndroid = "2.7.7"
+playServicesMaps = "19.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -72,6 +73,13 @@ firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", 
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+# --- Google Maps et localisation ---
+maps-compose = { module = "com.google.maps.android:maps-compose", version = "2.11.4" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version = "21.3.0" }
+
+# --- Accompanist (permissions runtime pour Compose) ---
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version = "0.34.0" }
+play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 
 
 [plugins]
