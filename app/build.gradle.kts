@@ -11,7 +11,6 @@ plugins {
     alias(libs.plugins.gms)
 }
 
-// ✅ Correction principale : on configure le bloc android via l’extension BaseAppModuleExtension
 extensions.configure<BaseAppModuleExtension>("android") {
     namespace = "com.android.sample"
     compileSdk = 34
@@ -23,7 +22,6 @@ extensions.configure<BaseAppModuleExtension>("android") {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -35,7 +33,6 @@ extensions.configure<BaseAppModuleExtension>("android") {
                 "proguard-rules.pro"
             )
         }
-
         getByName("debug") {
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
@@ -49,6 +46,7 @@ extensions.configure<BaseAppModuleExtension>("android") {
     buildFeatures.compose = true
 
     composeOptions {
+        // Keep as you had; if you upgrade your Compose BOM, align this version.
         kotlinCompilerExtensionVersion = "1.4.2"
     }
 
@@ -56,24 +54,29 @@ extensions.configure<BaseAppModuleExtension>("android") {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
     kotlinOptions.jvmTarget = "11"
 
-    packaging.resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    // Avoid META-INF collisions during :merge*JavaResource
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE*,NOTICE*,DEPENDENCIES}"
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE.txt"
+        }
+    }
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.isReturnDefaultValues = true
     }
 
-    // 🔧 Fix Robolectric
+    // 🔧 Robolectric source-set mapping you had
     sourceSets.getByName("testDebug") {
         val test = sourceSets.getByName("test")
         java.setSrcDirs(test.java.srcDirs)
         res.setSrcDirs(test.res.srcDirs)
         resources.setSrcDirs(test.resources.srcDirs)
     }
-
     sourceSets.getByName("test") {
         java.setSrcDirs(emptyList<File>())
         res.setSrcDirs(emptyList<File>())
@@ -87,153 +90,102 @@ sonar {
         property("sonar.projectName", "EduMon")
         property("sonar.organization", "edumonswent")
         property("sonar.host.url", "https://sonarcloud.io")
-        // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
-        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
-        // Paths to xml files with Android Lint issues. If the main flavor is changed, this file will have to be changed too.
+        property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugUnitTest/")
         property("sonar.androidLint.reportPaths", "${project.layout.buildDirectory.get()}/reports/lint-results-debug.xml")
-        // Paths to JaCoCo XML coverage report files.
         property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
     }
 }
-// Utilitaire global pour tests partagés
 
-
-// When a library is used both by robolectric and connected tests, use this function
+// Helper to add a dep to both unit & instrumented tests when truly needed
 fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
     androidTestImplementation(dep)
     testImplementation(dep)
 }
 
 dependencies {
+    // ---- Core ----
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // Jetpack Compose
-    implementation(platform(libs.compose.bom))
-    testImplementation(libs.junit)
-    globalTestImplementation(libs.androidx.junit)
-    globalTestImplementation(libs.androidx.espresso.core)
-
-    // ------------- Jetpack Compose ------------------
+    // ---- Compose with BOM ----
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
-    globalTestImplementation(composeBom)
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-
+    testImplementation(composeBom)          // ✅ make BOM available to test configs
+    androidTestImplementation(composeBom)   // ✅ make BOM available to androidTest
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.material3)
     implementation(libs.compose.activity)
-    // Integration with ViewModels
     implementation(libs.compose.viewmodel)
-    // Android Studio Preview support
     implementation(libs.compose.preview)
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation(libs.compose.tooling)
-    // UI Tests
-    globalTestImplementation(libs.compose.test.junit)
-    debugImplementation(libs.compose.test.manifest)
 
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.navigation.runtime.ktx)
-    implementation(libs.androidx.navigation.testing)
-    implementation(libs.compose.viewmodel)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-
-
-    // Tests
-    testImplementation(libs.junit)
-    globalTestImplementation(libs.androidx.junit)
-    globalTestImplementation(libs.androidx.espresso.core)
-
-    // Kaspresso
-    globalTestImplementation(libs.kaspresso)
-    globalTestImplementation(libs.kaspresso.compose)
-
-    // ----------       Robolectric     ------------
-    testImplementation(libs.robolectric)
-    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation("com.google.android.gms:play-services-tasks:18.1.0")
-
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.11.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
-    // Firebase
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.database.ktx)
-
-    implementation(libs.compose.material.icons.extended)
-
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation(libs.firebase.database.ktx)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.auth)
-    implementation(libs.credentials)
-    implementation(libs.credentials.play.services.auth)
-    implementation(libs.googleid)
-    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
-    testImplementation("org.robolectric:robolectric:4.11.1")
-    testImplementation("androidx.compose.ui:ui-test-junit4:1.7.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
-
-
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation("org.mockito:mockito-inline:5.2.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:<version>")
-
-
-
-    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation("com.google.android.gms:play-services-tasks:18.1.0")
-
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.11.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
-
-    testImplementation("junit:junit:4.13.2")
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation(libs.firebase.database.ktx)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.auth)
-    implementation(libs.credentials)
-    implementation(libs.credentials.play.services.auth)
-    implementation(libs.googleid)
-    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
-
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation("org.mockito:mockito-inline:5.2.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:<version>")
-
-    implementation("androidx.compose.material:material-icons-extended")
+    // Navigation (single version)
     implementation("androidx.navigation:navigation-compose:2.8.3")
+
+    // ---- Networking ----
+    implementation(libs.okhttp)
+
+    // ---- Firebase / Google ----
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.google.android.gms:play-services-tasks:18.1.0")
+    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.database.ktx)
+
+    // (keep these if your version catalog defines them and you use Credential Manager)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+
+    // ===================== Tests =====================
+
+    // JVM unit tests (JUnit4 so Jupiter jars don't leak into androidTest)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.mockito:mockito-inline:5.2.0")
+    testImplementation(libs.mockk)
+
+    // Compose UI tests on JVM (resolved via BOM above)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Android instrumented tests
+    // AndroidX Test (aligned versions)
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:core-ktx:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.mockk.agent)
+
+    implementation("androidx.navigation:navigation-compose:2.8.3")
+
+    globalTestImplementation("androidx.navigation:navigation-testing:2.8.3")
+
+    // (Optional) Kaspresso — if you use it in both test types
+    // globalTestImplementation(libs.kaspresso)
+    // globalTestImplementation(libs.kaspresso.compose)
 }
 
 tasks.withType<Test> {
-    // Configure Jacoco for each tests
+    // Jacoco for unit tests
     configure<JacocoTaskExtension> {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
 }
 
-// ✅ Jacoco Report task (with fix for line nr="65535" bug)
+// ✅ JaCoCo aggregate report (unit + instrumented)
 tasks.register("jacocoTestReport", JacocoReport::class) {
     mustRunAfter("testDebugUnitTest", "connectedDebugAndroidTest")
 
@@ -263,7 +215,7 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
 
-    // ✅ Patch to remove invalid JaCoCo lines (nr="65535") that break Sonar coverage
+    // Patch to remove invalid JaCoCo lines (nr="65535") that can break Sonar coverage
     doLast {
         val reportFile = reports.xml.outputLocation.asFile.get()
         if (reportFile.exists()) {
