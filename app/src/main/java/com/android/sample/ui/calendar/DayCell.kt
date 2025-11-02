@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.sample.model.calendar.StudyItem
+import com.android.sample.model.StudyItem
 import com.android.sample.ui.theme.PurpleBorder
 import com.android.sample.ui.theme.PurpleBottom
 import com.android.sample.ui.theme.PurpleSoft
