@@ -66,13 +66,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
-import com.android.sample.ui.theme.*
-import com.android.sample.data.UserProfile
 import com.android.sample.data.AccentVariant
-import com.android.sample.data.AccessorySlot
 import com.android.sample.data.AccessoryItem
+import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
-
+import com.android.sample.data.UserProfile
+import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
   const val PROFILE_SCREEN = "profileScreen"
@@ -345,14 +344,14 @@ fun StatsCard(user: UserProfile) {
         color = TextLight.copy(alpha = 0.8f))
     Spacer(modifier = Modifier.height(8.dp))
     StatRow(
-        Icons.Outlined.Whatshot, stringResource(id = R.string.stats_streak), "${user.streak} days")
+        Icons.Outlined.Whatshot, stringResource(id = R.string.stats_streak), "${user.streak} ${stringResource(R.string.days)}")
     StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${user.points}")
     StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${user.coins}")
     StatRow(
         Icons.AutoMirrored.Outlined.MenuBook,
         stringResource(id = R.string.stats_study_time),
-        "${user.studyTimeToday} min")
-    StatRow(Icons.Outlined.Flag, stringResource(id = R.string.stats_goal), "${user.dailyGoal} min")
+        "${user.studyTimeToday} ${stringResource(R.string.minute)}")
+    StatRow(Icons.Outlined.Flag, stringResource(id = R.string.stats_goal), "${user.dailyGoal} ${stringResource(R.string.minute)}")
   }
 }
 

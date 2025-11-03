@@ -1,4 +1,4 @@
-package com.android.sample.ui.profile
+package com.android.sample.profile
 
 import com.android.sample.data.UserProfile
 import kotlinx.coroutines.flow.MutableStateFlow

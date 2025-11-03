@@ -37,7 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserStats
+import com.android.sample.data.UserProfile
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.screens.CreatureStatsCard
 import com.android.sample.ui.theme.AccentViolet
@@ -251,7 +251,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
+fun UserStatsCard(stats: UserProfile, modifier: Modifier = Modifier) {
   ElevatedCard(
       modifier,
       colors =
@@ -265,7 +265,7 @@ fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
               Label("Streak")
-              BigNumber("${stats.streakDays}d")
+              BigNumber("${stats.streak}d")
             }
             Column {
               Label("Points")
@@ -276,11 +276,11 @@ fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
               Label("Study Today")
-              BigNumber("${stats.studyTodayMin}m")
+              BigNumber("${stats.studyTimeToday}m")
             }
             Column {
               Label("Daily Goal")
-              BigNumber("${stats.dailyGoalMin}m")
+              BigNumber("${stats.dailyGoal}m")
             }
           }
         }

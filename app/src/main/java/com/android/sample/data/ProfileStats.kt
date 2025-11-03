@@ -1,31 +1,31 @@
 package com.android.sample.data
 
+/*
 data class UserStats(
-    val streakDays: Int = 7,
-    val points: Int = 1250,
-    val studyTodayMin: Int = 45,
-    val dailyGoalMin: Int = 180,
-)
-
+    val streakDays: Int = 3,
+    val points: Int = 1240,
+    val studyTodayMin: Int = 35,
+    val dailyGoalMin: Int = 170,
+)*/
 
 enum class AccessorySlot {
-    HEAD,
-    TORSO,
-    LEGS
+  HEAD,
+  TORSO,
+  LEGS
 }
 
 enum class Rarity {
-    COMMON,
-    RARE,
-    EPIC,
-    LEGENDARY
+  COMMON,
+  RARE,
+  EPIC,
+  LEGENDARY
 }
 
 data class AccessoryItem(
     val id: String,
     val slot: AccessorySlot,
     val label: String,
-    val iconRes: Int? = null, // remplace par tes drawables quand tu les auras
+    val iconRes: Int? = null, // TODO remplace par tes drawables quand tu les auras
     val rarity: Rarity = Rarity.COMMON
 )
 
@@ -44,25 +44,25 @@ data class UserProfile(
     val avatarAccent: Long = DEFAULT_ACCENT, // ARGB
     val accessories: List<String> = emptyList()
 ) {
-    companion object {
-        const val DEFAULT_NAME = "Alex"
-        const val DEFAULT_EMAIL = "alex@university.edu"
-        const val DEFAULT_LEVEL = 5
-        const val DEFAULT_POINTS = 1250
-        const val DEFAULT_COINS = 0
-        const val DEFAULT_STREAK = 7
-        const val DEFAULT_STUDY_TIME = 45
-        const val DEFAULT_DAILY_GOAL = 180
-        const val DEFAULT_NOTIFICATIONS = true
-        const val DEFAULT_LOCATION = true
-        const val DEFAULT_FOCUS_MODE = false
-        const val DEFAULT_ACCENT = 0xFF9333EAL // ✅ manquant avant
-    }
+  companion object {
+    const val DEFAULT_NAME = "Alex"
+    const val DEFAULT_EMAIL = "alex@university.edu"
+    const val DEFAULT_LEVEL = 5
+    const val DEFAULT_POINTS = 1250
+    const val DEFAULT_COINS = 0
+    const val DEFAULT_STREAK = 7
+    const val DEFAULT_STUDY_TIME = 45
+    const val DEFAULT_DAILY_GOAL = 180
+    const val DEFAULT_NOTIFICATIONS = true
+    const val DEFAULT_LOCATION = true
+    const val DEFAULT_FOCUS_MODE = false
+    const val DEFAULT_ACCENT = 0xFF9333EAL
+  }
 }
 
 enum class AccentVariant {
-    Base,
-    Light,
-    Dark,
-    Vibrant
+  Base,
+  Light,
+  Dark,
+  Vibrant
 }

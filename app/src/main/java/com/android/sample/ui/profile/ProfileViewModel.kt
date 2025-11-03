@@ -9,6 +9,8 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.profile.ProfileRepository
+import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
@@ -22,13 +24,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() {
-
-  // ✅ Permet d'utiliser viewModel() sans factory
-  constructor() : this(FakeProfileRepository())
+class ProfileViewModel(
+    private val repository: ProfileRepository = ProfileRepositoryProvider.repository
+) : ViewModel() {
 
   // ----- Profil LOCAL uniquement -----
-  private val _userProfile = MutableStateFlow(UserProfile())
+  private val _userProfile = MutableStateFlow(repository.profile.value.copy())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
   // Palette issue de ton thème
