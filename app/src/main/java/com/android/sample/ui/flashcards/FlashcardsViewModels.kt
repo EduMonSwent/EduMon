@@ -2,8 +2,14 @@ package com.android.sample.ui.flashcards
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.data.Priority
+import com.android.sample.data.Status
+import com.android.sample.data.ToDo
+import com.android.sample.repositories.ToDoRepository
+import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository
 import com.android.sample.ui.flashcards.model.*
+import java.time.LocalDate
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -13,7 +19,9 @@ class DeckListViewModel : ViewModel() {
 }
 
 /** ViewModel for creating a new deck. */
-class CreateDeckViewModel : ViewModel() {
+class CreateDeckViewModel(
+    private val toDoRepo: ToDoRepository = ToDoRepositoryProvider.repository
+) : ViewModel() {
   private val _title = MutableStateFlow("")
   private val _description = MutableStateFlow("")
   private val _cards = MutableStateFlow<List<Flashcard>>(emptyList())
@@ -53,6 +61,16 @@ class CreateDeckViewModel : ViewModel() {
                 title = _title.value.trim(),
                 description = _description.value.trim(),
                 cards = _cards.value.filter { it.question.isNotBlank() && it.answer.isNotBlank() })
+
+        val deckTitle = _title.value.trim().ifBlank { "New deck" }
+        toDoRepo.add(
+            ToDo(
+                title = "Study: $deckTitle",
+                dueDate = LocalDate.now(),
+                priority = Priority.MEDIUM,
+                status = Status.TODO,
+                links = listOf("flashcard://deck/$id"),
+                note = _description.value.takeIf { it.isNotBlank() }))
         onSaved(id)
       }
 }
