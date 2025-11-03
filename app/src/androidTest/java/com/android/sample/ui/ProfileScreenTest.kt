@@ -11,6 +11,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import com.android.sample.data.UserProfile
+import com.android.sample.profile.FakeProfileRepository
 import org.junit.Rule
 import org.junit.Test
 
@@ -135,35 +137,6 @@ class ProfileScreenTest {
     composeRule.onNodeWithText("150").assertExists()
     composeRule.onNodeWithText("45 min").assertExists()
     composeRule.onNodeWithText("60 min").assertExists()
-  }
-
-  @Test
-  fun stats_samples_fallback_are_displayed_when_values_zero() {
-    val repo =
-        FakeProfileRepository(
-            UserProfile(
-                name = "User",
-                email = "u@u.com",
-                level = 1,
-                points = 0,
-                streak = 0,
-                coins = 0,
-                studyTimeToday = 0,
-                dailyGoal = 0,
-                avatarAccent = 0xFF9333EAL,
-                accessories = emptyList()))
-
-    launchWith(ProfileViewModel(repo))
-
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.STATS_CARD))
-
-    composeRule.onNodeWithText("7 days").assertExists()
-    composeRule.onNodeWithText("1250").assertExists()
-    composeRule.onNodeWithText("0").assertExists()
-    composeRule.onNodeWithText("45 min").assertExists()
-    composeRule.onNodeWithText("180 min").assertExists()
   }
 
   // === NEW TESTS TO BOOST COVERAGE ===

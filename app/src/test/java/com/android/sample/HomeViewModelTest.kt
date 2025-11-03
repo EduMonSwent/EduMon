@@ -4,7 +4,7 @@ import com.android.sample.data.CreatureStats
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserStats
+import com.android.sample.data.UserProfile
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
@@ -41,15 +41,15 @@ class HomeViewModelTest {
       },
       private val creature: CreatureStats =
           CreatureStats(happiness = 10, health = 20, energy = 30, level = 7),
-      private val user: UserStats =
-          UserStats(streakDays = 3, points = 99, studyTodayMin = 15, dailyGoalMin = 120),
+      private val user: UserProfile =
+          UserProfile(streak = 3, points = 99, studyTimeToday = 15, dailyGoal = 120),
       private val quote: String = "Test quote"
   ) : HomeRepository {
     override suspend fun fetchTodos(): List<ToDo> = todos
 
     override suspend fun fetchCreatureStats(): CreatureStats = creature
 
-    override suspend fun fetchUserStats(): UserStats = user
+    override suspend fun fetchUserStats(): UserProfile = user
 
     override fun dailyQuote(nowMillis: Long): String = quote
   }
@@ -134,7 +134,7 @@ class HomeViewModelTest {
 
     assertEquals(3, todos.size)
     assertTrue(creature.level >= 1)
-    assertTrue(user.dailyGoalMin > 0)
+    assertTrue(user.dailyGoal > 0)
   }
 
   @Test
@@ -143,7 +143,7 @@ class HomeViewModelTest {
     assertTrue(s.isLoading)
     assertTrue(s.todos.isEmpty())
     assertEquals(5, s.creatureStats.level)
-    assertEquals(180, s.userStats.dailyGoalMin)
+    assertEquals(180, s.userStats.dailyGoal)
     assertEquals("", s.quote)
   }
 }

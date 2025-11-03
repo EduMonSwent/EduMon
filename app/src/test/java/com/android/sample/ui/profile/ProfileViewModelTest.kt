@@ -2,6 +2,8 @@ package com.android.sample.ui.profile
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.profile.ProfileRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
