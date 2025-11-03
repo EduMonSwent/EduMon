@@ -98,17 +98,15 @@ jobs:
 
       - name: Start Firebase emulators (background)
         run: |
-          # Start only firestore + auth, bind to 0.0.0.0 so Android emulator can reach 10.0.2.2
-          nohup firebase emulators:start --only firestore,auth --host 0.0.0.0 --ui=false > /tmp/firebase.log 2>&1 &
+          nohup firebase emulators:start --only firestore,auth > /tmp/firebase.log 2>&1 &
           echo $! > /tmp/firebase.pid
 
-          # Wait for ports to be ready (8080 = Firestore, 9099 = Auth)
+          # Wait for service ports to be ready
           for i in {1..120}; do
             (curl -sf http://127.0.0.1:8080 >/dev/null) && (curl -sf http://127.0.0.1:9099 >/dev/null) && break
             sleep 1
           done
 
-          echo "---- firebase emulator logs (tail) ----"
           tail -n 50 /tmp/firebase.log || true
 
       # Run connected tests on the emulator
