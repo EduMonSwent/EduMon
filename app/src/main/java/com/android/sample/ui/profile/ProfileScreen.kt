@@ -67,6 +67,12 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.ui.theme.*
+import com.android.sample.data.UserProfile
+import com.android.sample.data.AccentVariant
+import com.android.sample.data.AccessorySlot
+import com.android.sample.data.AccessoryItem
+import com.android.sample.data.Rarity
+
 
 object ProfileScreenTestTags {
   const val PROFILE_SCREEN = "profileScreen"
