@@ -60,8 +60,18 @@ object FirebaseEmulator {
     }
   }
 
+  private fun probe(url: String): Boolean =
+      runCatching {
+            val req = Request.Builder().url(url).build()
+            httpClient.newCall(req).execute().use { resp ->
+              // Any response means something is listening (200..599)
+              resp.code in 200..599
+            }
+          }
+          .getOrDefault(false)
+
   val isRunning: Boolean
-    get() = areEmulatorsRunning()
+    get() = probe("http://$HOST:$FIRESTORE_PORT") && probe("http://$HOST:$AUTH_PORT")
 
   // Idempotent connector flag (avoid re-calling useEmulator a bunch of times)
   @Volatile private var connected = false
