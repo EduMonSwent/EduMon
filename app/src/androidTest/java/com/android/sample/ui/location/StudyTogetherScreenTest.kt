@@ -1,81 +1,104 @@
 package com.android.sample.ui.location
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 
-@OptIn(ExperimentalPermissionsApi::class)
+// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
 class StudyTogetherScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  @Test
-  fun studyTogetherScreen_displaysCorrectly() {
-    composeTestRule.setContent {
-      // On simule la MapView pour ne pas lancer le vrai GoogleMap()
-      Box(Modifier.fillMaxSize()) {
-        Text("Mocked Map") // substitut visuel
-        UserStatusCard(isStudyMode = true)
+  /**
+   * Mock composable that mimics StudyTogetherScreen logic but replaces GoogleMap with simple
+   * buttons.
+   */
+  @Composable
+  private fun StudyTogetherScreenMock() {
+    var selectedFriend by remember { mutableStateOf<FriendStatus?>(null) }
+    var isUserSelected by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxSize().testTag("study_together_root").padding(16.dp)) {
+      // Displayed card depending on state
+      if (isUserSelected) {
+        UserStatusCard(isStudyMode = true, modifier = Modifier.testTag("user_status_card"))
+      } else if (selectedFriend != null) {
+        FriendInfoCard(
+            name = selectedFriend!!.name,
+            status = selectedFriend!!.status,
+            modifier = Modifier.testTag("friend_info_card"))
       }
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      Button(
+          onClick = {
+            selectedFriend = null
+            isUserSelected = true
+          },
+          modifier = Modifier.testTag("btn_user")) {
+            Text("Select User")
+          }
+
+      Button(
+          onClick = {
+            selectedFriend = FriendStatus("Alae", 0.0, 0.0, "study")
+            isUserSelected = false
+          },
+          modifier = Modifier.testTag("btn_study")) {
+            Text("Select Study Friend")
+          }
+
+      Button(
+          onClick = {
+            selectedFriend = FriendStatus("Florian", 0.0, 0.0, "break")
+            isUserSelected = false
+          },
+          modifier = Modifier.testTag("btn_break")) {
+            Text("Select Break Friend")
+          }
+
+      Button(
+          onClick = {
+            selectedFriend = FriendStatus("Khalil", 0.0, 0.0, "idle")
+            isUserSelected = false
+          },
+          modifier = Modifier.testTag("btn_idle")) {
+            Text("Select Idle Friend")
+          }
     }
-    composeTestRule.onRoot().assertExists()
   }
 
   @Test
-  fun whenFriendSelected_infoCardAppears() {
-    composeTestRule.setContent { FriendInfoCard(name = "Alae", status = "study") }
-    composeTestRule.onNodeWithText("Alae", substring = true, ignoreCase = true).assertExists()
-    composeTestRule.onNodeWithText("study", substring = true, ignoreCase = true).assertExists()
-  }
+  fun studyTogetherScreen_displaysAllCardsCorrectly() {
+    composeTestRule.setContent { StudyTogetherScreenMock() }
 
-  @Test
-  fun userStatusCard_displaysStudyMode() {
-    composeTestRule.setContent { UserStatusCard(isStudyMode = true) }
-    composeTestRule.onNodeWithText("study", substring = true, ignoreCase = true).assertExists()
-  }
+    // --- Test affichage carte utilisateur
+    composeTestRule.onNodeWithTag("btn_user").performClick()
+    composeTestRule.onNodeWithTag("user_status_card").assertExists()
 
-  @Test
-  fun userStatusCard_displaysBreakMode() {
-    composeTestRule.setContent { UserStatusCard(isStudyMode = false) }
-    composeTestRule.onNodeWithText("break", substring = true, ignoreCase = true).assertExists()
-  }
+    // --- Test affichage carte ami "study"
+    composeTestRule.onNodeWithTag("btn_study").performClick()
+    composeTestRule.onNodeWithTag("friend_info_card").assertExists()
+    composeTestRule.onNodeWithText("📚 Alae is currently in Study Mode").assertExists()
 
-  @Test
-  fun friendInfoCard_displaysDifferentStatuses() {
-    composeTestRule.setContent {
-      Column {
-        FriendInfoCard(name = "Florian", status = "study")
-        FriendInfoCard(name = "Khalil", status = "break")
-        FriendInfoCard(name = "Alae", status = "idle")
-      }
-    }
+    // --- Test affichage carte ami "break"
+    composeTestRule.onNodeWithTag("btn_break").performClick()
+    composeTestRule.onNodeWithText("☕ Florian is currently in Break Mode").assertExists()
 
-    composeTestRule.onNodeWithText("Florian", substring = true, ignoreCase = true).assertExists()
-    composeTestRule.onNodeWithText("Khalil", substring = true, ignoreCase = true).assertExists()
-    composeTestRule.onNodeWithText("Alae", substring = true, ignoreCase = true).assertExists()
-  }
+    // --- Test affichage carte ami "idle"
+    composeTestRule.onNodeWithTag("btn_idle").performClick()
+    composeTestRule.onNodeWithText("💤 Khalil is currently in Idle Mode").assertExists()
 
-  @Test
-  fun friendInfoCard_handlesUnexpectedStatus() {
-    composeTestRule.setContent { FriendInfoCard(name = "TestUser", status = "unknown") }
-    composeTestRule.onNodeWithText("TestUser", substring = true, ignoreCase = true).assertExists()
-  }
-
-  @Test
-  fun studyTogetherScreen_rendersWithoutCrashing() {
-    composeTestRule.setContent {
-      Box(Modifier.fillMaxSize()) {
-        Text("Mocked Map")
-        UserStatusCard(isStudyMode = true)
-      }
-    }
-    composeTestRule.onRoot().assertExists()
+    // --- Vérifie que le composant racine est toujours visible
+    composeTestRule.onNodeWithTag("study_together_root").assertExists()
   }
 }

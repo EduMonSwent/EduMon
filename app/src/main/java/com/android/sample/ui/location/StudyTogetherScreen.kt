@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -153,7 +154,7 @@ fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
   val color = if (isStudyMode) Color(0xFF7C4DFF) else Color(0xFFBDBDBD)
 
   Column(
-      modifier = modifier.fillMaxWidth(0.9f).wrapContentHeight(),
+      modifier = modifier.fillMaxWidth(0.9f).wrapContentHeight().testTag("user_status_card"),
       horizontalAlignment = Alignment.CenterHorizontally) {
         Card(
             colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
@@ -182,7 +183,11 @@ fun FriendInfoCard(name: String, status: String, modifier: Modifier = Modifier) 
       }
 
   Column(
-      modifier = modifier.fillMaxWidth(0.9f).wrapContentHeight(),
+      modifier =
+          modifier
+              .fillMaxWidth(0.9f)
+              .wrapContentHeight()
+              .testTag("friend_info_card"), // ✅ ajout du tag
       horizontalAlignment = Alignment.CenterHorizontally) {
         Card(
             colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
