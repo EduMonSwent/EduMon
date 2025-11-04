@@ -1,7 +1,8 @@
 package com.android.sample.feature.weeks.repository
 
-import com.android.sample.core.coroutines.DefaultDispatcherProvider
-import com.android.sample.core.coroutines.DispatcherProvider
+import com.android.sample.core.helpers.DefaultDispatcherProvider
+import com.android.sample.core.helpers.DispatcherProvider
+import com.android.sample.core.helpers.setMerged
 import com.android.sample.feature.weeks.model.Objective
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
@@ -79,7 +80,7 @@ class FirestoreObjectivesRepository(
         val items = fetchOrdered()
         val nextOrder = items.size.toLong()
         val data = obj.toFs(nextOrder).apply { this["createdAt"] = FieldValue.serverTimestamp() }
-        Tasks.await(col().document().set(data, SetOptions.merge()))
+        col().document().setMerged(data)
         getObjectives()
       }
 
@@ -94,7 +95,7 @@ class FirestoreObjectivesRepository(
         if (index !in items.indices) return@withContext items.map { it.second }
         val (snap, _) = items[index]
         val order = snap.getLong("order") ?: index.toLong()
-        Tasks.await(snap.reference.set(obj.toFs(order), SetOptions.merge()))
+        snap.reference.setMerged(obj.toFs(order))
         getObjectives()
       }
 

@@ -1,4 +1,4 @@
-package com.android.sample.core.coroutines
+package com.android.sample.core.helpers
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

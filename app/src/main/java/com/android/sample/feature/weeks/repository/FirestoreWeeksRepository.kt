@@ -1,7 +1,8 @@
 package com.android.sample.feature.weeks.repository
 
-import com.android.sample.core.coroutines.DefaultDispatcherProvider
-import com.android.sample.core.coroutines.DispatcherProvider
+import com.android.sample.core.helpers.DefaultDispatcherProvider
+import com.android.sample.core.helpers.DispatcherProvider
+import com.android.sample.core.helpers.setMerged
 import com.android.sample.feature.weeks.data.DefaultWeeksProvider
 import com.android.sample.feature.weeks.model.CourseMaterial
 import com.android.sample.feature.weeks.model.DayStatus
@@ -15,7 +16,6 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions
 import java.time.DayOfWeek
 import kotlinx.coroutines.withContext
 
@@ -128,7 +128,7 @@ class FirestoreWeeksRepository(
                   val ref = colWeeks().document()
                   val data = week.toWriteMap(idx.toLong()).toMutableMap()
                   data["createdAt"] = FieldValue.serverTimestamp()
-                  b.set(ref, data)
+                  @Suppress("ReplaceGetOrSet", "kotlin:S6519") b.set(ref, data)
                 }
               })
           // Refetch after seeding
@@ -164,6 +164,7 @@ class FirestoreWeeksRepository(
               db.runBatch { b ->
                 DayOfWeek.values().forEachIndexed { idx, d ->
                   val ref = colDayStatuses().document(d.name)
+                  @Suppress("ReplaceGetOrSet", "kotlin:S6519")
                   b.set(ref, mapOf("day" to d.name, "metTarget" to (idx % 2 == 0)))
                 }
               })
@@ -195,9 +196,7 @@ class FirestoreWeeksRepository(
         if (index !in items.indices) return@withContext items.map { it.second }
         val (snap, week) = items[index]
         val clamped = percent.coerceIn(0, 100)
-        Tasks.await(
-            snap.reference.set(
-                week.copy(percent = clamped).toWriteMap(index.toLong()), SetOptions.merge()))
+        snap.reference.setMerged(week.copy(percent = clamped).toWriteMap(index.toLong()))
         getWeeks()
       }
 
@@ -247,12 +246,10 @@ class FirestoreWeeksRepository(
                     })
         val newPercent = recomputePercent(updatedContent)
 
-        Tasks.await(
-            snap.reference.set(
-                week
-                    .copy(percent = newPercent, content = updatedContent)
-                    .toWriteMap(weekIndex.toLong()),
-                SetOptions.merge()))
+        snap.reference.set(
+            week
+                .copy(percent = newPercent, content = updatedContent)
+                .toWriteMap(weekIndex.toLong()))
 
         getWeeks()
       }
@@ -292,12 +289,10 @@ class FirestoreWeeksRepository(
                     })
         val newPercent = recomputePercent(updatedContent)
 
-        Tasks.await(
-            snap.reference.set(
-                week
-                    .copy(percent = newPercent, content = updatedContent)
-                    .toWriteMap(weekIndex.toLong()),
-                SetOptions.merge()))
+        snap.reference.set(
+            week
+                .copy(percent = newPercent, content = updatedContent)
+                .toWriteMap(weekIndex.toLong()))
 
         getWeeks()
       }

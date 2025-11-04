@@ -39,15 +39,13 @@ extensions.configure<BaseAppModuleExtension>("android") {
         }
     }
 
-    testCoverage {
-        jacocoVersion = "0.8.11"
-    }
+    testCoverage { jacocoVersion = "0.8.11" }
 
     buildFeatures.compose = true
 
     composeOptions {
-        // Keep as you had; if you upgrade your Compose BOM, align this version.
-        kotlinCompilerExtensionVersion = "1.4.2"
+        // from version catalog (no hardcoded string)
+        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
     }
 
     compileOptions {
@@ -56,7 +54,6 @@ extensions.configure<BaseAppModuleExtension>("android") {
     }
     kotlinOptions.jvmTarget = "11"
 
-    // Avoid META-INF collisions during :merge*JavaResource
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE*,NOTICE*,DEPENDENCIES}"
@@ -70,7 +67,7 @@ extensions.configure<BaseAppModuleExtension>("android") {
         unitTests.isReturnDefaultValues = true
     }
 
-    // 🔧 Robolectric source-set mapping you had
+    // Robolectric source-set mapping
     sourceSets.getByName("testDebug") {
         val test = sourceSets.getByName("test")
         java.setSrcDirs(test.java.srcDirs)
@@ -104,7 +101,7 @@ fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
 
 dependencies {
     // ---- Core ----
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -113,8 +110,8 @@ dependencies {
     // ---- Compose with BOM ----
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
-    testImplementation(composeBom)          // ✅ make BOM available to test configs
-    androidTestImplementation(composeBom)   // ✅ make BOM available to androidTest
+    testImplementation(composeBom)
+    androidTestImplementation(composeBom)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
@@ -122,59 +119,55 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.viewmodel)
     implementation(libs.compose.preview)
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.compose.material.icons.extended) // versionless via BOM
     debugImplementation(libs.compose.tooling)
 
-    // Navigation (single version)
-    implementation("androidx.navigation:navigation-compose:2.8.3")
+    // Navigation (catalog; single source of truth)
+    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.androidx.lifecycle.runtime.compose) // androidx.lifecycle:lifecycle-runtime-compose:2.7.0
+
 
     // ---- Networking ----
     implementation(libs.okhttp)
 
-    // ---- Firebase / Google ----
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation("com.google.android.gms:play-services-tasks:18.1.0")
-    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
+    // ---- Google / Firebase (catalog) ----
+    implementation(libs.gps.auth)
+    implementation(libs.gps.tasks)
+    implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.database.ktx)
 
-    // (keep these if your version catalog defines them and you use Credential Manager)
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
 
     // ===================== Tests =====================
 
-    // JVM unit tests (JUnit4 so Jupiter jars don't leak into androidTest)
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.11.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation("org.mockito:mockito-inline:5.2.0")
+    // JVM unit tests
+    testImplementation(libs.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.mockito.inline)
     testImplementation(libs.mockk)
 
-    // Compose UI tests on JVM (resolved via BOM above)
-    testImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    // Compose UI tests (versionless via BOM)
+    testImplementation(libs.compose.test.junit)
+    debugImplementation(libs.compose.test.manifest)
 
-    // Android instrumented tests
-    // AndroidX Test (aligned versions)
-    androidTestImplementation("androidx.test:runner:1.6.1")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test:core-ktx:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    // Android instrumented tests (catalog + updated versions)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.core.ktx)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.compose.test.junit)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
 
-    implementation("androidx.navigation:navigation-compose:2.8.3")
-
-    globalTestImplementation("androidx.navigation:navigation-testing:2.8.3")
-
-    // (Optional) Kaspresso — if you use it in both test types
-    // globalTestImplementation(libs.kaspresso)
-    // globalTestImplementation(libs.kaspresso.compose)
+    // Navigation testing in both test types
+    globalTestImplementation(libs.androidx.navigation.testing)
 }
 
 tasks.withType<Test> {
@@ -185,7 +178,7 @@ tasks.withType<Test> {
     }
 }
 
-// ✅ JaCoCo aggregate report (unit + instrumented)
+// JaCoCo aggregate report (unit + instrumented)
 tasks.register("jacocoTestReport", JacocoReport::class) {
     mustRunAfter("testDebugUnitTest", "connectedDebugAndroidTest")
 

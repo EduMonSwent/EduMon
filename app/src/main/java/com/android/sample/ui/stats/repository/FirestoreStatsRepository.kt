@@ -1,5 +1,6 @@
 package com.android.sample.ui.stats.repository
 
+import com.android.sample.core.helpers.setMerged
 import com.android.sample.ui.stats.model.StudyStats
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -44,7 +45,7 @@ class FirestoreStatsRepository(
     val uid = auth.currentUser?.uid ?: return
     val userDoc = db.collection("users").document(uid)
     val payload = mapOf("stats" to statsToPayload(stats))
-    userDoc.set(payload, SetOptions.merge()).await()
+    userDoc.setMerged(payload)
     _stats.value = stats
   }
 
@@ -67,7 +68,7 @@ class FirestoreStatsRepository(
     val current = mapToStats(raw)
     val defaults = defaultStats()
     if (current != defaults) {
-      userDoc.set(mapOf("stats" to statsToPayload(defaults)), SetOptions.merge()).await()
+      userDoc.setMerged(mapOf("stats" to statsToPayload(defaults)))
       _stats.value = defaults
     }
   }
