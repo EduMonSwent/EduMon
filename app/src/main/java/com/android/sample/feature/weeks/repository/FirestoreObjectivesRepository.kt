@@ -1,16 +1,18 @@
 package com.android.sample.feature.weeks.repository
 
+import com.android.sample.core.coroutines.DefaultDispatcherProvider
+import com.android.sample.core.coroutines.DispatcherProvider
 import com.android.sample.feature.weeks.model.Objective
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
 import java.time.DayOfWeek
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class FirestoreObjectivesRepository(
     private val db: FirebaseFirestore,
     private val auth: FirebaseAuth,
+    private val dispatchers: DispatcherProvider = DefaultDispatcherProvider,
 ) : ObjectivesRepository {
 
   // ---------- helpers ----------
@@ -45,7 +47,7 @@ class FirestoreObjectivesRepository(
   }
 
   private suspend fun fetchOrdered(): MutableList<Pair<DocumentSnapshot, Objective>> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         val snap = Tasks.await(col().orderBy("order", Query.Direction.ASCENDING).get())
         snap.documents.map { it to it.toDomain() }.toMutableList()
       }
@@ -62,13 +64,13 @@ class FirestoreObjectivesRepository(
 
   // ---------- API ----------
   override suspend fun getObjectives(): List<Objective> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         if (!isSignedIn()) return@withContext defaultObjectives()
         fetchOrdered().map { it.second }
       }
 
   override suspend fun addObjective(obj: Objective): List<Objective> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         if (!isSignedIn()) {
           val items = defaultObjectives()
           items.add(obj)
@@ -82,7 +84,7 @@ class FirestoreObjectivesRepository(
       }
 
   override suspend fun updateObjective(index: Int, obj: Objective): List<Objective> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         if (!isSignedIn()) {
           val items = defaultObjectives()
           if (index in items.indices) items[index] = obj
@@ -97,7 +99,7 @@ class FirestoreObjectivesRepository(
       }
 
   override suspend fun removeObjective(index: Int): List<Objective> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         if (!isSignedIn()) {
           val items = defaultObjectives()
           if (index in items.indices) items.removeAt(index)
@@ -122,7 +124,7 @@ class FirestoreObjectivesRepository(
       }
 
   override suspend fun moveObjective(fromIndex: Int, toIndex: Int): List<Objective> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         if (!isSignedIn()) {
           val items = defaultObjectives()
           if (items.isEmpty()) return@withContext items
@@ -154,7 +156,7 @@ class FirestoreObjectivesRepository(
       }
 
   override suspend fun setObjectives(objs: List<Objective>): List<Objective> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         if (!isSignedIn()) return@withContext objs.toList()
         val existing = Tasks.await(col().get())
         val batch = db.batch()

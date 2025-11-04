@@ -107,9 +107,7 @@ fun WeekProgressSection(
             WeeksExpandedList(
                 weeks = ui.weeks,
                 selectedIndex = ui.selectedWeekIndex,
-                onSelect = { index ->
-                  viewModel.selectWeek(index)
-                }, // assumes VM updates header + currentWeekContent
+                onSelect = { index -> viewModel.selectWeek(index) },
                 currentContent = ui.currentWeekContent,
                 isLoading = ui.isLoading,
                 modifier = Modifier.padding(top = 12.dp).testTag(WeekProgDailyObjTags.WEEKS_LIST))
@@ -118,7 +116,9 @@ fun WeekProgressSection(
   }
 }
 
-// Internal list for the expanded weeks
+/* ---------- Refactored: small, focused composables ---------- */
+
+// Simple “router” that delegates one row to a dedicated composable.
 @Composable
 private fun WeeksExpandedList(
     weeks: List<WeekProgressItem>,
@@ -128,190 +128,201 @@ private fun WeeksExpandedList(
     isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
-  val cs = MaterialTheme.colorScheme
   Column(modifier.fillMaxWidth().padding(top = 10.dp)) {
     weeks.forEachIndexed { index, item ->
-      val selected = index == selectedIndex
-      val bg = if (selected) cs.primary.copy(alpha = 0.12f) else cs.onSurface.copy(alpha = 0.04f)
-      var menuOpen by rememberSaveable(index) { mutableStateOf(false) }
-      val chevronRotation by
-          animateFloatAsState(
-              targetValue = if (menuOpen) 180f else 0f, label = "row-dropdown-chevron")
-
-      Column(
-          Modifier.fillMaxWidth()
-              .padding(vertical = 4.dp)
-              .clip(RoundedCornerShape(14.dp))
-              .background(bg)) {
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .clickable { onSelect(index) }
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                        .testTag(WeekProgDailyObjTags.WEEK_ROW_PREFIX + index),
-                verticalAlignment = Alignment.CenterVertically) {
-                  SmallProgressRing(
-                      percent = item.percent,
-                      ringSize = 26.dp,
-                      stroke = 4.dp,
-                      tag = WeekProgDailyObjTags.WEEK_RING_PREFIX + index)
-                  Spacer(Modifier.width(12.dp))
-                  Column(Modifier.weight(1f)) {
-                    Text(
-                        item.label,
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium),
-                        color = cs.onSurface)
-                  }
-                  Text(
-                      "${item.percent}%",
-                      style = MaterialTheme.typography.labelSmall,
-                      color = cs.onSurface.copy(alpha = 0.75f),
-                      modifier =
-                          Modifier.padding(end = 8.dp)
-                              .testTag(WeekProgDailyObjTags.WEEK_PERCENT_PREFIX + index))
-                  val finished = item.percent >= 100
-                  if (finished) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = "Finished week",
-                        tint = cs.primary,
-                        modifier =
-                            Modifier.size(20.dp)
-                                .testTag(WeekProgDailyObjTags.WEEK_STATUS_PREFIX + index))
-                  } else {
-                    Icon(
-                        imageVector = Icons.Outlined.HourglassEmpty,
-                        contentDescription = "Pending week",
-                        tint = cs.onSurface.copy(alpha = 0.8f),
-                        modifier =
-                            Modifier.size(20.dp)
-                                .testTag(WeekProgDailyObjTags.WEEK_STATUS_PREFIX + index))
-                  }
-
-                  // Dropdown anchor (shows details for the SELECTED week using
-                  // ui.currentWeekContent)
-                  Box(Modifier.wrapContentSize(Alignment.Center)) {
-                    IconButton(
-                        onClick = {
-                          // If tapping on a non-selected row, select it first.
-                          if (!selected) onSelect(index)
-                          menuOpen = !menuOpen
-                        },
-                        modifier = Modifier.size(28.dp).testTag("WEEK_DROPDOWN_BTN_$index")) {
-                          Icon(
-                              imageVector = Icons.Filled.ExpandMore,
-                              contentDescription = if (menuOpen) "Hide details" else "Show details",
-                              tint = cs.primary,
-                              modifier = Modifier.rotate(chevronRotation))
-                        }
-
-                    DropdownMenu(
-                        expanded = menuOpen,
-                        onDismissRequest = { menuOpen = false },
-                        modifier = Modifier.testTag("WEEK_DROPDOWN_$index")) {
-                          if (!selected) {
-                            DropdownMenuItem(
-                                text = { Text("Select this week to view details") },
-                                onClick = {
-                                  onSelect(index)
-                                  // Keep menu open; content will update when VM publishes new
-                                  // state.
-                                })
-                            return@DropdownMenu
-                          }
-
-                          if (isLoading) {
-                            DropdownMenuItem(
-                                text = { Text("Loading…") }, onClick = {}, enabled = false)
-                            return@DropdownMenu
-                          }
-
-                          // Exercises section
-                          val exs = currentContent.exercises
-                          DropdownMenuItem(
-                              text = {
-                                Text(
-                                    "Exercises (${exs.count { it.done }}/${exs.size})",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = cs.primary)
-                              },
-                              onClick = {},
-                              enabled = false)
-                          exs.forEach { ex ->
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                  Icon(Icons.Outlined.FitnessCenter, contentDescription = null)
-                                },
-                                text = {
-                                  Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(ex.title, modifier = Modifier.weight(1f))
-                                    Spacer(Modifier.width(8.dp))
-                                    Icon(
-                                        imageVector =
-                                            if (ex.done) Icons.Filled.Check
-                                            else Icons.Outlined.HourglassEmpty,
-                                        contentDescription = if (ex.done) "Done" else "Pending",
-                                        tint =
-                                            if (ex.done) cs.primary
-                                            else cs.onSurface.copy(alpha = 0.8f))
-                                  }
-                                },
-                                onClick = {} // display-only
-                                )
-                          }
-
-                          if (currentContent.courses.isNotEmpty() && exs.isNotEmpty()) {
-                            Divider()
-                          }
-
-                          // Courses section
-                          val courses = currentContent.courses
-                          DropdownMenuItem(
-                              text = {
-                                Text(
-                                    "Courses (${courses.count { it.read }}/${courses.size})",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = cs.primary)
-                              },
-                              onClick = {},
-                              enabled = false)
-                          courses.forEach { c ->
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                  Icon(Icons.Outlined.MenuBook, contentDescription = null)
-                                },
-                                text = {
-                                  Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(c.title, modifier = Modifier.weight(1f))
-                                    Spacer(Modifier.width(8.dp))
-                                    Icon(
-                                        imageVector =
-                                            if (c.read) Icons.Filled.Check
-                                            else Icons.Outlined.HourglassEmpty,
-                                        contentDescription = if (c.read) "Read" else "Pending",
-                                        tint =
-                                            if (c.read) cs.primary
-                                            else cs.onSurface.copy(alpha = 0.8f))
-                                  }
-                                },
-                                onClick = {} // display-only
-                                )
-                          }
-
-                          if (exs.isEmpty() && courses.isEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text("No content for this week") },
-                                onClick = {},
-                                enabled = false)
-                          }
-                        }
-                  }
-                }
-          }
+      WeekRowItem(
+          index = index,
+          item = item,
+          selected = index == selectedIndex,
+          onSelect = onSelect,
+          currentContent = currentContent,
+          isLoading = isLoading,
+      )
     }
   }
+}
+
+@Composable
+private fun WeekRowItem(
+    index: Int,
+    item: WeekProgressItem,
+    selected: Boolean,
+    onSelect: (Int) -> Unit,
+    currentContent: WeekContent,
+    isLoading: Boolean,
+) {
+  val cs = MaterialTheme.colorScheme
+  val bg = if (selected) cs.primary.copy(alpha = 0.12f) else cs.onSurface.copy(alpha = 0.04f)
+  var menuOpen by rememberSaveable(index) { mutableStateOf(false) }
+  val chevronRotation by
+      animateFloatAsState(targetValue = if (menuOpen) 180f else 0f, label = "row-dropdown-chevron")
+
+  Column(
+      Modifier.fillMaxWidth()
+          .padding(vertical = 4.dp)
+          .clip(RoundedCornerShape(14.dp))
+          .background(bg)) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clickable { onSelect(index) }
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .testTag(WeekProgDailyObjTags.WEEK_ROW_PREFIX + index),
+            verticalAlignment = Alignment.CenterVertically) {
+              SmallProgressRing(
+                  percent = item.percent,
+                  ringSize = 26.dp,
+                  stroke = 4.dp,
+                  tag = WeekProgDailyObjTags.WEEK_RING_PREFIX + index)
+              Spacer(Modifier.width(12.dp))
+              Column(Modifier.weight(1f)) {
+                Text(
+                    item.label,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = cs.onSurface)
+              }
+              Text(
+                  "${item.percent}%",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = cs.onSurface.copy(alpha = 0.75f),
+                  modifier =
+                      Modifier.padding(end = 8.dp)
+                          .testTag(WeekProgDailyObjTags.WEEK_PERCENT_PREFIX + index))
+              WeekStatusIcon(
+                  finished = item.percent >= 100,
+                  modifier =
+                      Modifier.size(20.dp).testTag(WeekProgDailyObjTags.WEEK_STATUS_PREFIX + index))
+
+              // Dropdown anchor (details for the SELECTED week)
+              Box(Modifier.wrapContentSize(Alignment.Center)) {
+                IconButton(
+                    onClick = {
+                      if (!selected) onSelect(index)
+                      menuOpen = !menuOpen
+                    },
+                    modifier = Modifier.size(28.dp).testTag("WEEK_DROPDOWN_BTN_$index")) {
+                      Icon(
+                          imageVector = Icons.Filled.ExpandMore,
+                          contentDescription = if (menuOpen) "Hide details" else "Show details",
+                          tint = cs.primary,
+                          modifier = Modifier.rotate(chevronRotation))
+                    }
+
+                WeekDropdownMenu(
+                    expanded = menuOpen,
+                    onDismiss = { menuOpen = false },
+                    index = index,
+                    selected = selected,
+                    isLoading = isLoading,
+                    content = currentContent,
+                    onSelect = onSelect)
+              }
+            }
+      }
+}
+
+@Composable
+private fun WeekStatusIcon(finished: Boolean, modifier: Modifier = Modifier) {
+  val cs = MaterialTheme.colorScheme
+  if (finished) {
+    Icon(
+        imageVector = Icons.Filled.Check,
+        contentDescription = "Finished week",
+        tint = cs.primary,
+        modifier = modifier)
+  } else {
+    Icon(
+        imageVector = Icons.Outlined.HourglassEmpty,
+        contentDescription = "Pending week",
+        tint = cs.onSurface.copy(alpha = 0.8f),
+        modifier = modifier)
+  }
+}
+
+@Composable
+private fun WeekDropdownMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    index: Int,
+    selected: Boolean,
+    isLoading: Boolean,
+    content: WeekContent,
+    onSelect: (Int) -> Unit
+) {
+  DropdownMenu(
+      expanded = expanded,
+      onDismissRequest = onDismiss,
+      modifier = Modifier.testTag("WEEK_DROPDOWN_$index")) {
+        when {
+          !selected ->
+              DropdownMenuItem(
+                  text = { Text("Select this week to view details") },
+                  onClick = { onSelect(index) })
+          isLoading -> DropdownMenuItem(text = { Text("Loading…") }, onClick = {}, enabled = false)
+          else -> DropdownContent(content)
+        }
+      }
+}
+
+@Composable
+private fun DropdownContent(currentContent: WeekContent) {
+  val cs = MaterialTheme.colorScheme
+  val exs = currentContent.exercises
+  val courses = currentContent.courses
+
+  // Exercises section
+  SectionHeader(title = "Exercises (${exs.count { it.done }}/${exs.size})", color = cs.primary)
+  exs.forEach { ex ->
+    DropdownMenuItem(
+        leadingIcon = { Icon(Icons.Outlined.FitnessCenter, contentDescription = null) },
+        text = {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(ex.title, modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
+            Icon(
+                imageVector = if (ex.done) Icons.Filled.Check else Icons.Outlined.HourglassEmpty,
+                contentDescription = if (ex.done) "Done" else "Pending",
+                tint = if (ex.done) cs.primary else cs.onSurface.copy(alpha = 0.8f))
+          }
+        },
+        onClick = {} // display-only
+        )
+  }
+
+  if (courses.isNotEmpty() && exs.isNotEmpty()) Divider()
+
+  // Courses section
+  SectionHeader(
+      title = "Courses (${courses.count { it.read }}/${courses.size})", color = cs.primary)
+  courses.forEach { c ->
+    DropdownMenuItem(
+        leadingIcon = { Icon(Icons.Outlined.MenuBook, contentDescription = null) },
+        text = {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(c.title, modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
+            Icon(
+                imageVector = if (c.read) Icons.Filled.Check else Icons.Outlined.HourglassEmpty,
+                contentDescription = if (c.read) "Read" else "Pending",
+                tint = if (c.read) cs.primary else cs.onSurface.copy(alpha = 0.8f))
+          }
+        },
+        onClick = {} // display-only
+        )
+  }
+
+  if (exs.isEmpty() && courses.isEmpty()) {
+    DropdownMenuItem(text = { Text("No content for this week") }, onClick = {}, enabled = false)
+  }
+}
+
+@Composable
+private fun SectionHeader(title: String, color: androidx.compose.ui.graphics.Color) {
+  DropdownMenuItem(
+      text = { Text(title, style = MaterialTheme.typography.labelLarge, color = color) },
+      onClick = {},
+      enabled = false)
 }
 
 // Tiny circular progress ring (0..100%)

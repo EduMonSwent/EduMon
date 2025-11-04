@@ -1,5 +1,8 @@
 package com.android.sample.feature.weeks.repository
 
+import com.android.sample.core.coroutines.DefaultDispatcherProvider
+import com.android.sample.core.coroutines.DispatcherProvider
+import com.android.sample.feature.weeks.data.DefaultWeeksProvider
 import com.android.sample.feature.weeks.model.CourseMaterial
 import com.android.sample.feature.weeks.model.DayStatus
 import com.android.sample.feature.weeks.model.Exercise
@@ -14,7 +17,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import java.time.DayOfWeek
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
@@ -25,6 +27,7 @@ import kotlinx.coroutines.withContext
 class FirestoreWeeksRepository(
     private val db: FirebaseFirestore,
     private val auth: FirebaseAuth,
+    private val dispatchers: DispatcherProvider = DefaultDispatcherProvider,
 ) : WeeksRepository {
 
   // --- Firestore helpers ---
@@ -87,7 +90,7 @@ class FirestoreWeeksRepository(
           "updatedAt" to FieldValue.serverTimestamp())
 
   private suspend fun fetchWeeksOrdered(): MutableList<Pair<DocumentSnapshot, WeekProgressItem>> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         val snap = Tasks.await(colWeeks().orderBy("order", Query.Direction.ASCENDING).get())
         snap.documents.map { it to it.toDomainWeek() }.toMutableList()
       }
@@ -99,61 +102,15 @@ class FirestoreWeeksRepository(
     return ((done * 100.0) / total).toInt().coerceIn(0, 100)
   }
 
-  // Default weeks (mirrors FakeWeeksRepository content). Percents will be recomputed on read.
+  // Default weeks provider (single source of truth)
   private fun buildDefaultWeeks(): List<WeekProgressItem> =
-      listOf(
-          WeekProgressItem(
-              label = "Week 1",
-              percent = 100,
-              content =
-                  WeekContent(
-                      courses =
-                          listOf(
-                              CourseMaterial(id = "c1", title = "Intro to Android", read = true),
-                              CourseMaterial(id = "c2", title = "Compose Basics", read = true),
-                          ),
-                      exercises =
-                          listOf(
-                              Exercise(id = "e1", title = "Set up environment", done = true),
-                              Exercise(id = "e2", title = "Finish codelab", done = true),
-                          ))),
-          WeekProgressItem(
-              label = "Week 2",
-              percent = 55,
-              content =
-                  WeekContent(
-                      courses =
-                          listOf(
-                              CourseMaterial(id = "c3", title = "Compose Layouts", read = false),
-                              CourseMaterial(
-                                  id = "c4", title = "State and Side-effects", read = true),
-                          ),
-                      exercises =
-                          listOf(
-                              Exercise(id = "e3", title = "Build layout challenge", done = false),
-                          ))),
-          WeekProgressItem(
-              label = "Week 3",
-              percent = 10,
-              content =
-                  WeekContent(
-                      courses =
-                          listOf(
-                              CourseMaterial(
-                                  id = "c5", title = "Architecture guidance", read = false),
-                          ),
-                      exercises =
-                          listOf(
-                              Exercise(
-                                  id = "e4", title = "Repository implementation", done = false),
-                          ))),
-      )
+      DefaultWeeksProvider.provideDefaultWeeks()
 
   private fun defaultDayStatuses(): List<DayStatus> =
-      DayOfWeek.values().mapIndexed { idx, d -> DayStatus(d, metTarget = idx % 2 == 0) }
+      DefaultWeeksProvider.provideDefaultDayStatuses()
 
   override suspend fun getWeeks(): List<WeekProgressItem> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         // If no user is signed in, return an in-memory default set so tests and previews work.
         if (!isSignedIn()) {
           val defaults = buildDefaultWeeks()
@@ -195,7 +152,7 @@ class FirestoreWeeksRepository(
       }
 
   override suspend fun getDayStatuses(): List<DayStatus> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         // Fallback for unsigned sessions
         if (!isSignedIn()) return@withContext defaultDayStatuses()
 
@@ -223,7 +180,7 @@ class FirestoreWeeksRepository(
       }
 
   override suspend fun updateWeekPercent(index: Int, percent: Int): List<WeekProgressItem> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         // For unsigned sessions, just update in-memory value by returning adjusted defaults.
         if (!isSignedIn()) {
           val weeks = buildDefaultWeeks().toMutableList()
@@ -245,7 +202,7 @@ class FirestoreWeeksRepository(
       }
 
   override suspend fun getWeekContent(index: Int): WeekContent =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         // Fallback when unsigned
         if (!isSignedIn()) {
           return@withContext buildDefaultWeeks().getOrNull(index)?.content
@@ -260,7 +217,7 @@ class FirestoreWeeksRepository(
       exerciseId: String,
       done: Boolean
   ): List<WeekProgressItem> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         // Unsigned fallback: return updated defaults only in-memory
         if (!isSignedIn()) {
           val weeks = buildDefaultWeeks().toMutableList()
@@ -305,7 +262,7 @@ class FirestoreWeeksRepository(
       courseId: String,
       read: Boolean
   ): List<WeekProgressItem> =
-      withContext(Dispatchers.IO) {
+      withContext(dispatchers.io) {
         // Unsigned fallback: return updated defaults only in-memory
         if (!isSignedIn()) {
           val weeks = buildDefaultWeeks().toMutableList()

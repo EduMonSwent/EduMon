@@ -42,7 +42,7 @@ class StatsViewModel(
     viewModelScope.launch {
       if (Firebase.auth.currentUser == null) return@launch
       val current = repo.stats.value
-      val base = current ?: StudyStats()
+      val base = current
       val objs = objectivesRepo.getObjectives()
       val completed = objs.count { it.completed }
       repo.update(base.copy(completedGoals = completed))

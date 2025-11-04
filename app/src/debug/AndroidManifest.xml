@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <uses-permission android:name="android.permission.INTERNET" />
-
     <application
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config"
+        tools:targetApi="28"
         tools:ignore="UnusedAttribute">
-        <!-- No components here; we just augment the main application's attributes for debug -->
+        <!-- Debug-only: allow cleartext only to local dev hosts -->
     </application>
 </manifest>
 
