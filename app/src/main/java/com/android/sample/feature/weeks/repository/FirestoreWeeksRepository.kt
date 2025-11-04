@@ -128,7 +128,7 @@ class FirestoreWeeksRepository(
                   val ref = colWeeks().document()
                   val data = week.toWriteMap(idx.toLong()).toMutableMap()
                   data["createdAt"] = FieldValue.serverTimestamp()
-                  @Suppress("ReplaceGetOrSet", "kotlin:S6519") b.set(ref, data)
+                  b.setMerged(ref, data)
                 }
               })
           // Refetch after seeding
@@ -165,7 +165,7 @@ class FirestoreWeeksRepository(
                 DayOfWeek.values().forEachIndexed { idx, d ->
                   val ref = colDayStatuses().document(d.name)
                   @Suppress("ReplaceGetOrSet", "kotlin:S6519")
-                  b.set(ref, mapOf("day" to d.name, "metTarget" to (idx % 2 == 0)))
+                  b.setMerged(ref, mapOf("day" to d.name, "metTarget" to (idx % 2 == 0)))
                 }
               })
           return@withContext DayOfWeek.values().mapIndexed { idx, d ->

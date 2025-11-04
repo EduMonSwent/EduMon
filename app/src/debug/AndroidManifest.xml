@@ -7,7 +7,6 @@
         tools:replace="android:allowBackup"
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config"
-        tools:targetApi="28"
         tools:ignore="UnusedAttribute">
         <!-- Debug-only: allow cleartext only to local dev hosts -->
     </application>

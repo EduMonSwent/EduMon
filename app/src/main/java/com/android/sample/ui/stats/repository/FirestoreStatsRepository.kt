@@ -4,7 +4,6 @@ import com.android.sample.core.helpers.setMerged
 import com.android.sample.ui.stats.model.StudyStats
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
@@ -59,7 +58,7 @@ class FirestoreStatsRepository(
     if (!snap.exists() || raw == null) {
       // No stats present: seed defaults
       val defaults = defaultStats()
-      userDoc.set(mapOf("stats" to statsToPayload(defaults)), SetOptions.merge()).await()
+      userDoc.setMerged(mapOf("stats" to statsToPayload(defaults)))
       _stats.value = defaults
       return
     }

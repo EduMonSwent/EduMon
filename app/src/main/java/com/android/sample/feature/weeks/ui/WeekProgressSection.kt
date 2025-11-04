@@ -51,8 +51,8 @@ import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 
 @Composable
 fun WeekProgressSection(
-    viewModel: WeeksViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     modifier: Modifier = Modifier,
+    viewModel: WeeksViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
 ) {
   val ui by viewModel.uiState.collectAsState()
   val cs = MaterialTheme.colorScheme

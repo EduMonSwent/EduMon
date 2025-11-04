@@ -165,7 +165,7 @@ class FirestoreObjectivesRepository(
         objs.forEachIndexed { i, obj ->
           val ref = col().document()
           val data = obj.toFs(i.toLong()).apply { this["createdAt"] = FieldValue.serverTimestamp() }
-          batch.set(ref, data)
+          batch.setMerged(ref, data)
         }
         Tasks.await(batch.commit())
         getObjectives()
