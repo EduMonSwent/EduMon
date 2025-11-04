@@ -40,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -265,56 +266,78 @@ private fun WeekDropdownMenu(
       }
 }
 
+/* ------------ LOWER COMPLEXITY DROPDOWN CONTENT ------------- */
+
 @Composable
 private fun DropdownContent(currentContent: WeekContent) {
-  val cs = MaterialTheme.colorScheme
-  val exs = currentContent.exercises
+  val exercises = currentContent.exercises
   val courses = currentContent.courses
 
-  // Exercises section
-  SectionHeader(title = "Exercises (${exs.count { it.done }}/${exs.size})", color = cs.primary)
-  exs.forEach { ex ->
-    DropdownMenuItem(
-        leadingIcon = { Icon(Icons.Outlined.FitnessCenter, contentDescription = null) },
-        text = {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(ex.title, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            Icon(
-                imageVector = if (ex.done) Icons.Filled.Check else Icons.Outlined.HourglassEmpty,
-                contentDescription = if (ex.done) "Done" else "Pending",
-                tint = if (ex.done) cs.primary else cs.onSurface.copy(alpha = 0.8f))
-          }
-        },
-        onClick = {} // display-only
-        )
+  // Early exit keeps branching minimal in this function
+  if (exercises.isEmpty() && courses.isEmpty()) {
+    DropdownMenuItem(text = { Text("No content for this week") }, onClick = {}, enabled = false)
+    return
   }
 
-  if (courses.isNotEmpty() && exs.isNotEmpty()) Divider()
+  if (exercises.isNotEmpty()) ExercisesSection(exercises)
+  if (exercises.isNotEmpty() && courses.isNotEmpty()) Divider()
+  if (courses.isNotEmpty()) CoursesSection(courses)
+}
 
-  // Courses section
+@Composable
+private fun ExercisesSection(exercises: List<com.android.sample.feature.weeks.model.Exercise>) {
+  val cs = MaterialTheme.colorScheme
+  SectionHeader(
+      title = "Exercises (${exercises.count { it.done }}/${exercises.size})", color = cs.primary)
+  exercises.forEach { ex ->
+    DropdownListRow(
+        title = ex.title,
+        done = ex.done,
+        leadingIcon = Icons.Outlined.FitnessCenter,
+    )
+  }
+}
+
+@Composable
+private fun CoursesSection(courses: List<com.android.sample.feature.weeks.model.CourseMaterial>) {
+  val cs = MaterialTheme.colorScheme
   SectionHeader(
       title = "Courses (${courses.count { it.read }}/${courses.size})", color = cs.primary)
   courses.forEach { c ->
-    DropdownMenuItem(
-        leadingIcon = { Icon(Icons.Outlined.MenuBook, contentDescription = null) },
-        text = {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(c.title, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            Icon(
-                imageVector = if (c.read) Icons.Filled.Check else Icons.Outlined.HourglassEmpty,
-                contentDescription = if (c.read) "Read" else "Pending",
-                tint = if (c.read) cs.primary else cs.onSurface.copy(alpha = 0.8f))
-          }
-        },
-        onClick = {} // display-only
-        )
+    DropdownListRow(
+        title = c.title,
+        done = c.read,
+        leadingIcon = Icons.Outlined.MenuBook,
+    )
   }
+}
 
-  if (exs.isEmpty() && courses.isEmpty()) {
-    DropdownMenuItem(text = { Text("No content for this week") }, onClick = {}, enabled = false)
-  }
+@Composable
+private fun DropdownListRow(
+    title: String,
+    done: Boolean,
+    leadingIcon: ImageVector,
+) {
+  DropdownMenuItem(
+      leadingIcon = { Icon(leadingIcon, contentDescription = null) },
+      text = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text(title, modifier = Modifier.weight(1f))
+          Spacer(Modifier.width(8.dp))
+          DonePendingIcon(done)
+        }
+      },
+      onClick = {} // display-only
+      )
+}
+
+@Composable
+private fun DonePendingIcon(done: Boolean) {
+  val cs = MaterialTheme.colorScheme
+  Icon(
+      imageVector = if (done) Icons.Filled.Check else Icons.Outlined.HourglassEmpty,
+      contentDescription = if (done) "Done" else "Pending",
+      tint = if (done) cs.primary else cs.onSurface.copy(alpha = 0.8f))
 }
 
 @Composable
@@ -358,5 +381,3 @@ private fun SmallProgressRing(
         topLeft = topLeft)
   }
 }
-
-// ---------- UI models for the dropdown content ----------
