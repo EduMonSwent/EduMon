@@ -35,6 +35,10 @@ data class ToDo(
     val note: String? = null, // extra description (optional)
     val notificationsEnabled: Boolean = false // reminder toggle
 ) {
-  // Utility to display due date in a human-friendly format
+  /**
+   * Utility to display due date in a human-friendly format
+   *
+   * @return formatted due date
+   */
   fun dueDateFormatted(): String = dueDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))
 }
