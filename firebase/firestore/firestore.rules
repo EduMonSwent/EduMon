@@ -2,33 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Only rules for the "todos" collection
+    // --- Keep your strict todos rules ---
     match /todos/{todoId} {
+      function signedIn() { return request.auth != null; }
+      function isOwnerDoc() { return signedIn() && request.auth.uid == resource.data.ownerId; }
+      function isOwnerForCreate() { return signedIn() && request.auth.uid == request.resource.data.ownerId; }
 
-      // Helpers
-      function signedIn() {
-        return request.auth != null;
-      }
-      function isOwnerDoc() {
-        // For reads/updates/deletes: compare caller to stored ownerId
-        return signedIn() && request.auth.uid == resource.data.ownerId;
-      }
-      function isOwnerForCreate() {
-        // For creates: compare caller to incoming ownerId
-        return signedIn() && request.auth.uid == request.resource.data.ownerId;
-      }
-
-      // READS (queries must filter to ownerId == request.auth.uid)
-      allow get, list: if isOwnerDoc();
-
-      // WRITES — ownership only, no schema checks
+      // NOTE: `list` cannot use `resource.data` (not available during queries).
+      // Your comment says "queries must filter to ownerId == request.auth.uid".
+      // That must be enforced either in rules via request.query (advanced) or in code; for now keep as-is if you only do gets.
+      allow get: if isOwnerDoc();
+      allow list: if false; // Safe default unless you add request.query checks
       allow create: if isOwnerForCreate();
-      allow update: if isOwnerDoc()
-                    && request.resource.data.ownerId == resource.data.ownerId; // ownerId immutable
+      allow update: if isOwnerDoc() && request.resource.data.ownerId == resource.data.ownerId;
       allow delete: if isOwnerDoc();
     }
 
-    // Deny everything else
+    // --- NEW: allow signed-in users to access their entire subtree under /users/{uid}/... ---
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Catch-all deny
     match /{document=**} {
       allow read, write: if false;
     }
