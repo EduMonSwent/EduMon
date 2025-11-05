@@ -3,7 +3,10 @@
 
 package com.android.sample.ui.stats
 
+// Added fakes to avoid Firebase in unit tests
+import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
 import com.android.sample.ui.stats.model.StudyStats
+import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -32,7 +35,7 @@ class StatsViewModelTest {
 
   @Test
   fun fake_scenarios_emit_into_state() {
-    val vm = StatsViewModel()
+    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     val s = vm.stats.value
     assertNotNull(s)
     // Default weekly goal in fake repo scenarios is 300
@@ -41,7 +44,7 @@ class StatsViewModelTest {
 
   @Test
   fun titles_are_exposed_and_contain_known_labels() {
-    val vm = StatsViewModel()
+    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     val titles = vm.scenarioTitles
     assertTrue(titles.isNotEmpty())
     assertTrue(titles.contains("Début de semaine"))
@@ -50,7 +53,7 @@ class StatsViewModelTest {
 
   @Test
   fun initial_selected_index_is_zero() {
-    val vm = StatsViewModel()
+    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     assertEquals(0, vm.scenarioIndex.value)
   }
 
@@ -62,7 +65,7 @@ class StatsViewModelTest {
 
   @Test
   fun selectScenario_updates_stats_from_fake_repo() {
-    val vm = StatsViewModel()
+    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     val initial = vm.stats.value
     assertNotNull(initial)
 
@@ -77,14 +80,14 @@ class StatsViewModelTest {
 
   @Test
   fun selectScenario_clamps_below_zero_to_zero() {
-    val vm = StatsViewModel()
+    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     vm.selectScenario(-10)
     assertEquals(0, vm.scenarioIndex.value)
   }
 
   @Test
   fun selectScenario_clamps_above_last_to_last() {
-    val vm = StatsViewModel()
+    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     vm.selectScenario(999)
     // Last scenario in FakeStatsRepository is index 4 with totalTimeMin = 180
     assertEquals(4, vm.scenarioIndex.value)
@@ -93,7 +96,7 @@ class StatsViewModelTest {
 
   @Test
   fun multiple_selections_update_stats_each_time() {
-    val vm = StatsViewModel()
+    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     // 3 -> "Objectif atteint" totalTimeMin = 320
     vm.selectScenario(3)
     assertEquals(320, vm.stats.value!!.totalTimeMin)

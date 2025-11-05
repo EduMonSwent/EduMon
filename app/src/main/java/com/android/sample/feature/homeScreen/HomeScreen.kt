@@ -1,7 +1,7 @@
 package com.android.sample.feature.homeScreen
 
 // 🔽 Only dependency on creature UI:
-import android.content.res.Configuration
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -30,11 +30,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.R
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
@@ -184,7 +182,6 @@ fun EduMonHomeScreen(
                         creatureResId = creatureResId,
                         level = state.creatureStats.level,
                         environmentResId = environmentResId)
-
                     Row(
                         Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -195,7 +192,6 @@ fun EduMonHomeScreen(
                               stats = state.userStats,
                               modifier = Modifier.weight(1f).fillMaxHeight())
                         }
-
                     AffirmationsAndRemindersCard(
                         quote = state.quote,
                         onOpenPlanner = { onNavigate(AppDestination.Planner.route) },
@@ -512,14 +508,4 @@ fun GlowCard(content: @Composable () -> Unit) {
               content()
             }
       }
-}
-
-// ---------- Preview ----------
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
-@Composable
-private fun HomePreview() {
-  MaterialTheme(colorScheme = darkColorScheme()) {
-    EduMonHomeRoute(
-        creatureResId = R.drawable.edumon, environmentResId = R.drawable.home, onNavigate = {})
-  }
 }
