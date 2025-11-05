@@ -1,0 +1,26 @@
+package com.android.sample.data.notifications
+
+import android.Manifest
+import android.content.Context
+import androidx.annotation.RequiresPermission
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import com.android.sample.R
+
+/** Prompt to start your first study block of the day. */
+class StudyKickoffWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  override suspend fun doWork(): Result {
+    NotificationUtils.ensureChannel(applicationContext)
+    val n =
+        NotificationCompat.Builder(applicationContext, NotificationUtils.CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Study kickoff")
+            .setContentText("Time to start your first study block 📚")
+            .build()
+    NotificationManagerCompat.from(applicationContext).notify(NotificationUtils.ID_STUDY_KICKOFF, n)
+    return Result.success()
+  }
+}

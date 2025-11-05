@@ -24,6 +24,7 @@ import com.android.sample.ui.games.GamesScreen
 import com.android.sample.ui.games.MemoryGameScreen
 import com.android.sample.ui.games.ReactionGameScreen
 import com.android.sample.ui.mood.MoodLoggingRoute
+import com.android.sample.ui.notifications.NotificationsScreen
 import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.session.StudySessionScreen
@@ -107,7 +108,11 @@ fun EduMonNavHost(
                           }
                     })
               }) { padding ->
-                Box(Modifier.fillMaxSize().padding(padding)) { ProfileScreen() }
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                  ProfileScreen(
+                      onOpenNotifications = { nav.navigate("notifications") } // <-- ICI
+                      )
+                }
               }
         }
 
@@ -337,6 +342,17 @@ fun EduMonNavHost(
               }) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) { MoodLoggingRoute() }
               }
+        }
+        composable("notifications") {
+          NotificationsScreen(
+              onBack = { nav.popBackStack() },
+              onGoHome = {
+                nav.navigate(AppDestination.Home.route) {
+                  popUpTo(AppDestination.Home.route) { saveState = true }
+                  launchSingleTop = true
+                  restoreState = true
+                }
+              })
         }
       }
 }
