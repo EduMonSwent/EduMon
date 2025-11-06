@@ -56,10 +56,13 @@ class StudySessionViewModel(
   }
 
   private fun observePomodoro() {
+    var lastPhase: PomodoroPhase? = null
+    var lastState: PomodoroState? = null
     combine(pomodoroViewModel.phase, pomodoroViewModel.timeLeft, pomodoroViewModel.state) {
             phase,
             timeLeft,
-            state ->
+            state,
+          ->
           Triple(phase, timeLeft, state)
         }
         .onEach { (phase, timeLeft, state) ->
@@ -71,9 +74,13 @@ class StudySessionViewModel(
           }
 
           // Detect end of a work session to increment stats
-          if (phase != PomodoroPhase.WORK && state == PomodoroState.FINISHED) {
+          if (lastPhase == PomodoroPhase.WORK &&
+              lastState != PomodoroState.FINISHED &&
+              state == PomodoroState.FINISHED) {
             onPomodoroCompleted()
           }
+          lastPhase = phase
+          lastState = state
         }
         .launchIn(viewModelScope)
   }

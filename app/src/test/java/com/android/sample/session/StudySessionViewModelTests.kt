@@ -101,7 +101,7 @@ class StudySessionViewModelTest {
   @Test
   fun `onPomodoroCompleted triggers only when NOT WORK and FINISHED`() = runTest {
     // FINISHED while WORK -> should NOT save
-    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.FINISHED)
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
     advanceUntilIdle()
     assertEquals(0, fakeRepo.getSavedSessions().size)
 
@@ -177,6 +177,8 @@ class StudySessionViewModelTest {
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `onPomodoroCompleted increments stats and saves session`() = runTest {
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
+    advanceUntilIdle()
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.SHORT_BREAK, PomodoroState.FINISHED)
     advanceUntilIdle()
 
