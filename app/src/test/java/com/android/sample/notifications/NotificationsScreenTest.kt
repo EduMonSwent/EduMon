@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import com.android.sample.ui.notifications.NotificationsScreen
@@ -16,8 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 private class CapturingRepo : NotificationRepository {
   var oneShot = 0
@@ -46,8 +45,7 @@ private class CapturingRepo : NotificationRepository {
   override fun cancel(context: Context, kind: NotificationKind) {}
 }
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [30])
+@RunWith(AndroidJUnit4::class)
 class NotificationsScreenTest {
 
   @get:Rule val compose = createComposeRule()
