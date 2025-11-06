@@ -11,6 +11,12 @@ composeViewModel = "2.7.0"
 lifecycleRuntimeKtx = "2.7.0"
 composeCompiler = "1.4.2"            # Kotlin 1.8.10 compatible
 
+# --- Location / Maps ---
+playServicesMaps = "18.2.0"
+playServicesLocation = "21.3.0"
+accompanist = "0.34.0"
+mapsCompose = "2.11.5"
+
 # UI
 appcompat = "1.6.1"
 material = "1.11.0"
@@ -54,7 +60,6 @@ gpsTasks = "18.1.0"
 navigationRuntimeKtx = "2.7.7"
 navigationCompose = "2.7.7"
 navigationTestingAndroid = "2.7.7"
-playServicesMaps = "19.2.0"
 lifecycleRuntimeCompose = "2.7.0"
 
 # Data / Net
@@ -68,6 +73,15 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+# Google Play Services (Maps + Location)
+play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+
+# Accompanist Permissions
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
+
+# Google Maps Compose
+maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
 
 # Compose (BOM-managed)
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -100,13 +114,6 @@ firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", 
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
-# --- Google Maps et localisation ---
-maps-compose = { module = "com.google.maps.android:maps-compose", version = "2.11.4" }
-play-services-location = { module = "com.google.android.gms:play-services-location", version = "21.3.0" }
-
-# --- Accompanist (permissions runtime pour Compose) ---
-accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version = "0.34.0" }
-play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 
 # Net
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }

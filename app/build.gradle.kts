@@ -107,14 +107,6 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // Jetpack Compose
-    implementation(platform(libs.compose.bom))
-    implementation(libs.play.services.maps)
-    testImplementation(libs.junit)
-    globalTestImplementation(libs.androidx.junit)
-    globalTestImplementation(libs.androidx.espresso.core)
-
-    // ------------- Jetpack Compose ------------------
     // ---- Compose with BOM ----
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
@@ -149,6 +141,12 @@ dependencies {
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
+    // ---- Location & Maps ----
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.accompanist.permissions)
+    implementation(libs.maps.compose)
+
 
     // ===================== Tests =====================
 
@@ -164,12 +162,7 @@ dependencies {
     testImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
 
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.navigation:navigation-compose:2.8.3")
-    // === Ajouts pour la localisation (task #70) ===
-    implementation(libs.maps.compose)
-    implementation(libs.play.services.location)
-    implementation(libs.accompanist.permissions)
+
     // Android instrumented tests (catalog + updated versions)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
@@ -179,6 +172,7 @@ dependencies {
     androidTestImplementation(libs.compose.test.junit)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
+
 
     // Navigation testing in both test types
     globalTestImplementation(libs.androidx.navigation.testing)

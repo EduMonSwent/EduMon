@@ -10,11 +10,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
+import com.android.sample.ui.theme.*
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationServices
@@ -24,9 +26,9 @@ import com.google.maps.android.compose.*
 private val EPFL_LAT_LNG = LatLng(46.5191, 6.5668)
 
 enum class FriendMode(val emoji: String, val color: Color) {
-  STUDY("📚", Color(0xFF4CAF50)),
-  BREAK("☕", Color(0xFFFFB300)),
-  IDLE("💤", Color(0xFF2196F3))
+  STUDY("📚", StudyGreen),
+  BREAK("☕", BreakYellow),
+  IDLE("💤", IdleBlue)
 }
 
 data class FriendStatus(
@@ -78,7 +80,7 @@ fun StudyTogetherScreen(friends: List<FriendStatus> = defaultFriends) {
                 val scaledEduMon = Bitmap.createScaledBitmap(baseEduMon, 120, 120, false)
 
                 val glowRadius = 25f
-                val glowColor = android.graphics.Color.argb(200, 255, 215, 0)
+                val glowColor = GlowGold.copy(alpha = 0.8f).toArgb()
                 val canvasSize = 180
                 val glowBitmap =
                     Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888)
@@ -89,8 +91,10 @@ fun StudyTogetherScreen(friends: List<FriendStatus> = defaultFriends) {
                       maskFilter = BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.NORMAL)
                       isAntiAlias = true
                     }
+
                 val center = canvasSize / 2f
                 canvas.drawCircle(center, center, 65f, paint)
+
                 val offset = (canvasSize - scaledEduMon.width) / 2f
                 canvas.drawBitmap(scaledEduMon, offset, offset, null)
                 BitmapDescriptorFactory.fromBitmap(glowBitmap)
@@ -108,8 +112,8 @@ fun StudyTogetherScreen(friends: List<FriendStatus> = defaultFriends) {
                 true
               })
 
+          val friendIcons = listOf(R.drawable.edumon1, R.drawable.edumon2, R.drawable.edumon3)
           friends.forEachIndexed { index, friend ->
-            val friendIcons = listOf(R.drawable.edumon1, R.drawable.edumon2, R.drawable.edumon3)
             val friendBitmap =
                 BitmapFactory.decodeResource(
                     context.resources, friendIcons[index % friendIcons.size])
@@ -178,7 +182,7 @@ fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
                                 if (isStudyMode) stringResource(R.string.study_mode)
                                 else stringResource(R.string.break_mode)),
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White)
+                        color = MaterialTheme.colorScheme.onPrimary)
                   }
             }
         Spacer(Modifier.height(40.dp))
@@ -205,7 +209,7 @@ fun FriendInfoCard(name: String, mode: FriendMode, modifier: Modifier = Modifier
                                 name,
                                 mode.name.lowercase().replaceFirstChar { it.uppercase() }),
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White)
+                        color = MaterialTheme.colorScheme.onPrimary)
                   }
             }
         Spacer(Modifier.height(40.dp))
