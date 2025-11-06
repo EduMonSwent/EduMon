@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repositories.ToDoRepositoryProvider

@@ -4,9 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserStats
-import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.data.UserProfile
+import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update

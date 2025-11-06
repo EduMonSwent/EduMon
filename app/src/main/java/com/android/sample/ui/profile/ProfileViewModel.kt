@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot

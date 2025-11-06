@@ -11,9 +11,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.data.UserProfile
 import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.stats.model.StudyStats
 import org.junit.Rule
 import org.junit.Test
