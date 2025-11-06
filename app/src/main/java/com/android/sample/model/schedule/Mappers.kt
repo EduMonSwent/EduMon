@@ -156,12 +156,14 @@ object ClassMapper {
           EventKind.CLASS_LAB -> ClassType.LAB
           else -> return null
         }
+      val time = event.time ?: return null
+      val endTime = time.plusMinutes((event.durationMinutes?.toLong() ?: 60))
 
     return PlannerClass(
         id = event.id,
         courseName = event.title,
-        startTime = event.time ?: return null,
-        endTime = event.time?.plusMinutes(event.durationMinutes?.toLong() ?: 60) ?: return null,
+        startTime = event.time,
+        endTime = endTime,
         type = classType,
         location = event.location ?: "",
         instructor = extractInstructorFromDescription(event.description))

@@ -25,9 +25,6 @@ object AdaptivePlanner {
       nextWeekEvents: List<ScheduleEvent>
   ): AdjustmentResult {
 
-    val start = weekStart(today)
-    val nextStart = start.plusWeeks(1)
-
     val currentTasks = currentWeekEvents.filter { it.sourceTag == SourceTag.Task }
     val nextTasks = nextWeekEvents.filter { it.sourceTag == SourceTag.Task }
 
