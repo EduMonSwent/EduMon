@@ -5,8 +5,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.android.sample.model.calendar.StudyItem
-import com.android.sample.model.calendar.TaskType
+import com.android.sample.model.StudyItem
+import com.android.sample.model.TaskType
 import com.android.sample.ui.calendar.UpcomingEventsSection
 import java.time.LocalDate
 import java.time.LocalTime

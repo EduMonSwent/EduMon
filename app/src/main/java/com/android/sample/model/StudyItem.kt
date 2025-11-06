@@ -1,4 +1,4 @@
-package com.android.sample.model.calendar
+package com.android.sample.model
 
 import java.time.LocalDate
 import java.time.LocalTime

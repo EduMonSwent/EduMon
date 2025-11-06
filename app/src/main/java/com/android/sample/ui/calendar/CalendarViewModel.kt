@@ -2,9 +2,9 @@ package com.android.sample.ui.calendar
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.model.calendar.PlannerRepository
-import com.android.sample.model.calendar.PlannerRepositoryImpl
-import com.android.sample.model.calendar.StudyItem
+import com.android.sample.model.PlannerRepository
+import com.android.sample.model.PlannerRepositoryImpl
+import com.android.sample.model.StudyItem
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.flow.*
