@@ -4,12 +4,18 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.R
+import com.android.sample.data.ToDo
 import com.android.sample.model.planner.*
+import com.android.sample.repositories.ToDoRepository
 import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.planner.PlannerScreenTestTags
+import com.android.sample.ui.viewmodel.PlannerViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,21 +55,67 @@ class PlannerScreenTest {
     composeTestRule.onNodeWithText("70%", substring = true).assertExists()
   }
 
+  // --- NEW TESTS: AIRecommendationCard Coverage ---
+
   @Test
-  fun plannerScreen_displaysAIRecommendationSection() {
-    composeTestRule.setContent { PlannerScreen() }
+  fun plannerScreen_displaysNoRecommendationText_whenNoRecommendedTask() {
+    // Fake ViewModel with empty recommendation
+    val fakeViewModel = PlannerViewModel()
+
+    composeTestRule.setContent { PlannerScreen(viewModel = fakeViewModel) }
 
     composeTestRule.waitForIdle()
 
-    // Check AI section headers
-    composeTestRule.onNodeWithText("AI Study Assistant", ignoreCase = true).assertExists()
+    // Expect to see the "no recommendation" string
+    composeTestRule
+        .onNodeWithText(
+            composeTestRule.activity.getString(R.string.ai_recommendation_none), substring = true)
+        .assertExists()
+  }
 
-    composeTestRule.onNodeWithText("Personalized Recommendation", ignoreCase = true).assertExists()
+  @Test
+  fun plannerScreen_displaysProperRecommendationText_whenTaskIsRecommended() {
+    val testTask =
+        ToDo(
+            title = "Study Algorithms",
+            dueDate = LocalDate.of(2025, 10, 30),
+            priority = com.android.sample.data.Priority.HIGH)
+    class FakeToDoRepository : ToDoRepository {
+      private val state = MutableStateFlow<List<ToDo>>(listOf(testTask))
+      override val todos = state.asStateFlow()
 
-    // Check recommendation content
-    composeTestRule.onNodeWithText("Calculus", substring = true, ignoreCase = true).assertExists()
+      override suspend fun add(todo: ToDo) {}
 
-    composeTestRule.onNodeWithText("Start Studying Session", ignoreCase = true).assertExists()
+      override suspend fun update(todo: ToDo) {}
+
+      override suspend fun remove(id: String) {}
+
+      override suspend fun getById(id: String): ToDo? {
+        return todos.value.find { it.id == id }
+      }
+    }
+    val fakeViewModel = PlannerViewModel(toDoRepository = FakeToDoRepository())
+
+    composeTestRule.setContent { PlannerScreen(viewModel = fakeViewModel) }
+
+    composeTestRule.waitForIdle()
+
+    val context = composeTestRule.activity
+
+    // Verify dynamic text pieces
+    composeTestRule
+        .onNodeWithText(context.getString(R.string.ai_recommendation_top), substring = true)
+        .assertExists()
+
+    composeTestRule.onNodeWithText("Study Algorithms", substring = true).assertExists()
+
+    composeTestRule
+        .onNodeWithText(context.getString(R.string.priority_high), substring = true)
+        .assertExists()
+
+    composeTestRule
+        .onNodeWithText(context.getString(R.string.ai_recommendation_due_date), substring = true)
+        .assertExists()
   }
 
   @Test
