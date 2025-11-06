@@ -4,8 +4,6 @@
     >
     <uses-permission
         android:name="android.permission.POST_NOTIFICATIONS"/>
-    xmlns:tools="http://schemas.android.com/tools">
-
     <!-- 📍 Permissions pour la localisation -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
