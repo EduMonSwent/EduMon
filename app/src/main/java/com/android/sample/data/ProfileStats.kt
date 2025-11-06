@@ -1,12 +1,6 @@
 package com.android.sample.data
 
-/*
-data class UserStats(
-    val streakDays: Int = 3,
-    val points: Int = 1240,
-    val studyTodayMin: Int = 35,
-    val dailyGoalMin: Int = 170,
-)*/
+import com.android.sample.ui.stats.model.StudyStats
 
 enum class AccessorySlot {
   HEAD,
@@ -36,13 +30,13 @@ data class UserProfile(
     val points: Int = DEFAULT_POINTS,
     val coins: Int = DEFAULT_COINS,
     val streak: Int = DEFAULT_STREAK,
-    val studyTimeToday: Int = DEFAULT_STUDY_TIME,
-    val dailyGoal: Int = DEFAULT_DAILY_GOAL,
     val notificationsEnabled: Boolean = DEFAULT_NOTIFICATIONS,
     val locationEnabled: Boolean = DEFAULT_LOCATION,
     val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE,
     val avatarAccent: Long = DEFAULT_ACCENT, // ARGB
-    val accessories: List<String> = emptyList()
+    val accessories: List<String> = emptyList(),
+    val studyStats: StudyStats =
+        StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL)
 ) {
   companion object {
     const val DEFAULT_NAME = "Alex"

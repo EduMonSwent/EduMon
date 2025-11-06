@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.profile.ProfileRepository
+import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroPhase
@@ -36,7 +38,8 @@ typealias Task = ToDo
 
 class StudySessionViewModel(
     val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
-    private val repository: StudySessionRepository
+    private val repository: StudySessionRepository,
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState
@@ -45,6 +48,11 @@ class StudySessionViewModel(
   init {
     observePomodoro()
     loadSuggestedTasks()
+    _uiState.update {
+      it.copy(
+          totalMinutes = profileRepository.profile.value.studyStats.totalTimeMin,
+          streakCount = profileRepository.profile.value.streak)
+    }
   }
 
   private fun observePomodoro() {
@@ -70,24 +78,20 @@ class StudySessionViewModel(
         .launchIn(viewModelScope)
   }
 
-  private fun onPomodoroCompleted() {
+  private suspend fun onPomodoroCompleted() {
+    profileRepository.increaseStreakIfCorrect()
+    profileRepository.increaseStudyTimeBy(25)
     _uiState.update {
       it.copy(
           completedPomodoros =
               pomodoroViewModel.cycleCount
                   .value, // TODO: update completed pomodoros with a repository call
-          totalMinutes = it.totalMinutes, // TODO: update total minutes with a repository call
-          streakCount = it.streakCount) // TODO: update streak count with a repository call
+          totalMinutes = profileRepository.profile.value.studyStats.totalTimeMin,
+          streakCount = profileRepository.profile.value.streak)
     }
-    viewModelScope.launch { repository.saveCompletedSession(_uiState.value) }
+    repository.saveCompletedSession(_uiState.value)
   }
 
-  /*private fun loadSuggestedTasks() {
-    viewModelScope.launch {
-      val tasks = repository.getSuggestedTasks()
-      _uiState.update { it.copy(suggestedTasks = tasks) }
-    }
-  }*/
   private fun loadSuggestedTasks() {
     viewModelScope.launch {
       val tasks = repository.getSuggestedTasks()

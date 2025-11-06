@@ -276,11 +276,11 @@ fun UserStatsCard(stats: UserProfile, modifier: Modifier = Modifier) {
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
               Label("Study Today")
-              BigNumber("${stats.studyTimeToday}m")
+              BigNumber("${stats.studyStats.totalTimeMin}m")
             }
             Column {
               Label("Daily Goal")
-              BigNumber("${stats.dailyGoal}m")
+              BigNumber("${stats.studyStats.dailyGoalMin}m")
             }
           }
         }

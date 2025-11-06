@@ -9,6 +9,10 @@ interface ProfileRepository {
   val profile: StateFlow<UserProfile>
 
   suspend fun updateProfile(newProfile: UserProfile)
+
+  suspend fun increaseStreakIfCorrect()
+
+  suspend fun increaseStudyTimeBy(time: Int)
 }
 
 /** Simple in-memory fake repository for the profile feature. */
@@ -18,5 +22,18 @@ class FakeProfileRepository(initial: UserProfile = UserProfile()) : ProfileRepos
 
   override suspend fun updateProfile(newProfile: UserProfile) {
     _profile.value = newProfile
+  }
+
+  override suspend fun increaseStreakIfCorrect() {
+    if (_profile.value.studyStats.totalTimeMin <= 0)
+        updateProfile(_profile.value.copy(streak = _profile.value.streak + 1))
+  }
+
+  override suspend fun increaseStudyTimeBy(time: Int) {
+    updateProfile(
+        _profile.value.copy(
+            studyStats =
+                _profile.value.studyStats.copy(
+                    totalTimeMin = _profile.value.studyStats.totalTimeMin + time)))
   }
 }

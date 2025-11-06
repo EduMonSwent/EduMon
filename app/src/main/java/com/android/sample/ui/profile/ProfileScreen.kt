@@ -344,14 +344,19 @@ fun StatsCard(user: UserProfile) {
         color = TextLight.copy(alpha = 0.8f))
     Spacer(modifier = Modifier.height(8.dp))
     StatRow(
-        Icons.Outlined.Whatshot, stringResource(id = R.string.stats_streak), "${user.streak} ${stringResource(R.string.days)}")
+        Icons.Outlined.Whatshot,
+        stringResource(id = R.string.stats_streak),
+        "${user.streak} ${stringResource(R.string.days)}")
     StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${user.points}")
     StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${user.coins}")
     StatRow(
         Icons.AutoMirrored.Outlined.MenuBook,
         stringResource(id = R.string.stats_study_time),
-        "${user.studyTimeToday} ${stringResource(R.string.minute)}")
-    StatRow(Icons.Outlined.Flag, stringResource(id = R.string.stats_goal), "${user.dailyGoal} ${stringResource(R.string.minute)}")
+        "${user.studyStats.totalTimeMin} ${stringResource(R.string.minute)}")
+    StatRow(
+        Icons.Outlined.Flag,
+        stringResource(id = R.string.stats_goal),
+        "${user.studyStats.dailyGoalMin} ${stringResource(R.string.minute)}")
   }
 }
 

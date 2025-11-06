@@ -6,5 +6,6 @@ data class StudyStats(
     val courseTimesMin: Map<String, Int> = emptyMap(),
     val completedGoals: Int = 0,
     val progressByDayMin: List<Int> = List(7) { 0 },
+    val dailyGoalMin: Int = 20,
     val weeklyGoalMin: Int = 300
 )
