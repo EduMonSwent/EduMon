@@ -156,8 +156,8 @@ object ClassMapper {
           EventKind.CLASS_LAB -> ClassType.LAB
           else -> return null
         }
-      val time = event.time ?: return null
-      val endTime = time.plusMinutes((event.durationMinutes?.toLong() ?: 60))
+    val time = event.time ?: return null
+    val endTime = time.plusMinutes((event.durationMinutes?.toLong() ?: 60))
 
     return PlannerClass(
         id = event.id,
