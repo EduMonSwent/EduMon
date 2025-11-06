@@ -2,14 +2,13 @@ package com.android.sample.ui.notifications
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import java.util.Calendar
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 private class FakeRepo : NotificationRepository {
   var oneShotCalls = 0
@@ -44,8 +43,7 @@ private class FakeRepo : NotificationRepository {
   }
 }
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [30])
+@RunWith(AndroidJUnit4::class)
 class NotificationsViewModelTest {
 
   private val ctx: Context = ApplicationProvider.getApplicationContext()
