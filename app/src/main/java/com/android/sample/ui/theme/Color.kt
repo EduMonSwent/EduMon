@@ -61,3 +61,10 @@ val PurpleTop = Color(0xFF9C27B0)
 val PurpleBottom = Color(0xFF7B1FA2)
 val VioletSoft = Color(0xFFBB86FC)
 val EventViolet = Color(0xFFBBA8F9)
+// === Study Together colors ===
+
+val StudyGreen = Color(0xFF4CAF50) // Pour le mode "study"
+val BreakYellow = Color(0xFFFFB300) // Pour le mode "break"
+val IdleBlue = Color(0xFF2196F3) // Pour le mode "idle"
+
+val GlowGold = Color(0xFFFFD700)
