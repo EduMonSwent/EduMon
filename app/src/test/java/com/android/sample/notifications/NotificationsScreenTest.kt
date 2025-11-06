@@ -12,7 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-private class CapturingRepo : NotificationRepository {
+class CapturingRepo2 : NotificationRepository {
   var oneShot = 0
   val weekly = mutableListOf<Triple<NotificationKind, Boolean, Map<Int, Pair<Int, Int>>>>()
 
@@ -47,7 +47,7 @@ class NotificationsScreenTest {
 
   @Test
   fun renders_updates_time_and_applies_schedule() {
-    val repo = CapturingRepo()
+    val repo = CapturingRepo2()
     val vm = NotificationsViewModel(repo)
 
     vm.setKickoffEnabled(ctx, true)
@@ -65,7 +65,7 @@ class NotificationsScreenTest {
 
   @Test
   fun test_button_triggers_one_shot() {
-    val repo = CapturingRepo()
+    val repo = CapturingRepo2()
     val vm = NotificationsViewModel(repo)
 
     vm.scheduleTestNotification(ctx)

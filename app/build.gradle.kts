@@ -170,6 +170,7 @@ dependencies {
 
     // Navigation testing in both test types
     globalTestImplementation(libs.androidx.navigation.testing)
+    testImplementation(kotlin("test"))
 }
 
 tasks.withType<Test> {

@@ -11,8 +11,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -27,7 +48,7 @@ import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
-/* ---------- Helpers testables pour augmenter la couverture du fichier ---------- */
+/* ---------- Helpers testables (augmentent la couverture de ce fichier) ---------- */
 
 @VisibleForTesting
 internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
@@ -64,7 +85,9 @@ internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): Stri
 fun NotificationsScreen(
     vm: NotificationsViewModel = viewModel(),
     onBack: () -> Unit = {},
-    onGoHome: () -> Unit = {}
+    onGoHome: () -> Unit = {},
+    /** Test-only: forcer l’ouverture du dialog pour couvrir ce chemin */
+    forceDialogForDay: Int? = null
 ) {
   val ctx = LocalContext.current
 
@@ -146,8 +169,9 @@ fun NotificationsScreen(
             }
       }
 
-  // Time picker dialog for kickoff
-  kickoffPickDay?.let { day ->
+  // Time picker dialog for kickoff (forceDialogForDay pour la couverture de test)
+  val openFor = kickoffPickDay ?: forceDialogForDay
+  openFor?.let { day ->
     val init = kickoffTimes[day] ?: (9 to 0)
     TimePickerDialog(
         initial = init,
