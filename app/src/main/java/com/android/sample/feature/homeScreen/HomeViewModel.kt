@@ -6,6 +6,7 @@ import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.data.UserProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -16,7 +17,7 @@ data class HomeUiState(
     val isLoading: Boolean = true,
     val todos: List<ToDo> = emptyList(),
     val creatureStats: CreatureStats = CreatureStats(),
-    val userStats: UserStats = UserStats(),
+    val userStats: UserProfile = UserProfile(),
     val quote: String = "",
 )
 

@@ -19,13 +19,14 @@ import com.android.sample.data.CreatureStats
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserStats
+import com.android.sample.data.UserProfile
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.feature.homeScreen.EduMonHomeScreen
 import com.android.sample.feature.homeScreen.GlowCard
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
 import com.android.sample.feature.homeScreen.HomeViewModel
+import com.android.sample.ui.stats.model.StudyStats
 import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
@@ -68,8 +69,10 @@ class HomeScreenTest {
                     creatureStats =
                         CreatureStats(happiness = 85, health = 90, energy = 70, level = 5),
                     userStats =
-                        UserStats(
-                            streakDays = 7, points = 1250, studyTodayMin = 45, dailyGoalMin = 180),
+                        UserProfile(
+                            streak = 7,
+                            points = 1250,
+                            studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 180)),
                     quote = quote),
             // use platform drawables so tests don’t depend on app resources
             creatureResId = R.drawable.ic_menu_help,
@@ -143,9 +146,9 @@ class HomeScreenTest {
             return CreatureStats()
           }
 
-          override suspend fun fetchUserStats(): UserStats {
+          override suspend fun fetchUserStats(): UserProfile {
             kotlinx.coroutines.delay(5_000)
-            return UserStats()
+            return UserProfile()
           }
 
           override fun dailyQuote(nowMillis: Long): String = "Slow"

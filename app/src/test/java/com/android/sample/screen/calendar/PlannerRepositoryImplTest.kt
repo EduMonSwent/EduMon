@@ -1,9 +1,9 @@
 package com.android.sample.screen.calendar
 
-import com.android.sample.model.calendar.PlannerRepository
-import com.android.sample.model.calendar.PlannerRepositoryImpl
-import com.android.sample.model.calendar.StudyItem
-import com.android.sample.model.calendar.TaskType
+import com.android.sample.model.PlannerRepository
+import com.android.sample.model.PlannerRepositoryImpl
+import com.android.sample.model.StudyItem
+import com.android.sample.model.TaskType
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.runBlocking

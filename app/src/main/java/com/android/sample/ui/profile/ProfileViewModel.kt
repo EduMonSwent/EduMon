@@ -5,6 +5,13 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.data.AccentVariant
+import com.android.sample.data.AccessoryItem
+import com.android.sample.data.AccessorySlot
+import com.android.sample.data.Rarity
+import com.android.sample.data.UserProfile
+import com.android.sample.profile.ProfileRepository
+import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
@@ -18,73 +25,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// ---------- Accessories & Accent ----------
-
-enum class AccessorySlot {
-  HEAD,
-  TORSO,
-  LEGS
-}
-
-enum class Rarity {
-  COMMON,
-  RARE,
-  EPIC,
-  LEGENDARY
-}
-
-data class AccessoryItem(
-    val id: String,
-    val slot: AccessorySlot,
-    val label: String,
-    val iconRes: Int? = null, // remplace par tes drawables quand tu les auras
-    val rarity: Rarity = Rarity.COMMON
-)
-
-data class UserProfile(
-    val name: String = DEFAULT_NAME,
-    val email: String = DEFAULT_EMAIL,
-    val level: Int = DEFAULT_LEVEL,
-    val points: Int = DEFAULT_POINTS,
-    val coins: Int = DEFAULT_COINS,
-    val streak: Int = DEFAULT_STREAK,
-    val studyTimeToday: Int = DEFAULT_STUDY_TIME,
-    val dailyGoal: Int = DEFAULT_DAILY_GOAL,
-    val notificationsEnabled: Boolean = DEFAULT_NOTIFICATIONS,
-    val locationEnabled: Boolean = DEFAULT_LOCATION,
-    val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE,
-    val avatarAccent: Long = DEFAULT_ACCENT, // ARGB
-    val accessories: List<String> = emptyList()
-) {
-  companion object {
-    const val DEFAULT_NAME = "Alex"
-    const val DEFAULT_EMAIL = "alex@university.edu"
-    const val DEFAULT_LEVEL = 5
-    const val DEFAULT_POINTS = 1250
-    const val DEFAULT_COINS = 0
-    const val DEFAULT_STREAK = 7
-    const val DEFAULT_STUDY_TIME = 45
-    const val DEFAULT_DAILY_GOAL = 180
-    const val DEFAULT_NOTIFICATIONS = true
-    const val DEFAULT_LOCATION = true
-    const val DEFAULT_FOCUS_MODE = false
-    const val DEFAULT_ACCENT = 0xFF9333EAL // ✅ manquant avant
-  }
-}
-
-enum class AccentVariant {
-  Base,
-  Light,
-  Dark,
-  Vibrant
-}
-
 class ProfileViewModel(
-    private val repository: ProfileRepository = AppRepositories.profileRepository
+    private val repository: ProfileRepository = ProfileRepositoryProvider.repository
 ) : ViewModel() {
 
   // ----- Profil LOCAL uniquement -----
-  private val _userProfile = MutableStateFlow(UserProfile())
+  private val _userProfile = MutableStateFlow(repository.profile.value.copy())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
   // Palette issue de ton thème

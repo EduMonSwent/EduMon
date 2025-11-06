@@ -141,6 +141,12 @@ dependencies {
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
+    // ---- Location & Maps ----
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.accompanist.permissions)
+    implementation(libs.maps.compose)
+
 
     // ===================== Tests =====================
 
@@ -156,6 +162,7 @@ dependencies {
     testImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
 
+
     // Android instrumented tests (catalog + updated versions)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
@@ -165,6 +172,7 @@ dependencies {
     androidTestImplementation(libs.compose.test.junit)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
+
 
     // Navigation testing in both test types
     globalTestImplementation(libs.androidx.navigation.testing)
