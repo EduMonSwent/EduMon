@@ -48,7 +48,7 @@ import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
-/* ---------- Helpers testables (augmentent la couverture de ce fichier) ---------- */
+/* ---------- Helpers testables (augmentent la couverture) ---------- */
 
 @VisibleForTesting
 internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
@@ -59,15 +59,15 @@ internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
 
 @VisibleForTesting
 internal val DAY_SHORT: Map<Int, String> =
-    mapOf(
-        Calendar.MONDAY to "Mon",
-        Calendar.TUESDAY to "Tue",
-        Calendar.WEDNESDAY to "Wed",
-        Calendar.THURSDAY to "Thu",
-        Calendar.FRIDAY to "Fri",
-        Calendar.SATURDAY to "Sat",
-        Calendar.SUNDAY to "Sun",
-    )
+    mapOf(Calendar.MONDAY to "Mon", Calendar.TUESDAY to "Tue")
+        .plus(
+            mapOf( // évite une longue ligne
+                Calendar.WEDNESDAY to "Wed",
+                Calendar.THURSDAY to "Thu",
+                Calendar.FRIDAY to "Fri",
+                Calendar.SATURDAY to "Sat",
+                Calendar.SUNDAY to "Sun",
+            ))
 
 @VisibleForTesting
 internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): String {
@@ -86,7 +86,7 @@ fun NotificationsScreen(
     vm: NotificationsViewModel = viewModel(),
     onBack: () -> Unit = {},
     onGoHome: () -> Unit = {},
-    /** Test-only: forcer l’ouverture du dialog pour couvrir ce chemin */
+    /** Test-only: permet de forcer l’ouverture du dialog de time picker pour la couverture */
     forceDialogForDay: Int? = null
 ) {
   val ctx = LocalContext.current
@@ -169,7 +169,7 @@ fun NotificationsScreen(
             }
       }
 
-  // Time picker dialog for kickoff (forceDialogForDay pour la couverture de test)
+  // Time picker dialog (forceDialogForDay pour les tests)
   val openFor = kickoffPickDay ?: forceDialogForDay
   openFor?.let { day ->
     val init = kickoffTimes[day] ?: (9 to 0)

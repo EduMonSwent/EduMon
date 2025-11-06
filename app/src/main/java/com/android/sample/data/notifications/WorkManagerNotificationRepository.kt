@@ -1,11 +1,30 @@
 package com.android.sample.data.notifications
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.work.*
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+
+@VisibleForTesting
+internal fun cancelKeysFor(kind: NotificationKind): List<String> {
+  val prefix =
+      when (kind) {
+        NotificationKind.NO_WORK_TODAY -> "kickoff"
+        NotificationKind.KEEP_STREAK -> "streak"
+      }
+  return listOf(
+      "${prefix}_${Calendar.MONDAY}",
+      "${prefix}_${Calendar.TUESDAY}",
+      "${prefix}_${Calendar.WEDNESDAY}",
+      "${prefix}_${Calendar.THURSDAY}",
+      "${prefix}_${Calendar.FRIDAY}",
+      "${prefix}_${Calendar.SATURDAY}",
+      "${prefix}_${Calendar.SUNDAY}",
+      if (kind == NotificationKind.NO_WORK_TODAY) "daily_kickoff_ALL" else "daily_streak_ALL")
+}
 
 class WorkManagerNotificationRepository(
     private val schedulerProvider: (Context) -> WorkScheduler = { WorkManagerScheduler(it) }
@@ -96,21 +115,7 @@ class WorkManagerNotificationRepository(
 
   override fun cancel(context: Context, kind: NotificationKind) {
     val scheduler = schedulerProvider(context)
-    val prefix =
-        when (kind) {
-          NotificationKind.NO_WORK_TODAY -> "kickoff"
-          NotificationKind.KEEP_STREAK -> "streak"
-        }
-    listOf(
-            "${prefix}_${Calendar.MONDAY}",
-            "${prefix}_${Calendar.TUESDAY}",
-            "${prefix}_${Calendar.WEDNESDAY}",
-            "${prefix}_${Calendar.THURSDAY}",
-            "${prefix}_${Calendar.FRIDAY}",
-            "${prefix}_${Calendar.SATURDAY}",
-            "${prefix}_${Calendar.SUNDAY}",
-            if (kind == NotificationKind.NO_WORK_TODAY) "daily_kickoff_ALL" else "daily_streak_ALL")
-        .forEach { scheduler.cancelUniqueWork(it) }
+    cancelKeysFor(kind).forEach { scheduler.cancelUniqueWork(it) }
   }
 
   // --- helpers ---

@@ -19,8 +19,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
-// Repo factice (aucune dépendance WorkManager)
-class CapturingRepo2 : NotificationRepository {
+private class CapturingRepo3 : NotificationRepository {
   var oneShot = 0
   val weekly = mutableListOf<Triple<NotificationKind, Boolean, Map<Int, Pair<Int, Int>>>>()
 
@@ -49,41 +48,35 @@ class CapturingRepo2 : NotificationRepository {
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
-class NotificationsScreenTest2 {
+class NotificationsScreenTest3 {
 
   @Test
   fun renders_all_branches_and_dialog_without_compose_rule() {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
-    val repo = CapturingRepo2()
+    val repo = CapturingRepo3()
     val vm = NotificationsViewModel(repo)
 
     val activity = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
 
-    activity.runOnUiThread {
-      activity.setContent { NotificationsScreen(vm = vm, onBack = {}, onGoHome = {}) }
-    }
+    // 1) toggle OFF
+    activity.runOnUiThread { activity.setContent { NotificationsScreen(vm = vm) } }
     Shadows.shadowOf(Looper.getMainLooper()).idle()
 
+    // 2) enable, days empty
     vm.setKickoffEnabled(ctx, true)
-    activity.runOnUiThread {
-      activity.setContent { NotificationsScreen(vm = vm, onBack = {}, onGoHome = {}) }
-    }
+    activity.runOnUiThread { activity.setContent { NotificationsScreen(vm = vm) } }
     Shadows.shadowOf(Looper.getMainLooper()).idle()
 
+    // 3) select day + set time (clamp exercé par VM), forcer le dialog
     vm.toggleKickoffDay(Calendar.MONDAY)
-    vm.updateKickoffTime(Calendar.MONDAY, 25, -1)
+    vm.updateKickoffTime(Calendar.MONDAY, 25, -1) // clampé en 23:00 côté VM
+
     activity.runOnUiThread {
-      activity.setContent {
-        NotificationsScreen(
-            vm = vm,
-            onBack = {},
-            onGoHome = {},
-            forceDialogForDay = Calendar.MONDAY // couvre la construction du dialog
-            )
-      }
+      activity.setContent { NotificationsScreen(vm = vm, forceDialogForDay = Calendar.MONDAY) }
     }
     Shadows.shadowOf(Looper.getMainLooper()).idle()
 
+    // 4) apply → repo touché
     vm.applyKickoffSchedule(ctx)
     assertTrue(repo.weekly.isNotEmpty())
     val (_, enabled, times) = repo.weekly.last()
@@ -91,10 +84,8 @@ class NotificationsScreenTest2 {
     assertEquals(1, times.size)
     assertEquals(23 to 0, times[Calendar.MONDAY])
 
+    // 5) streak ON + one-shot
     vm.setStreakEnabled(ctx, true)
-    activity.runOnUiThread { activity.setContent { NotificationsScreen(vm = vm) } }
-    Shadows.shadowOf(Looper.getMainLooper()).idle()
-
     vm.scheduleTestNotification(ctx)
     assertEquals(1, repo.oneShot)
   }

@@ -1,39 +1,45 @@
 package com.android.sample.data.notifications
 
 import android.Manifest
+import android.app.Notification
 import android.content.Context
 import androidx.annotation.RequiresPermission
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.android.sample.R
 
-class KeepStreakWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+// app/src/main/java/com/android/sample/data/notifications/KeepStreakWorker.kt
+@VisibleForTesting
+internal fun buildKeepStreakMessage(days: Int): String {
+  val unit = if (days == 1) "day" else "days"
+  return "Don’t let your streak of $days $unit disappear"
+}
 
+@VisibleForTesting
+internal fun buildKeepStreakNotification(ctx: Context, days: Int): Notification =
+    NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
+        .setSmallIcon(R.mipmap.ic_launcher)
+        .setContentTitle("Keep your streak 🔥")
+        .setContentText(buildKeepStreakMessage(days))
+        .setAutoCancel(true)
+        .build()
+
+@RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+@VisibleForTesting
+internal fun postNotification(ctx: Context, id: Int, n: Notification) {
+  NotificationManagerCompat.from(ctx).notify(id, n)
+}
+
+class KeepStreakWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
   override suspend fun doWork(): Result {
     NotificationUtils.ensureChannel(applicationContext)
-
     val days = StreakPrefs.get(applicationContext)
-    val msg = buildString {
-      append("Don’t let your streak of ")
-      append(days)
-      append(" day")
-      if (days != 1) append("s")
-      append(" disappear")
-    }
-
-    val n =
-        NotificationCompat.Builder(applicationContext, NotificationUtils.CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Keep your streak 🔥")
-            .setContentText(msg)
-            .setAutoCancel(true)
-            .build()
-
-    NotificationManagerCompat.from(applicationContext).notify(NotificationUtils.ID_KEEP_STREAK, n)
-
+    val n = buildKeepStreakNotification(applicationContext, days)
+    postNotification(applicationContext, NotificationUtils.ID_KEEP_STREAK, n)
     return Result.success()
   }
 }

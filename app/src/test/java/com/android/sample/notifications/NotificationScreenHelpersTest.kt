@@ -1,10 +1,8 @@
-package com.android.sample.notifications
+package com.android.sample.ui.notifications
 
-import com.android.sample.ui.notifications.DAY_SHORT
-import com.android.sample.ui.notifications.clampTimeInputs
-import com.android.sample.ui.notifications.formatDayTimeLabel
 import java.util.Calendar
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NotificationsScreenHelpersTest {
@@ -14,6 +12,7 @@ class NotificationsScreenHelpersTest {
     assertEquals(0 to 0, clampTimeInputs("", ""))
     assertEquals(9 to 5, clampTimeInputs("09", "05"))
     assertEquals(23 to 59, clampTimeInputs("99", "99")) // clamp max
+    assertEquals(0 to 0, clampTimeInputs("00", "00"))
     assertEquals(7 to 30, clampTimeInputs("07abc", "30xyz"))
   }
 
@@ -22,7 +21,6 @@ class NotificationsScreenHelpersTest {
     val times = mapOf(Calendar.MONDAY to (7 to 5), Calendar.WEDNESDAY to (18 to 0))
     assertEquals("Mon 07:05", formatDayTimeLabel(Calendar.MONDAY, times))
     assertEquals("Wed 18:00", formatDayTimeLabel(Calendar.WEDNESDAY, times))
-    // jour sans entrée → défaut 09:00
     assertEquals("Tue 09:00", formatDayTimeLabel(Calendar.TUESDAY, times))
   }
 
