@@ -1,4 +1,4 @@
-package com.android.sample.schedule
+package com.android.sample.ui.schedule
 
 import com.android.sample.model.Priority as ModelPriority
 import com.android.sample.model.StudyItem
