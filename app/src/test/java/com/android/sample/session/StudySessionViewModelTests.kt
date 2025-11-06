@@ -3,6 +3,7 @@ package com.android.sample.session
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
@@ -10,6 +11,7 @@ import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.session.StudySessionViewModel
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -25,16 +27,19 @@ import org.junit.Test
 class StudySessionViewModelTest {
   private lateinit var fakePomodoro: FakePomodoroViewModel
   private lateinit var fakeRepo: FakeStudySessionRepository
+  private lateinit var fakeProfileRepo: FakeProfileRepository
   private lateinit var viewModel: StudySessionViewModel
   private val testDispatcher = StandardTestDispatcher()
   private val toDoRepo = ToDoRepositoryProvider.repository
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
     fakePomodoro = FakePomodoroViewModel()
+    fakeProfileRepo = FakeProfileRepository()
     fakeRepo = FakeStudySessionRepository() // Make sure this now returns List<ToDo>
-    viewModel = StudySessionViewModel(fakePomodoro, fakeRepo)
+    viewModel = StudySessionViewModel(fakePomodoro, fakeRepo, fakeProfileRepo)
   }
 
   @Test
@@ -57,6 +62,7 @@ class StudySessionViewModelTest {
     assertEquals(task, viewModel.uiState.value.selectedTask)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `pomodoro state updates in uiState`() = runTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
@@ -67,6 +73,7 @@ class StudySessionViewModelTest {
     assertTrue(state.isSessionActive)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `pomodoro RUNNING updates isSessionActive and timeLeft`() = runTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
@@ -79,6 +86,7 @@ class StudySessionViewModelTest {
     assertEquals(900, state.timeLeft)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `pomodoro PAUSED clears isSessionActive`() = runTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
@@ -89,6 +97,7 @@ class StudySessionViewModelTest {
     assertEquals(PomodoroState.PAUSED, viewModel.uiState.value.pomodoroState)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `onPomodoroCompleted triggers only when NOT WORK and FINISHED`() = runTest {
     // FINISHED while WORK -> should NOT save
@@ -102,6 +111,7 @@ class StudySessionViewModelTest {
     assertEquals(1, fakeRepo.getSavedSessions().size)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `setSelectedTaskStatus updates repo and ui selection`() = runTest {
     val todo =
@@ -123,6 +133,7 @@ class StudySessionViewModelTest {
     assertEquals(Status.IN_PROGRESS, viewModel.uiState.value.selectedTask?.status)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `cycleSelectedTaskStatus cycles TODO - IN_PROGRESS - DONE - TODO`() = runTest {
     val todo =
@@ -149,6 +160,7 @@ class StudySessionViewModelTest {
     assertEquals(Status.TODO, viewModel.uiState.value.selectedTask?.status)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `setSelectedTaskStatus no-op when nothing selected`() = runTest {
     // Let suggestions load
@@ -162,6 +174,7 @@ class StudySessionViewModelTest {
     assertNull(viewModel.uiState.value.selectedTask)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `onPomodoroCompleted increments stats and saves session`() = runTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.SHORT_BREAK, PomodoroState.FINISHED)
@@ -169,8 +182,8 @@ class StudySessionViewModelTest {
 
     val state = viewModel.uiState.value
     assertEquals(fakePomodoro.cycleCount.value, state.completedPomodoros)
-    assertEquals(0, state.totalMinutes) // keep until implemented
-    assertEquals(0, state.streakCount) // keep until implemented
+    assertEquals(fakeProfileRepo.profile.value.studyStats.totalTimeMin, state.totalMinutes)
+    assertEquals(fakeProfileRepo.profile.value.streak, state.streakCount)
     assertEquals(1, fakeRepo.getSavedSessions().size)
   }
 
@@ -225,7 +238,7 @@ class FakePomodoroViewModel : PomodoroViewModelContract {
     _state.value = state
     _timeLeft.value = 1000
     if (state == PomodoroState.FINISHED && phase != PomodoroPhase.WORK) {
-      _cycleCount.value = _cycleCount.value + 1
+      _cycleCount.value += 1
     }
   }
 

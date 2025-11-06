@@ -2,6 +2,9 @@ package com.android.sample.ui.profile
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.android.sample.data.AccentVariant
+import com.android.sample.data.AccessorySlot
+import com.android.sample.data.UserProfile
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.profile.ProfileRepository
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +66,10 @@ class ProfileViewModelTest {
     override suspend fun updateProfile(newProfile: UserProfile) {
       state.value = newProfile
     }
+
+    override suspend fun increaseStudyTimeBy(time: Int) {}
+
+    override suspend fun increaseStreakIfCorrect() {}
   }
 
   @Test

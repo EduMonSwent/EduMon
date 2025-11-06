@@ -26,6 +26,7 @@ import com.android.sample.feature.homeScreen.GlowCard
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
 import com.android.sample.feature.homeScreen.HomeViewModel
+import com.android.sample.ui.stats.model.StudyStats
 import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
@@ -69,7 +70,9 @@ class HomeScreenTest {
                         CreatureStats(happiness = 85, health = 90, energy = 70, level = 5),
                     userStats =
                         UserProfile(
-                            streak = 7, points = 1250, studyTimeToday = 45, dailyGoal = 180),
+                            streak = 7,
+                            points = 1250,
+                            studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 180)),
                     quote = quote),
             // use platform drawables so tests don’t depend on app resources
             creatureResId = R.drawable.ic_menu_help,

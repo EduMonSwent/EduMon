@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import com.android.sample.data.UserProfile
 import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.ui.stats.model.StudyStats
 import org.junit.Rule
 import org.junit.Test
 
@@ -123,7 +124,11 @@ class ProfileScreenTest {
   fun statsCardDisplaysAllStats() {
 
     val user =
-        UserProfile(streak = 10, points = 200, coins = 150, studyTimeToday = 45, dailyGoal = 60)
+        UserProfile(
+            streak = 10,
+            points = 200,
+            coins = 150,
+            studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 60))
     composeRule.setContent { StatsCard(user) }
 
     composeRule.onNodeWithText("Current Streak").assertExists()
