@@ -5,6 +5,7 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.model.planner.*
+import com.android.sample.repositories.ToDoRepositoryLocal
 import com.android.sample.ui.viewmodel.PlannerViewModel
 import java.time.LocalTime
 import kotlinx.coroutines.*
@@ -31,6 +32,25 @@ class PlannerViewModelTest {
   private lateinit var viewModel: PlannerViewModel
 
   // Fake repository avec flux finis (pas de collect infini)
+
+  private class FakeToDoRepository(
+      private val items: List<ToDo> = emptyList(),
+      private val throws: Boolean = false
+  ) : com.android.sample.repositories.ToDoRepository {
+    override val todos =
+        if (throws)
+            kotlinx.coroutines.flow.flow<List<ToDo>> { throw RuntimeException("Repo error!") }
+        else kotlinx.coroutines.flow.flowOf(items)
+
+    override suspend fun add(todo: ToDo) {}
+
+    override suspend fun update(todo: ToDo) {}
+
+    override suspend fun remove(id: String) {}
+
+    override suspend fun getById(id: String) = null
+  }
+
   private class FakePlannerRepository : PlannerRepository() {
     override fun getTodayClassesFlow() =
         kotlinx.coroutines.flow.flow {
@@ -74,7 +94,9 @@ class PlannerViewModelTest {
   fun setup() {
     Dispatchers.setMain(dispatcher)
     // ⚠️ Important : fake repo qui émet une fois et s’arrête
-    viewModel = PlannerViewModel(FakePlannerRepository())
+    viewModel =
+        PlannerViewModel(
+            plannerRepository = FakePlannerRepository(), toDoRepository = ToDoRepositoryLocal())
   }
 
   @After
@@ -205,42 +227,24 @@ class PlannerViewModelTest {
   @Test
   fun `observeToDos should update uiState with todos and recommended task`() =
       runTest(dispatcher) {
-        // Fake repository emitting 2 tasks
-        val fakeRepo =
-            object : com.android.sample.repositories.ToDoRepository {
-              override val todos =
-                  kotlinx.coroutines.flow.flowOf(
-                      listOf(
-                          ToDo(
-                              title = "Finish report",
-                              dueDate = java.time.LocalDate.now(),
-                              priority = Priority.HIGH),
-                          ToDo(
-                              title = "Read chapter",
-                              dueDate = java.time.LocalDate.now().plusDays(1),
-                              priority = Priority.MEDIUM)))
+        val vm =
+            PlannerViewModel(
+                plannerRepository = FakePlannerRepository(),
+                toDoRepository =
+                    FakeToDoRepository(
+                        items =
+                            listOf(
+                                ToDo(
+                                    title = "Finish report",
+                                    dueDate = java.time.LocalDate.now(),
+                                    priority = Priority.HIGH),
+                                ToDo(
+                                    title = "Read chapter",
+                                    dueDate = java.time.LocalDate.now().plusDays(1),
+                                    priority = Priority.MEDIUM))))
 
-              override suspend fun add(todo: ToDo) {}
-
-              override suspend fun update(todo: ToDo) {}
-
-              override suspend fun remove(id: String) {}
-
-              override suspend fun getById(id: String) = null
-            }
-
-        val vm = com.android.sample.ui.viewmodel.PlannerViewModel(FakePlannerRepository())
-        // Inject toDoRepository via reflection (since it's private)
-        val repoField = vm.javaClass.getDeclaredField("toDoRepository")
-        repoField.isAccessible = true
-        repoField.set(vm, fakeRepo)
-
-        // Call private observeToDos()
-        val method = vm.javaClass.getDeclaredMethod("observeToDos")
-        method.isAccessible = true
-        method.invoke(vm)
-
-        delay(100) // allow collection to emit
+        // Let collectors run (UnconfinedTestDispatcher -> small delay is fine)
+        delay(50)
 
         val state = vm.uiState.first()
         assertEquals(2, state.todos.size)
@@ -250,30 +254,12 @@ class PlannerViewModelTest {
   @Test
   fun `observeToDos should catch errors from repository flow`() =
       runTest(dispatcher) {
-        val failingRepo =
-            object : com.android.sample.repositories.ToDoRepository {
-              override val todos =
-                  kotlinx.coroutines.flow.flow<List<ToDo>> { throw RuntimeException("Repo error!") }
+        val vm =
+            PlannerViewModel(
+                plannerRepository = FakePlannerRepository(),
+                toDoRepository = FakeToDoRepository(throws = true))
 
-              override suspend fun add(todo: ToDo) {}
-
-              override suspend fun update(todo: ToDo) {}
-
-              override suspend fun remove(id: String) {}
-
-              override suspend fun getById(id: String) = null
-            }
-
-        val vm = com.android.sample.ui.viewmodel.PlannerViewModel(FakePlannerRepository())
-        val repoField = vm.javaClass.getDeclaredField("toDoRepository")
-        repoField.isAccessible = true
-        repoField.set(vm, failingRepo)
-
-        val method = vm.javaClass.getDeclaredMethod("observeToDos")
-        method.isAccessible = true
-        method.invoke(vm)
-
-        delay(100)
+        delay(50)
 
         val state = vm.uiState.first()
         assertNotNull(state.errorMessage)

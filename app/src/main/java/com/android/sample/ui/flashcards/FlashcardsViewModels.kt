@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
-import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository
 import com.android.sample.ui.flashcards.model.*
 import java.time.LocalDate
@@ -19,9 +19,8 @@ class DeckListViewModel : ViewModel() {
 }
 
 /** ViewModel for creating a new deck. */
-class CreateDeckViewModel(
-    private val toDoRepo: ToDoRepository = ToDoRepositoryProvider.repository
-) : ViewModel() {
+class CreateDeckViewModel(private val toDoRepo: ToDoRepository = AppRepositories.toDoRepository) :
+    ViewModel() {
   private val _title = MutableStateFlow("")
   private val _description = MutableStateFlow("")
   private val _cards = MutableStateFlow<List<Flashcard>>(emptyList())

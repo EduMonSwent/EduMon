@@ -5,7 +5,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.repositories.ToDoRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
 
 /**
  * Screen for editing an existing To-Do. It reuses the same TodoForm composable as AddToDoScreen,
@@ -23,7 +23,7 @@ fun EditToDoScreen(id: String, onBack: () -> Unit) {
               object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                  return EditToDoViewModel(repo = ToDoRepositoryProvider.repository, id = id) as T
+                  return EditToDoViewModel(repo = AppRepositories.toDoRepository, id = id) as T
                 }
               })
 

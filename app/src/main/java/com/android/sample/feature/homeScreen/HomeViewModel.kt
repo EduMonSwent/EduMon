@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
+import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -21,7 +22,7 @@ data class HomeUiState(
 
 // ---------- ViewModel ----------
 class HomeViewModel(
-    private val repository: HomeRepository = FakeHomeRepository(), // swap pour DI/Hilt
+    private val repository: HomeRepository = AppRepositories.homeRepository,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(HomeUiState())

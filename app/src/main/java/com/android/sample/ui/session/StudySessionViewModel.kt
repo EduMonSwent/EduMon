@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroPhase
@@ -36,7 +37,7 @@ typealias Task = ToDo
 
 class StudySessionViewModel(
     val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
-    private val repository: StudySessionRepository
+    private val repository: StudySessionRepository = AppRepositories.studySessionRepository,
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState
