@@ -90,10 +90,16 @@ object StudyItemMapper {
     val text = "${item.title} ${item.description ?: ""}".lowercase(Locale.getDefault())
     return when {
       "midterm" in text -> EventKind.EXAM_MIDTERM
-      "final" in text -> EventKind.EXAM_FINAL
+      "final exam" in text || ("exam" in text && "final" in text) -> EventKind.EXAM_FINAL
       "milestone" in text -> EventKind.SUBMISSION_MILESTONE
       "weekly" in text || "rendu" in text -> EventKind.SUBMISSION_WEEKLY
-      "submit" in text || "deadline" in text || "due" in text -> EventKind.SUBMISSION_PROJECT
+      "submit" in text ||
+          "submission" in text ||
+          "deadline" in text ||
+          "due" in text ||
+          "deliverable" in text ||
+          "hand-in" in text ||
+          "handin" in text -> EventKind.SUBMISSION_PROJECT
       "project" in text -> EventKind.PROJECT
       else -> EventKind.STUDY
     }
