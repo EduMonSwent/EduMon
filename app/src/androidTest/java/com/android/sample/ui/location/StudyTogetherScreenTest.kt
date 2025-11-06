@@ -17,23 +17,18 @@ class StudyTogetherScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  /**
-   * Mock composable that mimics StudyTogetherScreen logic but replaces GoogleMap with simple
-   * buttons.
-   */
   @Composable
   private fun StudyTogetherScreenMock() {
     var selectedFriend by remember { mutableStateOf<FriendStatus?>(null) }
     var isUserSelected by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().testTag("study_together_root").padding(16.dp)) {
-      // Displayed card depending on state
       if (isUserSelected) {
         UserStatusCard(isStudyMode = true, modifier = Modifier.testTag("user_status_card"))
       } else if (selectedFriend != null) {
         FriendInfoCard(
             name = selectedFriend!!.name,
-            status = selectedFriend!!.status,
+            mode = selectedFriend!!.mode,
             modifier = Modifier.testTag("friend_info_card"))
       }
 
@@ -50,7 +45,7 @@ class StudyTogetherScreenTest {
 
       Button(
           onClick = {
-            selectedFriend = FriendStatus("Alae", 0.0, 0.0, "study")
+            selectedFriend = FriendStatus("Alae", 0.0, 0.0, FriendMode.STUDY)
             isUserSelected = false
           },
           modifier = Modifier.testTag("btn_study")) {
@@ -59,7 +54,7 @@ class StudyTogetherScreenTest {
 
       Button(
           onClick = {
-            selectedFriend = FriendStatus("Florian", 0.0, 0.0, "break")
+            selectedFriend = FriendStatus("Florian", 0.0, 0.0, FriendMode.BREAK)
             isUserSelected = false
           },
           modifier = Modifier.testTag("btn_break")) {
@@ -68,7 +63,7 @@ class StudyTogetherScreenTest {
 
       Button(
           onClick = {
-            selectedFriend = FriendStatus("Khalil", 0.0, 0.0, "idle")
+            selectedFriend = FriendStatus("Khalil", 0.0, 0.0, FriendMode.IDLE)
             isUserSelected = false
           },
           modifier = Modifier.testTag("btn_idle")) {

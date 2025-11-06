@@ -140,5 +140,10 @@
     <string name="account_logout">Logout</string>
     <string name="google_maps_key">AIzaSyDb-3cRCYlIT-TUVnCqgvfw_gPUQi3rd38</string>
 
+    <string name="user_mode_text">🧠 You’re in %1$s</string>
+    <string name="study_mode">Study Mode</string>
+    <string name="break_mode">Break Mode</string>
+    <string name="friend_mode_text">%1$s %2$s is currently in %3$s Mode</string>
+
 
 </resources>

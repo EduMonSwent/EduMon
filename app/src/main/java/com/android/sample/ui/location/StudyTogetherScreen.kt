@@ -12,20 +12,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
+
+private val EPFL_LAT_LNG = LatLng(46.5191, 6.5668)
+
+enum class FriendMode(val emoji: String, val color: Color) {
+  STUDY("📚", Color(0xFF4CAF50)),
+  BREAK("☕", Color(0xFFFFB300)),
+  IDLE("💤", Color(0xFF2196F3))
+}
 
 data class FriendStatus(
     val name: String,
     val latitude: Double,
     val longitude: Double,
-    val status: String // "study", "break", "idle"
+    val mode: FriendMode
 )
 
 @SuppressLint("MissingPermission")
@@ -34,33 +42,29 @@ data class FriendStatus(
     ExperimentalMaterial3Api::class,
     ExperimentalAnimationApi::class)
 @Composable
-fun StudyTogetherScreen() {
+fun StudyTogetherScreen(friends: List<FriendStatus> = defaultFriends) {
   val context = LocalContext.current
-  val permission = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+  val permissions =
+      rememberMultiplePermissionsState(
+          listOf(
+              Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+
   var userPosition by remember { mutableStateOf<Pair<Double, Double>?>(null) }
   var selectedFriend by remember { mutableStateOf<FriendStatus?>(null) }
   var isUserSelected by remember { mutableStateOf(false) }
 
-  LaunchedEffect(Unit) { permission.launchPermissionRequest() }
-
-  if (permission.status.isGranted) {
-    val fused = LocationServices.getFusedLocationProviderClient(context)
-    fused.lastLocation.addOnSuccessListener { loc ->
-      loc?.let { userPosition = it.latitude to it.longitude }
+  LaunchedEffect(permissions.allPermissionsGranted) {
+    permissions.launchMultiplePermissionRequest()
+    if (permissions.allPermissionsGranted) {
+      val fused = LocationServices.getFusedLocationProviderClient(context)
+      fused.lastLocation.addOnSuccessListener { loc ->
+        loc?.let { userPosition = it.latitude to it.longitude }
+      }
     }
   }
 
-  val epfl = LatLng(46.5191, 6.5668)
-
-  // 👥 Amis fictifs (chacun avec un avatar différent)
-  val friends =
-      listOf(
-          FriendStatus("Alae", 46.5208, 6.5674, "study"),
-          FriendStatus("Florian", 46.5186, 6.5649, "break"),
-          FriendStatus("Khalil", 46.5197, 6.5702, "idle"))
-
   val cameraPosition = rememberCameraPositionState {
-    position = CameraPosition.fromLatLngZoom(epfl, 16f)
+    position = CameraPosition.fromLatLngZoom(EPFL_LAT_LNG, 16f)
   }
 
   Box(Modifier.fillMaxSize()) {
@@ -68,32 +72,31 @@ fun StudyTogetherScreen() {
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPosition,
         properties = MapProperties(mapType = MapType.NORMAL)) {
-          // 🧠 Ton EduMon (avec halo doré bien centré)
-          val baseEduMon = BitmapFactory.decodeResource(context.resources, R.drawable.edumon)
-          val scaledEduMon = Bitmap.createScaledBitmap(baseEduMon, 120, 120, false)
+          val userIcon =
+              remember(userPosition) {
+                val baseEduMon = BitmapFactory.decodeResource(context.resources, R.drawable.edumon)
+                val scaledEduMon = Bitmap.createScaledBitmap(baseEduMon, 120, 120, false)
 
-          val glowRadius = 25f
-          val glowColor = android.graphics.Color.argb(200, 255, 215, 0) // doré clair
-          val canvasSize = 180
-          val glowBitmap = Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888)
-          val canvas = Canvas(glowBitmap)
-          val paint =
-              Paint().apply {
-                color = glowColor
-                maskFilter = BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.NORMAL)
-                isAntiAlias = true
+                val glowRadius = 25f
+                val glowColor = android.graphics.Color.argb(200, 255, 215, 0)
+                val canvasSize = 180
+                val glowBitmap =
+                    Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(glowBitmap)
+                val paint =
+                    Paint().apply {
+                      color = glowColor
+                      maskFilter = BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.NORMAL)
+                      isAntiAlias = true
+                    }
+                val center = canvasSize / 2f
+                canvas.drawCircle(center, center, 65f, paint)
+                val offset = (canvasSize - scaledEduMon.width) / 2f
+                canvas.drawBitmap(scaledEduMon, offset, offset, null)
+                BitmapDescriptorFactory.fromBitmap(glowBitmap)
               }
 
-          // Dessine un halo bien centré
-          val center = canvasSize / 2f
-          canvas.drawCircle(center, center, 65f, paint)
-
-          // Dessine ton EduMon au centre du halo
-          val offset = (canvasSize - scaledEduMon.width) / 2f
-          canvas.drawBitmap(scaledEduMon, offset, offset, null)
-
-          val userIcon = BitmapDescriptorFactory.fromBitmap(glowBitmap)
-          val userLatLng = userPosition?.let { LatLng(it.first, it.second) } ?: epfl
+          val userLatLng = userPosition?.let { LatLng(it.first, it.second) } ?: EPFL_LAT_LNG
 
           Marker(
               state = MarkerState(userLatLng),
@@ -105,10 +108,8 @@ fun StudyTogetherScreen() {
                 true
               })
 
-          // 🧩 Amis avec leurs EduMon
-          val friendIcons = listOf(R.drawable.edumon1, R.drawable.edumon2, R.drawable.edumon3)
-
           friends.forEachIndexed { index, friend ->
+            val friendIcons = listOf(R.drawable.edumon1, R.drawable.edumon2, R.drawable.edumon3)
             val friendBitmap =
                 BitmapFactory.decodeResource(
                     context.resources, friendIcons[index % friendIcons.size])
@@ -141,7 +142,7 @@ fun StudyTogetherScreen() {
             selectedFriend != null -> {
               FriendInfoCard(
                   name = selectedFriend!!.name,
-                  status = selectedFriend!!.status,
+                  mode = selectedFriend!!.mode,
                   modifier = Modifier.padding(16.dp).align(Alignment.BottomCenter))
             }
           }
@@ -149,9 +150,16 @@ fun StudyTogetherScreen() {
   }
 }
 
+private val defaultFriends =
+    listOf(
+        FriendStatus("Alae", 46.5208, 6.5674, FriendMode.STUDY),
+        FriendStatus("Florian", 46.5186, 6.5649, FriendMode.BREAK),
+        FriendStatus("Khalil", 46.5197, 6.5702, FriendMode.IDLE))
+
 @Composable
 fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
-  val color = if (isStudyMode) Color(0xFF7C4DFF) else Color(0xFFBDBDBD)
+  val color =
+      if (isStudyMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
 
   Column(
       modifier = modifier.fillMaxWidth(0.9f).wrapContentHeight().testTag("user_status_card"),
@@ -164,7 +172,11 @@ fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
                   modifier = Modifier.padding(16.dp),
                   horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "🧠 You’re in ${if (isStudyMode) "Study Mode" else "Break Mode"}",
+                        text =
+                            stringResource(
+                                R.string.user_mode_text,
+                                if (isStudyMode) stringResource(R.string.study_mode)
+                                else stringResource(R.string.break_mode)),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White)
                   }
@@ -174,23 +186,12 @@ fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun FriendInfoCard(name: String, status: String, modifier: Modifier = Modifier) {
-  val (emoji, color) =
-      when (status) {
-        "study" -> "📚" to Color(0xFF4CAF50)
-        "break" -> "☕" to Color(0xFFFFB300)
-        else -> "💤" to Color(0xFF2196F3)
-      }
-
+fun FriendInfoCard(name: String, mode: FriendMode, modifier: Modifier = Modifier) {
   Column(
-      modifier =
-          modifier
-              .fillMaxWidth(0.9f)
-              .wrapContentHeight()
-              .testTag("friend_info_card"), // ✅ ajout du tag
+      modifier = modifier.fillMaxWidth(0.9f).wrapContentHeight().testTag("friend_info_card"),
       horizontalAlignment = Alignment.CenterHorizontally) {
         Card(
-            colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
+            colors = CardDefaults.cardColors(containerColor = mode.color.copy(alpha = 0.9f)),
             shape = MaterialTheme.shapes.medium,
             elevation = CardDefaults.cardElevation(8.dp)) {
               Column(
@@ -198,7 +199,11 @@ fun FriendInfoCard(name: String, status: String, modifier: Modifier = Modifier) 
                   horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text =
-                            "$emoji $name is currently in ${status.replaceFirstChar { it.uppercase() }} Mode",
+                            stringResource(
+                                R.string.friend_mode_text,
+                                mode.emoji,
+                                name,
+                                mode.name.lowercase().replaceFirstChar { it.uppercase() }),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White)
                   }

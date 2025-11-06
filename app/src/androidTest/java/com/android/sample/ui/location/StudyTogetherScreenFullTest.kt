@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 
-// ✅ Final test file targeting ~90%+ coverage for StudyTogetherScreen.kt
+// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
 class StudyTogetherScreenFullTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -18,11 +18,11 @@ class StudyTogetherScreenFullTest {
   // --- 1️⃣ Test de la data class
   @Test
   fun friendStatus_hasCorrectFields() {
-    val f = FriendStatus("Alae", 46.52, 6.56, "study")
+    val f = FriendStatus("Alae", 46.52, 6.56, FriendMode.STUDY)
     assert(f.name == "Alae")
     assert(f.latitude == 46.52)
     assert(f.longitude == 6.56)
-    assert(f.status == "study")
+    assert(f.mode == FriendMode.STUDY)
   }
 
   // --- 2️⃣-A Test UserStatusCard (Study Mode)
@@ -47,7 +47,8 @@ class StudyTogetherScreenFullTest {
   @Test
   fun friendInfoCard_displaysStudyStatus() {
     composeTestRule.setContent {
-      FriendInfoCard(name = "Alae", status = "study", modifier = Modifier.testTag("friend_study"))
+      FriendInfoCard(
+          name = "Alae", mode = FriendMode.STUDY, modifier = Modifier.testTag("friend_study"))
     }
     composeTestRule.onNodeWithText("📚 Alae is currently in Study Mode").assertExists()
   }
@@ -56,7 +57,7 @@ class StudyTogetherScreenFullTest {
   fun friendInfoCard_displaysBreakStatus() {
     composeTestRule.setContent {
       FriendInfoCard(
-          name = "Florian", status = "break", modifier = Modifier.testTag("friend_break"))
+          name = "Florian", mode = FriendMode.BREAK, modifier = Modifier.testTag("friend_break"))
     }
     composeTestRule.onNodeWithText("☕ Florian is currently in Break Mode").assertExists()
   }
@@ -64,7 +65,8 @@ class StudyTogetherScreenFullTest {
   @Test
   fun friendInfoCard_displaysIdleStatus() {
     composeTestRule.setContent {
-      FriendInfoCard(name = "Khalil", status = "idle", modifier = Modifier.testTag("friend_idle"))
+      FriendInfoCard(
+          name = "Khalil", mode = FriendMode.IDLE, modifier = Modifier.testTag("friend_idle"))
     }
     composeTestRule.onNodeWithText("💤 Khalil is currently in Idle Mode").assertExists()
   }
@@ -90,9 +92,7 @@ class StudyTogetherScreenFullTest {
             }
             selected != null -> {
               FriendInfoCard(
-                  name = selected.name,
-                  status = selected.status,
-                  modifier = Modifier.padding(16.dp))
+                  name = selected.name, mode = selected.mode, modifier = Modifier.padding(16.dp))
             }
           }
         }
@@ -102,7 +102,7 @@ class StudyTogetherScreenFullTest {
   @Test
   fun animatedVisibility_displaysFriendCard() {
     composeTestRule.setContent {
-      TestAnimatedVisibilitySample(FriendStatus("Alae", 0.0, 0.0, "study"), false)
+      TestAnimatedVisibilitySample(FriendStatus("Alae", 0.0, 0.0, FriendMode.STUDY), false)
     }
     composeTestRule.onNodeWithText("📚 Alae is currently in Study Mode").assertExists()
   }
