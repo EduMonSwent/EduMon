@@ -1,5 +1,6 @@
 package com.android.sample.ui.notifications
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,38 @@ import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
+/* ---------- Helpers testables pour augmenter la couverture du fichier ---------- */
+
+@VisibleForTesting
+internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
+  val h = hh.filter(Char::isDigit).take(2).toIntOrNull() ?: 0
+  val m = mm.filter(Char::isDigit).take(2).toIntOrNull() ?: 0
+  return h.coerceIn(0, 23) to m.coerceIn(0, 59)
+}
+
+@VisibleForTesting
+internal val DAY_SHORT: Map<Int, String> =
+    mapOf(
+        Calendar.MONDAY to "Mon",
+        Calendar.TUESDAY to "Tue",
+        Calendar.WEDNESDAY to "Wed",
+        Calendar.THURSDAY to "Thu",
+        Calendar.FRIDAY to "Fri",
+        Calendar.SATURDAY to "Sat",
+        Calendar.SUNDAY to "Sun",
+    )
+
+@VisibleForTesting
+internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): String {
+  val (h, m) = times[day] ?: (9 to 0)
+  val hh = h.coerceIn(0, 23)
+  val mm = m.coerceIn(0, 59)
+  val d = DAY_SHORT[day] ?: "?"
+  return "%s %02d:%02d".format(d, hh, mm)
+}
+
+/* ------------------------------------ UI ------------------------------------ */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
@@ -38,7 +71,6 @@ fun NotificationsScreen(
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
   val kickoffDays by vm.kickoffDays.collectAsState()
   val kickoffTimes by vm.kickoffTimes.collectAsState()
-
   val streakEnabled by vm.streakEnabled.collectAsState()
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
@@ -189,24 +221,12 @@ private fun TimeChipsRow(
     enabled: Boolean,
     onPickRequest: (Int) -> Unit
 ) {
-  val dayShort = remember {
-    mapOf(
-        Calendar.MONDAY to "Mon",
-        Calendar.TUESDAY to "Tue",
-        Calendar.WEDNESDAY to "Wed",
-        Calendar.THURSDAY to "Thu",
-        Calendar.FRIDAY to "Fri",
-        Calendar.SATURDAY to "Sat",
-        Calendar.SUNDAY to "Sun",
-    )
-  }
   Row(
       Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically) {
         days.forEach { day ->
-          val (h, m) = times[day] ?: (9 to 0)
-          val label = "${dayShort[day]} %02d:%02d".format(h.coerceIn(0, 23), m.coerceIn(0, 59))
+          val label = formatDayTimeLabel(day, times)
           AssistChip(
               enabled = enabled,
               label = { Text(label) },
@@ -230,9 +250,8 @@ private fun TimePickerDialog(
       confirmButton = {
         TextButton(
             onClick = {
-              val h = hh.filter(Char::isDigit).take(2).toIntOrNull() ?: 0
-              val m = mm.filter(Char::isDigit).take(2).toIntOrNull() ?: 0
-              onConfirm(h.coerceIn(0, 23), m.coerceIn(0, 59))
+              val (H, M) = clampTimeInputs(hh, mm)
+              onConfirm(H, M)
             }) {
               Text("OK")
             }

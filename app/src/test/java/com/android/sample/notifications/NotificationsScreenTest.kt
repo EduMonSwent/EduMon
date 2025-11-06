@@ -6,8 +6,7 @@ import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import com.android.sample.ui.notifications.NotificationsViewModel
 import java.util.Calendar
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -54,8 +53,6 @@ class NotificationsScreenTest {
     vm.setKickoffEnabled(ctx, true)
     vm.toggleKickoffDay(Calendar.MONDAY)
     vm.updateKickoffTime(Calendar.MONDAY, 7, 30)
-
-    // Applique la planification
     vm.applyKickoffSchedule(ctx)
 
     assertTrue(repo.weekly.isNotEmpty())
@@ -71,9 +68,7 @@ class NotificationsScreenTest {
     val repo = CapturingRepo()
     val vm = NotificationsViewModel(repo)
 
-    // Equivalent du bouton “Send notification in 1 min”
     vm.scheduleTestNotification(ctx)
-
     assertEquals(1, repo.oneShot)
   }
 }
