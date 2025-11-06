@@ -1,5 +1,6 @@
 package com.android.sample.model.schedule
 
+import android.content.res.Resources
 import com.android.sample.model.PlannerRepository as TaskPlannerRepository
 import java.time.LocalDate
 import java.time.LocalTime
@@ -11,6 +12,7 @@ import kotlinx.coroutines.launch
 class ScheduleRepositoryImpl(
     private val taskRepo: TaskPlannerRepository,
     private val classRepo: com.android.sample.model.planner.PlannerRepository,
+    private val resources: Resources,
     coroutineScope: CoroutineScope? = null
 ) : ScheduleRepository {
 
@@ -18,10 +20,14 @@ class ScheduleRepositoryImpl(
 
   // Combine tasks and classes into unified ScheduleEvents
   private val tasksFlow: Flow<List<ScheduleEvent>> =
-      taskRepo.tasksFlow.map { tasks -> tasks.map(StudyItemMapper::toScheduleEvent) }
+      taskRepo.tasksFlow.map { tasks ->
+        tasks.map { StudyItemMapper.toScheduleEvent(it, resources) }
+      }
 
   private val classesFlow: Flow<List<ScheduleEvent>> =
-      classRepo.getTodayClassesFlow().map { classes -> classes.map(ClassMapper::toScheduleEvent) }
+      classRepo.getTodayClassesFlow().map { classes ->
+        classes.map { ClassMapper.toScheduleEvent(it, resources) }
+      }
 
   private val _events = MutableStateFlow<List<ScheduleEvent>>(emptyList())
   override val events: StateFlow<List<ScheduleEvent>> = _events.asStateFlow()
@@ -40,12 +46,11 @@ class ScheduleRepositoryImpl(
   override suspend fun save(event: ScheduleEvent) {
     when (event.sourceTag) {
       SourceTag.Task -> {
-        val studyItem = StudyItemMapper.fromScheduleEvent(event)
+        val studyItem = StudyItemMapper.fromScheduleEvent(event, resources)
         taskRepo.saveTask(studyItem)
       }
       SourceTag.Class -> {
-        // Classes are read-only for now, but could be extended
-        // For future: classRepo.saveClass(event)
+        // TODO: extend to support saving via classRepo.saveClass(event)
       }
     }
   }
@@ -53,11 +58,11 @@ class ScheduleRepositoryImpl(
   override suspend fun update(event: ScheduleEvent) {
     when (event.sourceTag) {
       SourceTag.Task -> {
-        val studyItem = StudyItemMapper.fromScheduleEvent(event)
-        taskRepo.saveTask(studyItem) // saveTask acts as upsert
+        val studyItem = StudyItemMapper.fromScheduleEvent(event, resources) // upsert
+        taskRepo.saveTask(studyItem)
       }
       SourceTag.Class -> {
-        // Classes are read-only for now
+        // TODO: extend to support updating
       }
     }
   }
@@ -71,13 +76,11 @@ class ScheduleRepositoryImpl(
     // Future: Add class deletion when classes become mutable
   }
 
-  override suspend fun getEventsBetween(start: LocalDate, end: LocalDate): List<ScheduleEvent> {
-    return events.value.filter { it.date in start..end }
-  }
+  override suspend fun getEventsBetween(start: LocalDate, end: LocalDate): List<ScheduleEvent> =
+      events.value.filter { it.date in start..end }
 
-  override suspend fun getById(id: String): ScheduleEvent? {
-    return events.value.firstOrNull { it.id == id }
-  }
+  override suspend fun getById(id: String): ScheduleEvent? =
+      events.value.firstOrNull { it.id == id }
 
   override suspend fun moveEventDate(id: String, newDate: LocalDate): Boolean {
     val event = getById(id) ?: return false
@@ -86,9 +89,8 @@ class ScheduleRepositoryImpl(
     return true
   }
 
-  override suspend fun getEventsForDate(date: LocalDate): List<ScheduleEvent> {
-    return events.value.filter { it.date == date }
-  }
+  override suspend fun getEventsForDate(date: LocalDate): List<ScheduleEvent> =
+      events.value.filter { it.date == date }
 
   override suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent> {
     val endDate = startDate.plusDays(6)
@@ -96,9 +98,8 @@ class ScheduleRepositoryImpl(
   }
 
   // Additional unified queries
-  suspend fun getEventsByKind(kind: EventKind): List<ScheduleEvent> {
-    return events.value.filter { it.kind == kind }
-  }
+  suspend fun getEventsByKind(kind: EventKind): List<ScheduleEvent> =
+      events.value.filter { it.kind == kind }
 
   suspend fun getUpcomingEvents(days: Int = 7): List<ScheduleEvent> {
     val start = LocalDate.now()

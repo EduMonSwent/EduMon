@@ -1,9 +1,11 @@
 package com.android.sample.ui.schedule
 
+import android.content.res.Resources
+import androidx.test.core.app.ApplicationProvider
 import com.android.sample.model.PlannerRepository // TASKS interface
 import com.android.sample.model.StudyItem
 import com.android.sample.model.TaskType
-import com.android.sample.model.planner.FakePlannerRepository // your existing CLASSES fake
+import com.android.sample.model.planner.FakePlannerRepository // your CLASSES fake
 import com.android.sample.model.schedule.EventKind
 import com.android.sample.model.schedule.ScheduleEvent
 import com.android.sample.model.schedule.ScheduleRepositoryImpl
@@ -26,8 +28,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class ScheduleRepositoryImplTest {
 
   private val dispatcher = StandardTestDispatcher()
@@ -36,17 +41,19 @@ class ScheduleRepositoryImplTest {
   private lateinit var tasksRepo: FakeTasksRepo // lightweight TASKS fake
   private lateinit var classesRepo: FakePlannerRepository // your CLASSES fake
   private lateinit var repo: ScheduleRepositoryImpl
+  private lateinit var resources: Resources
 
   @Before
   fun setUp() {
     Dispatchers.setMain(dispatcher)
     testScope = TestScope(dispatcher)
 
+    resources = ApplicationProvider.getApplicationContext<android.content.Context>().resources
     tasksRepo = FakeTasksRepo()
     classesRepo = FakePlannerRepository()
 
-    // IMPORTANT: pass testScope so internal combine() runs on our scheduler
-    repo = ScheduleRepositoryImpl(tasksRepo, classesRepo, testScope)
+    // IMPORTANT: pass resources + testScope so internal combine() runs on our scheduler
+    repo = ScheduleRepositoryImpl(tasksRepo, classesRepo, resources, testScope)
   }
 
   @After
@@ -70,8 +77,6 @@ class ScheduleRepositoryImplTest {
         advanceUntilIdle()
 
         val titlesInOrder = repo.events.value.map { it.title }
-        // Expect: T0 (08:00), Algorithms (09:00), T1 (10:00), Data Structures (11:00), Networks
-        // (14:00)
         assertEquals(listOf("T0", "Algorithms", "T1", "Data Structures", "Networks"), titlesInOrder)
       }
 
@@ -118,7 +123,6 @@ class ScheduleRepositoryImplTest {
       }
 
   // ---------------- TASKS fake (implements com.android.sample.model.PlannerRepository)
-  // ----------------
   private class FakeTasksRepo : PlannerRepository {
     private val _tasks = MutableStateFlow<List<StudyItem>>(emptyList())
     override val tasksFlow: StateFlow<List<StudyItem>> = _tasks

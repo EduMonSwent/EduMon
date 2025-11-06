@@ -1,7 +1,9 @@
-package com.android.sample.ui.schdeule
+package com.android.sample.ui.schedule
 
+import android.content.res.Resources
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.R
 import com.android.sample.model.planner.*
 import com.android.sample.model.schedule.*
 import java.time.DayOfWeek
@@ -27,7 +29,8 @@ data class ScheduleUiState(
 
 class ScheduleViewModel(
     private val scheduleRepository: ScheduleRepository,
-    private val plannerRepository: PlannerRepository
+    private val plannerRepository: PlannerRepository,
+    private val resources: Resources
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ScheduleUiState())
@@ -176,9 +179,10 @@ class ScheduleViewModel(
       val result = plannerRepository.saveAttendance(attendanceRecord)
       if (result.isSuccess) {
         onDismissClassAttendanceModal()
-        _eventFlow.emit(UiEvent.ShowSnackbar("Attendance saved successfully!"))
+        _eventFlow.emit(
+            UiEvent.ShowSnackbar(resources.getString(R.string.attendance_saved_success)))
       } else {
-        _eventFlow.emit(UiEvent.ShowSnackbar("Error saving attendance"))
+        _eventFlow.emit(UiEvent.ShowSnackbar(resources.getString(R.string.attendance_save_error)))
       }
     }
   }

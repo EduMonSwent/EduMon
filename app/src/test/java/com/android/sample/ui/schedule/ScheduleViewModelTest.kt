@@ -1,5 +1,7 @@
 package com.android.sample.ui.schedule
 
+import android.content.res.Resources
+import androidx.test.core.app.ApplicationProvider
 import com.android.sample.model.planner.AttendanceStatus
 import com.android.sample.model.planner.Class
 import com.android.sample.model.planner.CompletionStatus
@@ -9,8 +11,6 @@ import com.android.sample.model.schedule.Priority
 import com.android.sample.model.schedule.ScheduleEvent
 import com.android.sample.model.schedule.ScheduleRepository
 import com.android.sample.model.schedule.SourceTag
-import com.android.sample.ui.schdeule.AdaptivePlanner
-import com.android.sample.ui.schdeule.ScheduleViewModel
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
@@ -29,21 +29,26 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class ScheduleViewModelTest {
 
   private val testDispatcher = UnconfinedTestDispatcher()
   private lateinit var fakeScheduleRepo: FakeScheduleRepository
   private lateinit var fakePlannerRepo: FakePlannerRepository
   private lateinit var vm: ScheduleViewModel
+  private lateinit var resources: Resources
 
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
     fakeScheduleRepo = FakeScheduleRepository()
-    fakePlannerRepo = FakePlannerRepository() // <-- use your provided fake
-    vm = ScheduleViewModel(fakeScheduleRepo, fakePlannerRepo)
+    fakePlannerRepo = FakePlannerRepository() // your provided fake
+    resources = ApplicationProvider.getApplicationContext<android.content.Context>().resources
+    vm = ScheduleViewModel(fakeScheduleRepo, fakePlannerRepo, resources)
   }
 
   @After
@@ -53,13 +58,12 @@ class ScheduleViewModelTest {
 
   @Test
   fun init_collectsPlannerFlows_usesProvidedFakeEmissions() = runTest {
-    // Your FakePlannerRepository emits 3 classes once and empty attendance once.
     advanceUntilIdle()
     val s = vm.uiState.value
     assertEquals(3, s.todayClasses.size)
     assertEquals(
         listOf("Algorithms", "Data Structures", "Networks"), s.todayClasses.map(Class::courseName))
-    assertTrue(s.attendanceRecords.isEmpty()) // Fake emits empty list only
+    assertTrue(s.attendanceRecords.isEmpty())
     assertFalse(s.isLoading)
     assertNull(s.errorMessage)
   }
@@ -113,28 +117,20 @@ class ScheduleViewModelTest {
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun saveClassAttendance_emitsSuccessSnackbar() = runTest {
-    // Start collecting BEFORE triggering the event to avoid missing it (replay=0)
     var captured: ScheduleViewModel.UiEvent? = null
     val collectJob =
         launch(UnconfinedTestDispatcher(testScheduler)) {
-          // Collect only the first event then cancel this coroutine
           vm.eventFlow.collect { e ->
             captured = e
-            this.cancel() // stop after first emission
+            this.cancel()
           }
         }
 
-    // Trigger
     val klass = vm.uiState.value.todayClasses.first()
     vm.saveClassAttendance(klass, AttendanceStatus.YES, CompletionStatus.PARTIALLY)
-
-    // Let all coroutines run to completion under virtual time
     advanceUntilIdle()
 
-    // Assert
     assertTrue(captured is ScheduleViewModel.UiEvent.ShowSnackbar)
-
-    // Safety: ensure the collector is cancelled
     collectJob.cancel()
   }
 
@@ -149,7 +145,7 @@ class ScheduleViewModelTest {
         ScheduleEvent(
             id = "m1",
             title = "Missed task",
-            date = start, // Monday < today
+            date = start,
             kind = EventKind.STUDY,
             isCompleted = false,
             sourceTag = SourceTag.Task)
@@ -157,7 +153,7 @@ class ScheduleViewModelTest {
         ScheduleEvent(
             id = "doneFuture",
             title = "Completed early",
-            date = end, // Sun
+            date = end,
             time = LocalTime.of(12, 0),
             kind = EventKind.PROJECT,
             isCompleted = true,
@@ -214,9 +210,8 @@ class ScheduleViewModelTest {
       _events.value = backing.sortedBy { it.date }
     }
 
-    override suspend fun getEventsBetween(start: LocalDate, end: LocalDate): List<ScheduleEvent> {
-      return backing.filter { it.date in start..end }
-    }
+    override suspend fun getEventsBetween(start: LocalDate, end: LocalDate): List<ScheduleEvent> =
+        backing.filter { it.date in start..end }
 
     override suspend fun getById(id: String): ScheduleEvent? = backing.firstOrNull { it.id == id }
 
@@ -229,12 +224,10 @@ class ScheduleViewModelTest {
       return true
     }
 
-    override suspend fun getEventsForDate(date: LocalDate): List<ScheduleEvent> {
-      return backing.filter { it.date == date }
-    }
+    override suspend fun getEventsForDate(date: LocalDate): List<ScheduleEvent> =
+        backing.filter { it.date == date }
 
-    override suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent> {
-      return getEventsBetween(startDate, startDate.plusDays(6))
-    }
+    override suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent> =
+        getEventsBetween(startDate, startDate.plusDays(6))
   }
 }

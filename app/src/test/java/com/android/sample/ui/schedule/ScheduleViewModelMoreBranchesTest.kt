@@ -1,8 +1,9 @@
 package com.android.sample.ui.schedule
 
+import android.content.res.Resources
+import androidx.test.core.app.ApplicationProvider
 import com.android.sample.model.planner.*
 import com.android.sample.model.schedule.*
-import com.android.sample.ui.schdeule.ScheduleViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -10,8 +11,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.*
 import org.junit.*
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class ScheduleViewModelMoreBranchesTest {
 
   private val dispatcher = StandardTestDispatcher()
@@ -19,13 +23,15 @@ class ScheduleViewModelMoreBranchesTest {
   private lateinit var vm: ScheduleViewModel
   private lateinit var scheduleRepo: FakeScheduleRepo
   private lateinit var plannerRepo: FakePlannerRepo
+  private lateinit var resources: Resources
 
   @Before
   fun setUp() {
     Dispatchers.setMain(dispatcher)
     scheduleRepo = FakeScheduleRepo()
     plannerRepo = FakePlannerRepo()
-    vm = ScheduleViewModel(scheduleRepo, plannerRepo)
+    resources = ApplicationProvider.getApplicationContext<android.content.Context>().resources
+    vm = ScheduleViewModel(scheduleRepo, plannerRepo, resources)
   }
 
   @After
@@ -68,7 +74,7 @@ class ScheduleViewModelMoreBranchesTest {
         Assert.assertEquals(!before, vm.uiState.value.isMonthView)
       }
 
-  // minimal fakes
+  // ---- minimal fakes ----
   private class FakeScheduleRepo : ScheduleRepository {
     override val events = MutableStateFlow(emptyList<ScheduleEvent>())
 

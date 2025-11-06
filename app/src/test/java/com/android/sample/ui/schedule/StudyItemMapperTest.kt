@@ -1,5 +1,7 @@
 package com.android.sample.ui.schedule
 
+import android.content.res.Resources
+import androidx.test.core.app.ApplicationProvider
 import com.android.sample.model.Priority as ModelPriority
 import com.android.sample.model.StudyItem
 import com.android.sample.model.TaskType
@@ -12,8 +14,14 @@ import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class StudyItemMapperTest {
+
+  private val resources: Resources =
+      ApplicationProvider.getApplicationContext<android.content.Context>().resources
 
   @Test
   fun toScheduleEvent_mapsBasicFields_andPriority() {
@@ -28,7 +36,7 @@ class StudyItemMapperTest {
             priority = ModelPriority.HIGH,
             type = TaskType.STUDY)
 
-    val ev = StudyItemMapper.toScheduleEvent(item)
+    val ev = StudyItemMapper.toScheduleEvent(item, resources)
 
     assertEquals(item.id, ev.id)
     assertEquals("Study Linear Algebra", ev.title)
@@ -37,7 +45,7 @@ class StudyItemMapperTest {
     assertEquals(item.time, ev.time)
     assertEquals(90, ev.durationMinutes)
     assertEquals(EventKind.STUDY, ev.kind)
-    assertEquals(false, ev.isCompleted)
+    assertFalse(ev.isCompleted)
     assertEquals(Priority.HIGH, ev.priority)
     assertEquals(SourceTag.Task, ev.sourceTag)
   }
@@ -55,7 +63,7 @@ class StudyItemMapperTest {
             priority = Priority.MEDIUM,
             sourceTag = SourceTag.Task)
 
-    val item = StudyItemMapper.fromScheduleEvent(ev)
+    val item = StudyItemMapper.fromScheduleEvent(ev, resources)
 
     assertEquals(ev.id, item.id)
     assertEquals("Study OS", item.title)
@@ -64,8 +72,7 @@ class StudyItemMapperTest {
     assertEquals(60, item.durationMinutes)
     assertTrue(item.isCompleted)
     assertEquals(ModelPriority.MEDIUM, item.priority)
-    // STUDY & SUBMISSION kinds map to WORK in your mapper
-    assertEquals(TaskType.WORK, item.type)
+    assertEquals(TaskType.WORK, item.type) // STUDY maps to WORK in mapper
   }
 
   @Test
@@ -77,7 +84,7 @@ class StudyItemMapperTest {
             date = LocalDate.of(2025, 11, 10),
             type = TaskType.WORK)
 
-    val ev = StudyItemMapper.toScheduleEvent(item)
+    val ev = StudyItemMapper.toScheduleEvent(item, resources)
     assertEquals(EventKind.SUBMISSION_PROJECT, ev.kind)
   }
 
@@ -86,8 +93,8 @@ class StudyItemMapperTest {
     val item =
         StudyItem(title = "Gym session", date = LocalDate.of(2025, 11, 9), type = TaskType.PERSONAL)
 
-    val ev = StudyItemMapper.toScheduleEvent(item)
+    val ev = StudyItemMapper.toScheduleEvent(item, resources)
     assertEquals(EventKind.ACTIVITY_SPORT, ev.kind)
-    assertNull(ev.priority) // per mapper for PERSONAL
+    assertNull(ev.priority) // PERSONAL has null priority in mapper
   }
 }

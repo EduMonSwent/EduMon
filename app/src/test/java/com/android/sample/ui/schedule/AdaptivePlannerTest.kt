@@ -1,7 +1,6 @@
 package com.android.sample.ui.schedule
 
 import com.android.sample.model.schedule.*
-import com.android.sample.ui.schdeule.AdaptivePlanner
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.*
@@ -107,5 +106,68 @@ class AdaptivePlannerTest {
 
     val result = AdaptivePlanner.planAdjustments(today, current, next)
     assertTrue(result.pulledEarlier.isEmpty())
+  }
+
+  @Test
+  fun planAdjustments_prefers_higher_priority_then_earlier_date_then_time() {
+    val today = LocalDate.of(2025, 11, 6)
+    val start = AdaptivePlanner.weekStart(today)
+    val nextStart = start.plusWeeks(1)
+
+    // Current week: mark one completed in the future to enable "pull"
+    val current =
+        listOf(
+            ScheduleEvent(
+                id = "doneFuture",
+                title = "Completed future",
+                date = today.plusDays(1),
+                time = LocalTime.of(12, 0),
+                kind = EventKind.STUDY,
+                isCompleted = true,
+                sourceTag = SourceTag.Task))
+
+    // Next week candidates: all preferred kinds
+    val lowLater =
+        ScheduleEvent(
+            id = "lowLater",
+            title = "Low later",
+            date = nextStart.plusDays(3),
+            time = LocalTime.of(16, 0),
+            kind = EventKind.PROJECT,
+            isCompleted = false,
+            priority = Priority.LOW,
+            sourceTag = SourceTag.Task)
+
+    val medEarlier =
+        ScheduleEvent(
+            id = "medEarlier",
+            title = "Medium earlier",
+            date = nextStart.plusDays(1),
+            time = LocalTime.of(18, 0),
+            kind = EventKind.SUBMISSION_PROJECT,
+            isCompleted = false,
+            priority = Priority.MEDIUM,
+            sourceTag = SourceTag.Task)
+
+    val highSameDayEarlierTime =
+        ScheduleEvent(
+            id = "highPickMe",
+            title = "High same day earlier time",
+            date = nextStart.plusDays(1),
+            time = LocalTime.of(9, 0),
+            kind = EventKind.STUDY,
+            isCompleted = false,
+            priority = Priority.HIGH,
+            sourceTag = SourceTag.Task)
+
+    val result =
+        AdaptivePlanner.planAdjustments(
+            today,
+            currentWeekEvents = current,
+            nextWeekEvents = listOf(lowLater, medEarlier, highSameDayEarlierTime))
+
+    // Should pick HIGH first; tie on date vs MEDIUM; then earlier time among same date
+    assertEquals(1, result.pulledEarlier.size)
+    assertEquals("highPickMe", result.pulledEarlier.first().id)
   }
 }

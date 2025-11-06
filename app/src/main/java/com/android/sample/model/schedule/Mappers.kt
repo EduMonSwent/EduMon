@@ -1,5 +1,7 @@
 package com.android.sample.model.schedule
 
+import android.content.res.Resources
+import com.android.sample.R
 import com.android.sample.model.Priority as ModelPriority
 import com.android.sample.model.StudyItem
 import com.android.sample.model.TaskType
@@ -10,8 +12,9 @@ import java.time.LocalDate
 import java.util.Locale
 
 object StudyItemMapper {
-  fun toScheduleEvent(item: StudyItem): ScheduleEvent {
-    val (kind, priority) = mapStudyItemToEventKind(item)
+
+  fun toScheduleEvent(item: StudyItem, res: Resources): ScheduleEvent {
+    val (kind, priority) = mapStudyItemToEventKind(item, res)
     return ScheduleEvent(
         id = item.id,
         title = item.title,
@@ -27,7 +30,7 @@ object StudyItemMapper {
         sourceTag = SourceTag.Task)
   }
 
-  fun fromScheduleEvent(event: ScheduleEvent): StudyItem {
+  fun fromScheduleEvent(event: ScheduleEvent, res: Resources): StudyItem {
     val (taskType, priority) = mapEventKindToStudyItem(event.kind, event.priority)
     return StudyItem(
         id = event.id,
@@ -41,11 +44,11 @@ object StudyItemMapper {
         type = taskType)
   }
 
-  private fun mapStudyItemToEventKind(item: StudyItem): Pair<EventKind, Priority?> {
+  private fun mapStudyItemToEventKind(item: StudyItem, res: Resources): Pair<EventKind, Priority?> {
     return when (item.type) {
       TaskType.STUDY -> EventKind.STUDY to item.priority.toSchedulePriority()
-      TaskType.WORK -> guessWorkKind(item) to item.priority.toSchedulePriority()
-      TaskType.PERSONAL -> guessActivityKind(item) to null
+      TaskType.WORK -> guessWorkKind(item, res) to item.priority.toSchedulePriority()
+      TaskType.PERSONAL -> guessActivityKind(item, res) to null
     }
   }
 
@@ -70,53 +73,80 @@ object StudyItemMapper {
     }
   }
 
-  private fun ModelPriority.toSchedulePriority(): Priority {
-    return when (this) {
-      ModelPriority.LOW -> Priority.LOW
-      ModelPriority.MEDIUM -> Priority.MEDIUM
-      ModelPriority.HIGH -> Priority.HIGH
-    }
-  }
+  private fun ModelPriority.toSchedulePriority(): Priority =
+      when (this) {
+        ModelPriority.LOW -> Priority.LOW
+        ModelPriority.MEDIUM -> Priority.MEDIUM
+        ModelPriority.HIGH -> Priority.HIGH
+      }
 
-  private fun Priority.toModelPriority(): ModelPriority {
-    return when (this) {
-      Priority.LOW -> ModelPriority.LOW
-      Priority.MEDIUM -> ModelPriority.MEDIUM
-      Priority.HIGH -> ModelPriority.HIGH
-    }
-  }
+  private fun Priority.toModelPriority(): ModelPriority =
+      when (this) {
+        Priority.LOW -> ModelPriority.LOW
+        Priority.MEDIUM -> ModelPriority.MEDIUM
+        Priority.HIGH -> ModelPriority.HIGH
+      }
 
-  private fun guessWorkKind(item: StudyItem): EventKind {
-    val text = "${item.title} ${item.description ?: ""}".lowercase(Locale.getDefault())
+  private fun guessWorkKind(item: StudyItem, res: Resources): EventKind {
+    val locale = Locale.getDefault()
+    val text = "${item.title} ${item.description ?: ""}".lowercase(locale)
+
+    // Load localized keywords
+    val midterm = res.getString(R.string.keyword_midterm).lowercase(locale)
+    val finalExam = res.getString(R.string.keyword_final_exam).lowercase(locale)
+    val finalKW = res.getString(R.string.keyword_final).lowercase(locale)
+    val examKW = res.getString(R.string.keyword_exam).lowercase(locale)
+    val milestone = res.getString(R.string.keyword_milestone).lowercase(locale)
+    val weekly = res.getString(R.string.keyword_weekly).lowercase(locale)
+    val rendu = res.getString(R.string.keyword_rendu).lowercase(locale)
+    val submit = res.getString(R.string.keyword_submit).lowercase(locale)
+    val submission = res.getString(R.string.keyword_submission).lowercase(locale)
+    val deadline = res.getString(R.string.keyword_deadline).lowercase(locale)
+    val due = res.getString(R.string.keyword_due).lowercase(locale)
+    val deliverable = res.getString(R.string.keyword_deliverable).lowercase(locale)
+    val handIn = res.getString(R.string.keyword_hand_in).lowercase(locale)
+    val handin = res.getString(R.string.keyword_handin).lowercase(locale)
+    val project = res.getString(R.string.keyword_project).lowercase(locale)
+
     return when {
-      "midterm" in text -> EventKind.EXAM_MIDTERM
-      "final exam" in text || ("exam" in text && "final" in text) -> EventKind.EXAM_FINAL
-      "milestone" in text -> EventKind.SUBMISSION_MILESTONE
-      "weekly" in text || "rendu" in text -> EventKind.SUBMISSION_WEEKLY
-      "submit" in text ||
-          "submission" in text ||
-          "deadline" in text ||
-          "due" in text ||
-          "deliverable" in text ||
-          "hand-in" in text ||
-          "handin" in text -> EventKind.SUBMISSION_PROJECT
-      "project" in text -> EventKind.PROJECT
+      midterm in text -> EventKind.EXAM_MIDTERM
+      finalExam in text || (examKW in text && finalKW in text) -> EventKind.EXAM_FINAL
+      milestone in text -> EventKind.SUBMISSION_MILESTONE
+      weekly in text || rendu in text -> EventKind.SUBMISSION_WEEKLY
+      submit in text ||
+          submission in text ||
+          deadline in text ||
+          due in text ||
+          deliverable in text ||
+          handIn in text ||
+          handin in text -> EventKind.SUBMISSION_PROJECT
+      project in text -> EventKind.PROJECT
       else -> EventKind.STUDY
     }
   }
 
-  private fun guessActivityKind(item: StudyItem): EventKind {
-    val text = "${item.title} ${item.description ?: ""}".lowercase(Locale.getDefault())
+  private fun guessActivityKind(item: StudyItem, res: Resources): EventKind {
+    val locale = Locale.getDefault()
+    val text = "${item.title} ${item.description ?: ""}".lowercase(locale)
+
+    val sport = res.getString(R.string.keyword_sport).lowercase(locale)
+    val football = res.getString(R.string.keyword_football).lowercase(locale)
+    val gym = res.getString(R.string.keyword_gym).lowercase(locale)
+    val assoc = res.getString(R.string.keyword_assoc).lowercase(locale)
+    val assoc2 = res.getString(R.string.keyword_association).lowercase(locale)
+    val club = res.getString(R.string.keyword_club).lowercase(locale)
+
     return when {
-      "sport" in text || "football" in text || "gym" in text -> EventKind.ACTIVITY_SPORT
-      "assoc" in text || "association" in text || "club" in text -> EventKind.ACTIVITY_ASSOCIATION
+      sport in text || football in text || gym in text -> EventKind.ACTIVITY_SPORT
+      assoc in text || assoc2 in text || club in text -> EventKind.ACTIVITY_ASSOCIATION
       else -> EventKind.ACTIVITY_ASSOCIATION
     }
   }
 }
 
 object ClassMapper {
-  fun toScheduleEvent(plannerClass: PlannerClass): ScheduleEvent {
+
+  fun toScheduleEvent(plannerClass: PlannerClass, res: Resources): ScheduleEvent {
     val kind =
         when (plannerClass.type) {
           ClassType.LECTURE -> EventKind.CLASS_LECTURE
@@ -130,15 +160,27 @@ object ClassMapper {
             }
             .getOrNull()
 
+    // Localized “at/with” (or use format string)
+    val withWord = res.getString(R.string.with) // e.g., "With"
+    val atWord = res.getString(R.string.keyword_at) // e.g., "at"
+
+    val description =
+        res.getString(
+            R.string.class_description_fmt,
+            plannerClass.type,
+            atWord,
+            plannerClass.location,
+            withWord,
+            plannerClass.instructor)
+
     return ScheduleEvent(
         id = plannerClass.id,
         title = plannerClass.courseName,
-        date = LocalDate.now(), // Classes are for today in current implementation
+        date = LocalDate.now(), // current impl: classes are today
         time = plannerClass.startTime,
         durationMinutes = durationMinutes,
         kind = kind,
-        description =
-            "${plannerClass.type} at ${plannerClass.location} with ${plannerClass.instructor}",
+        description = description,
         isCompleted = false,
         priority = null,
         courseCode = null,
@@ -146,7 +188,7 @@ object ClassMapper {
         sourceTag = SourceTag.Class)
   }
 
-  fun fromScheduleEvent(event: ScheduleEvent): PlannerClass? {
+  fun fromScheduleEvent(event: ScheduleEvent, res: Resources): PlannerClass? {
     if (event.sourceTag != SourceTag.Class) return null
 
     val classType =
@@ -156,20 +198,34 @@ object ClassMapper {
           EventKind.CLASS_LAB -> ClassType.LAB
           else -> return null
         }
+
     val time = event.time ?: return null
-    val endTime = time.plusMinutes((event.durationMinutes?.toLong() ?: 60))
+    val endTime = time.plusMinutes((event.durationMinutes?.toLong() ?: 60L))
 
     return PlannerClass(
         id = event.id,
         courseName = event.title,
-        startTime = event.time,
+        startTime = time,
         endTime = endTime,
         type = classType,
         location = event.location ?: "",
-        instructor = extractInstructorFromDescription(event.description))
+        instructor = extractInstructorFromDescription(event.description, res))
   }
 
-  private fun extractInstructorFromDescription(description: String?): String {
-    return description?.substringAfter("with ")?.takeIf { it.isNotBlank() } ?: "Professor"
+  private fun extractInstructorFromDescription(description: String?, res: Resources): String {
+    // Use localized "with" token (case-insensitive), then trim
+    val withToken = res.getString(R.string.with).trim() // e.g., "With"
+    val idx =
+        description
+            ?.lowercase(Locale.getDefault())
+            ?.indexOf(withToken.lowercase(Locale.getDefault()) + " ") ?: -1
+
+    return if (idx >= 0) {
+      description!!.substring(idx + withToken.length + 1).trim().ifBlank {
+        res.getString(R.string.keyword_professor_default)
+      }
+    } else {
+      res.getString(R.string.keyword_professor_default)
+    }
   }
 }

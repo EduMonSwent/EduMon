@@ -1,21 +1,26 @@
 package com.android.sample.ui.schedule
 
-import com.android.sample.model.Priority as ModelPriority
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
+import android.content.res.Resources
+import androidx.test.core.app.ApplicationProvider
+import com.android.sample.R
 import com.android.sample.model.planner.Class as PlannerClass
 import com.android.sample.model.planner.ClassType
 import com.android.sample.model.schedule.ClassMapper
 import com.android.sample.model.schedule.EventKind
 import com.android.sample.model.schedule.ScheduleEvent
 import com.android.sample.model.schedule.SourceTag
-import com.android.sample.model.schedule.StudyItemMapper
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ClassMapperTest {
+
+  private val resources: Resources =
+      ApplicationProvider.getApplicationContext<android.content.Context>().resources
 
   @Test
   fun toScheduleEvent_mapsClassFields() {
@@ -28,19 +33,28 @@ class ClassMapperTest {
             location = "A1",
             instructor = "Prof. Smith")
 
-    val ev = ClassMapper.toScheduleEvent(c)
+    val ev = ClassMapper.toScheduleEvent(c, resources)
+    val at = resources.getString(R.string.keyword_at)
+    val with = resources.getString(R.string.with)
+    val expectedDesc =
+        resources.getString(
+            R.string.class_description_fmt, c.type, at, c.location, with, c.instructor)
+
     assertEquals(c.id, ev.id)
     assertEquals("Algorithms", ev.title)
     assertEquals(EventKind.CLASS_LECTURE, ev.kind)
-    assertEquals("LECTURE at A1 with Prof. Smith", ev.description)
+    assertEquals(expectedDesc, ev.description)
     assertEquals(c.startTime, ev.time)
     assertEquals(120, ev.durationMinutes)
     assertEquals(SourceTag.Class, ev.sourceTag)
-    assertEquals(LocalDate.now(), ev.date) // by current implementation
+    assertEquals(LocalDate.now(), ev.date) // current implementation
   }
 
   @Test
   fun fromScheduleEvent_reconstructsPlannerClass_whenSourceIsClass() {
+    val at = resources.getString(R.string.keyword_at)
+    val with = resources.getString(R.string.with)
+
     val ev =
         ScheduleEvent(
             title = "CS101",
@@ -48,11 +62,11 @@ class ClassMapperTest {
             time = LocalTime.of(8, 30),
             durationMinutes = 90,
             kind = EventKind.CLASS_EXERCISE,
-            description = "EXERCISE at B2 with Dr. Who",
+            description = "EXERCISE $at B2 $with Dr. Who",
             location = "B2",
             sourceTag = SourceTag.Class)
 
-    val pc = ClassMapper.fromScheduleEvent(ev)
+    val pc = ClassMapper.fromScheduleEvent(ev, resources)
     requireNotNull(pc)
     assertEquals(ev.id, pc.id)
     assertEquals("CS101", pc.courseName)
@@ -71,28 +85,7 @@ class ClassMapperTest {
             date = LocalDate.now(),
             kind = EventKind.STUDY,
             sourceTag = SourceTag.Task)
-    assertNull(ClassMapper.fromScheduleEvent(ev))
-  }
-
-  @Test
-  fun guessWorkKind_exam_only_when_exam_keyword_present() {
-    val item =
-        StudyItem(
-            title = "Final presentation",
-            description = "final deadline",
-            date = LocalDate.now(),
-            type = TaskType.WORK)
-    // “deadline” should beat “final” → submission (not exam)
-    val ev = StudyItemMapper.toScheduleEvent(item)
-    assertEquals(EventKind.SUBMISSION_PROJECT, ev.kind)
-
-    val exam =
-        StudyItem(
-            title = "Final Exam - OS",
-            description = "exam at 10",
-            date = LocalDate.now(),
-            type = TaskType.WORK)
-    assertEquals(EventKind.EXAM_FINAL, StudyItemMapper.toScheduleEvent(exam).kind)
+    assertNull(ClassMapper.fromScheduleEvent(ev, resources))
   }
 
   @Test
@@ -108,22 +101,9 @@ class ClassMapperTest {
             description = null,
             location = "L1",
             sourceTag = SourceTag.Class)
-    val pc = ClassMapper.fromScheduleEvent(ev)
+    val pc = ClassMapper.fromScheduleEvent(ev, resources)
     requireNotNull(pc)
-    assertEquals("Professor", pc.instructor) // default path
-  }
-
-  @Test
-  fun mapEventKindToStudyItem_personal_defaults_priority_medium() {
-    val ev =
-        ScheduleEvent(
-            title = "Club",
-            date = LocalDate.now(),
-            kind = EventKind.ACTIVITY_ASSOCIATION,
-            sourceTag = SourceTag.Task)
-    val back = StudyItemMapper.fromScheduleEvent(ev)
-    assertEquals(TaskType.PERSONAL, back.type)
-    assertEquals(ModelPriority.MEDIUM, back.priority)
+    assertEquals(resources.getString(R.string.keyword_professor_default), pc.instructor)
   }
 
   @Test
@@ -136,7 +116,7 @@ class ClassMapperTest {
             type = ClassType.LECTURE,
             location = "R1",
             instructor = "Prof")
-    val ev = ClassMapper.toScheduleEvent(c)
+    val ev = ClassMapper.toScheduleEvent(c, resources)
     assertEquals(120, ev.durationMinutes)
   }
 }

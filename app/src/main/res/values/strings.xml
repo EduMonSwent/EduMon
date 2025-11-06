@@ -144,4 +144,38 @@
     <string name="account_terms">Terms of Service</string>
     <string name="account_logout">Logout</string>
 
+    <string name="keyword_midterm">midterm</string>
+    <string name="keyword_final_exam">final exam</string>
+    <string name="keyword_final">final</string>
+    <string name="keyword_exam">exam</string>
+    <string name="keyword_milestone">milestone</string>
+    <string name="keyword_weekly">weekly</string>
+    <string name="keyword_rendu">rendu</string>
+    <string name="keyword_submit">submit</string>
+    <string name="keyword_submission">submission</string>
+    <string name="keyword_deadline">deadline</string>
+    <string name="keyword_due">due</string>
+    <string name="keyword_deliverable">deliverable</string>
+    <string name="keyword_hand_in">hand-in</string>
+    <string name="keyword_handin">handin</string>
+    <string name="keyword_project">project</string>
+
+    <!-- Personal / activity keywords -->
+    <string name="keyword_sport">sport</string>
+    <string name="keyword_football">football</string>
+    <string name="keyword_gym">gym</string>
+    <string name="keyword_assoc">assoc</string>
+    <string name="keyword_association">association</string>
+    <string name="keyword_club">club</string>
+
+    <!-- Misc -->
+    <string name="keyword_professor_default">Professor</string>
+    <string name="with">With</string>
+
+    <string name="attendance_saved_success">Attendance saved successfully!</string>
+    <string name="attendance_save_error">Error saving attendance</string>
+
+    <string name="class_description_fmt">%1$s %2$s %3$s %4$s %5$s</string>
+    <string name="keyword_at">at</string>
+
 </resources>

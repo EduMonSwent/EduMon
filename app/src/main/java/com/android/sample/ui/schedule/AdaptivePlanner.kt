@@ -1,4 +1,4 @@
-package com.android.sample.ui.schdeule
+package com.android.sample.ui.schedule
 
 import com.android.sample.model.schedule.EventKind
 import com.android.sample.model.schedule.Priority
@@ -46,11 +46,10 @@ object AdaptivePlanner {
           nextTasks
               .filter { !it.isCompleted }
               .sortedWith(
-                  compareBy(
-                      { it.kind !in preferredKinds }, // Preferred kinds first
-                      { it.priority ?: Priority.MEDIUM }, // Higher priority first
-                      { it.date }, // Sooner dates first
-                      { it.time ?: LocalTime.MIN }))
+                  compareBy<ScheduleEvent>({ it.kind !in preferredKinds })
+                      .thenByDescending { it.priority ?: Priority.MEDIUM }
+                      .thenBy { it.date }
+                      .thenBy { it.time ?: LocalTime.MIN })
               .firstOrNull()
               ?.let { listOf(it) } ?: emptyList()
         } else emptyList()
