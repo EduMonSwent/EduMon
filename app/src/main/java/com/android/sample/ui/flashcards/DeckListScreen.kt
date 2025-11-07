@@ -53,7 +53,7 @@ fun DeckListScreen(
 }
 
 @Composable
-private fun DeckRow(deck: Deck, onStudyDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit) {
+fun DeckRow(deck: Deck, onStudyDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit) {
   var confirmDelete by remember { mutableStateOf(false) }
   val isEmpty = deck.cards.isEmpty()
 

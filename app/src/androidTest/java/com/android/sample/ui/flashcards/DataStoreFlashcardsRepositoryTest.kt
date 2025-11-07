@@ -1,0 +1,73 @@
+package com.android.sample.ui.flashcards.data
+
+import android.content.Context
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.sample.ui.flashcards.model.Flashcard
+import java.util.UUID
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.*
+import org.junit.BeforeClass
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class DataStoreFlashcardsRepositoryTest {
+
+  companion object {
+    @JvmStatic
+    @BeforeClass
+    fun beforeAll() {
+      val ctx: Context = InstrumentationRegistry.getInstrumentation().targetContext
+      // init ONCE to keep a single DataStore instance
+      FlashcardsRepositoryProvider.init(ctx)
+    }
+  }
+
+  private val repo: FlashcardsRepository
+    get() = FlashcardsRepositoryProvider.repository
+
+  @Test
+  fun addCard_appendsCardToDeck() = runBlocking {
+    // Arrange: create a deck with 1 card
+    val deckId =
+        repo.createDeck(
+            title = "Repo AddCard " + UUID.randomUUID(),
+            description = "d",
+            cards = listOf(Flashcard(question = "Q1", answer = "A1")))
+
+    // Act: add another card
+    repo.addCard(deckId, Flashcard(question = "Q2", answer = "A2"))
+
+    // Assert: deck now has 2 cards and the appended one matches
+    val deck = repo.observeDeck(deckId).first { it?.cards?.size == 2 }!!
+    assertEquals(2, deck.cards.size)
+    assertEquals("Q2", deck.cards[1].question)
+    assertEquals("A2", deck.cards[1].answer)
+  }
+
+  @Test
+  fun deleteDeck_removesDeckFromRepository() = runBlocking {
+    // Skip if your interface doesn't expose deleteDeck; add it accordingly:
+    // suspend fun deleteDeck(deckId: String)
+
+    // Arrange
+    val deckId =
+        repo.createDeck(
+            title = "Repo Delete " + UUID.randomUUID(), description = "d", cards = emptyList())
+
+    // Act
+    // If your FlashcardsRepository includes deleteDeck:
+    (repo as? DataStoreFlashcardsRepository)?.deleteDeck(deckId)
+        ?: error("Expose deleteDeck on FlashcardsRepository or cast to concrete type here")
+
+    // Assert: not present in list, and observeDeck emits null
+    val list = repo.observeDecks().first { decks -> decks.none { it.id == deckId } }
+    assertTrue(list.none { it.id == deckId })
+
+    val single = repo.observeDeck(deckId).firstOrNull()
+    assertNull(single)
+  }
+}
