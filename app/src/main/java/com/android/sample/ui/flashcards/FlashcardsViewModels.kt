@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
