@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import com.android.sample.data.UserProfile
 import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.stats.model.StudyStats
 import org.junit.Rule
 import org.junit.Test
@@ -21,7 +22,9 @@ class ProfileScreenTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-  private fun launchWith(vm: ProfileViewModel = ProfileViewModel(FakeProfileRepository())) {
+  private fun launchWith(
+      vm: ProfileViewModel = ProfileViewModel(FakeRepositories.profileRepository)
+  ) {
     composeRule.setContent { ProfileScreen(viewModel = vm) }
   }
 

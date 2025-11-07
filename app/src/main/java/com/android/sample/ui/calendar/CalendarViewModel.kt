@@ -3,15 +3,16 @@ package com.android.sample.ui.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.model.PlannerRepository
-import com.android.sample.model.PlannerRepositoryImpl
 import com.android.sample.model.StudyItem
+import com.android.sample.repos_providors.AppRepositories
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class CalendarViewModel(private val repository: PlannerRepository = PlannerRepositoryImpl()) :
-    ViewModel() {
+class CalendarViewModel(
+    private val repository: PlannerRepository = AppRepositories.calendarRepository
+) : ViewModel() {
 
   private val _selectedDate = MutableStateFlow(LocalDate.now())
   val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()

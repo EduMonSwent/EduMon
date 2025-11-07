@@ -2,6 +2,7 @@ package com.android.sample.screen.calendar
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.calendar.CalendarViewModel
 import java.time.LocalDate
 import java.time.YearMonth
@@ -23,7 +24,7 @@ class CalendarViewModelTest {
 
   @Before
   fun setup() {
-    vm = CalendarViewModel()
+    vm = CalendarViewModel(FakeRepositories.calendarRepository)
   }
 
   @Test

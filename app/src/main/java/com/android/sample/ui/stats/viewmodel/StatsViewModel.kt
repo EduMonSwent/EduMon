@@ -2,13 +2,11 @@ package com.android.sample.ui.stats.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.stats.model.StudyStats
-import com.android.sample.ui.stats.repository.FirestoreStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -18,9 +16,8 @@ import kotlinx.coroutines.launch
  * when requested.
  */
 class StatsViewModel(
-    private val repo: StatsRepository = FirestoreStatsRepository(Firebase.firestore, Firebase.auth),
-    private val objectivesRepo: ObjectivesRepository =
-        FirestoreObjectivesRepository(Firebase.firestore, Firebase.auth),
+    private val repo: StatsRepository = AppRepositories.statsRepository,
+    private val objectivesRepo: ObjectivesRepository = AppRepositories.objectivesRepository,
 ) : ViewModel() {
 
   val stats: StateFlow<StudyStats?> = repo.stats

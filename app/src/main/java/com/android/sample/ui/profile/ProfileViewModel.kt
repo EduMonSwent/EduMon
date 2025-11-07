@@ -72,7 +72,7 @@ class ProfileViewModel(
   fun setAvatarAccent(color: Color) {
     val argb = color.toArgb().toLong()
     _userProfile.update { it.copy(avatarAccent = argb) }
-    viewModelScope.launch { runCatching { repository.updateProfile(userProfile.value) } }
+    pushProfile() // sync remote
   }
 
   fun setAccentVariant(variant: AccentVariant) {
@@ -104,7 +104,7 @@ class ProfileViewModel(
         }
     val updated = cur.copy(accessories = next)
     _userProfile.value = updated
-    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+    pushProfile(updated) // sync remote
   }
 
   fun unequip(slot: AccessorySlot) {
@@ -112,7 +112,7 @@ class ProfileViewModel(
     val prefix = slot.name.lowercase() + ":"
     val updated = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
     _userProfile.value = updated
-    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+    pushProfile(updated) // sync remote
   }
 
   fun equippedId(slot: AccessorySlot): String? {
@@ -129,7 +129,7 @@ class ProfileViewModel(
 
   private fun updateLocal(edit: (UserProfile) -> UserProfile) {
     _userProfile.update(edit)
-    viewModelScope.launch { runCatching { repository.updateProfile(userProfile.value) } }
+    pushProfile() // sync remote
   }
 
   // ---------- Color utils (privées) ----------
@@ -171,6 +171,15 @@ class ProfileViewModel(
     val current = _userProfile.value
     val updated = current.copy(coins = current.coins + amount)
     _userProfile.value = updated
+    pushProfile(updated) // sync remote
+  }
+
+  // --- Helpers ---
+  /**
+   * Pushes the current or provided profile to the repository. Centralizes the fire-and-forget
+   * update with error safety.
+   */
+  private fun pushProfile(updated: UserProfile = _userProfile.value) {
     viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
   }
 }

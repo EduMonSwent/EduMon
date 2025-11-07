@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.theme.EduMonTheme
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -27,7 +28,7 @@ class CreateDeckScreenTest {
 
   @Test
   fun renders_staticElements() {
-    val vm = CreateDeckViewModel()
+    val vm = CreateDeckViewModel(FakeRepositories.toDoRepository)
     composeRule.setContent {
       EduMonTheme { CreateDeckScreen(onSaved = {}, onCancel = {}, vm = vm) }
     }

@@ -1,6 +1,7 @@
 package com.android.sample.ui.calendar
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.repos_providors.FakeRepositories
 import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -19,7 +20,7 @@ class CalendarViewModelExtraTest {
 
   @Before
   fun setup() {
-    vm = CalendarViewModel()
+    vm = CalendarViewModel(FakeRepositories.calendarRepository)
   }
 
   @Test

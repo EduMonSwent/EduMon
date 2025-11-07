@@ -40,7 +40,7 @@ class ProfileViewModelTest {
   @Test
   fun toggles_and_accent_update_profile() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel()
+        val vm = ProfileViewModel(FakeProfileRepository())
         val before = vm.userProfile.value
 
         vm.toggleNotifications()
@@ -109,7 +109,7 @@ class ProfileViewModelTest {
   @Test
   fun accent_variants_cover_all_paths_without_strict_inequality() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel()
+        val vm = ProfileViewModel(FakeProfileRepository())
 
         val baseNonBlack = Color(0xFF6699CC)
         vm.setAvatarAccent(baseNonBlack)
@@ -191,7 +191,7 @@ class ProfileViewModelTest {
 
   @Test
   fun light_blend_matches_expected_math() = runTest {
-    val vm = ProfileViewModel()
+    val vm = ProfileViewModel(FakeProfileRepository())
 
     val job = launch { vm.accentEffective.collect {} }
 
@@ -220,7 +220,7 @@ class ProfileViewModelTest {
 
   @Test
   fun dark_blend_scales_toward_black_by_factor_0_75() = runTest {
-    val vm = ProfileViewModel()
+    val vm = ProfileViewModel(FakeProfileRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     val base = Color(0xFF336699)
@@ -239,7 +239,7 @@ class ProfileViewModelTest {
 
   @Test
   fun vibrant_preserves_black_and_clamps_to_one() = runTest {
-    val vm = ProfileViewModel()
+    val vm = ProfileViewModel(FakeProfileRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     vm.setAvatarAccent(Color.Black)
@@ -264,7 +264,7 @@ class ProfileViewModelTest {
 
   @Test
   fun base_variant_returns_exact_base_color_even_with_alpha() = runTest {
-    val vm = ProfileViewModel()
+    val vm = ProfileViewModel(FakeProfileRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     val base = Color(0.2f, 0.4f, 0.6f, 0.5f)
@@ -284,7 +284,7 @@ class ProfileViewModelTest {
 
   @Test
   fun vibrant_changes_channels_for_non_greyscale_non_black() = runTest {
-    val vm = ProfileViewModel()
+    val vm = ProfileViewModel(FakeProfileRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     val base = Color(0.4f, 0.2f, 0.8f, 1f)
