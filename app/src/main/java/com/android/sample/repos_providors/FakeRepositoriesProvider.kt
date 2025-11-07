@@ -6,14 +6,14 @@ import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
 import com.android.sample.feature.weeks.repository.FakeWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.android.sample.model.calendar.PlannerRepositoryImpl
+import com.android.sample.model.PlannerRepositoryImpl
 import com.android.sample.model.planner.PlannerRepository
+import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryLocal
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.session.ToDoBackedStudySessionRepository
-import com.android.sample.ui.profile.FakeProfileRepository
-import com.android.sample.ui.profile.ProfileRepository
 import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 

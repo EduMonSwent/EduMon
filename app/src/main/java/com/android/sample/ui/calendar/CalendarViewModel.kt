@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.model.PlannerRepository
 import com.android.sample.model.StudyItem
-import com.android.sample.model.calendar.PlannerRepository
-import com.android.sample.model.calendar.StudyItem
 import com.android.sample.repos_providors.AppRepositories
 import java.time.LocalDate
 import java.time.YearMonth
