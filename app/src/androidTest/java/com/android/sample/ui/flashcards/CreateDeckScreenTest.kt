@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.flashcards.data.FlashcardsRepositoryProvider
 import com.android.sample.ui.theme.EduMonTheme
 import java.util.concurrent.atomic.AtomicBoolean
