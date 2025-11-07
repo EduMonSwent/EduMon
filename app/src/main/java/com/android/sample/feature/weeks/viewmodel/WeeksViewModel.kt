@@ -5,11 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.model.DayStatus
 import com.android.sample.feature.weeks.model.WeekContent
 import com.android.sample.feature.weeks.model.WeekProgressItem
-import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
+import com.android.sample.repos_providors.AppRepositories
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,8 +25,7 @@ data class WeeksUiState(
 )
 
 class WeeksViewModel(
-    private val repository: WeeksRepository =
-        FirestoreWeeksRepository(Firebase.firestore, Firebase.auth),
+    private val repository: WeeksRepository = AppRepositories.weeksRepository,
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(WeeksUiState())
   val uiState = _uiState.asStateFlow()

@@ -3,7 +3,8 @@ package com.android.sample.feature.homeScreen
 import com.android.sample.data.CreatureStats
 import com.android.sample.data.Priority
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserStats
+import com.android.sample.data.UserProfile
+import com.android.sample.profile.ProfileRepositoryProvider
 import java.time.LocalDate
 
 // ---------- Repository ----------
@@ -12,7 +13,7 @@ interface HomeRepository {
 
   suspend fun fetchCreatureStats(): CreatureStats
 
-  suspend fun fetchUserStats(): UserStats
+  suspend fun fetchUserStats(): UserProfile
 
   fun dailyQuote(nowMillis: Long = System.currentTimeMillis()): String
 }
@@ -55,8 +56,8 @@ class FakeHomeRepository : HomeRepository {
     return CreatureStats()
   }
 
-  override suspend fun fetchUserStats(): UserStats {
-    return UserStats()
+  override suspend fun fetchUserStats(): UserProfile {
+    return ProfileRepositoryProvider.repository.profile.value
   }
 
   override fun dailyQuote(nowMillis: Long): String {

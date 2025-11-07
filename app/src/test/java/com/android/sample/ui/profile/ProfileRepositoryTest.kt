@@ -1,5 +1,7 @@
 package com.android.sample.ui.profile
 
+import com.android.sample.data.UserProfile
+import com.android.sample.profile.FakeProfileRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

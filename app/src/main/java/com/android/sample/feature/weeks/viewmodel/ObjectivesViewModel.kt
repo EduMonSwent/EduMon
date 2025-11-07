@@ -4,10 +4,9 @@ package com.android.sample.feature.weeks.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.model.Objective
-import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
+import com.android.sample.repos_providors.AppRepositories
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,9 +22,8 @@ data class ObjectivesUiState(
 )
 
 class ObjectivesViewModel(
-    // Default to Firestore; tests can still pass a Fake repo by overriding this param
-    private val repository: ObjectivesRepository =
-        FirestoreObjectivesRepository(Firebase.firestore, Firebase.auth),
+    // Default to provider; tests can still pass a Fake repo by overriding this param
+    private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
     // When false, we won't attempt Firebase auth automatically (useful for tests)
     private val requireAuth: Boolean = true,
 ) : ViewModel() {

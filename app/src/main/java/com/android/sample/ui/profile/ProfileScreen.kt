@@ -66,6 +66,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
+import com.android.sample.data.AccentVariant
+import com.android.sample.data.AccessoryItem
+import com.android.sample.data.AccessorySlot
+import com.android.sample.data.Rarity
+import com.android.sample.data.UserProfile
 import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
@@ -76,7 +81,6 @@ object ProfileScreenTestTags {
   const val CUSTOMIZE_PET_SECTION = "customizePetSection"
   const val SETTINGS_CARD = "settingsCard"
   const val ACCOUNT_ACTIONS_SECTION = "accountActionsSection"
-  const val SWITCH_NOTIFICATIONS = "switchNotifications"
   const val SWITCH_LOCATION = "switchLocation"
   const val SWITCH_FOCUS_MODE = "switchFocusMode"
 }
@@ -88,7 +92,10 @@ private val SCREEN_PADDING = 60.dp
 private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
+fun ProfileScreen(
+    viewModel: ProfileViewModel = viewModel(),
+    onOpenNotifications: () -> Unit = {} // navigate to "notifications"
+) {
   val user by viewModel.userProfile.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
@@ -129,9 +136,9 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
             Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
               SettingsCard(
                   user = user,
-                  onToggleNotifications = viewModel::toggleNotifications,
                   onToggleLocation = viewModel::toggleLocation,
-                  onToggleFocusMode = viewModel::toggleFocusMode)
+                  onToggleFocusMode = viewModel::toggleFocusMode,
+                  onOpenNotifications = onOpenNotifications)
             }
           }
         }
@@ -339,14 +346,19 @@ fun StatsCard(user: UserProfile) {
         color = TextLight.copy(alpha = 0.8f))
     Spacer(modifier = Modifier.height(8.dp))
     StatRow(
-        Icons.Outlined.Whatshot, stringResource(id = R.string.stats_streak), "${user.streak} days")
+        Icons.Outlined.Whatshot,
+        stringResource(id = R.string.stats_streak),
+        "${user.streak} ${stringResource(R.string.days)}")
     StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${user.points}")
     StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${user.coins}")
     StatRow(
         Icons.AutoMirrored.Outlined.MenuBook,
         stringResource(id = R.string.stats_study_time),
-        "${user.studyTimeToday} min")
-    StatRow(Icons.Outlined.Flag, stringResource(id = R.string.stats_goal), "${user.dailyGoal} min")
+        "${user.studyStats.totalTimeMin} ${stringResource(R.string.minute)}")
+    StatRow(
+        Icons.Outlined.Flag,
+        stringResource(id = R.string.stats_goal),
+        "${user.studyStats.dailyGoalMin} ${stringResource(R.string.minute)}")
   }
 }
 
@@ -410,14 +422,11 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 
     Spacer(Modifier.height(20.dp))
 
-    // Inventaire
+    // Inventory
     Text("Inventory", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(10.dp))
 
-    var selectedTab by
-        androidx.compose.runtime.remember {
-          androidx.compose.runtime.mutableStateOf(AccessorySlot.HEAD)
-        }
+    var selectedTab by remember { androidx.compose.runtime.mutableStateOf(AccessorySlot.HEAD) }
     val tabs = AccessorySlot.values()
     TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
       tabs.forEach { slot ->
@@ -509,9 +518,9 @@ private fun AccessoriesGrid(
 @Composable
 fun SettingsCard(
     user: UserProfile,
-    onToggleNotifications: () -> Unit,
     onToggleLocation: () -> Unit,
-    onToggleFocusMode: () -> Unit
+    onToggleFocusMode: () -> Unit,
+    onOpenNotifications: () -> Unit
 ) {
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
@@ -519,13 +528,9 @@ fun SettingsCard(
         color = TextLight.copy(alpha = 0.8f),
         fontWeight = FontWeight.SemiBold)
     Spacer(modifier = Modifier.height(8.dp))
-    SettingRow(
-        stringResource(id = R.string.settings_notifications),
-        stringResource(id = R.string.settings_notifications_desc),
-        user.notificationsEnabled,
-        onToggleNotifications,
-        modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_NOTIFICATIONS))
-    Divider(color = DarkDivider)
+
+    // Removed old "notifications" toggle. We now navigate to a dedicated Notifications screen.
+
     SettingRow(
         stringResource(id = R.string.settings_location),
         stringResource(id = R.string.settings_location_desc),
@@ -533,12 +538,20 @@ fun SettingsCard(
         onToggleLocation,
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
     Divider(color = DarkDivider)
+
     SettingRow(
         stringResource(id = R.string.settings_focus),
         stringResource(id = R.string.settings_focus_desc),
         user.focusModeEnabled,
         onToggleFocusMode,
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
+
+    Spacer(Modifier.height(12.dp))
+    androidx.compose.material3.TextButton(
+        onClick = onOpenNotifications,
+        modifier = Modifier.fillMaxWidth().testTag("open_notifications_screen")) {
+          Text("Manage notifications")
+        }
   }
 }
 

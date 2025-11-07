@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.repositories.ToDoRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
 
 /**
  * Add To-Do screen:
@@ -20,7 +20,7 @@ fun AddToDoScreen(onBack: () -> Unit) {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                   // Get the single shared repository from the provider
-                  return AddToDoViewModel(ToDoRepositoryProvider.repository) as T
+                  return AddToDoViewModel(AppRepositories.toDoRepository) as T
                 }
               })
 

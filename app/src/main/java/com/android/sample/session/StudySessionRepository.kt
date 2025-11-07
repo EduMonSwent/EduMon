@@ -1,8 +1,8 @@
 package com.android.sample.session
 
 import com.android.sample.data.Status
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
-import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.session.StudySessionUiState
 import com.android.sample.ui.session.Task
 import kotlinx.coroutines.flow.first
@@ -45,7 +45,7 @@ class FakeStudySessionRepository : StudySessionRepository { // Temporary Fake im
 }
 
 class ToDoBackedStudySessionRepository(
-    private val toDos: ToDoRepository = ToDoRepositoryProvider.repository
+    private val toDos: ToDoRepository = AppRepositories.toDoRepository
 ) : StudySessionRepository {
 
   private val savedSessions = mutableListOf<StudySessionUiState>()

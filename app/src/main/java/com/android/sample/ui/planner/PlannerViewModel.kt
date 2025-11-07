@@ -10,8 +10,8 @@ import com.android.sample.model.planner.Class
 import com.android.sample.model.planner.ClassAttendance
 import com.android.sample.model.planner.CompletionStatus
 import com.android.sample.model.planner.PlannerRepository
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
-import com.android.sample.repositories.ToDoRepositoryProvider
 import java.time.LocalDate
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -30,8 +30,8 @@ data class PlannerUiState(
 )
 
 open class PlannerViewModel(
-    private val plannerRepository: PlannerRepository = PlannerRepository(),
-    private val toDoRepository: ToDoRepository = ToDoRepositoryProvider.repository
+    private val plannerRepository: PlannerRepository = AppRepositories.plannerRepository,
+    private val toDoRepository: ToDoRepository = AppRepositories.toDoRepository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(PlannerUiState())

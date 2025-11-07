@@ -39,7 +39,7 @@ class CreateDeckScreenTest {
 
   @Test
   fun renders_staticElements() {
-    val vm = CreateDeckViewModel()
+    val vm = CreateDeckViewModel(FakeRepositories.toDoRepository)
     composeRule.setContent {
       EduMonTheme { CreateDeckScreen(onSaved = {}, onCancel = {}, vm = vm) }
     }
