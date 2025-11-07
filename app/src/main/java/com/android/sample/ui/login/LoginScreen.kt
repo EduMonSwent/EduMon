@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,9 +34,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen() {
   // --- Config ---
-  val webClientId = "154991771075-mluie21sbgjbjuv66l4jrl1oqofk824n.apps.googleusercontent.com"
 
-  val context = LocalContext.current
+    val webClientId = stringResource(R.string.default_web_client_id)
+    val context = LocalContext.current
   val activity = context as Activity
 
   val credentialManager = remember(activity) { CredentialManager.create(activity) }
