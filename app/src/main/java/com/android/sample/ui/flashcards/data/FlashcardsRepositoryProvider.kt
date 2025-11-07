@@ -2,7 +2,7 @@ package com.android.sample.ui.flashcards.data
 
 import android.content.Context
 
-/** Simple provider (no DI). Call init(context) once (e.g. Application.onCreate()). */
+/** Simple provider for FlashcardsRepo */
 object FlashcardsRepositoryProvider {
   @Volatile private var repo: FlashcardsRepository? = null
 

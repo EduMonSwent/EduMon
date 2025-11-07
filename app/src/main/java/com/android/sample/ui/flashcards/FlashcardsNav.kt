@@ -40,9 +40,7 @@ fun FlashcardsApp() {
     }
 
     composable(CreateDeckRoute.route) {
-      CreateDeckScreen(
-          onSaved = { nav.popBackStack() }, // 🔁 go back to deck list
-          onCancel = { nav.popBackStack() })
+      CreateDeckScreen(onSaved = { nav.popBackStack() }, onCancel = { nav.popBackStack() })
     }
 
     composable(StudyRoute.route) { backStack ->
