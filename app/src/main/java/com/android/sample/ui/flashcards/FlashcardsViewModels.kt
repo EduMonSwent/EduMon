@@ -7,21 +7,28 @@ import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryProvider
-import com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository
+import com.android.sample.ui.flashcards.data.FlashcardsRepository
+import com.android.sample.ui.flashcards.data.FlashcardsRepositoryProvider
 import com.android.sample.ui.flashcards.model.*
 import java.time.LocalDate
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /** ViewModel that exposes the list of decks from the repository. */
-class DeckListViewModel : ViewModel() {
-  val decks = InMemoryFlashcardsRepository.decks
+class DeckListViewModel(
+    private val repo: FlashcardsRepository = FlashcardsRepositoryProvider.repository
+) : ViewModel() {
+  val decks = repo.observeDecks()
+
+  fun deleteDeck(id: String) = viewModelScope.launch { repo.deleteDeck(id) }
 }
 
 /** ViewModel for creating a new deck. */
 class CreateDeckViewModel(
-    private val toDoRepo: ToDoRepository = ToDoRepositoryProvider.repository
+    private val toDoRepo: ToDoRepository = ToDoRepositoryProvider.repository,
+    private val repo: FlashcardsRepository = FlashcardsRepositoryProvider.repository
 ) : ViewModel() {
+
   private val _title = MutableStateFlow("")
   private val _description = MutableStateFlow("")
   private val _cards = MutableStateFlow<List<Flashcard>>(emptyList())
@@ -57,7 +64,7 @@ class CreateDeckViewModel(
   fun save(onSaved: (String) -> Unit) =
       viewModelScope.launch {
         val id =
-            InMemoryFlashcardsRepository.createDeck(
+            repo.createDeck(
                 title = _title.value.trim(),
                 description = _description.value.trim(),
                 cards = _cards.value.filter { it.question.isNotBlank() && it.answer.isNotBlank() })
@@ -77,39 +84,77 @@ class CreateDeckViewModel(
 /**
  * Immutable UI state for studying a deck. Tracks current index and whether the answer is visible.
  */
-data class StudyState(val deck: Deck, val index: Int = 0, val showingAnswer: Boolean = false) {
+data class StudyState(
+    val deck: Deck? = null,
+    val index: Int = 0,
+    val showingAnswer: Boolean = false,
+    val error: String? = null
+) {
   val total: Int
-    get() = deck.cards.size
-
-  val current: Flashcard
-    get() = deck.cards[index]
+    get() = deck?.cards?.size ?: 0
 
   val isFirst: Boolean
-    get() = index == 0
+    get() = index <= 0
 
   val isLast: Boolean
-    get() = index == total - 1
+    get() = total == 0 || index >= total - 1
+
+  val currentOrNull: Flashcard?
+    get() = if (total == 0 || index !in 0 until total) null else deck!!.cards[index]
 }
-/** ViewModel that drives the study flow (flip/next/prev/record). */
-class StudyViewModel(private val deckId: String) : ViewModel() {
-  private val deck = requireNotNull(InMemoryFlashcardsRepository.deck(deckId)) { "Deck not found" }
-  private val _state = MutableStateFlow(StudyState(deck))
+
+class StudyViewModel(
+    private val deckId: String,
+    private val repo: FlashcardsRepository = FlashcardsRepositoryProvider.repository
+) : ViewModel() {
+
+  private val _state = MutableStateFlow(StudyState())
   val state: StateFlow<StudyState> = _state
 
-  fun flip() {
-    _state.update { it.copy(showingAnswer = !it.showingAnswer) }
+  init {
+    viewModelScope.launch {
+      runCatching {
+            repo.observeDeck(deckId).collect { deck ->
+              if (deck == null) {
+                _state.value = StudyState(error = "Deck not found")
+              } else {
+                _state.value = StudyState(deck = deck, index = 0, showingAnswer = false)
+              }
+            }
+          }
+          .onFailure { e -> _state.value = StudyState(error = "Failed to load deck: ${e.message}") }
+    }
   }
 
-  fun next() {
-    _state.update { s -> if (!s.isLast) s.copy(index = s.index + 1, showingAnswer = false) else s }
-  }
+  fun flip() = _state.update { it.copy(showingAnswer = !it.showingAnswer) }
 
-  fun prev() {
-    _state.update { s -> if (!s.isFirst) s.copy(index = s.index - 1, showingAnswer = false) else s }
-  }
+  fun next() =
+      _state.update { s ->
+        val total = s.total
+        if (total == 0) s
+        else {
+          val newIndex = (s.index + 1).coerceAtMost(total - 1)
+          s.copy(index = newIndex, showingAnswer = false)
+        }
+      }
 
+  fun prev() =
+      _state.update { s ->
+        val total = s.total
+        if (total == 0) s
+        else {
+          val newIndex = (s.index - 1).coerceAtLeast(0)
+          s.copy(index = newIndex, showingAnswer = false)
+        }
+      }
+
+  // StudyViewModel.kt
   fun record(confidence: Confidence) {
-    // Here you could persist spaced-repetition data; we just advance.
+    // Don’t allow answering unless the answer is visible
+    val canGrade = state.value.showingAnswer
+    if (!canGrade) return
+
+    // TODO: apply SRS here later
     next()
   }
 }

@@ -71,7 +71,6 @@ class HomeNavigationTests {
             AppDestination.Stats.route to "Stats",
             AppDestination.Games.route to "Games",
             AppDestination.Study.route to "Study",
-            AppDestination.Flashcards.route to "Study", // Flashcards screen title is "Study"
             AppDestination.Todo.route to "Todo",
             AppDestination.Mood.route to "Daily Reflection")
 

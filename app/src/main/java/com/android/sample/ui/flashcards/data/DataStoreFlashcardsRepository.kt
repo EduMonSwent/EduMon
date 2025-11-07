@@ -1,0 +1,50 @@
+package com.android.sample.ui.flashcards.data
+
+import com.android.sample.ui.flashcards.model.Deck
+import com.android.sample.ui.flashcards.model.Flashcard
+import java.util.UUID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+class DataStoreFlashcardsRepository(private val storage: FlashcardsStorage) : FlashcardsRepository {
+
+  override fun observeDecks(): Flow<List<Deck>> =
+      storage.observeAll().map { it.map(DeckDTO::toDomain) }
+
+  override fun observeDeck(deckId: String): Flow<Deck?> =
+      storage.observeAll().map { list -> list.firstOrNull { it.id == deckId }?.toDomain() }
+
+  override suspend fun createDeck(
+      title: String,
+      description: String,
+      cards: List<Flashcard>
+  ): String {
+    val dto =
+        DeckDTO(
+            id = UUID.randomUUID().toString(),
+            title = title.ifBlank { "New deck" },
+            description = description,
+            cards =
+                cards
+                    .filter { it.question.isNotBlank() && it.answer.isNotBlank() }
+                    .map { CardDTO(q = it.question, a = it.answer) })
+    return storage.upsertDeck(dto)
+  }
+
+  override suspend fun addCard(deckId: String, card: Flashcard) {
+    if (card.question.isBlank() || card.answer.isBlank()) return
+    storage.addCard(deckId, CardDTO(q = card.question, a = card.answer))
+  }
+
+  override suspend fun deleteDeck(deckId: String) {
+    storage.deleteDeck(deckId)
+  }
+}
+
+/* ---------- mappers ---------- */
+private fun DeckDTO.toDomain(): Deck =
+    Deck(
+        id = id,
+        title = title,
+        description = description,
+        cards = cards.map { Flashcard(question = it.q, answer = it.a) }.toMutableList())

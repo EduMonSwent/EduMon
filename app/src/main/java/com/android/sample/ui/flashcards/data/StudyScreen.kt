@@ -20,79 +20,128 @@ import com.android.sample.ui.theme.*
 
 @Composable
 fun StudyScreen(deckId: String, onBack: () -> Unit) {
-  // simple factory to pass deckId
+  // Pass deckId to VM
   val vm: StudyViewModel =
       viewModel(factory = viewModelFactory { initializer { StudyViewModel(deckId) } })
-  val s by vm.state.collectAsState()
+
+  // Nullable while first value loads
+  val s by vm.state.collectAsState(initial = null)
 
   Column(Modifier.fillMaxSize().background(BackgroundDark).padding(16.dp)) {
+    // Top bar
     TextButton(
         onClick = onBack, colors = ButtonDefaults.textButtonColors(contentColor = TextLight)) {
           Text("← Back")
         }
-    Text(s.deck.title, style = MaterialTheme.typography.headlineMedium, color = AccentMagenta)
-    Text("Card ${s.index + 1} of ${s.total}", color = TextLight.copy(alpha = .7f))
-    Spacer(Modifier.height(16.dp))
 
-    FlipCard(
-        front = { QuestionSide(text = s.current.question) },
-        back = { AnswerSide(text = s.current.answer) },
-        flipped = s.showingAnswer,
-        onToggle = vm::flip,
-        modifier = Modifier.weight(1f).fillMaxWidth())
-
-    Spacer(Modifier.height(16.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-      OutlinedButton(
-          onClick = vm::prev,
-          enabled = !s.isFirst,
-          colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)) {
-            Text("Previous")
-          }
-
-      OutlinedButton(
-          onClick = vm::flip,
-          colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)) {
-            Text(if (s.showingAnswer) "Hide" else "Reveal")
-          }
-
-      Button(
-          onClick = vm::next,
-          enabled = !s.isLast,
-          colors =
-              ButtonDefaults.buttonColors(
-                  containerColor = AccentViolet, contentColor = TextLight)) {
-            Text("Next")
-          }
-    }
-
-    Spacer(Modifier.height(12.dp))
-    Text("How confident are you?", color = TextLight.copy(alpha = .8f))
     Spacer(Modifier.height(8.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      Button(
-          onClick = { vm.record(Confidence.LOW) },
-          modifier = Modifier.weight(1f),
-          colors =
-              ButtonDefaults.buttonColors(
-                  containerColor = AccentMagenta, contentColor = TextLight)) {
-            Text("Low")
+
+    // ------- ONE stable Column body; choose a branch without early returns -------
+    when {
+      // Loading
+      s == null -> {
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+          CircularProgressIndicator(color = AccentViolet)
+        }
+        // Fill remaining space so Column children count stays predictable
+        Spacer(Modifier.weight(1f))
+      }
+
+      // If your VM exposes an error string, show it here (optional, else remove branch)
+
+      // Empty deck
+      s!!.total == 0 -> {
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "This deck has no cards yet.",
+            color = TextLight,
+            style = MaterialTheme.typography.titleMedium)
+        Text("Add some cards, then come back to study.", color = TextLight.copy(alpha = .7f))
+        Spacer(Modifier.weight(1f))
+      }
+
+      // Main content
+      else -> {
+        val state = s!!
+        val deck = state.deck
+        Text(
+            deck?.title ?: "Untitled Deck",
+            style = MaterialTheme.typography.headlineMedium,
+            color = AccentMagenta)
+        Text("Card ${state.index + 1} of ${state.total}", color = TextLight.copy(alpha = .7f))
+
+        Spacer(Modifier.height(16.dp))
+
+        FlipCard(
+            front = { QuestionSide(text = state.currentOrNull?.question ?: "No question") },
+            back = { AnswerSide(text = state.currentOrNull?.answer ?: "No answer") },
+            flipped = state.showingAnswer,
+            onToggle = vm::flip,
+            modifier = Modifier.weight(1f).fillMaxWidth())
+
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          OutlinedButton(
+              onClick = vm::prev,
+              enabled = !state.isFirst,
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)) {
+                Text("Previous")
+              }
+
+          OutlinedButton(
+              onClick = vm::flip,
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)) {
+                Text(if (state.showingAnswer) "Hide" else "Reveal")
+              }
+
+          Button(
+              onClick = vm::next,
+              enabled = !state.isLast,
+              colors =
+                  ButtonDefaults.buttonColors(
+                      containerColor = AccentViolet, contentColor = TextLight)) {
+                Text("Next")
+              }
+        }
+
+        if (state.showingAnswer) {
+          Spacer(Modifier.height(12.dp))
+          Text("How confident were you?", color = TextLight.copy(alpha = .8f))
+          Spacer(Modifier.height(8.dp))
+          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { vm.record(Confidence.LOW) },
+                modifier = Modifier.weight(1f),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = AccentMagenta, contentColor = TextLight)) {
+                  Text("Low")
+                }
+
+            Button(
+                onClick = { vm.record(Confidence.MEDIUM) },
+                modifier = Modifier.weight(1f),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = AccentViolet, contentColor = TextLight)) {
+                  Text("Medium")
+                }
+
+            Button(
+                onClick = { vm.record(Confidence.HIGH) },
+                modifier = Modifier.weight(1f),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = AccentMint, contentColor = TextLight)) {
+                  Text("High")
+                }
           }
-      Button(
-          onClick = { vm.record(Confidence.MEDIUM) },
-          modifier = Modifier.weight(1f),
-          colors =
-              ButtonDefaults.buttonColors(
-                  containerColor = AccentViolet, contentColor = TextLight)) {
-            Text("Medium")
-          }
-      Button(
-          onClick = { vm.record(Confidence.HIGH) },
-          modifier = Modifier.weight(1f),
-          colors =
-              ButtonDefaults.buttonColors(containerColor = AccentMint, contentColor = TextLight)) {
-            Text("High")
-          }
+        } else {
+          Spacer(Modifier.height(12.dp))
+          Text("Tap “Reveal” to view the answer", color = TextLight.copy(alpha = .6f))
+        }
+      }
     }
   }
 }

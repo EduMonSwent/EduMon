@@ -1,5 +1,6 @@
 package com.android.sample.ui.flashcards
 
+import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -7,10 +8,14 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.ui.flashcards.data.FlashcardsRepositoryProvider
 import com.android.sample.ui.theme.EduMonTheme
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.flow.first
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +29,12 @@ import org.junit.runner.RunWith
 class CreateDeckScreenTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+  @Before
+  fun setup() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    FlashcardsRepositoryProvider.init(context)
+  }
 
   @Test
   fun renders_staticElements() {
@@ -110,6 +121,7 @@ class CreateDeckScreenTest {
 
   @Test
   fun saveDeck_trimsTitleAndDescription_andFiltersBlankCards() {
+    // Use the real VM that defaults to the provider-backed repo
     val vm =
         CreateDeckViewModel().apply {
           addEmptyCard() // will be filled
@@ -118,24 +130,30 @@ class CreateDeckScreenTest {
           setTitle("  Title  ")
           setDescription("  Desc  ")
         }
-    val savedId = AtomicReference<String?>()
+
+    val savedId = java.util.concurrent.atomic.AtomicReference<String?>()
 
     composeRule.setContent {
       EduMonTheme { CreateDeckScreen(onSaved = { savedId.set(it) }, onCancel = {}, vm = vm) }
     }
 
+    // Tap Save
     composeRule.onNodeWithText("Save Deck").performClick()
+
+    // Wait until the VM calls onSaved(id)
     composeRule.waitUntil(3_000) { savedId.get() != null }
 
     val id = requireNotNull(savedId.get())
-    val deck = com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository.deck(id)
+
+    val repo = FlashcardsRepositoryProvider.repository
+    val deck = kotlinx.coroutines.runBlocking { repo.observeDeck(id).first() }
     requireNotNull(deck)
-    // Title/description are trimmed in VM before save
+
     assert(deck.title == "Title")
     assert(deck.description == "Desc")
-    // Blank card filtered out -> only one card saved
+
     assert(deck.cards.size == 1)
-    // VM doesn't trim card fields; it just filters blanks
+
     assert(deck.cards[0].question == "  Q?  ")
     assert(deck.cards[0].answer == "  A!  ")
   }
