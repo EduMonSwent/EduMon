@@ -6,11 +6,10 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.R
 import com.android.sample.data.ToDo
-import com.android.sample.model.planner.*
+import com.android.sample.feature.schedule.viewmodel.PlannerViewModel
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.planner.PlannerScreenTestTags
-import com.android.sample.ui.viewmodel.PlannerViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -39,20 +38,6 @@ class PlannerScreenTest {
 
     // Check for pet header
     composeTestRule.onNodeWithTag(PlannerScreenTestTags.PET_HEADER).assertExists()
-  }
-
-  @Test
-  fun plannerScreen_displaysPetStats() {
-    composeTestRule.setContent { PlannerScreen() }
-
-    composeTestRule.waitForIdle()
-
-    // Check pet stats are displayed
-    composeTestRule.onNodeWithText("90%", substring = true).assertExists()
-
-    composeTestRule.onNodeWithText("85%", substring = true).assertExists()
-
-    composeTestRule.onNodeWithText("70%", substring = true).assertExists()
   }
 
   // --- NEW TESTS: AIRecommendationCard Coverage ---

@@ -26,9 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.Priority
-import com.android.sample.model.planner.*
+import com.android.sample.feature.schedule.data.planner.WellnessEventType
+import com.android.sample.feature.schedule.viewmodel.PlannerViewModel
 import com.android.sample.ui.theme.*
-import com.android.sample.ui.viewmodel.PlannerViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.collectLatest
@@ -75,10 +75,7 @@ fun PlannerScreen(viewModel: PlannerViewModel = viewModel()) {
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
               item {
-                PetHeader(
-                    level = 5,
-                    modifier = Modifier.testTag(PlannerScreenTestTags.PET_HEADER),
-                    onEdumonNameClick = { /* Navigate to pet profile */})
+                PetHeader(level = 5, modifier = Modifier.testTag(PlannerScreenTestTags.PET_HEADER))
               }
               item {
                 PlannerGlowCard {

@@ -1,12 +1,16 @@
-package com.android.sample.model.schedule
+package com.android.sample.feature.schedule.repository.schedule
 
 import android.content.res.Resources
 import com.android.sample.R
-import com.android.sample.model.Priority as ModelPriority
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
-import com.android.sample.model.planner.Class as PlannerClass
-import com.android.sample.model.planner.ClassType
+import com.android.sample.feature.schedule.data.calendar.Priority as ModelPriority
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
+import com.android.sample.feature.schedule.data.planner.Class as PlannerClass
+import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.schedule.EventKind
+import com.android.sample.feature.schedule.data.schedule.Priority
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SourceTag
 import java.time.Duration
 import java.time.LocalDate
 import java.util.Locale
