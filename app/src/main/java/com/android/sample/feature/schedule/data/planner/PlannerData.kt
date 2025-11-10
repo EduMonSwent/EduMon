@@ -1,4 +1,4 @@
-package com.android.sample.model.planner
+package com.android.sample.feature.schedule.data.planner
 
 import androidx.compose.ui.graphics.Color
 import com.android.sample.R

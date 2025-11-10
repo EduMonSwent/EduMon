@@ -1,6 +1,8 @@
-package com.android.sample.model.planner
+package com.android.sample.feature.schedule.repository.planner
 
-import com.android.sample.model.planner.*
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassAttendance
+import com.android.sample.feature.schedule.data.planner.ClassType
 import java.time.LocalTime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

@@ -100,7 +100,7 @@ fun CreatureHouseCard(
 }
 
 @Composable
-private fun CreatureSprite(resId: Int, modifier: Modifier = Modifier, size: Dp = 120.dp) {
+fun CreatureSprite(resId: Int, modifier: Modifier = Modifier, size: Dp = 120.dp) {
   val inf = rememberInfiniteTransition(label = "float")
   val offset by
       inf.animateFloat(
