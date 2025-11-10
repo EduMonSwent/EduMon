@@ -35,8 +35,8 @@ import kotlinx.coroutines.launch
 fun LoginScreen() {
   // --- Config ---
 
-    val webClientId = stringResource(R.string.default_web_client_id)
-    val context = LocalContext.current
+  val webClientId = stringResource(R.string.default_web_client_id)
+  val context = LocalContext.current
   val activity = context as Activity
 
   val credentialManager = remember(activity) { CredentialManager.create(activity) }
