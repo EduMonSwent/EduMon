@@ -23,11 +23,13 @@ import com.android.sample.ui.games.FocusBreathingScreen
 import com.android.sample.ui.games.GamesScreen
 import com.android.sample.ui.games.MemoryGameScreen
 import com.android.sample.ui.games.ReactionGameScreen
+import com.android.sample.ui.location.StudyTogetherScreen
 import com.android.sample.ui.mood.MoodLoggingRoute
 import com.android.sample.ui.notifications.NotificationsScreen
 import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.session.StudySessionScreen
+import com.android.sample.ui.shop.ShopScreen
 import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.todo.TodoNavHostInThisFile
 
@@ -343,7 +345,59 @@ fun EduMonNavHost(
                 Box(Modifier.fillMaxSize().padding(padding)) { MoodLoggingRoute() }
               }
         }
-        composable("notifications") {
+
+      // STUDY TOGETHER
+      composable(AppDestination.StudyTogether.route) {
+          Scaffold(
+              topBar = {
+                  TopAppBar(
+                      title = {
+                          Text("Study Together", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                      },
+                      navigationIcon = {
+                          IconButton(
+                              onClick = { nav.popBackStack() },
+                              modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)
+                          ) {
+                              Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                      })
+              }
+          ) { padding ->
+              Box(Modifier.fillMaxSize().padding(padding)) {
+                  // Uses defaultFriends by default
+                  StudyTogetherScreen()
+              }
+          }
+      }
+      
+      //SHOP
+      composable(AppDestination.Shop.route ) {
+          Scaffold(
+              topBar = {
+                  TopAppBar(
+                      title = {
+                          Text("Shop", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                      },
+                      navigationIcon = {
+                          IconButton(
+                              onClick = { nav.popBackStack() },
+                              modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)
+                          ) {
+                              Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                      })
+              }
+          ) { padding ->
+              Box(Modifier.fillMaxSize().padding(padding)) {
+                  ShopScreen()
+              }
+          }
+      }
+
+
+
+      composable("notifications") {
           NotificationsScreen(
               onBack = { nav.popBackStack() },
               onGoHome = {
@@ -354,6 +408,7 @@ fun EduMonNavHost(
                 }
               })
         }
+
       }
 }
 
