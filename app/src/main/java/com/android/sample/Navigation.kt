@@ -346,58 +346,52 @@ fun EduMonNavHost(
               }
         }
 
-      // STUDY TOGETHER
-      composable(AppDestination.StudyTogether.route) {
+        // STUDY TOGETHER
+        composable(AppDestination.StudyTogether.route) {
           Scaffold(
               topBar = {
-                  TopAppBar(
-                      title = {
-                          Text("Study Together", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                      },
-                      navigationIcon = {
-                          IconButton(
-                              onClick = { nav.popBackStack() },
-                              modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)
-                          ) {
-                              Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                TopAppBar(
+                    title = {
+                      Text(
+                          "Study Together",
+                          modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                           }
-                      })
-              }
-          ) { padding ->
-              Box(Modifier.fillMaxSize().padding(padding)) {
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) {
                   // Uses defaultFriends by default
                   StudyTogetherScreen()
+                }
               }
-          }
-      }
-      
-      //SHOP
-      composable(AppDestination.Shop.route ) {
+        }
+
+        // SHOP
+        composable(AppDestination.Shop.route) {
           Scaffold(
               topBar = {
-                  TopAppBar(
-                      title = {
-                          Text("Shop", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                      },
-                      navigationIcon = {
-                          IconButton(
-                              onClick = { nav.popBackStack() },
-                              modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)
-                          ) {
-                              Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                TopAppBar(
+                    title = {
+                      Text("Shop", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                           }
-                      })
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) { ShopScreen() }
               }
-          ) { padding ->
-              Box(Modifier.fillMaxSize().padding(padding)) {
-                  ShopScreen()
-              }
-          }
-      }
+        }
 
-
-
-      composable("notifications") {
+        composable("notifications") {
           NotificationsScreen(
               onBack = { nav.popBackStack() },
               onGoHome = {
@@ -408,7 +402,6 @@ fun EduMonNavHost(
                 }
               })
         }
-
       }
 }
 
