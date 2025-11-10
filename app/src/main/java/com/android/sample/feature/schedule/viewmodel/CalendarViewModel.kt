@@ -1,17 +1,22 @@
-package com.android.sample.ui.calendar
+package com.android.sample.feature.schedule.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.model.PlannerRepository
-import com.android.sample.model.StudyItem
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import com.android.sample.repos_providors.AppRepositories
 import java.time.LocalDate
 import java.time.YearMonth
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class CalendarViewModel(
-    private val repository: PlannerRepository = AppRepositories.calendarRepository
+    private val repository: CalendarRepository = AppRepositories.calendarRepository
 ) : ViewModel() {
 
   private val _selectedDate = MutableStateFlow(LocalDate.now())
@@ -30,11 +35,11 @@ class CalendarViewModel(
   val showAddEditModal: StateFlow<Boolean> = _showAddEditModal.asStateFlow()
 
   val allTasks: StateFlow<List<StudyItem>> =
-      repository.tasksFlow.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+      repository.tasksFlow.stateIn(viewModelScope, SharingStarted.Companion.Lazily, emptyList())
 
   val tasksForSelectedDate: StateFlow<List<StudyItem>> =
       combine(selectedDate, allTasks) { date, tasks -> tasks.filter { it.date == date } }
-          .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+          .stateIn(viewModelScope, SharingStarted.Companion.Eagerly, emptyList())
 
   // ---- Calendar navigation ----
   fun onNavigateMonthWeek(forward: Boolean) {

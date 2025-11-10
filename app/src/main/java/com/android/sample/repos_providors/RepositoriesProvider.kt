@@ -1,10 +1,10 @@
 package com.android.sample.repos_providors
 
 import com.android.sample.feature.homeScreen.HomeRepository
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.android.sample.model.PlannerRepositoryImpl
-import com.android.sample.model.planner.PlannerRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.session.StudySessionRepository
@@ -28,7 +28,7 @@ interface RepositoriesProvider {
   val studySessionRepository: StudySessionRepository
 
   // Calendar feature repo (model.calendar.PlannerRepository type)
-  val calendarRepository: PlannerRepositoryImpl
+  val calendarRepository: CalendarRepositoryImpl
 
   // To-Do
   val toDoRepository: ToDoRepository
