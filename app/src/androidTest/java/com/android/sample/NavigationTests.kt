@@ -19,6 +19,11 @@ import org.junit.Test
 
 class HomeNavigationTests {
 
+  @get:Rule
+  val locationPermissionRule: GrantPermissionRule =
+      GrantPermissionRule.grant(
+          Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+
   @get:Rule val rule = createComposeRule()
 
   private lateinit var nav: TestNavHostController
@@ -119,7 +124,9 @@ class HomeNavigationTests {
     setContent()
     openDrawerAndWait()
     rule
-        .onNode(hasTestTag(HomeTestTags.drawerTag(AppDestination.StudyTogether.route)))
+        .onNode(
+            hasTestTag(HomeTestTags.drawerTag(AppDestination.StudyTogether.route)),
+            useUnmergedTree = true)
         .performClick()
     waitUntilRoute(AppDestination.StudyTogether.route)
     rule.waitForIdle()
@@ -151,7 +158,10 @@ class HomeNavigationTests {
   fun drawer_navigates_to_shop() {
     setContent()
     openDrawerAndWait()
-    rule.onNode(hasTestTag(HomeTestTags.drawerTag(AppDestination.Shop.route))).performClick()
+    rule
+        .onNode(
+            hasTestTag(HomeTestTags.drawerTag(AppDestination.Shop.route)), useUnmergedTree = true)
+        .performClick()
     rule.waitForIdle()
     assertRoute(AppDestination.Shop.route)
     assertTopBarTitle("Shop")
@@ -176,9 +186,4 @@ class HomeNavigationTests {
   private fun waitUntilRoute(expected: String) {
     rule.waitUntil(5_000) { nav.currentBackStackEntry?.destination?.route == expected }
   }
-
-  @get:Rule
-  val locationPermissionRule: GrantPermissionRule =
-      GrantPermissionRule.grant(
-          Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 }
