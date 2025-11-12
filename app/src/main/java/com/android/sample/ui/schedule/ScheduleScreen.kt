@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -102,6 +103,7 @@ fun ScheduleScreen() {
       snackbarHost = { SnackbarHost(snackbarHostState) },
       floatingActionButton = {
         FloatingActionButton(
+            modifier = Modifier.testTag("addTaskFab"),
             onClick = {
               addDate =
                   when (currentTab) {
@@ -152,9 +154,13 @@ fun ScheduleScreen() {
               when (currentTab) {
                 ScheduleTab.DAY ->
                     DayTabContent(vm = vm, state = state, objectivesVm = objectivesVm)
-                ScheduleTab.WEEK -> {
-                  // TODO: implement Week
-                }
+                ScheduleTab.WEEK ->
+                    WeekTabContent(
+                        vm = vm,
+                        weeksVm = weeksVm,
+                        objectivesVm = objectivesVm,
+                        allTasks = allTasks,
+                        selectedDate = state.selectedDate)
                 ScheduleTab.MONTH -> {
                   // TODO: implement Month
                 }
