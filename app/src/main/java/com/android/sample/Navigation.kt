@@ -112,7 +112,7 @@ fun EduMonNavHost(
                 Box(Modifier.fillMaxSize().padding(padding)) {
                   ProfileScreen(
                       onOpenNotifications = { nav.navigate("notifications") },
-                      onOpenFocusMode = { nav.navigate("focus_mode") }// <-- ICI
+                      onOpenFocusMode = { nav.navigate("focus_mode") } // <-- ICI
                       )
                 }
               }
@@ -356,32 +356,26 @@ fun EduMonNavHost(
                 }
               })
         }
-      composable("focus_mode") {
+        composable("focus_mode") {
           Scaffold(
               topBar = {
-                  TopAppBar(
-                      title = {
-                          Text(
-                              "Focus Mode",
-                              modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE)
-                          )
-                      },
-                      navigationIcon = {
-                          IconButton(
-                              onClick = { nav.popBackStack() },
-                              modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)
-                          ) {
-                              Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                TopAppBar(
+                    title = {
+                      Text(
+                          "Focus Mode",
+                          modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                           }
-                      }
-                  )
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) { FocusModeScreen() }
               }
-          ) { padding ->
-              Box(Modifier.fillMaxSize().padding(padding)) {
-                  FocusModeScreen()
-              }
-          }
-      }
+        }
       }
 }
 

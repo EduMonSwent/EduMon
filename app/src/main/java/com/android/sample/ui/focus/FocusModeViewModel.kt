@@ -9,23 +9,25 @@ import kotlinx.coroutines.launch
 
 class FocusModeViewModel : ViewModel() {
 
-    val remainingTime = FocusTimer.remainingTime
-        .stateIn(viewModelScope, SharingStarted.Lazily, FocusTimer.remainingTime.value)
+  val remainingTime =
+      FocusTimer.remainingTime.stateIn(
+          viewModelScope, SharingStarted.Lazily, FocusTimer.remainingTime.value)
 
-    val isRunning = FocusTimer.isRunning
-        .stateIn(viewModelScope, SharingStarted.Lazily, FocusTimer.isRunning.value)
+  val isRunning =
+      FocusTimer.isRunning.stateIn(
+          viewModelScope, SharingStarted.Lazily, FocusTimer.isRunning.value)
 
-    fun startFocus(context: Context, durationMinutes: Int = 25) {
-        FocusModeManager.activate(context)
-        viewModelScope.launch { FocusTimer.start(durationMinutes) }
-    }
+  fun startFocus(context: Context, durationMinutes: Int = 25) {
+    FocusModeManager.activate(context)
+    viewModelScope.launch { FocusTimer.start(durationMinutes) }
+  }
 
-    fun stopFocus(context: Context) {
-        FocusModeManager.deactivate(context)
-        viewModelScope.launch { FocusTimer.stop() }
-    }
+  fun stopFocus(context: Context) {
+    FocusModeManager.deactivate(context)
+    viewModelScope.launch { FocusTimer.stop() }
+  }
 
-    fun resetFocus() {
-        viewModelScope.launch { FocusTimer.reset() }
-    }
+  fun resetFocus() {
+    viewModelScope.launch { FocusTimer.reset() }
+  }
 }

@@ -94,7 +94,7 @@ private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(),
-    onOpenFocusMode: () -> Unit,
+    onOpenFocusMode: () -> Unit = {},
     onOpenNotifications: () -> Unit = {}
 ) {
   val user by viewModel.userProfile.collectAsState()
@@ -525,50 +525,45 @@ fun SettingsCard(
     onOpenNotifications: () -> Unit,
     onEnterFocusMode: () -> Unit
 ) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            stringResource(id = R.string.settings_title),
-            color = TextLight.copy(alpha = 0.8f),
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+  Column(modifier = Modifier.padding(16.dp)) {
+    Text(
+        stringResource(id = R.string.settings_title),
+        color = TextLight.copy(alpha = 0.8f),
+        fontWeight = FontWeight.SemiBold)
+    Spacer(modifier = Modifier.height(8.dp))
 
-        // --- Location toggle ---
-        SettingRow(
-            stringResource(id = R.string.settings_location),
-            stringResource(id = R.string.settings_location_desc),
-            user.locationEnabled,
-            onToggleLocation,
-            modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION)
-        )
+    // --- Location toggle ---
+    SettingRow(
+        stringResource(id = R.string.settings_location),
+        stringResource(id = R.string.settings_location_desc),
+        user.locationEnabled,
+        onToggleLocation,
+        modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
 
-        Divider(color = DarkDivider)
+    Divider(color = DarkDivider)
 
-        // --- Focus mode toggle ---
-        SettingRow(
-            stringResource(id = R.string.settings_focus),
-            stringResource(id = R.string.settings_focus_desc),
-            user.focusModeEnabled,
-            onToggle = {
-                onToggleFocusMode()
-                if (!user.focusModeEnabled) {
-                    // Si on vient d’activer le focus mode → on lance l’écran
-                    onEnterFocusMode()
-                }
-            },
-            modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE)
-        )
+    // --- Focus mode toggle ---
+    SettingRow(
+        stringResource(id = R.string.settings_focus),
+        stringResource(id = R.string.settings_focus_desc),
+        user.focusModeEnabled,
+        onToggle = {
+          onToggleFocusMode()
+          if (!user.focusModeEnabled) {
+            // Si on vient d’activer le focus mode → on lance l’écran
+            onEnterFocusMode()
+          }
+        },
+        modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
 
-        Spacer(Modifier.height(12.dp))
-        androidx.compose.material3.TextButton(
-            onClick = onOpenNotifications,
-            modifier = Modifier.fillMaxWidth().testTag("open_notifications_screen")
-        ) {
-            Text("Manage notifications")
+    Spacer(Modifier.height(12.dp))
+    androidx.compose.material3.TextButton(
+        onClick = onOpenNotifications,
+        modifier = Modifier.fillMaxWidth().testTag("open_notifications_screen")) {
+          Text("Manage notifications")
         }
-    }
+  }
 }
-
 
 @Composable
 fun SettingRow(
