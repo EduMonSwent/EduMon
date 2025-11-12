@@ -1,88 +1,109 @@
 // ProfilesFriendRepository.kt
 package com.android.sample.ui.location
 
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.MetadataChanges
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class ProfilesFriendRepository(
-    private val db: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : FriendRepository {
 
     private val currentUid: String =
         auth.currentUser?.uid ?: throw IllegalStateException(
-            "User must be logged in before creating ProfilesFriendRepository."
+            "User must be signed in before using ProfilesFriendRepository."
         )
 
     override val friendsFlow: Flow<List<FriendStatus>> = callbackFlow {
-        // Active per-friend profile listeners
+        // Per-friend profile listeners
         val profileRegs = mutableMapOf<String, ListenerRegistration>()
-        // Latest friend set + profile cache
+        // Current friend id set + cache of FriendStatus
         var currentIds: Set<String> = emptySet()
         val cache = mutableMapOf<String, FriendStatus>()
 
+        // When adding new friends, we hold emissions until each one delivers its *first* profile snapshot.
+        var initialLoadsPending = 0
+
         fun emitNow() {
-            // Only emit friends that are still in the current id set, sorted by name
+            // Emit only friends that are still in the current id set
             val list = cache.values
                 .filter { it.id in currentIds }
                 .sortedBy { it.name.lowercase() }
             trySend(list)
         }
 
-        // Helper to attach a single profile listener
         fun attachProfileListener(uid: String) {
             if (profileRegs.containsKey(uid)) return
+
+            initialLoadsPending++ // first snapshot pending for this uid
+            var first = true
+
             val reg = db.collection("profiles").document(uid)
                 .addSnapshotListener { doc, _ ->
                     if (doc == null || !doc.exists()) {
                         cache.remove(uid)
-                        emitNow()
-                        return@addSnapshotListener
-                    }
-                    val status = doc.toFriendStatus(uid)
-                    if (status == null) {
-                        cache.remove(uid) // no location yet
                     } else {
-                        cache[uid] = status
+                        val status = doc.toFriendStatus(uid)
+                        if (status == null) {
+                            cache.remove(uid)
+                        } else {
+                            cache[uid] = status
+                        }
                     }
-                    emitNow()
+
+                    // On the first snapshot for this uid, release one pending slot.
+                    if (first) {
+                        first = false
+                        if (initialLoadsPending > 0) initialLoadsPending--
+                    }
+
+                    // Only emit if we're not in the middle of an "add" burst.
+                    if (initialLoadsPending == 0) emitNow()
                 }
+
             profileRegs[uid] = reg
         }
 
-        // Helper to detach a single profile listener
         fun detachProfileListener(uid: String) {
             profileRegs.remove(uid)?.remove()
             cache.remove(uid)
         }
 
-        // Listen to my friend IDs (subcollection of documents named by friend uid)
-        val idsReg = db.collection("users")
-            .document(currentUid)
-            .collection("friendIds")
-            .addSnapshotListener { snap, _ ->
-                val ids = snap?.documents?.map { it.id }?.toSet() ?: emptySet()
-                // Compute delta
-                val newIds = ids - currentIds
-                val removedIds = currentIds - ids
-                currentIds = ids
+        // Listen to my friend IDs; ignore local (pending write) snapshots to avoid add-flicker.
+        val idsReg: ListenerRegistration =
+            db.collection("users")
+                .document(currentUid)
+                .collection("friendIds")
+                .addSnapshotListener(MetadataChanges.INCLUDE) { snap, _ ->
+                    if (snap == null) return@addSnapshotListener
 
-                // Detach removed
-                removedIds.forEach { detachProfileListener(it) }
+                    // KEY: skip the optimistic local snapshot that causes churn
+                    if (snap.metadata.hasPendingWrites()) return@addSnapshotListener
 
-                // Attach new
-                newIds.forEach { attachProfileListener(it) }
+                    val ids = snap.documents.map { it.id }.toSet()
 
-                // Emit immediately to reflect removals before profile listeners fire
-                emitNow()
-            }
+                    val newIds = ids - currentIds
+                    val removedIds = currentIds - ids
+                    currentIds = ids
+
+                    // Detach removed first (reflect deletions immediately)
+                    removedIds.forEach { detachProfileListener(it) }
+
+                    // Attach new; their first profile snapshots will trigger a coalesced emit
+                    newIds.forEach { attachProfileListener(it) }
+
+                    // Emit immediately if there were removals; additions will emit on first profile loads
+                    if (removedIds.isNotEmpty() && initialLoadsPending == 0) {
+                        emitNow()
+                    }
+                }
 
         awaitClose {
             idsReg.remove()
@@ -104,14 +125,14 @@ class ProfilesFriendRepository(
             .await()
         if (edgeDoc.exists()) throw IllegalArgumentException("You're already friends.")
 
-        // Resolve profile → must exist and have a location
+        // Confirm profile exists (and optionally has location)
         val doc = db.collection("profiles").document(frienduid).get().await()
         if (!doc.exists()) throw IllegalArgumentException("No user found for that UID.")
 
         val status = doc.toFriendStatus(frienduid)
             ?: throw IllegalStateException("That user hasn’t shared a location yet.")
 
-        // Create the edge (we no longer need to snapshot name here for display logic)
+        // Create the edge; display will be driven by the profile listener
         db.collection("users")
             .document(currentUid)
             .collection("friendIds")
@@ -123,10 +144,16 @@ class ProfilesFriendRepository(
     }
 
     override suspend fun addFriendByUsername(username: String): FriendStatus {
-        require(username.isNotBlank()) { "username is blank" }
-        val q = db.collection("profiles").whereEqualTo("username", username).limit(1).get().await()
+        require(username.isNotBlank()) { "Username is blank." }
+        val q = db.collection("profiles")
+            .whereEqualTo("username", username)
+            .limit(1)
+            .get()
+            .await()
+
         val doc = q.documents.firstOrNull()
             ?: throw IllegalArgumentException("No profile found for username \"$username\"")
+
         return addFriendByUid(doc.id)
     }
 
@@ -140,7 +167,7 @@ class ProfilesFriendRepository(
     }
 }
 
-/* -------------------- helpers (same shape as before) -------------------- */
+/* -------------------- Helpers -------------------- */
 
 private fun com.google.firebase.firestore.DocumentSnapshot.toFriendStatus(
     uid: String
@@ -152,7 +179,6 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toFriendStatus(
         "idle" -> FriendMode.IDLE
         else -> FriendMode.STUDY
     }
-    // val updatedAt = (getTimestamp("updatedAt") ?: getTimestamp("lastSeen") ?: Timestamp.now())
     return FriendStatus(
         id = uid,
         name = name,
