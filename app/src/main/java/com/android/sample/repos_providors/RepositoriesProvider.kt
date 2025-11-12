@@ -5,6 +5,7 @@ import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
 import com.android.sample.model.PlannerRepositoryImpl
 import com.android.sample.model.planner.PlannerRepository
+import com.android.sample.pet.data.PetRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.session.StudySessionRepository
@@ -35,6 +36,10 @@ interface RepositoriesProvider {
 
   // Profile
   val profileRepository: ProfileRepository
+
+  // Pet
+  val petRepository: PetRepository
+
 }
 
 /**

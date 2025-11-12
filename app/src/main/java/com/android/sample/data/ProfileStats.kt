@@ -35,6 +35,7 @@ data class UserProfile(
     val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE,
     val avatarAccent: Long = DEFAULT_ACCENT, // ARGB
     val accessories: List<String> = emptyList(),
+    val owned: List<String> = emptyList(),
     val studyStats: StudyStats =
         StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL)
 ) {

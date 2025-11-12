@@ -1,45 +1,80 @@
 package com.android.sample.ui.shop
 
 import androidx.lifecycle.ViewModel
-import com.android.sample.R
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.android.sample.data.shop.ShopRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
-class ShopViewModel : ViewModel() {
+data class ShopUiState(
+    val coins: Int = 0,
+    val catalog: List<ShopRepository.ShopItem> = emptyList(),
+    val owned: Set<String> = emptySet(),
+    val purchasingId: String? = null,
+    val message: String? = null
+)
 
-  private val _userCoins = MutableStateFlow(1500)
-  val userCoins: StateFlow<Int> = _userCoins
+class ShopViewModel(
+    private val uid: String,
+    private val repo: ShopRepository,
+    initialCatalog: List<ShopRepository.ShopItem>
+) : ViewModel() {
 
-  private val _items = MutableStateFlow(initialCosmetics())
-  val items: StateFlow<List<CosmeticItem>> = _items
+    private val _message = MutableStateFlow<String?>(null)
+    private val _purchasingId = MutableStateFlow<String?>(null)
 
-  /**
-   * Attempts to buy an item.
-   *
-   * @return true if the purchase succeeds, false otherwise.
-   */
-  fun buyItem(item: CosmeticItem): Boolean {
-    val coins = _userCoins.value
-    return if (coins >= item.price && !item.owned) {
-      _userCoins.value = coins - item.price
-      _items.value =
-          _items.value.map { currentItem ->
-            if (currentItem.id == item.id) currentItem.copy(owned = true) else currentItem
-          }
-      true
-    } else {
-      false
+    val state: StateFlow<ShopUiState> =
+        combine(
+            repo.observeCoins(uid),
+            repo.observeOwnedItemIds(uid),
+            _purchasingId,
+            _message
+        ) { coins, owned, purchasingId, message ->
+            ShopUiState(
+                coins = coins,
+                catalog = initialCatalog,
+                owned = owned,
+                purchasingId = purchasingId,
+                message = message
+            )
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, ShopUiState(catalog = initialCatalog))
+
+    fun clearMessage() { _message.value = null }
+
+    fun purchase(item: ShopRepository.ShopItem) {
+        viewModelScope.launch {
+            _purchasingId.value = item.id
+            val result = repo.purchase(uid, item)
+            _purchasingId.value = null
+            _message.value = if (result.success) "Purchased" else result.errorMessage ?: "Purchase failed"
+        }
     }
-  }
-}
 
-// Initial cosmetics data
-private fun initialCosmetics() =
-    listOf(
-        CosmeticItem("1", "Cool Shades", 500, R.drawable.cosmetic_glasses),
-        CosmeticItem("2", "Wizard Hat", 800, R.drawable.cosmetic_hat),
-        CosmeticItem("3", "Red Scarf", 300, R.drawable.cosmetic_scarf),
-        CosmeticItem("4", "Cyber Wings", 1200, R.drawable.cosmetic_wings),
-        CosmeticItem("5", "Epic Aura", 1000, R.drawable.cosmetic_aura),
-        CosmeticItem("6", "Hero Cape", 700, R.drawable.cosmetic_cape))
+    // dev utility to seed coins quickly
+    fun addCoinsDev(amount: Int) {
+        viewModelScope.launch {
+            val ds = repo
+            if (ds is com.android.sample.data.shop.FirestoreShopDataSource) {
+                val cur = state.value.coins
+                runCatching { ds.setCoins(uid, cur + amount) }
+                _message.value = "Coins +$amount"
+            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    class Factory(
+        private val uid: String,
+        private val repo: ShopRepository,
+        private val catalog: List<ShopRepository.ShopItem>
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return ShopViewModel(uid, repo, catalog) as T
+        }
+    }
+}

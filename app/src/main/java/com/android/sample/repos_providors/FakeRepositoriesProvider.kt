@@ -8,6 +8,8 @@ import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
 import com.android.sample.model.PlannerRepositoryImpl
 import com.android.sample.model.planner.PlannerRepository
+import com.android.sample.pet.data.FakePetRepository
+import com.android.sample.pet.data.PetRepository
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
@@ -31,6 +33,8 @@ object FakeRepositoriesProvider : RepositoriesProvider {
 
   override val toDoRepository: ToDoRepository = ToDoRepositoryLocal()
   override val profileRepository: ProfileRepository = FakeProfileRepository()
+
+  override val petRepository: PetRepository = FakePetRepository()
 }
 
 @Volatile var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider

@@ -76,6 +76,8 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   Todo("todo", "To-Do", Icons.Outlined.CheckBox),
   // NEW: Daily Reflection / Mood
   Mood("mood", "Daily Reflection", Icons.Outlined.Mood),
+    Shop("shop", "Shop", Icons.Outlined.Store),
+
 }
 
 // ---------- Route (hooks up VM to UI) ----------
@@ -225,6 +227,8 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
           AppDestination.Study,
           AppDestination.Profile,
           AppDestination.Games,
+          AppDestination.Shop,
+
       )
   NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
     items.forEach { item ->

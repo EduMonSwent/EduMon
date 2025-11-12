@@ -7,8 +7,12 @@ import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
 import com.android.sample.model.PlannerRepositoryImpl
+import com.android.sample.pet.data.FirestorePetRepository
+import com.android.sample.pet.data.PetRepository
+import com.android.sample.pet.domain.PetEngine
 import com.android.sample.model.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryLocal
@@ -42,7 +46,11 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val calendarRepository: PlannerRepositoryImpl by lazy { PlannerRepositoryImpl() }
 
   override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
-  override val profileRepository: ProfileRepository by lazy { FakeProfileRepository() }
+  override val profileRepository: ProfileRepository by lazy { FirestoreProfileRepository(db, auth) }
+
+  override val petRepository: PetRepository by lazy {
+    FirestorePetRepository(db)
+  }
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider

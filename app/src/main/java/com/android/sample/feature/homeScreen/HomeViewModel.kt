@@ -5,49 +5,61 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
+import com.android.sample.pet.model.PetState
 import com.android.sample.repos_providors.AppRepositories
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlin.math.floor
 
-// ---------- UI State ----------
-data class HomeUiState(
-    val isLoading: Boolean = true,
-    val todos: List<ToDo> = emptyList(),
-    val creatureStats: CreatureStats = CreatureStats(),
-    val userStats: UserProfile = UserProfile(),
-    val quote: String = "",
-)
 
-// ---------- ViewModel ----------
 class HomeViewModel(
-    private val repository: HomeRepository = AppRepositories.homeRepository,
+    private val petFlow: Flow<PetState> = AppRepositories.petRepository.state,
+    private val profileFlow: Flow<UserProfile> = AppRepositories.profileRepository.profile,
+    private val quoteFlow: Flow<String> = flow { emit(AppRepositories.homeRepository.dailyQuote()) },
+    private val todosFlow: Flow<List<ToDo>> = flow { emit(AppRepositories.homeRepository.fetchTodos()) }
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(HomeUiState())
-  val uiState: StateFlow<HomeUiState> = _uiState
+    val uiState: StateFlow<HomeUiState> =
+        combine(
+            petFlow.map { it.toCreatureStats() },
+            profileFlow,
+            quoteFlow,
+            todosFlow
+        ) { creature, profile, quote, todos ->
+            HomeUiState(
+                isLoading = false,
+                creatureStats = creature,
+                userStats = profile,
+                quote = quote,
+                todos = todos
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = HomeUiState()
+        )
+}
 
-  init {
-    refresh()
-  }
+data class HomeUiState(
+    val isLoading: Boolean = true,
+    val creatureStats: CreatureStats = CreatureStats(level = 1, energy = 1f, happiness = 0.5f, health = 0f),
+    val userStats: UserProfile = UserProfile(),
+    val quote: String = "",
+    val todos: List<ToDo> = emptyList()
+)
 
-  fun refresh() {
-    _uiState.update { it.copy(isLoading = true) }
-    viewModelScope.launch {
-      val todos = repository.fetchTodos()
-      val creature = repository.fetchCreatureStats()
-      val user = repository.fetchUserStats()
-      val quote = repository.dailyQuote()
 
-      _uiState.update {
-        it.copy(
-            isLoading = false,
-            todos = todos,
-            creatureStats = creature,
-            userStats = user,
-            quote = quote)
-      }
-    }
-  }
+private fun PetState.toCreatureStats(): CreatureStats {
+    val lvl = floor(this.growth * 10f).toInt().coerceAtLeast(1)
+    return CreatureStats(
+        level = lvl,
+        energy = this.energy.coerceIn(0f, 1f),
+        happiness = this.happiness.coerceIn(0f, 1f),
+        health = this.growth.coerceIn(0f, 1f)
+    )
 }

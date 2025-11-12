@@ -1,11 +1,11 @@
 package com.android.sample.profile
 
-/**
- * Provides a single instance of the repository in the app. `repository` is mutable for testing or
- * replacement with another implementation.
- */
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+
 object ProfileRepositoryProvider {
-  // default repository until firestore usage : fake one
-  private val _localRepository: ProfileRepository = FakeProfileRepository() // TODO replace
-  val repository: ProfileRepository = _localRepository
+  val repository: ProfileRepository by lazy {
+    FirestoreProfileRepository(Firebase.firestore, Firebase.auth)
+  }
 }

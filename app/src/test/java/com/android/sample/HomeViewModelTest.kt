@@ -27,7 +27,7 @@ import org.junit.Test
 class HomeViewModelTest {
 
   private class TestRepository(
-      private val todos: List<ToDo> = run {
+    private val todos: List<ToDo> = run {
         val today = LocalDate.now()
         val tomorrow = today.plusDays(1)
         listOf(
@@ -40,14 +40,14 @@ class HomeViewModelTest {
             ToDo(id = "2", title = "B", dueDate = today, priority = Priority.LOW),
             ToDo(id = "3", title = "C", dueDate = tomorrow, priority = Priority.HIGH))
       },
-      private val creature: CreatureStats =
+    private val creature: CreatureStats =
           CreatureStats(happiness = 10, health = 20, energy = 30, level = 7),
-      private val user: UserProfile =
+    private val user: UserProfile =
           UserProfile(
               streak = 3,
               points = 99,
               studyStats = StudyStats(totalTimeMin = 15, dailyGoalMin = 120)),
-      private val quote: String = "Test quote"
+    private val quote: String = "Test quote"
   ) : HomeRepository {
     override suspend fun fetchTodos(): List<ToDo> = todos
 

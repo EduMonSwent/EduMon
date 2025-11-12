@@ -1,6 +1,10 @@
-package com.android.sample.ui.shop
+package com.android.sample.ui.shop.model
 
-/** Data class representing a cosmetic item in the EduMon shop. */
+/**
+ * This code has been written partially using A.I (LLM).
+ *
+ * UI model for items sold in the shop.
+ */
 data class CosmeticItem(
     val id: String,
     val name: String,
