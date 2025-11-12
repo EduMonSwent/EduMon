@@ -1,3 +1,4 @@
+// StudyTogetherViewModel.kt
 package com.android.sample.ui.location
 
 import androidx.lifecycle.ViewModel
@@ -12,73 +13,58 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class StudyTogetherViewModel(
-    private val friendRepository: FriendRepository = AppRepositories.friendRepository,
-    initialMode: FriendMode = FriendMode.STUDY,
-    /**
-     * Initial live flag; even if signed in, we can start with default EPFL until user enables live.
-     */
-    liveLocation: Boolean = false
+  private val friendRepository: FriendRepository = AppRepositories.friendRepository,
+  initialMode: FriendMode = FriendMode.STUDY,
+  liveLocation: Boolean = true // simpler: default to true for maps; feel free to flip
 ) : ViewModel() {
 
-  // --- Black-or-white: freeze "online vs local-only" at startup
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-  private val presenceEnabled: Boolean = auth.currentUser != null
+  private val isSignedIn get() = auth.currentUser != null
 
-  // --- UI state (no flows for location; we set it directly)
   private val _uiState = MutableStateFlow(StudyTogetherUiState(userPosition = DEFAULT_LOCATION))
   val uiState: StateFlow<StudyTogetherUiState> = _uiState.asStateFlow()
 
-  // Live flag (simple boolean; not a flow)
-  private var liveLocationEnabled: Boolean = liveLocation
-
-  // Presence bits (used only if presenceEnabled && live rules allow)
   private var currentMode: FriendMode = initialMode
   private val displayName: String =
-      auth.currentUser?.displayName?.takeIf { !it.isNullOrBlank() } ?: "Me"
-  private var profileEnsured = false
+    auth.currentUser?.displayName?.takeIf { !it.isNullOrBlank() } ?: "Me"
 
-  // Last device location (from UI)
+  private var profileEnsured = false
   private var lastDeviceLatLng: LatLng? = null
 
-  // Throttling for presence writes
+  // Throttle presence writes a bit
   private var lastSentAtMs: Long = 0L
   private var lastSentLatLng: LatLng? = null
-  private val minSendIntervalMs = 20_000L
+  private val minSendIntervalMs = 10_000L
   private val minMoveMeters = 25f
 
   init {
-    // Friends live updates
+    // Live friends (no changes needed in the screen)
     viewModelScope.launch {
-      friendRepository.friendsFlow.collect { list -> _uiState.update { it.copy(friends = list) } }
+      friendRepository.friendsFlow.collect { list ->
+        _uiState.update { it.copy(friends = list) }
+      }
     }
   }
 
-  /**
-   * UI gives current device coords (after permission). We decide what to show and whether to write
-   * presence.
-   */
+  /** UI passes the latest device coordinates. Show them immediately; write presence (throttled) if signed in. */
   fun consumeLocation(lat: Double, lon: Double) {
     val device = LatLng(lat, lon)
     lastDeviceLatLng = device
 
-    val chosenLoc = if (liveLocationEnabled) device else DEFAULT_LOCATION
-    // Update the map with the chosen location policy
-    _uiState.update { it.copy(userPosition = chosenLoc) }
+    // Always show live device position on the map (simpler UX)
+    _uiState.update { it.copy(userPosition = device) }
 
-    if (!presenceEnabled) return
-    // If live is OFF, we still use DEFAULT for presence (per your rule), else device.
+    if (!isSignedIn) return
+
     viewModelScope.launch {
       try {
-        // Ensure once with the chosen location (if not ensured yet)
         if (!profileEnsured) {
-          ensureMyProfile(displayName, currentMode, chosenLoc.latitude, chosenLoc.longitude)
+          ensureMyProfile(displayName, currentMode, device.latitude, device.longitude)
           profileEnsured = true
         }
-
-        // Throttled presence with the chosen location
-        if (shouldSendPresence(chosenLoc)) {
-          updateMyPresence(displayName, currentMode, chosenLoc.latitude, chosenLoc.longitude)
-          lastSentLatLng = chosenLoc
+        if (shouldSendPresence(device)) {
+          updateMyPresence(displayName, currentMode, device.latitude, device.longitude)
+          lastSentLatLng = device
           lastSentAtMs = System.currentTimeMillis()
         }
       } catch (e: Throwable) {
@@ -89,23 +75,19 @@ class StudyTogetherViewModel(
     }
   }
 
-  /** Change user mode; if signed in we send presence with the chosen policy’s location. */
+  /** Mode change → update presence with the last known device location if signed in. */
   fun setMode(mode: FriendMode) {
     currentMode = mode
-    if (!presenceEnabled) return
-    val chosen = if (liveLocationEnabled) (lastDeviceLatLng ?: return) else DEFAULT_LOCATION
+    if (!isSignedIn) return
+    val loc = lastDeviceLatLng ?: return
     viewModelScope.launch {
       try {
-        updateMyPresence(displayName, currentMode, chosen.latitude, chosen.longitude)
-        lastSentLatLng = chosen
+        updateMyPresence(displayName, currentMode, loc.latitude, loc.longitude)
+        lastSentLatLng = loc
         lastSentAtMs = System.currentTimeMillis()
-      } catch (_: Throwable) {
-        /* ignore */
-      }
+      } catch (_: Throwable) { /* ignore */ }
     }
   }
-
-  // --- UI helpers unchanged below ---
 
   fun selectFriend(friend: FriendStatus) {
     _uiState.update { it.copy(selectedFriend = friend, isUserSelected = false) }
@@ -125,11 +107,10 @@ class StudyTogetherViewModel(
         friendRepository.addFriendByUid(uid.trim())
         _uiState.update { it.copy(errorMessage = null) }
       } catch (e: Throwable) {
-        val msg =
-            when (e) {
-              is IllegalArgumentException -> e.message ?: "Invalid input."
-              else -> "Couldn't add friend: ${e.localizedMessage ?: "Error"}"
-            }
+        val msg = when (e) {
+          is IllegalArgumentException -> e.message ?: "Invalid input."
+          else -> "Couldn't add friend: ${e.localizedMessage ?: "Error"}"
+        }
         _uiState.update { it.copy(errorMessage = msg) }
       }
     }
@@ -139,7 +120,6 @@ class StudyTogetherViewModel(
     _uiState.update { it.copy(errorMessage = null) }
   }
 
-  // --- presence throttle helpers ---
   private fun shouldSendPresence(curr: LatLng): Boolean {
     val now = System.currentTimeMillis()
     val movedEnough = lastSentLatLng?.let { distanceMeters(it, curr) >= minMoveMeters } ?: true
