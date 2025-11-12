@@ -7,6 +7,7 @@ import io.mockk.*
 import org.junit.Before
 import org.junit.Test
 
+// Parts of this code were written using ChatGPT
 class FocusModeManagerTest {
 
   private val context = mockk<Context>(relaxed = true)
@@ -29,6 +30,5 @@ class FocusModeManagerTest {
   @Test
   fun `deactivate plays sound safely`() {
     FocusModeManager.deactivate(context)
-    // can't easily assert sound, but ensure no crash
   }
 }

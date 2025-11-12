@@ -75,7 +75,6 @@ fun FocusModeScreen(viewModel: FocusModeViewModel = viewModel()) {
 
               Spacer(Modifier.height(48.dp))
 
-              // 🔘 Bouton stylé avec glow
               Button(
                   onClick = {
                     if (!isRunning) viewModel.startFocus(context, 25)

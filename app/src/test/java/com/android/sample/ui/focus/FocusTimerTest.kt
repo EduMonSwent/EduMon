@@ -6,6 +6,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 
+// Parts of this code were written using ChatGPT
 class FocusTimerTest {
 
   @BeforeTest

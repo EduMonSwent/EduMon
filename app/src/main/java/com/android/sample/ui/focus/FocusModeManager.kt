@@ -23,9 +23,7 @@ object FocusModeManager {
       try {
         WorkManager.getInstance(context).cancelAllWorkByTag("notifications")
         giveHapticFeedback(context)
-      } catch (e: Exception) {
-        // Log silently
-      }
+      } catch (e: Exception) {}
     }
   }
 
@@ -37,9 +35,7 @@ object FocusModeManager {
     CoroutineScope(Dispatchers.Default).launch {
       try {
         playCompletionSound(context)
-      } catch (e: Exception) {
-        // Log silently
-      }
+      } catch (e: Exception) {}
     }
   }
 
@@ -50,9 +46,7 @@ object FocusModeManager {
       val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
       val effect = VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE)
       vibrator.vibrate(effect)
-    } catch (_: Exception) {
-      // Ignore if device doesn’t support vibration
-    }
+    } catch (_: Exception) {}
   }
 
   /** Plays a short sound when focus session ends */
@@ -61,8 +55,6 @@ object FocusModeManager {
       val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
       val ringtone = RingtoneManager.getRingtone(context, notification)
       ringtone.play()
-    } catch (_: Exception) {
-      // silently ignore
-    }
+    } catch (_: Exception) {}
   }
 }

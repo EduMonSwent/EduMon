@@ -14,6 +14,7 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
+// Parts of this code were written using ChatGPT
 @OptIn(ExperimentalCoroutinesApi::class)
 class FocusModeViewModelTest {
 
@@ -35,20 +36,17 @@ class FocusModeViewModelTest {
     Dispatchers.resetMain()
   }
 
-  // Remplace temporairement la logique asynchrone du timer par une exécution immédiate
   private fun runFocusTimerImmediately(duration: Int) {
     FocusTimer.stop()
     FocusTimer.start(duration)
-    FocusTimer.stop() // fin instantanée
+    FocusTimer.stop()
   }
 
   @Test
   fun startFocus_startsTimerAndSetsRunningTrue() = runTest {
-    // Simulation : forcer le timer à se lancer directement
     FocusTimer.start(1)
     viewModel.startFocus(fakeContext, 1)
 
-    // Attendre le temps que les StateFlow propagent
     kotlinx.coroutines.delay(50)
 
     Assert.assertTrue("isRunning should be true after start", FocusTimer.isRunning.value)
