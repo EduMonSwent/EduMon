@@ -1,7 +1,11 @@
 // app/src/main/java/com/android/sample/ui/notifications/NotificationsViewModel.kt
 package com.android.sample.ui.notifications
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import com.android.sample.data.notifications.WorkManagerNotificationRepository
 import com.android.sample.model.notifications.NotificationKind
@@ -41,6 +45,34 @@ class NotificationsViewModel(
   private val DEFAULT_STREAK_HOUR = 19 // daily at 19:00
 
   fun scheduleTestNotification(ctx: Context) = repo.scheduleOneMinuteFromNow(ctx)
+
+  /**
+   * Indicates wether the permission is needed or not.
+   *
+   * @param ctx context
+   */
+  @Suppress("InlinedApi")
+  fun needsNotificationPermission(ctx: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    return ContextCompat.checkSelfPermission(ctx, permission) != PackageManager.PERMISSION_GRANTED
+  }
+
+  /**
+   * Checks the permission and, if needed, requests it.
+   *
+   * @param ctx context
+   * @param permissionLauncher launcher for the permission request
+   */
+  @Suppress("InlinedApi")
+  fun requestOrSchedule(ctx: Context, permissionLauncher: (String) -> Unit) {
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (needsNotificationPermission(ctx)) {
+      permissionLauncher(permission)
+    } else {
+      scheduleTestNotification(ctx)
+    }
+  }
 
   // Kickoff
   fun setKickoffEnabled(ctx: Context, on: Boolean) {

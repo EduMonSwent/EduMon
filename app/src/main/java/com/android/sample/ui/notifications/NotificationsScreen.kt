@@ -1,5 +1,7 @@
 package com.android.sample.ui.notifications
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -91,6 +93,14 @@ fun NotificationsScreen(
 ) {
   val ctx = LocalContext.current
 
+  // --- Permission runtime pour Android 13+ ---
+  val launcher =
+      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+          vm.scheduleTestNotification(ctx)
+        }
+      }
+
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
   val kickoffDays by vm.kickoffDays.collectAsState()
   val kickoffTimes by vm.kickoffTimes.collectAsState()
@@ -162,7 +172,10 @@ fun NotificationsScreen(
               Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 Button(
                     modifier = Modifier.testTag("btn_test_1_min"),
-                    onClick = { vm.scheduleTestNotification(ctx) }) {
+                    onClick = {
+                      // let the vm check the permission and schedule the notification
+                      vm.requestOrSchedule(ctx) { permission -> launcher.launch(permission) }
+                    }) {
                       Text("Send notification in 1 min")
                     }
               }
