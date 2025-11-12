@@ -54,6 +54,7 @@
     <string name="did_you_review_lecture">Did you finish reviewing today’s lecture materials?</string>
     <string name="did_you_finish_exercise">Did you finish the exercise?</string>
     <string name="did_you_finish_lab">Did you finish the lab?</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Wellness Event Item -->
     <string name="wellness_event_yoga_title">Yoga Session @ Sports Center</string>

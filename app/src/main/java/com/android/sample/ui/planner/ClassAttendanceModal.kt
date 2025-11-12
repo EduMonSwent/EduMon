@@ -213,7 +213,7 @@ fun ClassAttendanceModal(
                 ButtonDefaults.outlinedButtonColors(contentColor = PurpleText.copy(alpha = 0.9f)),
         ) {
           Text(
-              stringResource(R.string.close),
+              stringResource(R.string.cancel),
               color = TextLight.copy(alpha = 0.7f),
               fontWeight = FontWeight.SemiBold,
               fontSize = 16.sp)
