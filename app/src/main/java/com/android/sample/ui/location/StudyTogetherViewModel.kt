@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class StudyTogetherViewModel(
   private val friendRepository: FriendRepository = AppRepositories.friendRepository,
   initialMode: FriendMode = FriendMode.STUDY,
-  liveLocation: Boolean = true // simpler: default to true for maps; feel free to flip
+  private val liveLocation: Boolean = true // simpler: default to true for maps; feel free to flip
 ) : ViewModel() {
 
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -49,22 +49,26 @@ class StudyTogetherViewModel(
   /** UI passes the latest device coordinates. Show them immediately; write presence (throttled) if signed in. */
   fun consumeLocation(lat: Double, lon: Double) {
     val device = LatLng(lat, lon)
+
+    val userLocation = if (liveLocation) device else DEFAULT_LOCATION
+
+
     lastDeviceLatLng = device
 
     // Always show live device position on the map (simpler UX)
-    _uiState.update { it.copy(userPosition = device) }
+    _uiState.update { it.copy(userPosition = userLocation) }
 
     if (!isSignedIn) return
 
     viewModelScope.launch {
       try {
         if (!profileEnsured) {
-          ensureMyProfile(displayName, currentMode, device.latitude, device.longitude)
+          ensureMyProfile(displayName, currentMode, userLocation.latitude, userLocation.longitude)
           profileEnsured = true
         }
         if (shouldSendPresence(device)) {
-          updateMyPresence(displayName, currentMode, device.latitude, device.longitude)
-          lastSentLatLng = device
+          updateMyPresence(displayName, currentMode, userLocation.latitude, userLocation.longitude)
+          lastSentLatLng = userLocation
           lastSentAtMs = System.currentTimeMillis()
         }
       } catch (e: Throwable) {
