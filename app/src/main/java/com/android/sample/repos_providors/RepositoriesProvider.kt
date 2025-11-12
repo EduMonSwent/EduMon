@@ -8,6 +8,7 @@ import com.android.sample.model.planner.PlannerRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.session.StudySessionRepository
+import com.android.sample.ui.location.FriendRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 
 /**
@@ -32,6 +33,8 @@ interface RepositoriesProvider {
 
   // To-Do
   val toDoRepository: ToDoRepository
+
+  val friendRepository: FriendRepository
 
   // Profile
   val profileRepository: ProfileRepository

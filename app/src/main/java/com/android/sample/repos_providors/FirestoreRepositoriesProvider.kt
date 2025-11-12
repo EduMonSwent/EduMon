@@ -14,11 +14,14 @@ import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryLocal
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.session.ToDoBackedStudySessionRepository
+import com.android.sample.ui.location.FriendRepository
+import com.android.sample.ui.location.ProfilesFriendRepository
 import com.android.sample.ui.stats.repository.FirestoreStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlin.getValue
 
 /** Firebase-backed provider with LAZY init to prevent accidental Firebase loading. */
 object FirestoreRepositoriesProvider : RepositoriesProvider {
@@ -31,6 +34,8 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   }
   override val weeksRepository: WeeksRepository by lazy { FirestoreWeeksRepository(db, auth) }
   override val statsRepository: StatsRepository by lazy { FirestoreStatsRepository(db, auth) }
+
+  override val friendRepository: FriendRepository by lazy { ProfilesFriendRepository(db, auth) }
 
   // Local implementations until remote backends exist
   override val homeRepository: HomeRepository by lazy { FakeHomeRepository() }
