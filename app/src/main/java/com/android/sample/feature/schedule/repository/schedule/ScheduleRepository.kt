@@ -1,5 +1,6 @@
-package com.android.sample.model.schedule
+package com.android.sample.feature.schedule.repository.schedule
 
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import java.time.LocalDate
 import kotlinx.coroutines.flow.*
 

@@ -2,8 +2,13 @@ package com.android.sample.ui.schedule
 
 import android.content.res.Resources
 import androidx.test.core.app.ApplicationProvider
-import com.android.sample.model.planner.*
-import com.android.sample.model.schedule.*
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassAttendance
+import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
+import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime

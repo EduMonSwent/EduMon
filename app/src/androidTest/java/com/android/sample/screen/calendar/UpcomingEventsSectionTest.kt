@@ -3,8 +3,8 @@ package com.android.sample.ui.calendar
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Rule
