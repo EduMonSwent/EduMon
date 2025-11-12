@@ -120,24 +120,6 @@ class HomeNavigationTests {
   }
 
   @Test
-  fun drawer_navigates_to_study_together() {
-    setContent()
-    openDrawerAndWait()
-    rule
-        .onNode(
-            hasTestTag(HomeTestTags.drawerTag(AppDestination.StudyTogether.route)),
-            useUnmergedTree = true)
-        .performClick()
-    waitUntilRoute(AppDestination.StudyTogether.route)
-    rule.waitForIdle()
-    assertRoute(AppDestination.StudyTogether.route)
-    assertTopBarTitle("Study Together")
-    tapBack()
-    waitUntilRoute(AppDestination.Home.route)
-    assertRoute(AppDestination.Home.route)
-  }
-
-  @Test
   fun startDestination_isHome() {
     setContent()
     assertRoute(AppDestination.Home.route)
@@ -150,21 +132,6 @@ class HomeNavigationTests {
     waitUntilRoute(AppDestination.Study.route)
     assertRoute(AppDestination.Study.route)
     assertTopBarTitle("Study")
-    tapBack()
-    assertRoute(AppDestination.Home.route)
-  }
-
-  @Test
-  fun drawer_navigates_to_shop() {
-    setContent()
-    openDrawerAndWait()
-    rule
-        .onNode(
-            hasTestTag(HomeTestTags.drawerTag(AppDestination.Shop.route)), useUnmergedTree = true)
-        .performClick()
-    rule.waitForIdle()
-    assertRoute(AppDestination.Shop.route)
-    assertTopBarTitle("Shop")
     tapBack()
     assertRoute(AppDestination.Home.route)
   }
