@@ -1,0 +1,80 @@
+package com.android.sample.ui.location
+
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+/** Contract the VM depends on. */
+interface FriendRepository {
+
+  val friendsFlow: kotlinx.coroutines.flow.Flow<List<FriendStatus>>
+
+  suspend fun addFriendByUid(frienduid: String): FriendStatus
+
+  suspend fun removeFriend(frienduid: String) {}
+
+  suspend fun addFriendByUsername(username: String): FriendStatus
+}
+
+/** Simple in-memory repo useful for previews/tests. */
+class FakeFriendRepository(
+    seed: List<FriendStatus> =
+        listOf(
+            FriendStatus("U1", "Alae", 46.5208, 6.5674, FriendMode.STUDY),
+            FriendStatus("U2", "Florian", 46.5186, 6.5649, FriendMode.BREAK),
+            FriendStatus("U3", "Khalil", 46.5197, 6.5702, FriendMode.IDLE),
+        )
+) : FriendRepository {
+
+  private val _state = MutableStateFlow(seed.sortedBy { it.name.lowercase() })
+  override val friendsFlow: StateFlow<List<FriendStatus>> = _state.asStateFlow()
+
+  override suspend fun addFriendByUid(frienduid: String): FriendStatus {
+    require(frienduid.isNotBlank()) { "Enter a UID." }
+    if (_state.value.any { it.id == frienduid }) {
+      throw IllegalArgumentException("You're already friends.")
+    }
+    val (lat, lon) = nextDefaultPosition()
+    val newFriend =
+        FriendStatus(
+            id = frienduid,
+            name = "Friend $frienduid",
+            latitude = lat,
+            longitude = lon,
+            mode = FriendMode.STUDY,
+        )
+    _state.value = (_state.value + newFriend).sortedBy { it.name.lowercase() }
+    return newFriend
+  }
+
+  override suspend fun addFriendByUsername(username: String): FriendStatus {
+    // keep it dead simple for tests
+    return addFriendByUid(username)
+  }
+
+  override suspend fun removeFriend(frienduid: String) {
+    _state.value = _state.value.filterNot { it.id == frienduid }
+  }
+
+  /** Simulate a friend moving to a new Lat/Lon (emits to the flow). */
+  fun move(frienduid: String, lat: Double, lon: Double) {
+    _state.value =
+        _state.value.map { f ->
+          if (f.id == frienduid)
+              f.copy(
+                  latitude = lat,
+                  longitude = lon,
+              )
+          else f
+        }
+  }
+
+  // Small helper to avoid overlapping markers when auto-creating test friends.
+  private fun nextDefaultPosition(): Pair<Double, Double> {
+    val baseLat = 46.5191
+    val baseLon = 6.5668
+    val idx = _state.value.size % 6 // 6 tiny steps around EPFL
+    val step = 0.0006 * idx
+    return baseLat + step to baseLon + step
+  }
+}
