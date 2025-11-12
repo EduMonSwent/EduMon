@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -105,7 +106,7 @@ fun ClassAttendanceModal(
               IconButton(onClick = onDismiss) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_close), // Ensure ic_close exists
-                    contentDescription = "Close",
+                    contentDescription = stringResource(R.string.close),
                     tint = TextLight.copy(alpha = 0.8f),
                     modifier = Modifier.size(28.dp) // Larger close icon
                     )
@@ -115,7 +116,7 @@ fun ClassAttendanceModal(
       text = {
         Column(modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)) {
           Text(
-              text = "Confirm your attendance & completion",
+              text = stringResource(R.string.confirm_attendance_completion),
               color = TextLight.copy(alpha = 0.8f),
               fontSize = 14.sp,
               modifier = Modifier.padding(bottom = 20.dp) // More space after subtitle
@@ -123,7 +124,7 @@ fun ClassAttendanceModal(
 
           // Attendance Section
           Text(
-              text = "Did you attend this class?",
+              text = stringResource(R.string.did_you_attend_class),
               color = TextLight,
               fontWeight = FontWeight.SemiBold,
               fontSize = 15.sp,
@@ -151,9 +152,9 @@ fun ClassAttendanceModal(
           Text(
               text =
                   when (classItem.type) {
-                    ClassType.LECTURE -> "Did you finish reviewing today’s lecture materials?"
-                    ClassType.EXERCISE -> "Did you finish the exercise?"
-                    ClassType.LAB -> "Did you finish the lab?"
+                    ClassType.LECTURE -> stringResource(R.string.did_you_review_lecture)
+                    ClassType.EXERCISE -> stringResource(R.string.did_you_finish_exercise)
+                    ClassType.LAB -> stringResource(R.string.did_you_finish_lab)
                   },
               color = TextLight,
               fontWeight = FontWeight.SemiBold,
@@ -190,7 +191,11 @@ fun ClassAttendanceModal(
                     disabledContainerColor = PurplePrimary.copy(alpha = 0.35f),
                     disabledContentColor = Color.White.copy(alpha = .7f)),
             contentPadding = PaddingValues(vertical = 14.dp)) {
-              Text("Save", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+              Text(
+                  stringResource(R.string.save),
+                  color = Color.White,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 16.sp)
             }
       },
       dismissButton = {
@@ -208,7 +213,7 @@ fun ClassAttendanceModal(
                 ButtonDefaults.outlinedButtonColors(contentColor = PurpleText.copy(alpha = 0.9f)),
         ) {
           Text(
-              "Cancel",
+              stringResource(R.string.close),
               color = TextLight.copy(alpha = 0.7f),
               fontWeight = FontWeight.SemiBold,
               fontSize = 16.sp)
