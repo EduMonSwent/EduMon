@@ -153,7 +153,12 @@ fun ScheduleScreen() {
                 ScheduleTab.DAY ->
                     DayTabContent(vm = vm, state = state, objectivesVm = objectivesVm)
                 ScheduleTab.WEEK -> {
-                  // TODO: implement Week
+                  WeekTabContent(
+                      vm = vm,
+                      weeksVm = weeksVm,
+                      objectivesVm = objectivesVm,
+                      allTasks = allTasks,
+                      selectedDate = state.selectedDate)
                 }
                 ScheduleTab.MONTH -> {
                   // TODO: implement Month

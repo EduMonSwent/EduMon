@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -188,29 +187,6 @@ private fun TodayCard(
                 onClick = {})
           }
         }
-  }
-}
-
-/** Sub-card with rounded border (looks like the inner rounded section in your mock) */
-@Composable
-private fun SectionBox(
-    title: String? = null,
-    header: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-  val cs = MaterialTheme.colorScheme
-  GlassSurface(shape = RoundedCornerShape(16.dp)) {
-    when {
-      header != null -> header()
-      title != null ->
-          Text(
-              title,
-              style =
-                  MaterialTheme.typography.titleMedium.copy(
-                      fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
-              modifier = Modifier.padding(bottom = 8.dp))
-    }
-    Column(content = content)
   }
 }
 
