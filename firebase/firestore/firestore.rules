@@ -2,28 +2,79 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Keep your strict todos rules ---
+    /* ---------- helpers ---------- */
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function viewerHasEdgeTo(profileUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/friendIds/$(profileUid));
+    }
+
+    /* ---------- TODOS (kept strict, as you had) ---------- */
     match /todos/{todoId} {
-      function signedIn() { return request.auth != null; }
       function isOwnerDoc() { return signedIn() && request.auth.uid == resource.data.ownerId; }
       function isOwnerForCreate() { return signedIn() && request.auth.uid == request.resource.data.ownerId; }
 
-      // NOTE: `list` cannot use `resource.data` (not available during queries).
-      // Your comment says "queries must filter to ownerId == request.auth.uid".
-      // That must be enforced either in rules via request.query (advanced) or in code; for now keep as-is if you only do gets.
+      // Note: list queries remain denied unless you add request.query checks.
       allow get: if isOwnerDoc();
-      allow list: if false; // Safe default unless you add request.query checks
+      allow list: if false;
       allow create: if isOwnerForCreate();
       allow update: if isOwnerDoc() && request.resource.data.ownerId == resource.data.ownerId;
       allow delete: if isOwnerDoc();
     }
 
-    // --- NEW: allow signed-in users to access their entire subtree under /users/{uid}/... ---
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    /* ---------- PROFILES (presence used by ProfilesFriendRepository) ---------- */
+    match /profiles/{uid} {
+      // Needed so "add by UID" can read a profile before an edge exists.
+      allow read: if signedIn();
+
+      // Emulator-friendly create so tests can seed profiles easily.
+      // (Tighten to isOwner(uid) for production if you want.)
+      allow create: if signedIn();
+
+      // Only the owner can modify their own presence.
+      allow update, delete: if isOwner(uid);
     }
 
-    // Catch-all deny
+    /* ---------- FRIEND GRAPH: /users/{uid}/friendIds/{friendUid} ---------- */
+    match /users/{uid}/friendIds/{friendUid} {
+      // Only the owner sees and manages their edges.
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && request.resource.id == friendUid;
+      allow update: if isOwner(uid);
+      allow delete: if isOwner(uid);
+    }
+
+    /* ---------- OBJECTIVES: top-level collection (if your repo uses /objectives) ---------- */
+    match /objectives/{id} {
+      // On create, require ownerId == auth.uid
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+
+      // Per-doc reads for owner only (queries must filter to ownerId == auth.uid)
+      allow get, list, read: if signedIn() && resource.data.ownerId == request.auth.uid;
+
+      // Owner only, and ownerId must not change
+      allow update, delete: if signedIn()
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+    }
+
+    /* ---------- OBJECTIVES under weeks: /weeks/{weekId}/objectives/{id} ---------- */
+    match /weeks/{weekId}/objectives/{id} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow get, list, read: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow update, delete: if signedIn()
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+    }
+
+    /* ---------- EVERYTHING under the signed-in user's subtree ---------- */
+    // This covers paths like /users/{uid}/objectives/** or /users/{uid}/weeks/** if you store there.
+    match /users/{uid}/{document=**} {
+      allow read, write: if isOwner(uid);
+    }
+
+    /* ---------- Catch-all deny ---------- */
     match /{document=**} {
       allow read, write: if false;
     }

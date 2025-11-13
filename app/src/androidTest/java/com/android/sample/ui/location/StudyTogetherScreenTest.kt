@@ -1,99 +1,106 @@
 package com.android.sample.ui.location
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.*
+import android.Manifest
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
 import org.junit.Test
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
 class StudyTogetherScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
+  @get:Rule
+  val permissionRule: GrantPermissionRule =
+      GrantPermissionRule.grant(
+          Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
-  @Composable
-  private fun StudyTogetherScreenMock() {
-    var selectedFriend by remember { mutableStateOf<FriendStatus?>(null) }
-    var isUserSelected by remember { mutableStateOf(false) }
+  private fun buildViewModel(repo: FriendRepository): StudyTogetherViewModel =
+      StudyTogetherViewModel(
+          friendRepository = repo, initialMode = FriendMode.STUDY, liveLocation = false)
 
-    Column(modifier = Modifier.fillMaxSize().testTag("study_together_root").padding(16.dp)) {
-      if (isUserSelected) {
-        UserStatusCard(isStudyMode = true, modifier = Modifier.testTag("user_status_card"))
-      } else if (selectedFriend != null) {
-        FriendInfoCard(
-            name = selectedFriend!!.name,
-            mode = selectedFriend!!.mode,
-            modifier = Modifier.testTag("friend_info_card"))
-      }
+  @Test
+  fun addFriendDialog_opens_disablesAdd_whenEmpty_and_addsFriend_whenFilled() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
 
-      Spacer(modifier = Modifier.height(8.dp))
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, false) }
 
-      Button(
-          onClick = {
-            selectedFriend = null
-            isUserSelected = true
-          },
-          modifier = Modifier.testTag("btn_user")) {
-            Text("Select User")
-          }
+    // Open dialog
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("Add friend by UID").assertExists()
 
-      Button(
-          onClick = {
-            selectedFriend = FriendStatus("Alae", 0.0, 0.0, FriendMode.STUDY)
-            isUserSelected = false
-          },
-          modifier = Modifier.testTag("btn_study")) {
-            Text("Select Study Friend")
-          }
+    // Add button disabled when empty
+    composeTestRule.onNodeWithText("Add").assertIsNotEnabled()
 
-      Button(
-          onClick = {
-            selectedFriend = FriendStatus("Florian", 0.0, 0.0, FriendMode.BREAK)
-            isUserSelected = false
-          },
-          modifier = Modifier.testTag("btn_break")) {
-            Text("Select Break Friend")
-          }
+    // Type a UID and confirm enabled
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U10")
+    composeTestRule.onNodeWithText("Add").assertIsEnabled().performClick()
 
-      Button(
-          onClick = {
-            selectedFriend = FriendStatus("Khalil", 0.0, 0.0, FriendMode.IDLE)
-            isUserSelected = false
-          },
-          modifier = Modifier.testTag("btn_idle")) {
-            Text("Select Idle Friend")
-          }
-    }
+    composeTestRule.waitForIdle()
+    // Dropdown should now reflect one friend
+    composeTestRule.onNodeWithText("Friends (1)").assertExists()
   }
 
   @Test
-  fun studyTogetherScreen_displaysAllCardsCorrectly() {
-    composeTestRule.setContent { StudyTogetherScreenMock() }
+  fun friendsDropdown_selectFriend_showsFriendInfoCard() {
+    val seed =
+        listOf(
+            FriendStatus("U1", "Alae", 46.52, 6.56, FriendMode.STUDY),
+            FriendStatus("U2", "Florian", 46.51, 6.55, FriendMode.BREAK),
+            FriendStatus("U3", "Khalil", 46.50, 6.54, FriendMode.IDLE),
+        )
+    val repo = FakeFriendRepository(seed)
+    val vm = buildViewModel(repo)
 
-    // --- Test affichage carte utilisateur
-    composeTestRule.onNodeWithTag("btn_user").performClick()
-    composeTestRule.onNodeWithTag("user_status_card").assertExists()
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm) }
 
-    // --- Test affichage carte ami "study"
-    composeTestRule.onNodeWithTag("btn_study").performClick()
-    composeTestRule.onNodeWithTag("friend_info_card").assertExists()
-    composeTestRule.onNodeWithText("📚 Alae is currently in Study Mode").assertExists()
+    // Open dropdown and pick Khalil
+    composeTestRule.onNodeWithText("Friends (${seed.size})").performClick()
+    composeTestRule.onNodeWithText("Khalil").performClick()
 
-    // --- Test affichage carte ami "break"
-    composeTestRule.onNodeWithTag("btn_break").performClick()
-    composeTestRule.onNodeWithText("☕ Florian is currently in Break Mode").assertExists()
+    // Bottom card shows name and the Idle status chip
+    composeTestRule.onNodeWithText("Khalil").assertExists()
+    composeTestRule.onNodeWithText("Idle").assertExists()
+  }
 
-    // --- Test affichage carte ami "idle"
-    composeTestRule.onNodeWithTag("btn_idle").performClick()
-    composeTestRule.onNodeWithText("💤 Khalil is currently in Idle Mode").assertExists()
+  @Test
+  fun addFriendDialog_duplicateUid_showsSnackbarError() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, false) }
 
-    // --- Vérifie que le composant racine est toujours visible
-    composeTestRule.onNodeWithTag("study_together_root").assertExists()
+    // Add once
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U20")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    // Add duplicate -> expect snackbar with error message
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U20")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("You're already friends.").assertExists()
+  }
+
+  @Test
+  fun selectUser_showsUserStatusCard() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm) }
+
+    // Simulate clicking the user marker by invoking VM helper directly
+    composeTestRule.runOnUiThread { vm.selectUser() }
+
+    // Expect the user status card text
+    composeTestRule.onNodeWithText("You’re studying").assertExists()
   }
 }
