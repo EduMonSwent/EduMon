@@ -18,6 +18,7 @@ import java.time.YearMonth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+/** This class was implemented with the help of ai (chatgbt) */
 data class ScheduleUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val currentDisplayMonth: YearMonth = YearMonth.now(),
