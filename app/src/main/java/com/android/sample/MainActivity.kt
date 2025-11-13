@@ -60,7 +60,14 @@ class MainActivity : ComponentActivity() {
               Box(Modifier.fillMaxSize().padding(padding)) {
                 NavHost(
                     navController = nav, startDestination = if (user == null) "login" else "app") {
-                      composable("login") { LoginScreen() }
+                    composable("login") {
+                        LoginScreen(onLoggedIn = {
+                            nav.navigate("app") {
+                                popUpTo("login") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        })
+                    }
 
                       composable("app") {
                         LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
