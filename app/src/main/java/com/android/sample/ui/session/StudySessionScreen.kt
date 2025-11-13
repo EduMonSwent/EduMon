@@ -12,11 +12,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
 import com.android.sample.data.Status
+import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.session.ToDoBackedStudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroScreen
 import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.session.components.SessionStatsPanel
 import com.android.sample.ui.session.components.SuggestedTasksList
+import kotlinx.coroutines.launch
 
 // Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
 
@@ -31,11 +33,23 @@ object StudySessionTestTags {
 
 @Composable
 fun StudySessionScreen(
+    eventId: String? = null,
     viewModel: StudySessionViewModel =
         StudySessionViewModel(repository = ToDoBackedStudySessionRepository()),
     pomodoroViewModel: PomodoroViewModelContract = viewModel.pomodoroViewModel
 ) {
   val uiState by viewModel.uiState.collectAsState()
+
+  // If a deep-linked eventId is provided, try to pre-select the corresponding task
+  val scope = rememberCoroutineScope()
+  LaunchedEffect(eventId) {
+    eventId?.let { id ->
+      scope.launch {
+        val todo = ToDoRepositoryProvider.repository.getById(id)
+        todo?.let { viewModel.selectTask(it) }
+      }
+    }
+  }
 
   Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
     Column(

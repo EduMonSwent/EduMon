@@ -7,6 +7,8 @@
     <!-- 📍 Permissions pour la localisation -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Needed to receive BOOT_COMPLETED and re-schedule exact alarms -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:allowBackup="true"
@@ -28,7 +30,26 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Deep link scheme: edumon://study_session/{id} -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- host is 'study_session' so URI like edumon://study_session/123 -->
+                <data android:scheme="edumon" android:host="study_session" />
+            </intent-filter>
         </activity>
+
+        <!-- Alarm receiver for study session reminders -->
+        <receiver android:name=".data.notifications.StudyAlarmReceiver" android:exported="true" />
+
+        <!-- BOOT receiver to re-schedule alarms on device reboot -->
+        <receiver android:name=".data.notifications.BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!-- ✅ Nécessaire pour utiliser l'API Google Maps -->
         <meta-data

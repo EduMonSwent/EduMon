@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,19 +95,43 @@ fun NotificationsScreen(
   val ctx = LocalContext.current
 
   // --- Permission runtime pour Android 13+ ---
-  val launcher =
+  val launcherTest =
       rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
           vm.scheduleTestNotification(ctx)
         }
       }
 
+  val launcherDemo =
+      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+          vm.sendDeepLinkDemoNotification(ctx)
+        }
+      }
+
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
   val kickoffDays by vm.kickoffDays.collectAsState()
   val kickoffTimes by vm.kickoffTimes.collectAsState()
+  val taskNotificationsEnabled by vm.taskNotificationsEnabled.collectAsState()
   val streakEnabled by vm.streakEnabled.collectAsState()
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
+
+  // If task notifications are enabled (default true), start observing/scheduling automatically
+  var startupError by remember { mutableStateOf<String?>(null) }
+  LaunchedEffect(taskNotificationsEnabled) {
+    if (taskNotificationsEnabled) {
+      try {
+        vm.startObservingSchedule(ctx)
+        startupError = null
+      } catch (e: Throwable) {
+        android.util.Log.e("NotificationsScreen", "Failed to start observing schedule", e)
+        startupError = e.message ?: "Failed to start schedule observer"
+      }
+    } else {
+      startupError = null
+    }
+  }
 
   Scaffold(
       topBar = {
@@ -124,6 +149,13 @@ fun NotificationsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+              // Optional small error banner if startup failed
+              startupError?.let { msg ->
+                Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+                  Text("Notification setup error: $msg", color = Color.Red)
+                }
+              }
 
               // === Study kickoff ===
               SectionCard(
@@ -168,15 +200,43 @@ fun NotificationsScreen(
                         style = MaterialTheme.typography.bodySmall)
                   }
 
+              // --- Task notifications (15 minutes before next study task) ---
+              SectionCard(
+                  title = "Task notifications",
+                  subtitle = "Notify 15 minutes before your next study task",
+                  enabled = taskNotificationsEnabled,
+                  onToggle = { on -> vm.setTaskNotificationsEnabled(ctx, on) }) {
+                    Text(
+                        "When enabled, EduMon will notify you 15 minutes before your next scheduled study task.",
+                        color = TextLight.copy(0.75f),
+                        style = MaterialTheme.typography.bodySmall)
+                  }
+
               // Test button centered
               Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 Button(
                     modifier = Modifier.testTag("btn_test_1_min"),
                     onClick = {
                       // let the vm check the permission and schedule the notification
-                      vm.requestOrSchedule(ctx) { permission -> launcher.launch(permission) }
+                      vm.requestOrSchedule(ctx) { permission -> launcherTest.launch(permission) }
                     }) {
                       Text("Send notification in 1 min")
+                    }
+              }
+
+              // Deep-link demo button centered
+              Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                Button(
+                    modifier = Modifier.testTag("btn_demo_deep_link"),
+                    onClick = {
+                      // Ensure permission then send demo deep-link notification
+                      if (vm.needsNotificationPermission(ctx)) {
+                        launcherDemo.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                      } else {
+                        vm.sendDeepLinkDemoNotification(ctx)
+                      }
+                    }) {
+                      Text("Send deep-link demo notification")
                     }
               }
             }
