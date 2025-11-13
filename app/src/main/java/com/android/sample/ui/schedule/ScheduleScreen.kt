@@ -36,6 +36,7 @@ import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
 import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
+import java.time.YearMonth
 
 /** This class was implemented with the help of ai (chatgbt) */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,8 +109,7 @@ fun ScheduleScreen() {
                   when (currentTab) {
                     ScheduleTab.DAY -> LocalDate.now()
                     ScheduleTab.WEEK -> vm.startOfWeek(state.selectedDate)
-                    ScheduleTab.MONTH,
-                    ScheduleTab.AGENDA -> state.selectedDate
+                    ScheduleTab.MONTH -> state.selectedDate
                   }
               showAddModal = true
             },
@@ -141,8 +141,7 @@ fun ScheduleScreen() {
                       listOf(
                           stringResource(R.string.tab_day),
                           stringResource(R.string.tab_week),
-                          stringResource(R.string.tab_month),
-                          stringResource(R.string.tab_agenda)))
+                          stringResource(R.string.tab_month)))
 
               Spacer(Modifier.height(8.dp))
               if (state.isAdjustingPlan) {
@@ -161,10 +160,11 @@ fun ScheduleScreen() {
                       selectedDate = state.selectedDate)
                 }
                 ScheduleTab.MONTH -> {
-                  // TODO: implement Month
-                }
-                ScheduleTab.AGENDA -> {
-                  // TODO: implement Agenda
+                  MonthTabContent(
+                      vm = vm,
+                      currentMonth = YearMonth.from(state.selectedDate),
+                      allTasks = allTasks,
+                      selectedDate = state.selectedDate)
                 }
               }
             }

@@ -42,9 +42,7 @@ class MonthGridTest {
             onDateClick = { d ->
               clicked = d
               selected.value = d
-            },
-            onPrevClick = {},
-            onNextClick = {})
+            })
       }
     }
 

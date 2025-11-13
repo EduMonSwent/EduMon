@@ -196,7 +196,6 @@
     <string name="tab_day">Day</string>
     <string name="tab_week">Week</string>
     <string name="tab_month">Month</string>
-    <string name="tab_agenda">Agenda</string>
 
     <!-- Today card -->
     <string name="today_title_fmt">Today • %1$s</string>
@@ -235,6 +234,7 @@
     <!-- Calendar more-events indicator -->
     <string name="calendar_more_events">+%1$d more</string>
     <string name="week_progression">Week progression</string>
-
+    <string name="schedule_month_important_title">Most important this month</string>
+    <string name="schedule_month_no_important">No important events this month</string>
 
 </resources>

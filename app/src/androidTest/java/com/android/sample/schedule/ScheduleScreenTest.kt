@@ -53,7 +53,6 @@ class ScheduleScreenAllAndroidTest {
     rule.onNodeWithText(ctx.getString(R.string.tab_day)).assertIsDisplayed()
     rule.onNodeWithText(ctx.getString(R.string.tab_week)).assertIsDisplayed()
     rule.onNodeWithText(ctx.getString(R.string.tab_month)).assertIsDisplayed()
-    rule.onNodeWithText(ctx.getString(R.string.tab_agenda)).assertIsDisplayed()
 
     // Day header "Today • <date>"
     val dateText = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMM d"))
@@ -82,7 +81,6 @@ class ScheduleScreenAllAndroidTest {
     // Click through tabs
     rule.onNodeWithText(ctx.getString(R.string.tab_week)).performClick()
     rule.onNodeWithText(ctx.getString(R.string.tab_month)).performClick()
-    rule.onNodeWithText(ctx.getString(R.string.tab_agenda)).performClick()
 
     // Back to Day
     rule.onNodeWithText(ctx.getString(R.string.tab_day)).performClick()
@@ -112,9 +110,6 @@ class ScheduleScreenAllAndroidTest {
     assertModalFromHere()
 
     rule.onNodeWithText(ctx.getString(R.string.tab_month)).performClick()
-    assertModalFromHere()
-
-    rule.onNodeWithText(ctx.getString(R.string.tab_agenda)).performClick()
     assertModalFromHere()
   }
 

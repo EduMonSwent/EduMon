@@ -8,5 +8,6 @@
 .cxx
 local.properties
 firestore-debug.log
+firebase-debug.log
 .firebaserc
 MainActivity.kt
