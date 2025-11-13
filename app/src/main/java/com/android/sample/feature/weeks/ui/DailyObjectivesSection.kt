@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
+import com.android.sample.ui.theme.AccentViolet
+import com.android.sample.ui.theme.PurplePrimary
 
 @Composable
 fun DailyObjectivesSection(
@@ -173,7 +175,7 @@ private fun MetaChip(text: String) {
 @Composable
 private fun StartButton(onClick: () -> Unit, tag: String? = null) {
   val cs = MaterialTheme.colorScheme
-  val gradient = Brush.linearGradient(listOf(cs.primary, cs.primary.copy(alpha = 0.85f)))
+  val gradient = Brush.linearGradient(listOf(AccentViolet, PurplePrimary))
   Button(
       onClick = onClick,
       colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),

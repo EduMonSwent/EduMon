@@ -3,8 +3,12 @@ package com.android.sample.screen
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import com.android.sample.model.planner.*
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
 import com.android.sample.ui.planner.ClassAttendanceModal
+import java.time.LocalTime
 import org.junit.Rule
 import org.junit.Test
 
@@ -19,8 +23,8 @@ class ClassAttendanceModalTest {
         Class(
             id = "1",
             courseName = "AI Fundamentals",
-            startTime = java.time.LocalTime.of(10, 0),
-            endTime = java.time.LocalTime.of(11, 0),
+            startTime = LocalTime.of(10, 0),
+            endTime = LocalTime.of(11, 0),
             type = ClassType.LECTURE,
             location = "A1.01",
             instructor = "Dr. Turing")
@@ -55,8 +59,8 @@ class ClassAttendanceModalTest {
         Class(
             id = "2",
             courseName = "Linear Algebra",
-            startTime = java.time.LocalTime.of(9, 0),
-            endTime = java.time.LocalTime.of(10, 0),
+            startTime = LocalTime.of(9, 0),
+            endTime = LocalTime.of(10, 0),
             type = ClassType.EXERCISE)
 
     composeTestRule.setContent {
