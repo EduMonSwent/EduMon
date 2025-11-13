@@ -53,13 +53,14 @@ private object GameRoutes {
 @Composable
 fun EduMonNavHost(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = com.android.sample.feature.homeScreen.AppDestination.Home.route
 ) {
   val nav = navController
 
   NavHost(
       navController = nav,
-      startDestination = AppDestination.Home.route,
+      startDestination = startDestination,
       modifier = modifier.testTag(NavigationTestTags.NAV_HOST)) {
 
         // HOME
