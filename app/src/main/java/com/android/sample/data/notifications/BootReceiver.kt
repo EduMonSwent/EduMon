@@ -7,6 +7,7 @@ import com.android.sample.feature.schedule.data.calendar.TaskType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.android.sample.feature.schedule.data.calendar.TaskType
 
 /**
  * Re-register alarms after device reboot. This receiver is invoked on BOOT_COMPLETED. It should
