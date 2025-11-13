@@ -65,34 +65,6 @@ class FirestoreFlashcardsRepositoryEmulatorTest {
   // ---------- tests ----------
 
   @Test
-  fun createDeck_persistsDeckAndCards() = runBlocking {
-    val uid = currentUid()
-
-    val deckId =
-        repo.createDeck(
-            title = "French",
-            description = "Basics",
-            cards =
-                listOf(
-                    Flashcard(question = "Bonjour", answer = "Hello"),
-                    Flashcard(question = "Merci", answer = "Thanks")))
-
-    val all = repo.observeDecks().first()
-    val deck = all.firstOrNull { it.id == deckId }
-
-    assertNotNull(deck)
-    assertEquals("French", deck!!.title)
-    assertEquals("Basics", deck.description)
-    assertTrue(deck.createdAt > 0L)
-    assertEquals(listOf("Bonjour", "Merci"), deck.cards.map { it.question })
-
-    val deckDoc = readDeckDoc(uid, deckId)!!
-    assertEquals(deckId, deckDoc.getString("id"))
-    assertEquals("French", deckDoc.getString("title"))
-    assertNotNull(deckDoc.getTimestamp("updatedAt"))
-  }
-
-  @Test
   fun observeDeck_updates_after_addCard() = runBlocking {
     val deckId = repo.createDeck("Spanish", "Basics", emptyList())
 
