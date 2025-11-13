@@ -62,9 +62,32 @@ internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
   return h.coerceIn(0, 23) to m.coerceIn(0, 59)
 }
 
+// Keep a JVM-friendly DAY_SHORT map and non-composable formatter for unit tests that expect
+// deterministic, locale-independent strings.
 @VisibleForTesting
-@Composable
+internal val DAY_SHORT: Map<Int, String> =
+    mapOf(Calendar.MONDAY to "Mon", Calendar.TUESDAY to "Tue")
+        .plus(
+            mapOf(
+                Calendar.WEDNESDAY to "Wed",
+                Calendar.THURSDAY to "Thu",
+                Calendar.FRIDAY to "Fri",
+                Calendar.SATURDAY to "Sat",
+                Calendar.SUNDAY to "Sun",
+            ))
+
+@VisibleForTesting
 internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): String {
+  val (h, m) = times[day] ?: (9 to 0)
+  val hh = h.coerceIn(0, 23)
+  val mm = m.coerceIn(0, 59)
+  val d = DAY_SHORT[day] ?: "?"
+  return "%s %02d:%02d".format(d, hh, mm)
+}
+
+// Composable localized formatter used by the UI so day names come from resources.
+@Composable
+internal fun formatDayTimeLabelLocalized(day: Int, times: Map<Int, Pair<Int, Int>>): String {
   val (h, m) = times[day] ?: (9 to 0)
   val hh = h.coerceIn(0, 23)
   val mm = m.coerceIn(0, 59)
@@ -87,7 +110,7 @@ internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): Stri
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
-    vm: NotificationsViewModel = viewModel(),
+    vm: NotificationsUiModel = viewModel<NotificationsViewModel>(),
     onBack: () -> Unit = {},
     onGoHome: () -> Unit = {},
     /** Test-only: permet de forcer l’ouverture du dialog de time picker pour la couverture */
@@ -347,7 +370,7 @@ private fun TimeChipsRow(
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically) {
         days.forEach { day ->
-          val label = formatDayTimeLabel(day, times)
+          val label = formatDayTimeLabelLocalized(day, times)
           AssistChip(
               enabled = enabled,
               label = { Text(label) },

@@ -15,7 +15,10 @@ import androidx.work.WorkerParameters
 import com.android.sample.R
 
 @VisibleForTesting
-internal fun buildOneShotNotification(ctx: Context, contentIntent: PendingIntent?): Notification {
+internal fun buildOneShotNotification(
+    ctx: Context,
+    contentIntent: PendingIntent? = null
+): Notification {
   val builder =
       NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
           .setSmallIcon(R.mipmap.ic_launcher)

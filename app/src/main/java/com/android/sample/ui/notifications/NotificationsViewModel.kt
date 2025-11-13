@@ -36,16 +36,20 @@ import kotlinx.coroutines.launch
 
 class NotificationsViewModel(
     private val repo: NotificationRepository = WorkManagerNotificationRepository()
-) : ViewModel() {
+) : ViewModel(), NotificationsUiModel {
+
+  // Implement the UI model interface
+  // (kept here to allow test fakes to implement the same contract)
 
   // --- Kickoff (configurable)
   private val _kickoffEnabled = MutableStateFlow(true)
-  val kickoffEnabled: StateFlow<Boolean> = _kickoffEnabled.asStateFlow()
+  override val kickoffEnabled: StateFlow<Boolean> = _kickoffEnabled.asStateFlow()
 
   // --- Task notifications (15 minutes before next task)
   // Separate from the Study kickoff feature. Enabled by default per request.
   private val _taskNotificationsEnabled = MutableStateFlow(true)
-  val taskNotificationsEnabled: StateFlow<Boolean> = _taskNotificationsEnabled.asStateFlow()
+  override val taskNotificationsEnabled: StateFlow<Boolean> =
+      _taskNotificationsEnabled.asStateFlow()
 
   private val allDays =
       setOf(
@@ -57,18 +61,18 @@ class NotificationsViewModel(
           Calendar.SATURDAY,
           Calendar.SUNDAY)
   private val _kickoffDays = MutableStateFlow(emptySet<Int>()) // start empty
-  val kickoffDays: StateFlow<Set<Int>> = _kickoffDays.asStateFlow()
+  override val kickoffDays: StateFlow<Set<Int>> = _kickoffDays.asStateFlow()
 
   private val _kickoffTimes = MutableStateFlow(initWeek(9, 0))
-  val kickoffTimes: StateFlow<Map<Int, Pair<Int, Int>>> = _kickoffTimes.asStateFlow()
+  override val kickoffTimes: StateFlow<Map<Int, Pair<Int, Int>>> = _kickoffTimes.asStateFlow()
 
   // --- Streak (toggle only)
   private val _streakEnabled = MutableStateFlow(false)
-  val streakEnabled: StateFlow<Boolean> = _streakEnabled.asStateFlow()
+  override val streakEnabled: StateFlow<Boolean> = _streakEnabled.asStateFlow()
 
   private val DEFAULT_STREAK_HOUR = 19 // daily at 19:00
 
-  fun scheduleTestNotification(ctx: Context) = repo.scheduleOneMinuteFromNow(ctx)
+  override fun scheduleTestNotification(ctx: Context) = repo.scheduleOneMinuteFromNow(ctx)
 
   /**
    * Indicates wether the permission is needed or not.
@@ -76,7 +80,7 @@ class NotificationsViewModel(
    * @param ctx context
    */
   @Suppress("InlinedApi")
-  fun needsNotificationPermission(ctx: Context): Boolean {
+  override fun needsNotificationPermission(ctx: Context): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
     val permission = Manifest.permission.POST_NOTIFICATIONS
     return ContextCompat.checkSelfPermission(ctx, permission) != PackageManager.PERMISSION_GRANTED
@@ -89,7 +93,7 @@ class NotificationsViewModel(
    * @param permissionLauncher launcher for the permission request
    */
   @Suppress("InlinedApi")
-  fun requestOrSchedule(ctx: Context, permissionLauncher: (String) -> Unit) {
+  override fun requestOrSchedule(ctx: Context, permissionLauncher: (String) -> Unit) {
     val permission = Manifest.permission.POST_NOTIFICATIONS
     if (needsNotificationPermission(ctx)) {
       permissionLauncher(permission)
@@ -99,7 +103,7 @@ class NotificationsViewModel(
   }
 
   // Kickoff
-  fun setKickoffEnabled(ctx: Context, on: Boolean) {
+  override fun setKickoffEnabled(ctx: Context, on: Boolean) {
     _kickoffEnabled.value = on
     if (!on) {
       repo.cancel(ctx, NotificationKind.NO_WORK_TODAY)
@@ -108,32 +112,32 @@ class NotificationsViewModel(
     }
   }
 
-  fun toggleKickoffDay(day: Int) {
+  override fun toggleKickoffDay(day: Int) {
     _kickoffDays.value =
         if (_kickoffDays.value.contains(day)) _kickoffDays.value - day else _kickoffDays.value + day
   }
 
-  fun updateKickoffTime(day: Int, hour: Int, minute: Int) {
+  override fun updateKickoffTime(day: Int, hour: Int, minute: Int) {
     _kickoffTimes.value =
         _kickoffTimes.value.toMutableMap().apply {
           this[day] = hour.coerceIn(0, 23) to minute.coerceIn(0, 59)
         }
   }
 
-  fun applyKickoffSchedule(ctx: Context) {
+  override fun applyKickoffSchedule(ctx: Context) {
     if (!_kickoffEnabled.value) return
     val map = _kickoffTimes.value.filterKeys { _kickoffDays.value.contains(it) }
     repo.setWeeklySchedule(ctx, NotificationKind.NO_WORK_TODAY, true, map)
   }
 
   // Streak
-  fun setStreakEnabled(ctx: Context, on: Boolean) {
+  override fun setStreakEnabled(ctx: Context, on: Boolean) {
     _streakEnabled.value = on
     repo.setDailyEnabled(ctx, NotificationKind.KEEP_STREAK, on, DEFAULT_STREAK_HOUR)
   }
 
   // Task notifications (15 minutes before next upcoming Study task)
-  fun setTaskNotificationsEnabled(ctx: Context, on: Boolean) {
+  override fun setTaskNotificationsEnabled(ctx: Context, on: Boolean) {
     _taskNotificationsEnabled.value = on
     if (!on) {
       // stop observing and cancel any scheduled alarm
@@ -163,7 +167,7 @@ class NotificationsViewModel(
    * `setKickoffEnabled(..., false)` is called.
    */
   @OptIn(FlowPreview::class)
-  fun startObservingSchedule(ctx: Context) {
+  override fun startObservingSchedule(ctx: Context) {
     // Avoid launching multiple collectors
     if (scheduleObserverJob?.isActive == true) return
 
@@ -283,7 +287,7 @@ class NotificationsViewModel(
    * use the next scheduled study task id when available; otherwise a demo id. Caller should ensure
    * POST_NOTIFICATIONS permission is granted on Android 13+.
    */
-  fun sendDeepLinkDemoNotification(ctx: Context) {
+  override fun sendDeepLinkDemoNotification(ctx: Context) {
     try {
       val planner = AppRepositories.calendarRepository
       val tasks =

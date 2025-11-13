@@ -1,7 +1,9 @@
 package com.android.sample.notifications
 
+import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.android.sample.data.notifications.NotificationUtils
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import com.android.sample.ui.notifications.NotificationsViewModel
@@ -10,6 +12,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 class CapturingRepo : NotificationRepository {
@@ -70,5 +73,21 @@ class NotificationsScreenTest {
 
     vm.scheduleTestNotification(ctx)
     assertEquals(1, repo.oneShot)
+  }
+
+  @Test
+  fun demo_deep_link_posts_notification() {
+    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val shadow = Shadows.shadowOf(nm)
+    val before = shadow.allNotifications.size
+
+    // Ensure channel exists
+    NotificationUtils.ensureChannel(ctx)
+
+    val vm = NotificationsViewModel()
+    vm.sendDeepLinkDemoNotification(ctx)
+
+    val after = shadow.allNotifications.size
+    assertEquals(before + 1, after)
   }
 }
