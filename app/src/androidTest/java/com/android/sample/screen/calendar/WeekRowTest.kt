@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.ui.calendar.WeekRow
@@ -62,10 +63,23 @@ class WeekRowTest {
             StudyItem(
                 title = "Very long first event title that should be truncated",
                 date = busyDay,
-                type = TaskType.STUDY),
-            StudyItem(title = "Second event", date = busyDay, type = TaskType.STUDY),
-            StudyItem(title = "Third event", date = busyDay, type = TaskType.WORK),
-            StudyItem(title = "Fourth event", date = busyDay, type = TaskType.PERSONAL))
+                type = TaskType.STUDY,
+                priority = Priority.MEDIUM),
+            StudyItem(
+                title = "Second event",
+                date = busyDay,
+                type = TaskType.STUDY,
+                priority = Priority.MEDIUM),
+            StudyItem(
+                title = "Third event",
+                date = busyDay,
+                type = TaskType.WORK,
+                priority = Priority.MEDIUM),
+            StudyItem(
+                title = "Fourth event",
+                date = busyDay,
+                type = TaskType.PERSONAL,
+                priority = Priority.MEDIUM))
 
     composeRule.setContent {
       MaterialTheme {

@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
+import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
@@ -97,18 +98,21 @@ class WeekTabContentAllAndroidTest {
             title = "Linear Algebra review",
             date = start,
             time = LocalTime.of(9, 0),
+            priority = Priority.MEDIUM,
             type = TaskType.STUDY),
         StudyItem(
             id = "b",
             title = "Part-time shift",
             date = start,
             time = LocalTime.of(16, 0),
+            priority = Priority.MEDIUM,
             type = TaskType.WORK),
         StudyItem(
             id = "c",
             title = "Gym with Sam",
             date = start.plusDays(2),
             time = LocalTime.of(18, 30),
+            priority = Priority.MEDIUM,
             type = TaskType.PERSONAL),
         // outside current week (must not appear)
         StudyItem(
@@ -116,6 +120,7 @@ class WeekTabContentAllAndroidTest {
             title = "Outside week task",
             date = start.plusDays(8),
             time = LocalTime.NOON,
+            priority = Priority.MEDIUM,
             type = TaskType.STUDY))
   }
 
