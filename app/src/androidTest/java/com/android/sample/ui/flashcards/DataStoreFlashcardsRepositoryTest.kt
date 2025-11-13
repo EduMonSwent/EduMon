@@ -1,6 +1,9 @@
-package com.android.sample.ui.flashcards.data
+package com.android.sample.ui.flashcards
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.ui.flashcards.data.DataStoreFlashcardsRepository
+import com.android.sample.ui.flashcards.data.FlashcardsRepository
+import com.android.sample.ui.flashcards.data.FlashcardsRepositoryProvider
 import com.android.sample.ui.flashcards.model.Flashcard
 import java.util.UUID
 import kotlinx.coroutines.flow.first
