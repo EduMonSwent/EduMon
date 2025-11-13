@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** This class was implemented with the help of ai (chatgbt) */
 class CalendarViewModel(
     private val repository: CalendarRepository = AppRepositories.calendarRepository
 ) : ViewModel() {

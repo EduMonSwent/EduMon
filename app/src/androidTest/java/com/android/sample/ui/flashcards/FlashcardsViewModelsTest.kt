@@ -53,7 +53,7 @@ private class FakeFlashcardsRepository : FlashcardsRepository {
   }
 
   override suspend fun deleteDeck(deckId: String) {
-    TODO("Not yet implemented")
+    _decks.value = _decks.value.filterNot { it.id == deckId }
   }
 }
 
@@ -112,12 +112,20 @@ class FlashcardsViewModelsTest {
     val after = vm.decks.first()
     assertEquals(initialCount + 1, after.size)
     assertTrue(after.any { it.id == newId && it.title == "DeckListVM Deck" })
+
+    vm.deleteDeck(newId)
+    advanceUntilIdle()
+
+    val afterDelete = vm.decks.first()
+    assertEquals(initialCount, afterDelete.size)
+    assertFalse(afterDelete.any { it.id == newId })
   }
 
   @Test
   fun createDeckViewModel_fullFlow_addUpdateRemove_save_addsDeck() = runTest {
     val fakeRepo = FakeFlashcardsRepository()
-    val vm = CreateDeckViewModel(repo = fakeRepo)
+    val fakeToDo = FakeToDoRepo()
+    val vm = CreateDeckViewModel(fakeToDo, fakeRepo)
 
     // initial state
     assertEquals("", vm.title.value)
