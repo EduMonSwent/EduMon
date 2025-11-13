@@ -11,6 +11,10 @@ plugins {
     alias(libs.plugins.gms)
 }
 
+jacoco {
+    toolVersion = "0.8.11"
+}
+
 extensions.configure<BaseAppModuleExtension>("android") {
     namespace = "com.android.sample"
     compileSdk = 34
@@ -159,6 +163,9 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.mockito.inline)
     testImplementation(libs.mockk)
+
+    // WorkManager test utilities
+    testImplementation(libs.androidx.work.testing)
 
     // Compose UI tests (versionless via BOM)
     testImplementation(libs.compose.test.junit)

@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -19,6 +20,7 @@ import com.android.sample.data.notifications.NotificationUtils
 import com.android.sample.data.notifications.WorkManagerNotificationRepository
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import com.android.sample.repos_providors.AppRepositories
@@ -36,7 +38,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 class NotificationsViewModel(
-    private val repo: NotificationRepository = WorkManagerNotificationRepository()
+    private val repo: NotificationRepository = WorkManagerNotificationRepository(),
+    private val calendarRepository: CalendarRepository = AppRepositories.calendarRepository,
+    private val observeDispatcher: kotlinx.coroutines.CoroutineDispatcher =
+        kotlinx.coroutines.Dispatchers.Default,
+    private val debounceMillis: Long = 1000L
 ) : ViewModel(), NotificationsUiModel {
 
   // Implement the UI model interface
@@ -169,67 +175,50 @@ class NotificationsViewModel(
    */
   @OptIn(FlowPreview::class)
   override fun startObservingSchedule(ctx: Context) {
-    // Avoid launching multiple collectors
     if (scheduleObserverJob?.isActive == true) return
 
     scheduleObserverJob =
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+        viewModelScope.launch(observeDispatcher) {
           try {
-            val planner = AppRepositories.calendarRepository
-            planner.tasksFlow
-                .debounce(1000) // wait briefly to avoid rapid rescheduling on bursts
-                .collect { tasks ->
-                  try {
-                    // Determine next study task with a time in the future
-                    val now = Instant.now()
-                    val zone = ZoneId.systemDefault()
-
-                    val nextTask =
-                        tasks
-                            .asSequence()
-                            .filter { it.type == TaskType.STUDY }
-                            .filter { !it.isCompleted }
-                            .filter { it.time != null }
-                            .map { item ->
-                              val dt = LocalDateTime.of(item.date, item.time)
-                              Pair(item, dt.atZone(zone).toInstant())
-                            }
-                            .filter { (_, instant) -> instant.isAfter(now) }
-                            .sortedBy { it.second }
-                            .map { it.first }
-                            .firstOrNull()
-
-                    if (nextTask == null) {
-                      // No upcoming study task: cancel any scheduled reminder
-                      scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
-                      scheduledTaskId = null
-                      return@collect
-                    }
-
-                    // If already scheduled for the same task, do nothing
-                    if (nextTask.id == scheduledTaskId) return@collect
-
-                    // Schedule for this next task: 15 minutes before
-                    val taskDateTime = LocalDateTime.of(nextTask.date, nextTask.time!!)
-                    val taskInstant = taskDateTime.atZone(zone).toInstant()
-                    val triggerAt = taskInstant.toEpochMilli() - Duration.ofMinutes(15).toMillis()
-
-                    // cancel previous scheduling for safety
-                    scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
-
-                    // schedule new (defensive)
-                    try {
-                      AlarmHelper.scheduleStudyAlarm(ctx, nextTask.id, triggerAt)
-                    } catch (e: Exception) {
-                      Log.e("NotificationsVM", "Failed to schedule alarm for ${nextTask.id}", e)
-                    }
-                    scheduledTaskId = nextTask.id
-                  } catch (e: Exception) {
-                    Log.e("NotificationsVM", "Error while processing tasksFlow collect", e)
-                  }
+            calendarRepository.tasksFlow.debounce(debounceMillis).collect { tasks ->
+              try {
+                val now = Instant.now()
+                val zone = ZoneId.systemDefault()
+                val nextTask =
+                    tasks
+                        .asSequence()
+                        .filter { it.type == TaskType.STUDY }
+                        .filter { !it.isCompleted }
+                        .filter { it.time != null }
+                        .map { item ->
+                          val dt = LocalDateTime.of(item.date, item.time)
+                          Pair(item, dt.atZone(zone).toInstant())
+                        }
+                        .filter { (_, instant) -> instant.isAfter(now) }
+                        .sortedBy { it.second }
+                        .map { it.first }
+                        .firstOrNull()
+                if (nextTask == null) {
+                  scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
+                  scheduledTaskId = null
+                  return@collect
                 }
+                if (nextTask.id == scheduledTaskId) return@collect
+                val taskDateTime = LocalDateTime.of(nextTask.date, nextTask.time!!)
+                val taskInstant = taskDateTime.atZone(zone).toInstant()
+                val triggerAt = taskInstant.toEpochMilli() - Duration.ofMinutes(15).toMillis()
+                scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
+                try {
+                  AlarmHelper.scheduleStudyAlarm(ctx, nextTask.id, triggerAt)
+                } catch (e: Exception) {
+                  Log.e("NotificationsVM", "Failed to schedule alarm for ${nextTask.id}", e)
+                }
+                scheduledTaskId = nextTask.id
+              } catch (e: Exception) {
+                Log.e("NotificationsVM", "Error while processing tasksFlow collect", e)
+              }
+            }
           } catch (e: Throwable) {
-            // Fail-safe: log and don't crash the VM / UI
             Log.e("NotificationsVM", "Failed to start observing schedule", e)
           }
         }
@@ -237,18 +226,14 @@ class NotificationsViewModel(
 
   // Keep the old one-shot helper (non-reactive) for backward compatibility
   fun scheduleNextStudySessionNotification(ctx: Context) {
-    // fallback one-shot scheduling via AlarmHelper
-    val planner = AppRepositories.calendarRepository
     val tasks =
         try {
-          planner.tasksFlow.value
+          calendarRepository.tasksFlow.value
         } catch (_: Exception) {
           emptyList<StudyItem>()
         }
-
     val now = Instant.now()
     val zone = ZoneId.systemDefault()
-
     val nextTask =
         tasks
             .asSequence()
@@ -263,17 +248,11 @@ class NotificationsViewModel(
             .sortedBy { it.second }
             .map { it.first }
             .firstOrNull()
-
     if (nextTask == null) return
-
-    // compute 15 minutes before task start
     val taskDateTime = LocalDateTime.of(nextTask.date, nextTask.time!!)
     val taskInstant = taskDateTime.atZone(zone).toInstant()
     val triggerAt = taskInstant.toEpochMilli() - Duration.ofMinutes(15).toMillis()
-
-    // cancel previous
     scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
-
     AlarmHelper.scheduleStudyAlarm(ctx, nextTask.id, triggerAt)
     scheduledTaskId = nextTask.id
   }
@@ -290,10 +269,9 @@ class NotificationsViewModel(
    */
   override fun sendDeepLinkDemoNotification(ctx: Context) {
     try {
-      val planner = AppRepositories.calendarRepository
       val tasks =
           try {
-            planner.tasksFlow.value
+            calendarRepository.tasksFlow.value
           } catch (_: Exception) {
             emptyList<StudyItem>()
           }
@@ -350,9 +328,7 @@ class NotificationsViewModel(
               .build()
 
       NotificationManagerCompat.from(ctx).notify(DEMO_NOTIFICATION_ID, n)
-    } catch (_: Exception) {
-      // best-effort demo, swallow errors
-    }
+    } catch (_: Exception) {}
   }
 
   override fun onCleared() {
@@ -361,4 +337,6 @@ class NotificationsViewModel(
     scheduleObserverJob?.cancel()
     scheduleObserverJob = null
   }
+
+  @VisibleForTesting internal fun currentScheduledTaskId(): String? = scheduledTaskId
 }

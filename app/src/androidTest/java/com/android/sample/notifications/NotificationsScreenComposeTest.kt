@@ -5,6 +5,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.sample.EduMonNavHost
+import com.android.sample.NavigationTestTags
 import com.android.sample.ui.notifications.NotificationsScreen
 import com.android.sample.ui.notifications.NotificationsUiModel
 import org.junit.Assert.assertTrue
@@ -114,5 +116,28 @@ class NotificationsScreenComposeTest {
 
     // Assert after Compose settles
     composeRule.runOnIdle { assertTrue("Demo button should trigger ViewModel call", vm.demoCalled) }
+  }
+
+  @Test
+  fun renders_study_route_with_event_id() {
+    composeRule.setContent {
+      val navController = androidx.navigation.compose.rememberNavController()
+      // Manually navigate to the deep-link route
+      EduMonNavHost(navController = navController)
+      navController.navigate("study/test-event")
+    }
+
+    // Wait for composition
+    composeRule.waitForIdle()
+
+    // Verify top bar appears (so Scaffold + StudySessionScreen executed)
+    composeRule
+        .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
+        .assertExists("Expected study top bar to exist")
+
+    // Optionally assert back button too
+    composeRule
+        .onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON)
+        .assertExists("Expected back button to exist")
   }
 }

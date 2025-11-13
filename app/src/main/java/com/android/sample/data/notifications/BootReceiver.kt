@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.android.sample.feature.schedule.data.calendar.TaskType
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
+import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,16 +17,18 @@ import kotlinx.coroutines.launch
  * on the broadcast thread (use a JobIntentService or schedule a WorkManager job). For simplicity we
  * launch a coroutine here.
  */
-class BootReceiver : BroadcastReceiver() {
+class BootReceiver(
+    private val repository: CalendarRepository = AppRepositories.calendarRepository,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+) : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
     // Re-schedule next alarms in background
-    CoroutineScope(Dispatchers.Default).launch {
+    scope.launch {
       try {
         // Use calendar repository to find upcoming tasks and schedule the next one(s)
-        val planner = com.android.sample.repos_providors.AppRepositories.calendarRepository
-        val tasks = planner.tasksFlow.value // best effort
+        val tasks = repository.tasksFlow.value // best effort
         val zone = java.time.ZoneId.systemDefault()
         val now = java.time.Instant.now()
 
