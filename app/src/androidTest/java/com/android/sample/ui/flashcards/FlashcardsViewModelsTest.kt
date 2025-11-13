@@ -117,7 +117,8 @@ class FlashcardsViewModelsTest {
   @Test
   fun createDeckViewModel_fullFlow_addUpdateRemove_save_addsDeck() = runTest {
     val fakeRepo = FakeFlashcardsRepository()
-    val vm = CreateDeckViewModel(repo = fakeRepo)
+    val fakeToDo = FakeToDoRepo()
+    val vm = CreateDeckViewModel(fakeToDo, fakeRepo)
 
     // initial state
     assertEquals("", vm.title.value)
