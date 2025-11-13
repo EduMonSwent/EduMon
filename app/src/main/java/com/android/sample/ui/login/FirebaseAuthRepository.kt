@@ -7,22 +7,23 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.tasks.await
 
-/** Implémentation Firebase du dépôt d’authentification. */
+private const val ERROR_NO_USER_AFTER_LOGIN = "No user after connexion"
+private const val ERROR_CREDENTIAL_NOT_SUPPORTED = "Credential not supported"
+
 class FirebaseAuthRepository(private val auth: FirebaseAuth = FirebaseAuth.getInstance()) :
     AuthRepository {
 
   override suspend fun loginWithGoogle(credential: Credential): Result<FirebaseUser> {
     return try {
-      // Vérifie que le credential est bien un token Google
       if (credential is CustomCredential &&
           credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
         val idToken = GoogleAuthHelper.fromBundle(credential.data).idToken
         val firebaseCred = GoogleAuthHelper.toFirebaseCredential(idToken)
         val user = auth.signInWithCredential(firebaseCred).await().user
         if (user != null) Result.success(user)
-        else Result.failure(IllegalStateException("Utilisateur introuvable après connexion."))
+        else Result.failure(IllegalStateException(ERROR_NO_USER_AFTER_LOGIN))
       } else {
-        Result.failure(IllegalArgumentException("Type de credential non supporté."))
+        Result.failure(IllegalArgumentException(ERROR_CREDENTIAL_NOT_SUPPORTED))
       }
     } catch (e: Exception) {
       Result.failure(e)
