@@ -3,6 +3,7 @@ package com.android.sample.data.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import com.android.sample.repos_providors.AppRepositories
@@ -52,7 +53,17 @@ class BootReceiver(
           val trigger =
               taskDateTime.atZone(zone).toInstant().toEpochMilli() -
                   java.time.Duration.ofMinutes(15).toMillis()
-          AlarmHelper.scheduleStudyAlarm(context, it.id, trigger)
+
+          // API 31+: ensure app is allowed to set exact alarms; otherwise AlarmHelper will fallback
+          if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+              (context
+                  .getSystemService(android.app.AlarmManager::class.java)
+                  ?.canScheduleExactAlarms() == true)) {
+            AlarmHelper.scheduleStudyAlarm(context, it.id, trigger)
+          } else {
+            // Let AlarmHelper fallback path handle delayed WorkManager scheduling
+            AlarmHelper.scheduleStudyAlarm(context, it.id, trigger)
+          }
         }
       } catch (_: Exception) {
         // best-effort: ignore

@@ -7,10 +7,12 @@
     <!-- 📍 Permissions pour la localisation -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-  
+
     <!-- Needed to receive BOOT_COMPLETED and re-schedule exact alarms -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Declare exact alarm permission for AlarmManager.setExact* (API 31+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:targetApi="31"/>
 
 
     <application

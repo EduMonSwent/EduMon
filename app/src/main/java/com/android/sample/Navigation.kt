@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -59,7 +60,7 @@ fun EduMonNavHost(
   val nav = navController
 
   NavHost(
-      navController = nav,
+      navController = navController,
       startDestination = startDestination,
       modifier = modifier.testTag(NavigationTestTags.NAV_HOST)) {
 
@@ -278,7 +279,16 @@ fun EduMonNavHost(
                     },
                     navigationIcon = {
                       IconButton(
-                          onClick = { nav.popBackStack() },
+                          onClick = {
+                            val popped = nav.popBackStack()
+                            if (!popped) {
+                              nav.navigate(AppDestination.Home.route) {
+                                popUpTo(nav.graph.findStartDestination().id) { inclusive = true }
+                                launchSingleTop = true
+                                restoreState = true
+                              }
+                            }
+                          },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
                             Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                           }
@@ -304,7 +314,18 @@ fun EduMonNavHost(
                         },
                         navigationIcon = {
                           IconButton(
-                              onClick = { nav.popBackStack() },
+                              onClick = {
+                                val popped = nav.popBackStack()
+                                if (!popped) {
+                                  nav.navigate(AppDestination.Home.route) {
+                                    popUpTo(nav.graph.findStartDestination().id) {
+                                      inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                  }
+                                }
+                              },
                               modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
                                 Icon(
                                     Icons.AutoMirrored.Outlined.ArrowBack,
