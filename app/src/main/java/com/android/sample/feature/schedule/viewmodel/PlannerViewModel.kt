@@ -1,15 +1,15 @@
-package com.android.sample.ui.viewmodel
+package com.android.sample.feature.schedule.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.model.planner.AttendanceStatus
-import com.android.sample.model.planner.Class
-import com.android.sample.model.planner.ClassAttendance
-import com.android.sample.model.planner.CompletionStatus
-import com.android.sample.model.planner.PlannerRepository
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassAttendance
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
 import java.time.LocalDate

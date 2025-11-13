@@ -1,12 +1,14 @@
-package com.android.sample.model
+package com.android.sample.feature.schedule.repository.calendar
 
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-interface PlannerRepository {
+interface CalendarRepository {
   val tasksFlow: StateFlow<List<StudyItem>> // Expose tasks as a Flow for reactivity
 
   suspend fun getAllTasks(): List<StudyItem>
@@ -18,7 +20,7 @@ interface PlannerRepository {
   suspend fun deleteTask(taskId: String)
 }
 
-class PlannerRepositoryImpl : PlannerRepository {
+class CalendarRepositoryImpl : CalendarRepository {
 
   private val _tasks = MutableStateFlow<List<StudyItem>>(emptyList())
   override val tasksFlow: StateFlow<List<StudyItem>> = _tasks.asStateFlow()

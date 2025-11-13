@@ -1,5 +1,10 @@
-package com.android.sample.model.planner
+package com.android.sample.feature.schedule.repository.planner
 
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassAttendance
+import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime

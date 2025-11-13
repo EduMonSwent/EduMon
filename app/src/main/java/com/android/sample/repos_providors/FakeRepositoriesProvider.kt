@@ -2,12 +2,12 @@ package com.android.sample.repos_providors
 
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
 import com.android.sample.feature.weeks.repository.FakeWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.android.sample.model.PlannerRepositoryImpl
-import com.android.sample.model.planner.PlannerRepository
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
@@ -28,7 +28,7 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val studySessionRepository: StudySessionRepository = ToDoBackedStudySessionRepository()
   override val homeRepository: HomeRepository = FakeHomeRepository()
 
-  override val calendarRepository: PlannerRepositoryImpl = PlannerRepositoryImpl()
+  override val calendarRepository: CalendarRepositoryImpl = CalendarRepositoryImpl()
 
   override val friendRepository: FakeFriendRepository = FakeFriendRepository()
 

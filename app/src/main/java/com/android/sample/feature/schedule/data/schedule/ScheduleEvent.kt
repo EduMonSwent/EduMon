@@ -1,4 +1,4 @@
-package com.android.sample.model.schedule
+package com.android.sample.feature.schedule.data.schedule
 
 import java.time.LocalDate
 import java.time.LocalTime
