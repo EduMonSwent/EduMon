@@ -124,9 +124,7 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
                           startOfWeek = vm.startOfWeek(selectedDate),
                           selectedDate = selectedDate,
                           allTasks = allTasks,
-                          onDayClick = { vm.onDateSelected(it) },
-                          onPrevClick = { vm.onPreviousMonthWeekClicked() },
-                          onNextClick = { vm.onNextMonthWeekClicked() })
+                          onDayClick = { vm.onDateSelected(it) })
                     }
                   }
 

@@ -71,11 +71,12 @@ fun MonthGrid(
 
   val title = stringResource(id = R.string.calendar_month_year, monthName, currentMonth.year)
 
+  // Group tasks by date once, recompute only when allTasks changes
+  val tasksByDate = remember(allTasks) { allTasks.groupBy { it.date } }
+
   Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    /* --- Month Header --- */
     CalendarHeader(title = title, onPrevClick = onPrevClick, onNextClick = onNextClick)
 
-    /* --- Weekday Header --- */
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween) {
@@ -100,7 +101,6 @@ fun MonthGrid(
           }
         }
 
-    /* --- Calendar Days Grid --- */
     val firstOfMonth = currentMonth.atDay(1)
     val firstDayOfWeek = DayOfWeek.MONDAY
     val offset = (firstOfMonth.dayOfWeek.value - firstDayOfWeek.value + 7) % 7
@@ -120,7 +120,8 @@ fun MonthGrid(
           items(displayDays.size) { index ->
             val day = displayDays[index]
             if (day != null) {
-              val tasksForDay = allTasks.filter { it.date == day }
+              // O(1) lookup instead of filter
+              val tasksForDay = tasksByDate[day].orEmpty()
               DayCell(
                   date = day,
                   tasks = tasksForDay,
@@ -139,11 +140,19 @@ fun WeekRow(
     startOfWeek: LocalDate,
     selectedDate: LocalDate,
     allTasks: List<StudyItem>,
-    onDayClick: (LocalDate) -> Unit,
-    onPrevClick: () -> Unit,
-    onNextClick: () -> Unit
+    onDayClick: (LocalDate) -> Unit
 ) {
   val weekDays = remember(startOfWeek) { (0..6).map { startOfWeek.plusDays(it.toLong()) } }
+
+  // Group + sort once, recompute only when allTasks changes
+  val tasksByDate =
+      remember(allTasks) {
+        allTasks
+            .groupBy { it.date }
+            .mapValues { (_, list) ->
+              list.sortedWith(compareBy<StudyItem> { it.time }.thenBy { it.title })
+            }
+      }
 
   LazyRow(
       horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -153,11 +162,8 @@ fun WeekRow(
               .padding(vertical = 8.dp)
               .testTag(CalendarScreenTestTags.WEEK_ROW)) {
         items(weekDays) { day ->
-          val tasksForDay =
-              allTasks
-                  .filter { it.date == day }
-                  .sortedWith(compareBy<StudyItem> { it.time }.thenBy { it.title })
-
+          // O(1) lookup; already sorted
+          val tasksForDay = tasksByDate[day].orEmpty()
           val isSelected = day == selectedDate
 
           Box(
@@ -175,7 +181,6 @@ fun WeekRow(
                       .padding(10.dp)
                       .testTag("${CalendarScreenTestTags.WEEK_DAY_BOX_PREFIX}${day.dayOfMonth}")) {
                 Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
-                  // Day number
                   Text(
                       text = day.dayOfMonth.toString(),
                       style =
@@ -185,7 +190,6 @@ fun WeekRow(
 
                   Spacer(Modifier.height(6.dp))
 
-                  // Show up to 2 events
                   tasksForDay.take(2).forEach { task ->
                     val tagColor =
                         when (task.type) {
@@ -218,7 +222,6 @@ fun WeekRow(
                         }
                   }
 
-                  // “+N more” indicator
                   if (tasksForDay.size > 2) {
                     val remainingCount = tasksForDay.size - 2
                     Text(

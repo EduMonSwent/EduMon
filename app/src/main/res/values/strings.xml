@@ -228,6 +228,7 @@
 
     <!-- Calendar more-events indicator -->
     <string name="calendar_more_events">+%1$d more</string>
+    <string name="week_progression">Week progression</string>
 
 
 </resources>

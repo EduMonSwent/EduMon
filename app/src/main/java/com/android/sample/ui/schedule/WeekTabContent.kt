@@ -48,13 +48,13 @@ fun WeekTabContent(
     allTasks: List<StudyItem>,
     selectedDate: LocalDate
 ) {
+  val weekStart = vm.startOfWeek(selectedDate)
   LazyColumn(
       modifier = Modifier.fillMaxSize().testTag("WeekContent"),
       verticalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(bottom = 96.dp)) {
         item("week-big-frame") {
           SectionBox(title = null, header = null) {
-            val weekStart = vm.startOfWeek(selectedDate)
             val weekDays = (0..6).map { weekStart.plusDays(it.toLong()) }
             val weekTitle =
                 "${weekDays.first().month.name.lowercase().replaceFirstChar { it.uppercase() }} " +
@@ -77,12 +77,10 @@ fun WeekTabContent(
                 colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.85f)),
                 shape = RoundedCornerShape(24.dp)) {
                   WeekRow(
-                      startOfWeek = vm.startOfWeek(selectedDate),
+                      startOfWeek = weekStart,
                       selectedDate = selectedDate,
                       allTasks = allTasks,
-                      onDayClick = { vm.onDateSelected(it) },
-                      onPrevClick = { vm.onPreviousMonthWeekClicked() },
-                      onNextClick = { vm.onNextMonthWeekClicked() })
+                      onDayClick = { vm.onDateSelected(it) })
                 }
 
             Spacer(Modifier.height(16.dp))
@@ -91,7 +89,7 @@ fun WeekTabContent(
             SectionBox(
                 header = {
                   Text(
-                      text = "Week progression",
+                      text = stringResource(R.string.week_progression),
                       style =
                           MaterialTheme.typography.titleMedium.copy(
                               fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
@@ -109,9 +107,8 @@ fun WeekTabContent(
 
             // ---- Frame: Upcoming events (embedded; no inner GlassSurface) ----
             SectionBox(title = null) {
-              val start = vm.startOfWeek(selectedDate)
-              val end = start.plusDays(6)
-              val from = if (selectedDate.isBefore(start)) start else selectedDate
+              val end = weekStart.plusDays(6)
+              val from = if (selectedDate.isBefore(weekStart)) weekStart else selectedDate
               val weekTasks = allTasks.filter { it.date in from..end }
 
               UpcomingEventsSection(
