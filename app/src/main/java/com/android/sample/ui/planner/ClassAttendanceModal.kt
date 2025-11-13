@@ -1,7 +1,5 @@
 package com.android.sample.ui.planner
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,23 +28,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
-import com.android.sample.model.planner.AttendanceStatus
-import com.android.sample.model.planner.Class
-import com.android.sample.model.planner.ClassType
-import com.android.sample.model.planner.CompletionStatus
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.DarkCardItem
 import com.android.sample.ui.theme.DarknightViolet
 import com.android.sample.ui.theme.LightBlueAccent
 import com.android.sample.ui.theme.MidDarkCard
+import com.android.sample.ui.theme.PurpleBorder
+import com.android.sample.ui.theme.PurplePrimary
+import com.android.sample.ui.theme.PurpleText
 import com.android.sample.ui.theme.TextLight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,6 +62,7 @@ fun ClassAttendanceModal(
 ) {
   var attendanceStatus by remember { mutableStateOf(initialAttendance) }
   var completionStatus by remember { mutableStateOf(initialCompletion) }
+  val canSave = attendanceStatus != null && completionStatus != null
 
   // Define modal background gradient
   val modalBackgroundBrush =
@@ -104,7 +106,7 @@ fun ClassAttendanceModal(
               IconButton(onClick = onDismiss) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_close), // Ensure ic_close exists
-                    contentDescription = "Close",
+                    contentDescription = stringResource(R.string.close),
                     tint = TextLight.copy(alpha = 0.8f),
                     modifier = Modifier.size(28.dp) // Larger close icon
                     )
@@ -114,7 +116,7 @@ fun ClassAttendanceModal(
       text = {
         Column(modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)) {
           Text(
-              text = "Confirm your attendance & completion",
+              text = stringResource(R.string.confirm_attendance_completion),
               color = TextLight.copy(alpha = 0.8f),
               fontSize = 14.sp,
               modifier = Modifier.padding(bottom = 20.dp) // More space after subtitle
@@ -122,7 +124,7 @@ fun ClassAttendanceModal(
 
           // Attendance Section
           Text(
-              text = "Did you attend this class?",
+              text = stringResource(R.string.did_you_attend_class),
               color = TextLight,
               fontWeight = FontWeight.SemiBold,
               fontSize = 15.sp,
@@ -150,9 +152,9 @@ fun ClassAttendanceModal(
           Text(
               text =
                   when (classItem.type) {
-                    ClassType.LECTURE -> "Did you finish reviewing today’s lecture materials?"
-                    ClassType.EXERCISE -> "Did you finish the exercise?"
-                    ClassType.LAB -> "Did you finish the lab?"
+                    ClassType.LECTURE -> stringResource(R.string.did_you_review_lecture)
+                    ClassType.EXERCISE -> stringResource(R.string.did_you_finish_exercise)
+                    ClassType.LAB -> stringResource(R.string.did_you_finish_lab)
                   },
               color = TextLight,
               fontWeight = FontWeight.SemiBold,
@@ -175,41 +177,47 @@ fun ClassAttendanceModal(
       },
       confirmButton = {
         Button(
-            onClick = {
-              val finalAttendance =
-                  attendanceStatus ?: AttendanceStatus.NO // Default to NO if not selected
-              val finalCompletion =
-                  completionStatus ?: CompletionStatus.NO // Default to NO if not selected
-              onSave(finalAttendance, finalCompletion)
-            },
+            onClick = { onSave(attendanceStatus!!, completionStatus!!) },
+            enabled = canSave,
             modifier =
                 Modifier.fillMaxWidth()
                     .height(50.dp) // Slightly taller button
-                    .padding(horizontal = 8.dp) // Padding for button within dialog
-                    .shadow(6.dp, RoundedCornerShape(12.dp), clip = false), // Subtle shadow
+                    .padding(horizontal = 8.dp), // Padding for button within dialog
+            // .shadow(6.dp, RoundedCornerShape(12.dp), clip = false), // Subtle shadow
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
-            contentPadding = PaddingValues(0.dp)) {
-              Text("Save", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = PurplePrimary,
+                    disabledContainerColor = PurplePrimary.copy(alpha = 0.35f),
+                    disabledContentColor = Color.White.copy(alpha = .7f)),
+            contentPadding = PaddingValues(vertical = 14.dp)) {
+              Text(
+                  stringResource(R.string.save),
+                  color = Color.White,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 16.sp)
             }
       },
       dismissButton = {
         OutlinedButton(
             onClick = onDismiss,
+            border = BorderStroke(1.dp, PurpleBorder.copy(alpha = 0.6f)),
             modifier =
                 Modifier.fillMaxWidth()
                     .height(50.dp) // Slightly taller button
                     .padding(horizontal = 8.dp) // Padding for button within dialog
                     .padding(bottom = 8.dp), // Padding from the bottom of the dialog
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, TextLight.copy(alpha = 0.3f)), // Lighter border
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)) {
-              Text(
-                  "Cancel",
-                  color = TextLight.copy(alpha = 0.7f),
-                  fontWeight = FontWeight.SemiBold,
-                  fontSize = 16.sp)
-            }
+            // border = BorderStroke(1.dp, TextLight.copy(alpha = 0.3f)), // Lighter border
+            colors =
+                ButtonDefaults.outlinedButtonColors(contentColor = PurpleText.copy(alpha = 0.9f)),
+        ) {
+          Text(
+              stringResource(R.string.cancel),
+              color = TextLight.copy(alpha = 0.7f),
+              fontWeight = FontWeight.SemiBold,
+              fontSize = 16.sp)
+        }
       })
 }
 
@@ -220,29 +228,23 @@ fun ChoiceButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-  val backgroundColor by
-      animateColorAsState(
-          targetValue = if (isSelected) AccentViolet.copy(alpha = 0.9f) else DarkCardItem,
-          animationSpec = tween(durationMillis = 200),
-          label = "choiceButtonBgColor")
-  val textColor by
-      animateColorAsState(
-          targetValue = if (isSelected) Color.White else TextLight.copy(alpha = 0.8f),
-          animationSpec = tween(durationMillis = 200),
-          label = "choiceButtonTextColor")
+  val bg = if (isSelected) PurplePrimary else DarkCardItem
+  val fg = if (isSelected) Color.White else TextLight.copy(alpha = 0.85f)
+  val border = if (isSelected) BorderStroke(1.dp, PurpleBorder.copy(alpha = 0.45f)) else null
 
   Button(
       onClick = onClick,
-      colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
-      shape = RoundedCornerShape(10.dp), // Slightly more rounded
-      modifier =
-          modifier
-              .height(48.dp) // Consistent button height
-              .shadow(
-                  elevation = if (isSelected) 6.dp else 2.dp, // Dynamic shadow for selected state
-                  shape = RoundedCornerShape(10.dp),
-                  clip = false),
-      contentPadding = PaddingValues(vertical = 12.dp, horizontal = 8.dp)) {
-        Text(text, color = textColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+      shape = RoundedCornerShape(12.dp),
+      colors = ButtonDefaults.buttonColors(containerColor = bg, contentColor = fg),
+      border = border,
+      elevation =
+          ButtonDefaults.buttonElevation(
+              defaultElevation = 0.dp,
+              pressedElevation = 0.dp,
+              focusedElevation = 0.dp,
+              disabledElevation = 0.dp),
+      contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+      modifier = modifier.height(44.dp)) {
+        Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
       }
 }

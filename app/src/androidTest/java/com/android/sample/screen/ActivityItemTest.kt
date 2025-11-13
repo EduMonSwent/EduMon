@@ -3,7 +3,11 @@ package com.android.sample.screen
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import com.android.sample.model.planner.*
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassAttendance
+import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
 import com.android.sample.ui.planner.ActivityItem
 import java.time.LocalDate
 import java.time.LocalTime

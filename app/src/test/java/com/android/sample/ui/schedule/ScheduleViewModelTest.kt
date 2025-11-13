@@ -2,15 +2,16 @@ package com.android.sample.ui.schedule
 
 import android.content.res.Resources
 import androidx.test.core.app.ApplicationProvider
-import com.android.sample.model.planner.AttendanceStatus
-import com.android.sample.model.planner.Class
-import com.android.sample.model.planner.CompletionStatus
-import com.android.sample.model.planner.FakePlannerRepository
-import com.android.sample.model.schedule.EventKind
-import com.android.sample.model.schedule.Priority
-import com.android.sample.model.schedule.ScheduleEvent
-import com.android.sample.model.schedule.ScheduleRepository
-import com.android.sample.model.schedule.SourceTag
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
+import com.android.sample.feature.schedule.data.schedule.EventKind
+import com.android.sample.feature.schedule.data.schedule.Priority
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SourceTag
+import com.android.sample.feature.schedule.repository.planner.FakePlannerRepository
+import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth

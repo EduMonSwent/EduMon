@@ -2,14 +2,14 @@ package com.android.sample.ui.schedule
 
 import android.content.res.Resources
 import androidx.test.core.app.ApplicationProvider
-import com.android.sample.model.Priority as ModelPriority
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
-import com.android.sample.model.schedule.EventKind
-import com.android.sample.model.schedule.Priority
-import com.android.sample.model.schedule.ScheduleEvent
-import com.android.sample.model.schedule.SourceTag
-import com.android.sample.model.schedule.StudyItemMapper
+import com.android.sample.feature.schedule.data.calendar.Priority as ModelPriority
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
+import com.android.sample.feature.schedule.data.schedule.EventKind
+import com.android.sample.feature.schedule.data.schedule.Priority
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SourceTag
+import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.*

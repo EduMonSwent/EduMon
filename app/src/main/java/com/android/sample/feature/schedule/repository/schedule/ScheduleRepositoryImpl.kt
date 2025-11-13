@@ -1,7 +1,11 @@
-package com.android.sample.model.schedule
+package com.android.sample.feature.schedule.repository.schedule
 
 import android.content.res.Resources
-import com.android.sample.model.PlannerRepository as TaskPlannerRepository
+import com.android.sample.feature.schedule.data.schedule.EventKind
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SourceTag
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineScope
@@ -10,8 +14,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class ScheduleRepositoryImpl(
-    private val taskRepo: TaskPlannerRepository,
-    private val classRepo: com.android.sample.model.planner.PlannerRepository,
+    private val taskRepo: CalendarRepository,
+    private val classRepo: PlannerRepository,
     private val resources: Resources,
     coroutineScope: CoroutineScope? = null
 ) : ScheduleRepository {

@@ -3,10 +3,10 @@ package com.android.sample.screen.calendar
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import com.android.sample.feature.schedule.viewmodel.CalendarViewModel
 import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.calendar.CalendarScreen
 import com.android.sample.ui.calendar.CalendarScreenTestTags
-import com.android.sample.ui.calendar.CalendarViewModel
 import org.junit.Rule
 import org.junit.Test
 

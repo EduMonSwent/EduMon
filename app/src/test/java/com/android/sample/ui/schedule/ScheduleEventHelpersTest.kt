@@ -1,6 +1,8 @@
 package com.android.sample.ui.schedule
 
-import com.android.sample.model.schedule.*
+import com.android.sample.feature.schedule.data.schedule.EventKind
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SourceTag
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.*

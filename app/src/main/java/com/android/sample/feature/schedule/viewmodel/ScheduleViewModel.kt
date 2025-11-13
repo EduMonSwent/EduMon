@@ -1,11 +1,17 @@
-package com.android.sample.ui.schedule
+package com.android.sample.feature.schedule.viewmodel
 
 import android.content.res.Resources
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.R
-import com.android.sample.model.planner.*
-import com.android.sample.model.schedule.*
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassAttendance
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
+import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.ui.schedule.AdaptivePlanner
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -179,6 +185,11 @@ class ScheduleViewModel(
       val result = plannerRepository.saveAttendance(attendanceRecord)
       if (result.isSuccess) {
         onDismissClassAttendanceModal()
+        _uiState.update { st ->
+          val updated =
+              st.attendanceRecords.filterNot { it.classId == classItem.id } + attendanceRecord
+          st.copy(attendanceRecords = updated)
+        }
         _eventFlow.emit(
             UiEvent.ShowSnackbar(resources.getString(R.string.attendance_saved_success)))
       } else {
