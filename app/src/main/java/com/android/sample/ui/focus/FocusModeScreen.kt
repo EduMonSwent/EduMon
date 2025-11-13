@@ -13,11 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.R
 import com.android.sample.ui.theme.*
 import kotlin.time.Duration.Companion.minutes
 
@@ -34,11 +36,10 @@ fun FocusModeScreen(viewModel: FocusModeViewModel = viewModel()) {
   val backgroundColor by
       animateColorAsState(
           if (isRunning) BackgroundGradientEnd else BackgroundDark,
-          animationSpec = tween(durationMillis = 800, easing = LinearEasing))
+          animationSpec = tween(800, easing = LinearEasing))
 
   val accentColor by
-      animateColorAsState(
-          if (isRunning) AccentMint else AccentViolet, animationSpec = tween(durationMillis = 600))
+      animateColorAsState(if (isRunning) AccentMint else AccentViolet, animationSpec = tween(600))
 
   val infiniteTransition = rememberInfiniteTransition(label = "pulse")
   val pulseAlpha by
@@ -57,7 +58,7 @@ fun FocusModeScreen(viewModel: FocusModeViewModel = viewModel()) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center) {
               Text(
-                  text = "Focus Mode",
+                  text = stringResource(R.string.focus_mode_title),
                   style =
                       MaterialTheme.typography.headlineMedium.copy(
                           color = PurpleText, fontWeight = FontWeight.Bold))
@@ -89,7 +90,10 @@ fun FocusModeScreen(viewModel: FocusModeViewModel = viewModel()) {
                           .background(accentColor.copy(alpha = pulseAlpha), CircleShape),
                   shape = CircleShape) {
                     Text(
-                        text = if (!isRunning) "Start" else "Stop",
+                        text =
+                            stringResource(
+                                if (isRunning) R.string.focus_mode_stop
+                                else R.string.focus_mode_start),
                         style =
                             MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.SemiBold, fontSize = 22.sp))
@@ -99,8 +103,9 @@ fun FocusModeScreen(viewModel: FocusModeViewModel = viewModel()) {
 
               Text(
                   text =
-                      if (!isRunning) "Start a 25-minute deep focus session"
-                      else "Stay focused — you got this 💪",
+                      stringResource(
+                          if (isRunning) R.string.focus_mode_running_message
+                          else R.string.focus_mode_start_description),
                   color = TextLight,
                   style = MaterialTheme.typography.bodyLarge,
                   textAlign = TextAlign.Center)
