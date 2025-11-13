@@ -92,14 +92,27 @@ class NotificationsScreenComposeTest {
     }
   }
 
+  @OptIn(ExperimentalTestApi::class)
   @Test
   fun clicking_demo_button_calls_viewmodel_demo() {
     val vm = SpyNotificationsViewModel()
 
     composeRule.setContent { NotificationsScreen(vm = vm, onBack = {}, onGoHome = {}) }
 
-    // Click the demo deep-link button and assert VM was invoked
-    composeRule.onNodeWithTag("btn_demo_deep_link").performClick()
-    composeRule.runOnIdle { assertTrue(vm.demoCalled) }
+    // Wait until the button actually appears and is clickable
+    composeRule.waitUntilExactlyOneExists(hasTestTag("btn_demo_deep_link"), timeoutMillis = 5_000)
+
+    // Scroll into view if it's inside a LazyColumn
+    composeRule
+        .onNodeWithTag("btn_demo_deep_link", useUnmergedTree = true)
+        .performScrollTo()
+        .assertIsDisplayed()
+        .performClick()
+
+    // Wait until recomposition completes
+    composeRule.waitForIdle()
+
+    // Assert after Compose settles
+    composeRule.runOnIdle { assertTrue("Demo button should trigger ViewModel call", vm.demoCalled) }
   }
 }
