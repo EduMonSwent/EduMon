@@ -8,8 +8,8 @@ import com.android.sample.feature.weeks.repository.WeeksRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.session.StudySessionRepository
-import com.android.sample.ui.location.FriendRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
+import com.android.sample.ui.location.FriendRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 
 /**
