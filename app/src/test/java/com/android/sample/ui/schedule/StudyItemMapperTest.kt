@@ -82,7 +82,8 @@ class StudyItemMapperTest {
             title = "Project report",
             description = "final deadline",
             date = LocalDate.of(2025, 11, 10),
-            type = TaskType.WORK)
+            type = TaskType.WORK,
+            priority = ModelPriority.MEDIUM)
 
     val ev = StudyItemMapper.toScheduleEvent(item, resources)
     assertEquals(EventKind.SUBMISSION_PROJECT, ev.kind)
@@ -91,7 +92,11 @@ class StudyItemMapperTest {
   @Test
   fun toScheduleEvent_guessActivityKind_sportByKeyword() {
     val item =
-        StudyItem(title = "Gym session", date = LocalDate.of(2025, 11, 9), type = TaskType.PERSONAL)
+        StudyItem(
+            title = "Gym session",
+            date = LocalDate.of(2025, 11, 9),
+            priority = ModelPriority.MEDIUM,
+            type = TaskType.PERSONAL)
 
     val ev = StudyItemMapper.toScheduleEvent(item, resources)
     assertEquals(EventKind.ACTIVITY_SPORT, ev.kind)

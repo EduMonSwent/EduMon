@@ -39,6 +39,7 @@ class StudyItemTest {
         StudyItem(
             title = "Untimed",
             date = d,
+            priority = Priority.MEDIUM,
             type = TaskType.WORK // leave description/time/duration at defaults
             )
 
@@ -56,7 +57,10 @@ class StudyItemTest {
   @Test
   fun uuid_is_unique_across_instances() {
     val d = LocalDate.of(2025, 1, 2)
-    val items = (0 until 10).map { StudyItem(title = "t$it", date = d, type = TaskType.PERSONAL) }
+    val items =
+        (0 until 10).map {
+          StudyItem(title = "t$it", date = d, priority = Priority.MEDIUM, type = TaskType.PERSONAL)
+        }
     val distinctIds = items.map { it.id }.toSet()
     assertEquals(items.size, distinctIds.size)
   }
@@ -164,8 +168,8 @@ class StudyItemTest {
   fun calendarUiState_custom_values_are_preserved() {
     val d1 = LocalDate.of(2025, 2, 10)
     val d2 = LocalDate.of(2025, 2, 11)
-    val item1 = StudyItem(title = "A", date = d1, type = TaskType.STUDY)
-    val item2 = StudyItem(title = "B", date = d2, type = TaskType.WORK)
+    val item1 = StudyItem(title = "A", date = d1, priority = Priority.MEDIUM, type = TaskType.STUDY)
+    val item2 = StudyItem(title = "B", date = d2, priority = Priority.MEDIUM, type = TaskType.WORK)
     val map = mapOf(d1 to listOf(item1), d2 to listOf(item2))
     val ym = YearMonth.of(2025, 2)
     val s =
@@ -188,7 +192,8 @@ class StudyItemTest {
   @Test
   fun calendarUiState_copy_toggles_modal_and_selection() {
     val d = LocalDate.of(2025, 7, 20)
-    val i = StudyItem(title = "Edit me", date = d, type = TaskType.PERSONAL)
+    val i =
+        StudyItem(title = "Edit me", date = d, priority = Priority.MEDIUM, type = TaskType.PERSONAL)
     val s = CalendarUiState(selectedDate = d, isShowingAddEditModal = false, taskToEdit = null)
 
     val s2 = s.copy(isShowingAddEditModal = true, taskToEdit = i)
@@ -206,9 +211,23 @@ class StudyItemTest {
   @Test
   fun tasks_can_be_sorted_by_date_then_time_nulls_last() {
     val d = LocalDate.of(2025, 9, 1)
-    val a = StudyItem(title = "A", date = d, time = LocalTime.of(8, 0), type = TaskType.STUDY)
-    val b = StudyItem(title = "B", date = d, time = LocalTime.of(7, 30), type = TaskType.STUDY)
-    val c = StudyItem(title = "C", date = d, time = null, type = TaskType.STUDY)
+    val a =
+        StudyItem(
+            title = "A",
+            date = d,
+            time = LocalTime.of(8, 0),
+            priority = Priority.MEDIUM,
+            type = TaskType.STUDY)
+    val b =
+        StudyItem(
+            title = "B",
+            date = d,
+            time = LocalTime.of(7, 30),
+            priority = Priority.MEDIUM,
+            type = TaskType.STUDY)
+    val c =
+        StudyItem(
+            title = "C", date = d, time = null, priority = Priority.MEDIUM, type = TaskType.STUDY)
     val list =
         listOf(a, b, c)
             .sortedWith(compareBy<StudyItem> { it.date }.thenBy { it.time ?: LocalTime.MAX })
