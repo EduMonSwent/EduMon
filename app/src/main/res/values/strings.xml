@@ -185,4 +185,13 @@
     <string name="class_description_fmt">%1$s %2$s %3$s %4$s %5$s</string>
     <string name="keyword_at">at</string>
 
+    <!-- Friends Repository -->
+    <string name="enter_uid">Enter a UID.</string>
+    <string name="friend_exist_already">You\'re already friends.</string>
+    <string name="khalil_user">Khalil</string>
+    <string name="alae_user">Alae</string>
+    <string name="florian_user">Florian</string>
+    <string name="no_user_with_uid">No user found for that UID.</string>
+    <string name="cant_add_yourself">You can’t add yourself.</string>
+    <string name="study_together_no_friends_yet">No friends yet</string>
 </resources>

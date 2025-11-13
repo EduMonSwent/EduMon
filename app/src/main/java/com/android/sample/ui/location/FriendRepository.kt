@@ -1,5 +1,6 @@
 package com.android.sample.ui.location
 
+import com.android.sample.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +12,7 @@ interface FriendRepository {
 
   suspend fun addFriendByUid(frienduid: String): FriendStatus
 
-  suspend fun removeFriend(frienduid: String) {}
+  suspend fun removeFriend(frienduid: String): Unit
 }
 
 /** Simple in-memory repo useful for previews/tests. */
@@ -28,10 +29,8 @@ class FakeFriendRepository(
   override val friendsFlow: StateFlow<List<FriendStatus>> = _state.asStateFlow()
 
   override suspend fun addFriendByUid(frienduid: String): FriendStatus {
-    require(frienduid.isNotBlank()) { "Enter a UID." }
-    if (_state.value.any { it.id == frienduid }) {
-      throw IllegalArgumentException("You're already friends.")
-    }
+    require(frienduid.isNotBlank()) { R.string.enter_uid }
+    require(!(_state.value.any { it.id == frienduid })) { R.string.friend_exist_already }
     val (lat, lon) = nextDefaultPosition()
     val newFriend =
         FriendStatus(

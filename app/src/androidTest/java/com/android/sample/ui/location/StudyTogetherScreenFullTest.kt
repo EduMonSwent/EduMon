@@ -15,7 +15,6 @@ class StudyTogetherScreenFullTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  // --- 1️⃣ Test de la data class
   @Test
   fun friendStatus_hasCorrectFields() {
     val f = FriendStatus("U0", "Alae", 46.52, 6.56, FriendMode.STUDY)
@@ -44,7 +43,6 @@ class StudyTogetherScreenFullTest {
     composeTestRule.onNodeWithText("You’re on a break").assertExists()
   }
 
-  // --- 3️⃣ Test FriendInfoCard pour tous les statuts
   @Test
   fun friendInfoCard_displaysStudyStatus() {
     composeTestRule.setContent {
@@ -76,7 +74,6 @@ class StudyTogetherScreenFullTest {
     composeTestRule.onNodeWithText("Idle").assertExists()
   }
 
-  // --- 4️⃣ Test global du composable principal (vérifie qu'il ne crash pas)
   @Test
   fun studyTogetherScreen_rendersWithoutCrashing() {
     // Use a fake repo-backed ViewModel and disable the map to avoid runtime deps in tests

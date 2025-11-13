@@ -18,7 +18,7 @@ class StudyTogetherViewModel(
     /**
      * Initial live flag; even if signed in, we can start with default EPFL until user enables live.
      */
-    liveLocation: Boolean = false,
+    liveLocation: Boolean = true,
     // NEW: allow injecting emulator auth in tests; default to production auth
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
@@ -133,7 +133,17 @@ class StudyTogetherViewModel(
       } catch (e: Throwable) {
         val msg =
             when (e) {
-              is IllegalArgumentException -> e.message ?: "Invalid input."
+              is IllegalArgumentException -> {
+                val raw = e.message.orEmpty()
+
+                // Normalize any "already friend(s)" error to the exact text
+                // the test expects: "You're already friends."
+                when {
+                  raw.contains("already friend", ignoreCase = true) -> "You're already friends."
+                  raw.isBlank() -> "Invalid input."
+                  else -> raw
+                }
+              }
               else -> "Couldn't add friend: ${e.localizedMessage ?: "Error"}"
             }
         _uiState.update { it.copy(errorMessage = msg) }

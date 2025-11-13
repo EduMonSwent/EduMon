@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -92,6 +93,7 @@ fun StudyTogetherScreen(
 
   // Ask permission, then feed VM one-shot last known location
   LaunchedEffect(Unit) { permissions.launchMultiplePermissionRequest() }
+
   LaunchedEffect(permissions.allPermissionsGranted) {
     if (permissions.allPermissionsGranted) {
       LocationServices.getFusedLocationProviderClient(context).lastLocation.addOnSuccessListener {
@@ -101,10 +103,20 @@ fun StudyTogetherScreen(
     }
   }
 
-  // One-shot error display
   LaunchedEffect(uiState.errorMessage) {
-    uiState.errorMessage?.let {
-      snackbarHostState.showSnackbar(it)
+    uiState.errorMessage?.let { raw ->
+      // If the message looks like an Int (e.g. "2131755344"),
+      // treat it as a string resource ID coming from `require { R.string.… }`.
+      val msg =
+          raw.toIntOrNull()?.let { resId ->
+            try {
+              context.getString(resId)
+            } catch (_: Throwable) {
+              raw // fallback if it's not a valid string resource
+            }
+          } ?: raw
+
+      snackbarHostState.showSnackbar(msg)
       viewModel.consumeError()
     }
   }
@@ -115,142 +127,236 @@ fun StudyTogetherScreen(
     cameraPosition.safeAnimateTo(uiState.effectiveUserLatLng, zoom = 16f, durationMs = 600)
   }
 
+  StudyTogetherContent(
+      uiState = uiState,
+      showMap = showMap,
+      permissionsGranted = permissions.allPermissionsGranted,
+      cameraPositionState = cameraPosition,
+      snackbarHostState = snackbarHostState,
+      showAddDialog = showAddDialog,
+      friendUidInput = friendUidInput,
+      onFriendUidChange = { friendUidInput = it },
+      onUserSelected = { viewModel.selectUser() },
+      onFriendSelected = { viewModel.selectFriend(it) },
+      onAddFriendFabClick = { showAddDialog = true },
+      onDismissAddFriendDialog = { showAddDialog = false },
+      onConfirmAddFriend = { uid ->
+        viewModel.addFriendByUid(uid)
+        friendUidInput = ""
+        showAddDialog = false
+      },
+  )
+}
+
+/* ---------- Main screen layout (reduced complexity) ---------- */
+
+@Composable
+private fun StudyTogetherContent(
+    uiState: StudyTogetherUiState,
+    showMap: Boolean,
+    permissionsGranted: Boolean,
+    cameraPositionState: CameraPositionState,
+    snackbarHostState: SnackbarHostState,
+    showAddDialog: Boolean,
+    friendUidInput: String,
+    onFriendUidChange: (String) -> Unit,
+    onUserSelected: () -> Unit,
+    onFriendSelected: (FriendStatus) -> Unit,
+    onAddFriendFabClick: () -> Unit,
+    onDismissAddFriendDialog: () -> Unit,
+    onConfirmAddFriend: (String) -> Unit,
+) {
+  Scaffold(
+      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+      containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+          StudyMap(
+              showMap = showMap,
+              cameraPositionState = cameraPositionState,
+              permissionsGranted = permissionsGranted,
+              userLatLng = uiState.effectiveUserLatLng,
+              friends = uiState.friends,
+              onUserSelected = onUserSelected,
+              onFriendSelected = onFriendSelected,
+              modifier = Modifier.matchParentSize())
+
+          // Compact friends dropdown
+          EdumonFriendsDropdown(
+              friends = uiState.friends,
+              onPick = onFriendSelected,
+              modifier = Modifier.align(Alignment.TopStart).padding(12.dp).testTag(TAG_BTN_FRIENDS))
+
+          // Bottom info cards (user / friend status)
+          BottomSelectionPanel(
+              isUserSelected = uiState.isUserSelected,
+              selectedFriend = uiState.selectedFriend,
+          )
+
+          // Add friend FAB
+          AddFriendFab(
+              onClick = onAddFriendFabClick,
+          )
+
+          // Dialog to add friend by UID
+          if (showAddDialog) {
+            AddFriendDialog(
+                friendUid = friendUidInput,
+                onFriendUidChange = onFriendUidChange,
+                onConfirm = { onConfirmAddFriend(it) },
+                onDismiss = onDismissAddFriendDialog)
+          }
+        }
+      }
+}
+
+/* ---------- Map (user + friends) ---------- */
+
+@Composable
+private fun StudyMap(
+    showMap: Boolean,
+    cameraPositionState: CameraPositionState,
+    permissionsGranted: Boolean,
+    userLatLng: LatLng,
+    friends: List<FriendStatus>,
+    onUserSelected: () -> Unit,
+    onFriendSelected: (FriendStatus) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+  val context = LocalContext.current
+
+  if (!showMap) {
+    // Simple stub so layout stays similar in tests
+    Box(
+        modifier =
+            modifier.background(MaterialTheme.colorScheme.surfaceVariant).testTag(TAG_MAP_STUB))
+    return
+  }
+
   // One MarkerState per friend id (prevents association crash)
   val markerStates = remember { mutableStateMapOf<String, MarkerState>() }
-  LaunchedEffect(uiState.friends) {
-    val ids = uiState.friends.map { it.id }.toSet()
+  LaunchedEffect(friends) {
+    val ids = friends.map { it.id }.toSet()
     (markerStates.keys - ids).forEach { markerStates.remove(it) }
   }
 
-  Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { innerPadding ->
-    Box(Modifier.fillMaxSize().padding(innerPadding)) {
-      if (showMap) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPosition,
-            properties =
-                MapProperties(
-                    mapType = MapType.NORMAL,
-                    isMyLocationEnabled = permissions.allPermissionsGranted)) {
-              // --- User marker ---
-              val userIcon = remember {
-                BitmapDescriptorFactory.fromBitmap(
-                    loadDrawableAsBitmap(context, R.drawable.edumon, sizeDp = 44f))
-              }
-              val userMarkerState = remember { MarkerState(position = uiState.effectiveUserLatLng) }
-              LaunchedEffect(uiState.effectiveUserLatLng) {
-                userMarkerState.position = uiState.effectiveUserLatLng
-              }
-              Marker(
-                  state = userMarkerState,
-                  title = "You",
-                  icon = userIcon,
-                  anchor = Offset(0.5f, 0.5f),
-                  zIndex = 1f,
-                  onClick = {
-                    viewModel.selectUser()
-                    true
-                  })
+  GoogleMap(
+      modifier = modifier,
+      cameraPositionState = cameraPositionState,
+      properties =
+          MapProperties(mapType = MapType.NORMAL, isMyLocationEnabled = permissionsGranted)) {
+        // --- User marker (BitmapDescriptorFactory only used *inside* GoogleMap) ---
+        val userIcon = remember {
+          BitmapDescriptorFactory.fromBitmap(
+              loadDrawableAsBitmap(context, R.drawable.edumon, sizeDp = 44f))
+        }
+        val userMarkerState = remember { MarkerState(position = userLatLng) }
+        LaunchedEffect(userLatLng) { userMarkerState.position = userLatLng }
 
-              // --- Friend markers ---
-              val friendsDistinct =
-                  remember(uiState.friends) { uiState.friends.distinctBy { it.id } }
-              friendsDistinct.forEach { friend ->
-                key(friend.id) {
-                  val target = LatLng(friend.latitude, friend.longitude)
-                  val state = markerStates.getOrPut(friend.id) { MarkerState(position = target) }
-                  LaunchedEffect(friend.id, friend.latitude, friend.longitude) {
-                    state.position = target
-                  }
-                  val iconRes = edumonFor(friend.id)
-                  val friendIcon =
-                      remember(friend.id) {
-                        val bmp = loadDrawableAsBitmap(context, iconRes, sizeDp = 40f)
-                        BitmapDescriptorFactory.fromBitmap(bmp)
-                      }
-                  Marker(
-                      state = state,
-                      title = friend.name,
-                      icon = friendIcon,
-                      anchor = Offset(0.5f, 0.5f),
-                      onClick = {
-                        viewModel.selectFriend(friend)
-                        true
-                      })
+        Marker(
+            state = userMarkerState,
+            title = "You",
+            icon = userIcon,
+            anchor = Offset(0.5f, 0.5f),
+            zIndex = 1f,
+            onClick = {
+              onUserSelected()
+              true
+            })
+
+        // --- Friend markers ---
+        val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }
+
+        friendsDistinct.forEach { friend ->
+          key(friend.id) {
+            val target = LatLng(friend.latitude, friend.longitude)
+            val state = markerStates.getOrPut(friend.id) { MarkerState(position = target) }
+            LaunchedEffect(friend.id, friend.latitude, friend.longitude) { state.position = target }
+            val iconRes = edumonFor(friend.id)
+            val friendIcon =
+                remember(friend.id) {
+                  val bmp = loadDrawableAsBitmap(context, iconRes, sizeDp = 40f)
+                  BitmapDescriptorFactory.fromBitmap(bmp)
                 }
-              }
-            }
-      } else {
-        // Simple stub so layout stays similar in tests
-        Box(
-            Modifier.fillMaxSize()
-                .background(androidx.compose.ui.graphics.Color.Transparent)
-                .testTag(TAG_MAP_STUB))
-      }
-
-      // ---------- Compact Edumon friends dropdown (top-left) ----------
-      EdumonFriendsDropdown(
-          friends = uiState.friends,
-          onPick = { viewModel.selectFriend(it) },
-          modifier = Modifier.align(Alignment.TopStart).padding(12.dp).testTag(TAG_BTN_FRIENDS))
-
-      // ---------- Bottom info cards ----------
-      AnimatedVisibility(
-          visible = uiState.selectedFriend != null || uiState.isUserSelected,
-          enter = slideInVertically { it } + fadeIn(),
-          exit = slideOutVertically { it } + fadeOut(),
-          modifier = Modifier.align(Alignment.BottomCenter)) {
-            when {
-              uiState.isUserSelected ->
-                  UserStatusCard(
-                      isStudyMode = true,
-                      modifier = Modifier.padding(16.dp).align(Alignment.BottomCenter))
-              uiState.selectedFriend != null ->
-                  FriendInfoCard(
-                      name = uiState.selectedFriend!!.name,
-                      mode = uiState.selectedFriend!!.mode,
-                      modifier = Modifier.padding(16.dp).align(Alignment.BottomCenter))
-            }
+            Marker(
+                state = state,
+                title = friend.name,
+                icon = friendIcon,
+                anchor = Offset(0.5f, 0.5f),
+                onClick = {
+                  onFriendSelected(friend)
+                  true
+                })
           }
-
-      // ---------- Add friend FAB ----------
-      ExtendedFloatingActionButton(
-          onClick = { showAddDialog = true },
-          icon = { Icon(Icons.Filled.PersonAdd, contentDescription = null) },
-          text = { Text("Add friend") },
-          modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).testTag(TAG_FAB_ADD))
-
-      if (showAddDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { Text("Add friend by UID") },
-            text = {
-              OutlinedTextField(
-                  value = friendUidInput,
-                  onValueChange = { friendUidInput = it },
-                  label = { Text("Friend UID") },
-                  singleLine = true,
-                  modifier = Modifier.testTag(TAG_FIELD_UID))
-            },
-            confirmButton = {
-              TextButton(
-                  enabled = friendUidInput.isNotBlank(),
-                  onClick = {
-                    val uid = friendUidInput.trim()
-                    if (uid.isNotEmpty()) viewModel.addFriendByUid(uid)
-                    friendUidInput = ""
-                    showAddDialog = false
-                  }) {
-                    Text("Add")
-                  }
-            },
-            dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text("Cancel") } })
+        }
       }
-    }
-  }
 }
 
-/* ---------- Friends dropdown (compact, “edumon” row) ---------- */
+/* ---------- Bottom selection panel (cards) ---------- */
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+private fun BoxScope.BottomSelectionPanel(
+    isUserSelected: Boolean,
+    selectedFriend: FriendStatus?,
+) {
+  AnimatedVisibility(
+      visible = selectedFriend != null || isUserSelected,
+      enter = slideInVertically { it } + fadeIn(),
+      exit = slideOutVertically { it } + fadeOut(),
+      modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)) {
+        when {
+          isUserSelected -> UserStatusCard(isStudyMode = true, modifier = Modifier.fillMaxWidth())
+          selectedFriend != null ->
+              FriendInfoCard(
+                  name = selectedFriend.name,
+                  mode = selectedFriend.mode,
+                  modifier = Modifier.fillMaxWidth())
+        }
+      }
+}
+
+/* ---------- Add friend FAB + dialog ---------- */
+
+@Composable
+private fun BoxScope.AddFriendFab(onClick: () -> Unit) {
+  ExtendedFloatingActionButton(
+      onClick = onClick,
+      icon = { Icon(Icons.Filled.PersonAdd, contentDescription = null) },
+      text = { Text("Add friend") },
+      modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).testTag(TAG_FAB_ADD),
+      shape = RoundedCornerShape(24.dp),
+      containerColor = MaterialTheme.colorScheme.primary,
+      contentColor = MaterialTheme.colorScheme.onPrimary)
+}
+
+@Composable
+private fun AddFriendDialog(
+    friendUid: String,
+    onFriendUidChange: (String) -> Unit,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+  AlertDialog(
+      onDismissRequest = onDismiss,
+      shape = RoundedCornerShape(24.dp),
+      title = { Text(text = "Add friend by UID", style = MaterialTheme.typography.titleMedium) },
+      text = {
+        OutlinedTextField(
+            value = friendUid,
+            onValueChange = onFriendUidChange,
+            label = { Text("Friend UID") },
+            singleLine = true,
+            modifier = Modifier.testTag(TAG_FIELD_UID))
+      },
+      confirmButton = {
+        TextButton(enabled = friendUid.isNotBlank(), onClick = { onConfirm(friendUid.trim()) }) {
+          Text("Add")
+        }
+      },
+      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+}
+
+/* ---------- Friends dropdown (compact “edumon” row) ---------- */
 
 @Composable
 private fun EdumonFriendsDropdown(
@@ -264,8 +370,9 @@ private fun EdumonFriendsDropdown(
   Box(modifier = modifier) {
     FilledTonalButton(
         onClick = { expanded = true },
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-        modifier = Modifier.defaultMinSize(minHeight = 34.dp)) {
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        modifier = Modifier.defaultMinSize(minHeight = 36.dp),
+        shape = RoundedCornerShape(24.dp)) {
           Icon(
               painter = painterResource(id = R.drawable.edumon1),
               contentDescription = null,
@@ -316,40 +423,49 @@ private fun StatusChip(mode: FriendMode) {
         FriendMode.BREAK -> "Break" to BreakYellow
         FriendMode.IDLE -> "Idle" to IdleBlue
       }
+
   Box(
       modifier =
           Modifier.clip(RoundedCornerShape(50))
               .background(bg.copy(alpha = 0.18f))
-              .padding(horizontal = 8.dp, vertical = 3.dp)) {
+              .padding(horizontal = 10.dp, vertical = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
           Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(bg))
           Spacer(Modifier.width(6.dp))
-          Text(label)
+          Text(text = label, style = MaterialTheme.typography.labelMedium)
         }
       }
 }
 
-/**
- * Minimal cards to keep this file self-contained. Replace with your own UI if you already have it.
- */
+/* ---------- Info cards ---------- */
+
 @Composable
 fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
-  Card(modifier = modifier, elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)) {
-    Text(
-        text = if (isStudyMode) "You’re studying" else "You’re on a break",
-        modifier = Modifier.padding(16.dp))
-  }
+  Card(
+      modifier = modifier,
+      shape = RoundedCornerShape(24.dp),
+      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+      elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
+        Text(
+            text = if (isStudyMode) "You’re studying" else "You’re on a break",
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodyMedium)
+      }
 }
 
 @Composable
 fun FriendInfoCard(name: String, mode: FriendMode, modifier: Modifier = Modifier) {
-  Card(modifier = modifier, elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)) {
-    Column(Modifier.padding(16.dp)) {
-      Text(text = name)
-      Spacer(Modifier.height(6.dp))
-      StatusChip(mode)
-    }
-  }
+  Card(
+      modifier = modifier,
+      shape = RoundedCornerShape(24.dp),
+      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+      elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
+        Column(Modifier.padding(16.dp)) {
+          Text(text = name, style = MaterialTheme.typography.titleMedium)
+          Spacer(Modifier.height(6.dp))
+          StatusChip(mode)
+        }
+      }
 }
 
 /* -------------------- helpers -------------------- */
@@ -380,5 +496,7 @@ private suspend fun CameraPositionState.safeAnimateTo(
 ) {
   try {
     animate(CameraUpdateFactory.newLatLngZoom(latLng, zoom), durationMs)
-  } catch (_: Exception) {}
+  } catch (_: Exception) {
+    // Ignore crashes due to map not being ready
+  }
 }

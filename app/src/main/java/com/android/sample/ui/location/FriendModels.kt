@@ -2,6 +2,9 @@ package com.android.sample.ui.location
 
 import com.google.android.gms.maps.model.LatLng
 
+// EPFL default center (optional fallback).
+internal val DEFAULT_LOCATION = LatLng(46.5191, 6.5668)
+
 // Friend presence mode shown on the map.
 enum class FriendMode {
   STUDY,
@@ -29,6 +32,3 @@ data class StudyTogetherUiState(
 ) {
   val effectiveUserLatLng: LatLng = userPosition ?: DEFAULT_LOCATION
 }
-
-// EPFL default center (optional fallback).
-internal val DEFAULT_LOCATION = LatLng(46.5191, 6.5668)

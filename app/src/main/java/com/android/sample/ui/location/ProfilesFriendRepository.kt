@@ -46,25 +46,25 @@ class ProfilesFriendRepository(private val db: FirebaseFirestore, private val au
 
       val reg =
           db.collection("profiles").document(uid).addSnapshotListener { doc, _ ->
-            if (doc == null || !doc.exists()) {
-              cache.remove(uid)
+            // Normalize snapshot → cache change into one simple branch
+            val status = doc?.takeIf { it.exists() }?.toFriendStatus(uid)
+
+            if (status != null) {
+              cache[uid] = status
             } else {
-              val status = doc.toFriendStatus(uid)
-              if (status == null) {
-                cache.remove(uid)
-              } else {
-                cache[uid] = status
-              }
+              cache.remove(uid)
             }
 
             // On the first snapshot for this uid, release one pending slot.
-            if (first) {
+            if (first && initialLoadsPending > 0) {
               first = false
-              if (initialLoadsPending > 0) initialLoadsPending--
+              initialLoadsPending--
             }
 
             // Only emit if we're not in the middle of an "add" burst.
-            if (initialLoadsPending == 0) emitNow()
+            if (initialLoadsPending == 0) {
+              emitNow()
+            }
           }
 
       profileRegs[uid] = reg

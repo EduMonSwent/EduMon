@@ -21,7 +21,6 @@ import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import kotlin.getValue
 
 /** Firebase-backed provider with LAZY init to prevent accidental Firebase loading. */
 object FirestoreRepositoriesProvider : RepositoriesProvider {

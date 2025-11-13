@@ -49,26 +49,6 @@ class StudyTogetherScreenTest {
   }
 
   @Test
-  fun addFriendDialog_duplicateUid_showsSnackbarError() {
-    val repo = FakeFriendRepository(emptyList())
-    val vm = buildViewModel(repo)
-    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, false) }
-
-    // Add once
-    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
-    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U20")
-    composeTestRule.onNodeWithText("Add").performClick()
-
-    // Add duplicate -> expect snackbar with error message
-    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
-    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U20")
-    composeTestRule.onNodeWithText("Add").performClick()
-
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithText("You're already friends.").assertExists()
-  }
-
-  @Test
   fun friendsDropdown_selectFriend_showsFriendInfoCard() {
     val seed =
         listOf(
@@ -88,6 +68,26 @@ class StudyTogetherScreenTest {
     // Bottom card shows name and the Idle status chip
     composeTestRule.onNodeWithText("Khalil").assertExists()
     composeTestRule.onNodeWithText("Idle").assertExists()
+  }
+
+  @Test
+  fun addFriendDialog_duplicateUid_showsSnackbarError() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, false) }
+
+    // Add once
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U20")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    // Add duplicate -> expect snackbar with error message
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U20")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("You're already friends.").assertExists()
   }
 
   @Test
