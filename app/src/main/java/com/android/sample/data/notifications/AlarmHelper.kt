@@ -1,15 +1,18 @@
 package com.android.sample.data.notifications
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.android.sample.R
+import java.util.concurrent.TimeUnit
 
 /**
  * Helper to schedule and cancel exact alarms for study session reminders. Uses a deterministic
@@ -19,6 +22,7 @@ object AlarmHelper {
 
   private const val ALARM_ACTION = "com.android.sample.ACTION_STUDY_ALARM"
 
+  @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
   fun scheduleStudyAlarm(context: Context, eventId: String, triggerAtMillis: Long) {
     val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     val pi = buildPendingIntent(context, eventId)
@@ -32,11 +36,7 @@ object AlarmHelper {
 
     // Try exact alarm first; if not allowed, fallback to WorkManager
     try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
-      } else {
-        am.setExact(AlarmManager.RTC_WAKEUP, millis, pi)
-      }
+      am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
       return
     } catch (se: SecurityException) {
       Log.w("AlarmHelper", "Exact alarm not permitted, falling back to WorkManager", se)
@@ -49,14 +49,13 @@ object AlarmHelper {
     // Fallback: schedule using WorkManager with equivalent delay
     try {
       val delay = millis - System.currentTimeMillis()
-      val deepLink = context.getString(com.android.sample.R.string.deep_link_format, eventId)
+      val deepLink = context.getString(R.string.deep_link_format, eventId)
       val data =
           Data.Builder().putString("deep_link", deepLink).putString("event_id", eventId).build()
 
       val req =
           OneTimeWorkRequestBuilder<SendNotificationWorker>()
-              .setInitialDelay(
-                  if (delay > 0) delay else 0, java.util.concurrent.TimeUnit.MILLISECONDS)
+              .setInitialDelay(if (delay > 0) delay else 0, TimeUnit.MILLISECONDS)
               .setInputData(data)
               .addTag("study_session_start")
               .build()
@@ -79,13 +78,9 @@ object AlarmHelper {
     // Also cancel any WorkManager fallback
     try {
       WorkManager.getInstance(context).cancelUniqueWork("study_session_start_$eventId")
-    } catch (_: Throwable) {}
-  }
-
-  fun cancelAllStudyAlarms(context: Context) {
-    // There's no API to list all alarms; in our design we tag by event ids we scheduled.
-    // For safety we cancel using a wildcard approach for the default tag: we cannot iterate.
-    // Caller should keep track of scheduled event ids (ViewModel does) and cancel individually.
+    } catch (_: Throwable) {
+      Log.w("AlarmHelper", "Failed to cancel fallback via WorkManager")
+    }
   }
 
   private fun buildPendingIntent(context: Context, eventId: String): PendingIntent {

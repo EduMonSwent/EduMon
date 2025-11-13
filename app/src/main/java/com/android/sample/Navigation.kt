@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -302,7 +303,9 @@ fun EduMonNavHost(
                           IconButton(
                               onClick = { nav.popBackStack() },
                               modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.ArrowBack,
+                                    contentDescription = "Back")
                               }
                         })
                   }) { padding ->

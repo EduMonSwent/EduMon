@@ -13,30 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -53,7 +31,7 @@ import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
-/* ---------- Helpers testables (augmentent la couverture) ---------- */
+/* ---------- Helpers testables ---------- */
 
 @VisibleForTesting
 internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
@@ -62,19 +40,17 @@ internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
   return h.coerceIn(0, 23) to m.coerceIn(0, 59)
 }
 
-// Keep a JVM-friendly DAY_SHORT map and non-composable formatter for unit tests that expect
-// deterministic, locale-independent strings.
 @VisibleForTesting
 internal val DAY_SHORT: Map<Int, String> =
-    mapOf(Calendar.MONDAY to "Mon", Calendar.TUESDAY to "Tue")
-        .plus(
-            mapOf(
-                Calendar.WEDNESDAY to "Wed",
-                Calendar.THURSDAY to "Thu",
-                Calendar.FRIDAY to "Fri",
-                Calendar.SATURDAY to "Sat",
-                Calendar.SUNDAY to "Sun",
-            ))
+    mapOf(
+        Calendar.MONDAY to "Mon",
+        Calendar.TUESDAY to "Tue",
+        Calendar.WEDNESDAY to "Wed",
+        Calendar.THURSDAY to "Thu",
+        Calendar.FRIDAY to "Fri",
+        Calendar.SATURDAY to "Sat",
+        Calendar.SUNDAY to "Sun",
+    )
 
 @VisibleForTesting
 internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): String {
@@ -85,24 +61,27 @@ internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): Stri
   return "%s %02d:%02d".format(d, hh, mm)
 }
 
-// Composable localized formatter used by the UI so day names come from resources.
+/* ------------ NEW SMALL DEDUPLICATION HELPER (minimal change) ------------ */
+
+@Composable
+private fun localizedDayName(day: Int): String =
+    when (day) {
+      Calendar.MONDAY -> stringResource(R.string.day_short_mon)
+      Calendar.TUESDAY -> stringResource(R.string.day_short_tue)
+      Calendar.WEDNESDAY -> stringResource(R.string.day_short_wed)
+      Calendar.THURSDAY -> stringResource(R.string.day_short_thu)
+      Calendar.FRIDAY -> stringResource(R.string.day_short_fri)
+      Calendar.SATURDAY -> stringResource(R.string.day_short_sat)
+      Calendar.SUNDAY -> stringResource(R.string.day_short_sun)
+      else -> stringResource(R.string.unknown)
+    }
+
+/* ------------------------------------------------------------------------- */
+
 @Composable
 internal fun formatDayTimeLabelLocalized(day: Int, times: Map<Int, Pair<Int, Int>>): String {
   val (h, m) = times[day] ?: (9 to 0)
-  val hh = h.coerceIn(0, 23)
-  val mm = m.coerceIn(0, 59)
-  val d =
-      when (day) {
-        Calendar.MONDAY -> stringResource(R.string.day_short_mon)
-        Calendar.TUESDAY -> stringResource(R.string.day_short_tue)
-        Calendar.WEDNESDAY -> stringResource(R.string.day_short_wed)
-        Calendar.THURSDAY -> stringResource(R.string.day_short_thu)
-        Calendar.FRIDAY -> stringResource(R.string.day_short_fri)
-        Calendar.SATURDAY -> stringResource(R.string.day_short_sat)
-        Calendar.SUNDAY -> stringResource(R.string.day_short_sun)
-        else -> stringResource(R.string.unknown)
-      }
-  return "%s %02d:%02d".format(d, hh, mm)
+  return "%s %02d:%02d".format(localizedDayName(day), h.coerceIn(0, 23), m.coerceIn(0, 59))
 }
 
 /* ------------------------------------ UI ------------------------------------ */
@@ -113,24 +92,18 @@ fun NotificationsScreen(
     vm: NotificationsUiModel = viewModel<NotificationsViewModel>(),
     onBack: () -> Unit = {},
     onGoHome: () -> Unit = {},
-    /** Test-only: permet de forcer l’ouverture du dialog de time picker pour la couverture */
     forceDialogForDay: Int? = null
 ) {
   val ctx = LocalContext.current
 
-  // --- Permission runtime pour Android 13+ ---
   val launcherTest =
       rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) {
-          vm.scheduleTestNotification(ctx)
-        }
+        if (granted) vm.scheduleTestNotification(ctx)
       }
 
   val launcherDemo =
       rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) {
-          vm.sendDeepLinkDemoNotification(ctx)
-        }
+        if (granted) vm.sendDeepLinkDemoNotification(ctx)
       }
 
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
@@ -141,7 +114,6 @@ fun NotificationsScreen(
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
 
-  // If task notifications are enabled (default true), start observing/scheduling automatically
   var startupError by remember { mutableStateOf<String?>(null) }
   LaunchedEffect(taskNotificationsEnabled) {
     if (taskNotificationsEnabled) {
@@ -149,7 +121,7 @@ fun NotificationsScreen(
         vm.startObservingSchedule(ctx)
         startupError = null
       } catch (e: Throwable) {
-        android.util.Log.e("NotificationsScreen", "Failed to start observing schedule", e)
+        android.util.Log.e("NotificationsScreen", "Failed", e)
         startupError = e.message ?: "Failed to start schedule observer"
       }
     } else {
@@ -177,8 +149,6 @@ fun NotificationsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
-              // Optional small error banner if startup failed
               startupError?.let { msg ->
                 Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
                   Text(
@@ -186,7 +156,7 @@ fun NotificationsScreen(
                 }
               }
 
-              // === Study kickoff ===
+              /* ---- Study kickoff ---- */
               SectionCard(
                   title = stringResource(R.string.study_kickoff_title),
                   subtitle = stringResource(R.string.study_kickoff_subtitle),
@@ -217,7 +187,7 @@ fun NotificationsScreen(
                     }
                   }
 
-              // === Keep streak (toggle only) ===
+              /* ---- Keep streak ---- */
               SectionCard(
                   title = stringResource(R.string.keep_streak_title),
                   subtitle = stringResource(R.string.keep_streak_subtitle),
@@ -229,7 +199,7 @@ fun NotificationsScreen(
                         style = MaterialTheme.typography.bodySmall)
                   }
 
-              // --- Task notifications (15 minutes before next study task) ---
+              /* ---- Task notifications ---- */
               SectionCard(
                   title = stringResource(R.string.task_notifications_title),
                   subtitle = stringResource(R.string.task_notifications_subtitle),
@@ -241,31 +211,27 @@ fun NotificationsScreen(
                         style = MaterialTheme.typography.bodySmall)
                   }
 
-              // Test button centered
+              /* ---- Test notification button ---- */
               Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 Button(
                     modifier = Modifier.testTag("btn_test_1_min"),
                     onClick = {
-                      // let the vm check the permission and schedule the notification
                       vm.requestOrSchedule(ctx) { permission -> launcherTest.launch(permission) }
                     }) {
                       Text(stringResource(R.string.send_notification_1_min))
                     }
               }
 
-              // Deep-link demo button centered
+              /* ---- Deep-link demo ---- */
               Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 Button(
                     modifier = Modifier.testTag("btn_demo_deep_link"),
                     onClick = {
-                      // Ensure permission then send demo deep-link notification
                       if (vm.needsNotificationPermission(ctx)) {
                         if (android.os.Build.VERSION.SDK_INT >=
                             android.os.Build.VERSION_CODES.TIRAMISU) {
                           launcherDemo.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                         } else {
-                          // Shouldn't happen: needsNotificationPermission already checks SDK, but
-                          // keep safe fallback
                           vm.sendDeepLinkDemoNotification(ctx)
                         }
                       } else {
@@ -278,7 +244,6 @@ fun NotificationsScreen(
             }
       }
 
-  // Time picker dialog (forceDialogForDay pour les tests)
   val openFor = kickoffPickDay ?: forceDialogForDay
   openFor?.let { day ->
     val init = kickoffTimes[day] ?: (9 to 0)
@@ -303,23 +268,23 @@ private fun SectionCard(
   Card(
       modifier = Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(20.dp)),
       colors = CardDefaults.cardColors(containerColor = MidDarkCard),
-      shape = RoundedCornerShape(20.dp),
-  ) {
-    Column(
-        Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-          Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-              Text(title, color = TextLight, fontWeight = FontWeight.SemiBold)
-              Text(
-                  subtitle,
-                  color = TextLight.copy(0.75f),
-                  style = MaterialTheme.typography.bodySmall)
+      shape = RoundedCornerShape(20.dp)) {
+        Column(
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)) {
+              Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                  Text(title, color = TextLight, fontWeight = FontWeight.SemiBold)
+                  Text(
+                      subtitle,
+                      color = TextLight.copy(0.75f),
+                      style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = enabled, onCheckedChange = onToggle)
+              }
+              content()
             }
-            Switch(checked = enabled, onCheckedChange = onToggle)
-          }
-          content()
-        }
-  }
+      }
 }
 
 @Composable
@@ -332,28 +297,17 @@ private fun DayChipsRow(selected: Set<Int>, onToggle: (Int) -> Unit, enabled: Bo
           Calendar.THURSDAY,
           Calendar.FRIDAY,
           Calendar.SATURDAY,
-          Calendar.SUNDAY,
-      )
+          Calendar.SUNDAY)
+
   Row(
       Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
       horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         days.forEach { day ->
-          val label =
-              when (day) {
-                Calendar.MONDAY -> stringResource(R.string.day_short_mon)
-                Calendar.TUESDAY -> stringResource(R.string.day_short_tue)
-                Calendar.WEDNESDAY -> stringResource(R.string.day_short_wed)
-                Calendar.THURSDAY -> stringResource(R.string.day_short_thu)
-                Calendar.FRIDAY -> stringResource(R.string.day_short_fri)
-                Calendar.SATURDAY -> stringResource(R.string.day_short_sat)
-                Calendar.SUNDAY -> stringResource(R.string.day_short_sun)
-                else -> stringResource(R.string.unknown)
-              }
           FilterChip(
               enabled = enabled,
               selected = selected.contains(day),
               onClick = { onToggle(day) },
-              label = { Text(label) })
+              label = { Text(localizedDayName(day)) })
         }
       }
 }
@@ -370,10 +324,9 @@ private fun TimeChipsRow(
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically) {
         days.forEach { day ->
-          val label = formatDayTimeLabelLocalized(day, times)
           AssistChip(
               enabled = enabled,
-              label = { Text(label) },
+              label = { Text(formatDayTimeLabelLocalized(day, times)) },
               onClick = { onPickRequest(day) },
               leadingIcon = { Icon(Icons.Outlined.Timer, contentDescription = null) })
         }

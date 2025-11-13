@@ -228,7 +228,6 @@
     <string name="day_short_fri">Fri</string>
     <string name="day_short_sat">Sat</string>
     <string name="day_short_sun">Sun</string>
-    <string name="failed_start_schedule_observer">Failed to start schedule observer</string>
     <string name="time_separator">:</string>
     <string name="unknown">?</string>
     <!-- Tabs -->

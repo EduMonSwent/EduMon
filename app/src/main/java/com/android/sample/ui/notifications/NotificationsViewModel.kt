@@ -1,4 +1,3 @@
-// app/src/main/java/com/android/sample/ui/notifications/NotificationsViewModel.kt
 package com.android.sample.ui.notifications
 
 import android.Manifest
@@ -45,15 +44,51 @@ class NotificationsViewModel(
     private val debounceMillis: Long = 1000L
 ) : ViewModel(), NotificationsUiModel {
 
-  // Implement the UI model interface
-  // (kept here to allow test fakes to implement the same contract)
+  // -------------------------------------------------------------------------
+  // Helpers to remove duplicated code
+  // -------------------------------------------------------------------------
 
-  // --- Kickoff (configurable)
+  @VisibleForTesting
+  internal fun safeTasksValue(repo: CalendarRepository): List<StudyItem> =
+      try {
+        repo.tasksFlow.value
+      } catch (_: Exception) {
+        emptyList()
+      }
+
+  private fun findNextUpcomingStudyTask(tasks: List<StudyItem>): StudyItem? {
+    val now = Instant.now()
+    val zone = ZoneId.systemDefault()
+
+    return tasks
+        .asSequence()
+        .filter { it.type == TaskType.STUDY }
+        .filter { !it.isCompleted }
+        .filter { it.time != null }
+        .map { item ->
+          val dt = LocalDateTime.of(item.date, item.time)
+          Pair(item, dt.atZone(zone).toInstant())
+        }
+        .filter { (_, instant) -> instant.isAfter(now) }
+        .sortedBy { it.second }
+        .map { it.first }
+        .firstOrNull()
+  }
+
+  private fun computeTriggerAt(task: StudyItem): Long {
+    val zone = ZoneId.systemDefault()
+    val dt = LocalDateTime.of(task.date, task.time!!)
+    val instant = dt.atZone(zone).toInstant()
+    return instant.toEpochMilli() - Duration.ofMinutes(15).toMillis()
+  }
+
+  // -------------------------------------------------------------------------
+  // UI Model State
+  // -------------------------------------------------------------------------
+
   private val _kickoffEnabled = MutableStateFlow(true)
   override val kickoffEnabled: StateFlow<Boolean> = _kickoffEnabled.asStateFlow()
 
-  // --- Task notifications (15 minutes before next task)
-  // Separate from the Study kickoff feature. Enabled by default per request.
   private val _taskNotificationsEnabled = MutableStateFlow(true)
   override val taskNotificationsEnabled: StateFlow<Boolean> =
       _taskNotificationsEnabled.asStateFlow()
@@ -67,25 +102,20 @@ class NotificationsViewModel(
           Calendar.FRIDAY,
           Calendar.SATURDAY,
           Calendar.SUNDAY)
-  private val _kickoffDays = MutableStateFlow(emptySet<Int>()) // start empty
+
+  private val _kickoffDays = MutableStateFlow(emptySet<Int>())
   override val kickoffDays: StateFlow<Set<Int>> = _kickoffDays.asStateFlow()
 
   private val _kickoffTimes = MutableStateFlow(initWeek(9, 0))
   override val kickoffTimes: StateFlow<Map<Int, Pair<Int, Int>>> = _kickoffTimes.asStateFlow()
 
-  // --- Streak (toggle only)
   private val _streakEnabled = MutableStateFlow(false)
   override val streakEnabled: StateFlow<Boolean> = _streakEnabled.asStateFlow()
 
-  private val DEFAULT_STREAK_HOUR = 19 // daily at 19:00
+  private val DEFAULT_STREAK_HOUR = 19
 
   override fun scheduleTestNotification(ctx: Context) = repo.scheduleOneMinuteFromNow(ctx)
 
-  /**
-   * Indicates wether the permission is needed or not.
-   *
-   * @param ctx context
-   */
   @Suppress("InlinedApi")
   override fun needsNotificationPermission(ctx: Context): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
@@ -93,12 +123,6 @@ class NotificationsViewModel(
     return ContextCompat.checkSelfPermission(ctx, permission) != PackageManager.PERMISSION_GRANTED
   }
 
-  /**
-   * Checks the permission and, if needed, requests it.
-   *
-   * @param ctx context
-   * @param permissionLauncher launcher for the permission request
-   */
   @Suppress("InlinedApi")
   override fun requestOrSchedule(ctx: Context, permissionLauncher: (String) -> Unit) {
     val permission = Manifest.permission.POST_NOTIFICATIONS
@@ -109,13 +133,10 @@ class NotificationsViewModel(
     }
   }
 
-  // Kickoff
   override fun setKickoffEnabled(ctx: Context, on: Boolean) {
     _kickoffEnabled.value = on
     if (!on) {
       repo.cancel(ctx, NotificationKind.NO_WORK_TODAY)
-    } else {
-      // only manage kickoff schedule (weekly), do not start/stop task notifications here
     }
   }
 
@@ -137,23 +158,23 @@ class NotificationsViewModel(
     repo.setWeeklySchedule(ctx, NotificationKind.NO_WORK_TODAY, true, map)
   }
 
-  // Streak
   override fun setStreakEnabled(ctx: Context, on: Boolean) {
     _streakEnabled.value = on
     repo.setDailyEnabled(ctx, NotificationKind.KEEP_STREAK, on, DEFAULT_STREAK_HOUR)
   }
 
-  // Task notifications (15 minutes before next upcoming Study task)
+  @androidx.annotation.RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
   override fun setTaskNotificationsEnabled(ctx: Context, on: Boolean) {
     _taskNotificationsEnabled.value = on
     if (!on) {
-      // stop observing and cancel any scheduled alarm
       scheduleObserverJob?.cancel()
       scheduleObserverJob = null
       scheduledTaskId?.let {
         try {
           AlarmHelper.cancelStudyAlarm(ctx, it)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+          Log.e("NotificationsVM", "Failed to cancel alarm for $it")
+        }
       }
       scheduledTaskId = null
     } else {
@@ -163,17 +184,11 @@ class NotificationsViewModel(
 
   private fun initWeek(h: Int, m: Int) = allDays.associateWith { h to m }
 
-  // --- Reactive scheduling state
   private var scheduledTaskId: String? = null
   private var scheduleObserverJob: Job? = null
 
-  /**
-   * Start observing the planner/task flow and schedule a one-shot WorkManager reminder 15 minutes
-   * before the next study task. Call this once (for example from the Notifications UI when the user
-   * enables study-session reminders). The observation runs until ViewModel is cleared or until
-   * `setKickoffEnabled(..., false)` is called.
-   */
   @OptIn(FlowPreview::class)
+  @androidx.annotation.RequiresPermission(android.Manifest.permission.SCHEDULE_EXACT_ALARM)
   override fun startObservingSchedule(ctx: Context) {
     if (scheduleObserverJob?.isActive == true) return
 
@@ -182,37 +197,25 @@ class NotificationsViewModel(
           try {
             calendarRepository.tasksFlow.debounce(debounceMillis).collect { tasks ->
               try {
-                val now = Instant.now()
-                val zone = ZoneId.systemDefault()
-                val nextTask =
-                    tasks
-                        .asSequence()
-                        .filter { it.type == TaskType.STUDY }
-                        .filter { !it.isCompleted }
-                        .filter { it.time != null }
-                        .map { item ->
-                          val dt = LocalDateTime.of(item.date, item.time)
-                          Pair(item, dt.atZone(zone).toInstant())
-                        }
-                        .filter { (_, instant) -> instant.isAfter(now) }
-                        .sortedBy { it.second }
-                        .map { it.first }
-                        .firstOrNull()
+                val nextTask = findNextUpcomingStudyTask(tasks)
+
                 if (nextTask == null) {
                   scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
                   scheduledTaskId = null
                   return@collect
                 }
+
                 if (nextTask.id == scheduledTaskId) return@collect
-                val taskDateTime = LocalDateTime.of(nextTask.date, nextTask.time!!)
-                val taskInstant = taskDateTime.atZone(zone).toInstant()
-                val triggerAt = taskInstant.toEpochMilli() - Duration.ofMinutes(15).toMillis()
+
+                val triggerAt = computeTriggerAt(nextTask)
+
                 scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
                 try {
                   AlarmHelper.scheduleStudyAlarm(ctx, nextTask.id, triggerAt)
                 } catch (e: Exception) {
                   Log.e("NotificationsVM", "Failed to schedule alarm for ${nextTask.id}", e)
                 }
+
                 scheduledTaskId = nextTask.id
               } catch (e: Exception) {
                 Log.e("NotificationsVM", "Error while processing tasksFlow collect", e)
@@ -224,82 +227,33 @@ class NotificationsViewModel(
         }
   }
 
-  // Keep the old one-shot helper (non-reactive) for backward compatibility
+  @androidx.annotation.RequiresPermission(android.Manifest.permission.SCHEDULE_EXACT_ALARM)
   fun scheduleNextStudySessionNotification(ctx: Context) {
-    val tasks =
-        try {
-          calendarRepository.tasksFlow.value
-        } catch (_: Exception) {
-          emptyList<StudyItem>()
-        }
-    val now = Instant.now()
-    val zone = ZoneId.systemDefault()
-    val nextTask =
-        tasks
-            .asSequence()
-            .filter { it.type == TaskType.STUDY }
-            .filter { !it.isCompleted }
-            .filter { it.time != null }
-            .map { item ->
-              val dt = LocalDateTime.of(item.date, item.time)
-              Pair(item, dt.atZone(zone).toInstant())
-            }
-            .filter { (_, instant) -> instant.isAfter(now) }
-            .sortedBy { it.second }
-            .map { it.first }
-            .firstOrNull()
-    if (nextTask == null) return
-    val taskDateTime = LocalDateTime.of(nextTask.date, nextTask.time!!)
-    val taskInstant = taskDateTime.atZone(zone).toInstant()
-    val triggerAt = taskInstant.toEpochMilli() - Duration.ofMinutes(15).toMillis()
+    val tasks = safeTasksValue(calendarRepository)
+    val nextTask = findNextUpcomingStudyTask(tasks) ?: return
+
+    val triggerAt = computeTriggerAt(nextTask)
+
     scheduledTaskId?.let { AlarmHelper.cancelStudyAlarm(ctx, it) }
     AlarmHelper.scheduleStudyAlarm(ctx, nextTask.id, triggerAt)
     scheduledTaskId = nextTask.id
   }
 
-  // Demo notification id
   companion object {
     private const val DEMO_NOTIFICATION_ID = 9001
   }
 
-  /**
-   * Sends an immediate demo notification that deep-links into the app's StudySessionScreen. It will
-   * use the next scheduled study task id when available; otherwise a demo id. Caller should ensure
-   * POST_NOTIFICATIONS permission is granted on Android 13+.
-   */
   override fun sendDeepLinkDemoNotification(ctx: Context) {
     try {
-      val tasks =
-          try {
-            calendarRepository.tasksFlow.value
-          } catch (_: Exception) {
-            emptyList<StudyItem>()
-          }
-
-      val now = Instant.now()
-      val zone = ZoneId.systemDefault()
-
-      val nextTask =
-          tasks
-              .asSequence()
-              .filter { it.type == TaskType.STUDY }
-              .filter { !it.isCompleted }
-              .filter { it.time != null }
-              .map { item ->
-                val dt = LocalDateTime.of(item.date, item.time)
-                Pair(item, dt.atZone(zone).toInstant())
-              }
-              .filter { (_, instant) -> instant.isAfter(now) }
-              .sortedBy { it.second }
-              .map { it.first }
-              .firstOrNull()
+      val tasks = safeTasksValue(calendarRepository)
+      val nextTask = findNextUpcomingStudyTask(tasks)
 
       val eventId = nextTask?.id ?: "demo"
       val deepLink = ctx.getString(com.android.sample.R.string.deep_link_format, eventId)
 
-      // Build pending intent for deep link
       val intent =
           Intent(Intent.ACTION_VIEW, deepLink.toUri()).apply { `package` = ctx.packageName }
+
       val pi =
           PendingIntent.getActivity(
               ctx,
@@ -307,10 +261,8 @@ class NotificationsViewModel(
               intent,
               PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-      // Ensure channel
       NotificationUtils.ensureChannel(ctx)
 
-      // Permission check for POST_NOTIFICATIONS (Android 13+)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val granted =
             ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
@@ -333,7 +285,6 @@ class NotificationsViewModel(
 
   override fun onCleared() {
     super.onCleared()
-    // Cancel the observer job when the VM is cleared
     scheduleObserverJob?.cancel()
     scheduleObserverJob = null
   }

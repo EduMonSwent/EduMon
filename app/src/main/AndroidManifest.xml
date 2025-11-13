@@ -42,7 +42,7 @@
         </activity>
 
         <!-- Alarm receiver for study session reminders -->
-        <receiver android:name=".data.notifications.StudyAlarmReceiver" android:exported="true" />
+        <receiver android:name=".data.notifications.StudyAlarmReceiver" android:exported="false" />
 
         <!-- BOOT receiver to re-schedule alarms on device reboot -->
         <receiver android:name=".data.notifications.BootReceiver" android:exported="true">
