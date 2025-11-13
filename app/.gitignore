@@ -3,5 +3,3 @@
 /build
 /app/build
 local.properties
-firebase-debug.log
-firestore-debug.log

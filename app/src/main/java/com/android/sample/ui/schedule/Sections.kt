@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.feature.weeks.ui.GlassSurface
 
+/** This class was implemented with the help of ai (chatgbt) */
 @Composable
 private fun GlassSurfaceCompact(
     modifier: Modifier = Modifier,

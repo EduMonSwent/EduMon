@@ -132,11 +132,7 @@ class WeekTabContentAllAndroidTest {
 
     rule.setContent {
       WeekTabContent(
-          vm = vm,
-          weeksVm = weeksVm,
-          objectivesVm = objectivesVm,
-          allTasks = tasks,
-          selectedDate = selected)
+          vm = vm, objectivesVm = objectivesVm, allTasks = tasks, selectedDate = selected)
     }
 
     // root content + calendar card + week dots row present
@@ -165,7 +161,6 @@ class WeekTabContentAllAndroidTest {
     rule.setContent {
       WeekTabContent(
           vm = vm,
-          weeksVm = weeksVm,
           objectivesVm = objectivesVm,
           allTasks = tasksForWeek(selected),
           selectedDate = selected)
@@ -198,7 +193,6 @@ class WeekTabContentAllAndroidTest {
     rule.setContent {
       WeekTabContent(
           vm = vm,
-          weeksVm = weeksVm,
           objectivesVm = objectivesVm,
           allTasks = tasksForWeek(selected),
           selectedDate = selected)
@@ -229,7 +223,6 @@ class WeekTabContentAllAndroidTest {
     rule.setContent {
       WeekTabContent(
           vm = vm,
-          weeksVm = weeksVm,
           objectivesVm = objectivesVm,
           allTasks = tasksForWeek(selected),
           selectedDate = selected)
@@ -264,11 +257,7 @@ class WeekTabContentAllAndroidTest {
 
     rule.setContent {
       WeekTabContent(
-          vm = vm,
-          weeksVm = weeksVm,
-          objectivesVm = objectivesVm,
-          allTasks = emptyList(),
-          selectedDate = selected)
+          vm = vm, objectivesVm = objectivesVm, allTasks = emptyList(), selectedDate = selected)
     }
 
     val expected =

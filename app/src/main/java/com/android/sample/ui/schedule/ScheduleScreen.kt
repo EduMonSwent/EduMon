@@ -37,6 +37,7 @@ import com.android.sample.ui.theme.BackgroundGradientEnd
 import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
 
+/** This class was implemented with the help of ai (chatgbt) */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen() {
@@ -155,7 +156,6 @@ fun ScheduleScreen() {
                 ScheduleTab.WEEK -> {
                   WeekTabContent(
                       vm = vm,
-                      weeksVm = weeksVm,
                       objectivesVm = objectivesVm,
                       allTasks = allTasks,
                       selectedDate = state.selectedDate)

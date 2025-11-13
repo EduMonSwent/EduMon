@@ -53,6 +53,7 @@ import com.android.sample.ui.theme.StatBarLightbulb
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+/** This class was implemented with the help of ai (chatgbt) */
 @Composable
 fun DayTabContent(
     vm: ScheduleViewModel,

@@ -8,6 +8,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
+/** This class was implemented with the help of ai (chatgbt) */
 object AdaptivePlanner {
 
   data class AdjustmentResult(

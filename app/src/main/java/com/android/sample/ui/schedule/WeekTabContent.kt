@@ -28,7 +28,6 @@ import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.ui.WeekDotsRow
 import com.android.sample.feature.weeks.ui.WeekProgDailyObjTags
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
-import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 import com.android.sample.ui.calendar.CalendarHeader
 import com.android.sample.ui.calendar.CalendarScreenTestTags
 import com.android.sample.ui.calendar.UpcomingEventsSection
@@ -38,12 +37,11 @@ import java.time.LocalDate
 
 /**
  * Weekly tab content adapted to the existing Day/GlassSurface styling. Place this in
- * ui/schedule/WeekTabContent.kt
+ * ui/schedule/WeekTabContent.kt This class was implemented with the help of ai (chatgbt)
  */
 @Composable
 fun WeekTabContent(
     vm: ScheduleViewModel,
-    weeksVm: WeeksViewModel,
     objectivesVm: ObjectivesViewModel,
     allTasks: List<StudyItem>,
     selectedDate: LocalDate
