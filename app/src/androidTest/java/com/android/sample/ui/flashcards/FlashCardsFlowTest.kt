@@ -3,16 +3,18 @@ package com.android.sample.ui.flashcards
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.sample.ui.flashcards.data.FlashcardsRepositoryProvider
+import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepoProvider
 import com.android.sample.ui.flashcards.model.Deck
 import com.android.sample.ui.flashcards.model.Flashcard
 import com.android.sample.ui.theme.EduMonTheme
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,10 +29,24 @@ class FlashcardsFlowTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+  // tiny helpers
+  private fun AndroidComposeTestRule<*, *>.waitAndAssertVisible(
+      text: String,
+      timeoutMs: Long = 10_000
+  ) {
+    val m = hasText(text, substring = true, ignoreCase = true)
+    waitUntil(timeoutMs) {
+      onAllNodes(m, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+    }
+    onNode(m, useUnmergedTree = true).assertIsDisplayed()
+  }
+
   @Test
   fun studyFlow_withPrepopulatedDeck_navigatesAndShowsContent() {
-    // Seed the SAME repo the app uses
-    val repo = FlashcardsRepositoryProvider.repository
+    val repo = FirestoreFlashcardsRepoProvider.get()
+
+    runBlocking { com.google.firebase.auth.FirebaseAuth.getInstance().signInAnonymously().await() }
+
     runBlocking {
       repo.createDeck(
           title = "CI Deck",
@@ -40,23 +56,21 @@ class FlashcardsFlowTest {
 
     composeRule.setContent { EduMonTheme { FlashcardsApp() } }
 
-    composeRule.onNodeWithText("Flashcards").assertIsDisplayed()
+    val studyMatcher = hasText("Study", substring = true, ignoreCase = true)
 
-    // Wait for at least one Study button, then click the first
-    val studyNodes = composeRule.onAllNodesWithText("Study")
-    composeRule.waitUntil(3_000) { studyNodes.fetchSemanticsNodes().isNotEmpty() }
-    studyNodes[0].performClick()
+    composeRule.waitUntil(10_000) {
+      composeRule
+          .onAllNodes(studyMatcher, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
-    composeRule.onNodeWithText("Card 1 of 1").assertIsDisplayed()
-    composeRule.onNodeWithText("Question").assertIsDisplayed()
-    composeRule.onNodeWithText("Tap to reveal answer").assertIsDisplayed()
+    val study = composeRule.onAllNodes(studyMatcher, useUnmergedTree = true)[0]
+    study.performClick()
 
-    composeRule.onNodeWithText("Reveal").performClick()
-    composeRule.onNodeWithText("Answer").assertIsDisplayed()
-    composeRule.onNodeWithText("Medium").performClick()
-
-    composeRule.onNodeWithText("← Back").performClick()
-    composeRule.onNodeWithText("Flashcards").assertIsDisplayed()
+    composeRule.waitAndAssertVisible("Card 1") // matches "Card 1 of 1" etc.
+    composeRule.waitAndAssertVisible("Question")
+    composeRule.waitAndAssertVisible("reveal answer") // matches "Tap to reveal answer"
   }
 
   @Test

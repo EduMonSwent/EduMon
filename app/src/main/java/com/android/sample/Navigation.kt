@@ -21,6 +21,7 @@ import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.ui.calendar.CalendarScreen
 import com.android.sample.ui.flashcards.FlashcardsApp
+import com.android.sample.ui.focus.FocusModeScreen
 import com.android.sample.ui.games.FlappyEduMonScreen
 import com.android.sample.ui.games.FocusBreathingScreen
 import com.android.sample.ui.games.GamesScreen
@@ -113,7 +114,8 @@ fun EduMonNavHost(
               }) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) {
                   ProfileScreen(
-                      onOpenNotifications = { nav.navigate("notifications") } // <-- ICI
+                      onOpenNotifications = { nav.navigate("notifications") },
+                      onOpenFocusMode = { nav.navigate("focus_mode") } // <-- ICI
                       )
                 }
               }
@@ -384,6 +386,26 @@ fun EduMonNavHost(
                   restoreState = true
                 }
               })
+        }
+        composable("focus_mode") {
+          Scaffold(
+              topBar = {
+                TopAppBar(
+                    title = {
+                      Text(
+                          "Focus Mode",
+                          modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) { FocusModeScreen() }
+              }
         }
       }
 }
