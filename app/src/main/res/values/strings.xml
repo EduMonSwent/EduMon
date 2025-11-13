@@ -231,6 +231,12 @@
     <string name="failed_start_schedule_observer">Failed to start schedule observer</string>
     <string name="time_separator">:</string>
     <string name="unknown">?</string>
+    <!-- Focus Mode UI -->
+    <string name="focus_mode_title">Focus Mode</string>
+    <string name="focus_mode_start">Start</string>
+    <string name="focus_mode_stop">Stop</string>
+    <string name="focus_mode_start_description">Start a 25-minute deep focus session</string>
+    <string name="focus_mode_running_message">Stay focused — you got this 💪</string>
     <!-- Tabs -->
     <string name="tab_day">Day</string>
     <string name="tab_week">Week</string>
