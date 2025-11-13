@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.RingtoneManager
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 object FocusModeManager {
+
+  private const val TAG = "FocusModeManager"
 
   /**
    * Activate Focus Mode:
@@ -23,7 +26,10 @@ object FocusModeManager {
       try {
         WorkManager.getInstance(context).cancelAllWorkByTag("notifications")
         giveHapticFeedback(context)
-      } catch (e: Exception) {}
+      } catch (e: Exception) {
+
+        Log.e(TAG, "Failed to activate focus mode", e)
+      }
     }
   }
 
@@ -35,18 +41,23 @@ object FocusModeManager {
     CoroutineScope(Dispatchers.Default).launch {
       try {
         playCompletionSound(context)
-      } catch (e: Exception) {}
+      } catch (e: Exception) {
+
+        Log.e(TAG, "Failed to play completion sound", e)
+      }
     }
   }
 
-  /** Optional haptic feedback when activating Focus Mode */
   @RequiresPermission(Manifest.permission.VIBRATE)
   private fun giveHapticFeedback(context: Context) {
     try {
       val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
       val effect = VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE)
       vibrator.vibrate(effect)
-    } catch (_: Exception) {}
+    } catch (e: Exception) {
+
+      Log.w(TAG, "Haptic feedback unavailable", e)
+    }
   }
 
   /** Plays a short sound when focus session ends */
@@ -55,6 +66,9 @@ object FocusModeManager {
       val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
       val ringtone = RingtoneManager.getRingtone(context, notification)
       ringtone.play()
-    } catch (_: Exception) {}
+    } catch (e: Exception) {
+
+      Log.w(TAG, "Unable to play completion sound", e)
+    }
   }
 }

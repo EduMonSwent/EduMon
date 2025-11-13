@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.ui.theme.*
-import kotlin.time.Duration.Companion.minutes
 
 @SuppressLint("DefaultLocale")
 @Composable
