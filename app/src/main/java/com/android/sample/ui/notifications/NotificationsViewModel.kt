@@ -17,7 +17,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.notifications.AlarmHelper
 import com.android.sample.data.notifications.NotificationUtils
 import com.android.sample.data.notifications.WorkManagerNotificationRepository
-import com.android.sample.model.StudyItem
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import com.android.sample.repos_providors.AppRepositories
@@ -186,7 +187,7 @@ class NotificationsViewModel(
                     val nextTask =
                         tasks
                             .asSequence()
-                            .filter { it.type == com.android.sample.model.TaskType.STUDY }
+                            .filter { it.type == TaskType.STUDY }
                             .filter { !it.isCompleted }
                             .filter { it.time != null }
                             .map { item ->
@@ -251,7 +252,7 @@ class NotificationsViewModel(
     val nextTask =
         tasks
             .asSequence()
-            .filter { it.type == com.android.sample.model.TaskType.STUDY }
+            .filter { it.type == TaskType.STUDY }
             .filter { !it.isCompleted }
             .filter { it.time != null }
             .map { item ->
@@ -303,7 +304,7 @@ class NotificationsViewModel(
       val nextTask =
           tasks
               .asSequence()
-              .filter { it.type == com.android.sample.model.TaskType.STUDY }
+              .filter { it.type == TaskType.STUDY }
               .filter { !it.isCompleted }
               .filter { it.time != null }
               .map { item ->

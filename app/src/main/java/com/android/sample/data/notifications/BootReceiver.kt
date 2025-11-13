@@ -3,6 +3,7 @@ package com.android.sample.data.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.android.sample.feature.schedule.data.calendar.TaskType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,7 +31,7 @@ class BootReceiver : BroadcastReceiver() {
         val nextTask =
             tasks
                 .asSequence()
-                .filter { it.type == com.android.sample.model.TaskType.STUDY }
+                .filter { it.type == TaskType.STUDY }
                 .filter { !it.isCompleted }
                 .filter { it.time != null }
                 .map { item ->
