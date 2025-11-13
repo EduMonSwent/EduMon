@@ -6,12 +6,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.notifications.AlarmHelper
@@ -26,6 +26,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Calendar
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -153,7 +154,6 @@ class NotificationsViewModel(
 
   // --- Reactive scheduling state
   private var scheduledTaskId: String? = null
-  // Job permettant d'annuler la collecte réactive quand on désactive la fonctionnalité
   private var scheduleObserverJob: Job? = null
 
   /**
@@ -162,6 +162,7 @@ class NotificationsViewModel(
    * enables study-session reminders). The observation runs until ViewModel is cleared or until
    * `setKickoffEnabled(..., false)` is called.
    */
+  @OptIn(FlowPreview::class)
   fun startObservingSchedule(ctx: Context) {
     // Avoid launching multiple collectors
     if (scheduleObserverJob?.isActive == true) return
@@ -311,11 +312,11 @@ class NotificationsViewModel(
               .firstOrNull()
 
       val eventId = nextTask?.id ?: "demo"
-      val deepLink = buildDeepLinkForStudySession(eventId)
+      val deepLink = ctx.getString(com.android.sample.R.string.deep_link_format, eventId)
 
       // Build pending intent for deep link
       val intent =
-          Intent(Intent.ACTION_VIEW, Uri.parse(deepLink)).apply { `package` = ctx.packageName }
+          Intent(Intent.ACTION_VIEW, deepLink.toUri()).apply { `package` = ctx.packageName }
       val pi =
           PendingIntent.getActivity(
               ctx,
@@ -337,8 +338,8 @@ class NotificationsViewModel(
       val n =
           NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
               .setSmallIcon(com.android.sample.R.mipmap.ic_launcher)
-              .setContentTitle("Demo: Start your study session")
-              .setContentText("Tap to open the study session")
+              .setContentTitle(ctx.getString(com.android.sample.R.string.demo_notification_title))
+              .setContentText(ctx.getString(com.android.sample.R.string.demo_notification_text))
               .setContentIntent(pi)
               .setAutoCancel(true)
               .build()
@@ -347,11 +348,6 @@ class NotificationsViewModel(
     } catch (_: Exception) {
       // best-effort demo, swallow errors
     }
-  }
-
-  private fun buildDeepLinkForStudySession(eventId: String): String {
-    // App handles deep links of form "edumon://study_session/{eventId}" via navigation
-    return "edumon://study_session/$eventId"
   }
 
   override fun onCleared() {

@@ -49,11 +49,9 @@ object AlarmHelper {
     // Fallback: schedule using WorkManager with equivalent delay
     try {
       val delay = millis - System.currentTimeMillis()
+      val deepLink = context.getString(com.android.sample.R.string.deep_link_format, eventId)
       val data =
-          Data.Builder()
-              .putString("deep_link", "edumon://study_session/$eventId")
-              .putString("event_id", eventId)
-              .build()
+          Data.Builder().putString("deep_link", deepLink).putString("event_id", eventId).build()
 
       val req =
           OneTimeWorkRequestBuilder<SendNotificationWorker>()

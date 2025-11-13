@@ -5,10 +5,10 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.android.sample.R
 
 /** Receives exact alarms and posts the notification with a deep-link to the study session. */
@@ -19,7 +19,7 @@ class StudyAlarmReceiver : BroadcastReceiver() {
     // Build deep link pending intent
     val deepLink = "edumon://study_session/$eventId"
     val target =
-        Intent(Intent.ACTION_VIEW, Uri.parse(deepLink)).apply { `package` = context.packageName }
+        Intent(Intent.ACTION_VIEW, deepLink.toUri()).apply { `package` = context.packageName }
 
     val pi =
         PendingIntent.getActivity(
@@ -39,8 +39,8 @@ class StudyAlarmReceiver : BroadcastReceiver() {
     val n =
         NotificationCompat.Builder(context, NotificationUtils.CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Start your study session")
-            .setContentText("Your next task starts soon — open Study Session")
+            .setContentTitle(context.getString(R.string.study_alarm_title))
+            .setContentText(context.getString(R.string.study_alarm_text))
             .setContentIntent(pi)
             .setAutoCancel(true)
             .build()
