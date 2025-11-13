@@ -6,6 +6,7 @@ import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.android.sample.feature.schedule.data.calendar.TaskType
 
 /**
  * Re-register alarms after device reboot. This receiver is invoked on BOOT_COMPLETED. It should
@@ -30,7 +31,7 @@ class BootReceiver : BroadcastReceiver() {
         val nextTask =
             tasks
                 .asSequence()
-                .filter { it.type == com.android.sample.model.TaskType.STUDY }
+                .filter { it.type == TaskType.STUDY }
                 .filter { !it.isCompleted }
                 .filter { it.time != null }
                 .map { item ->
