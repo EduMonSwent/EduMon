@@ -55,15 +55,11 @@ class ShopViewModel(
         }
     }
 
-    // dev utility to seed coins quickly
+    /** Dev helper to credit coins quickly */
     fun addCoinsDev(amount: Int) {
         viewModelScope.launch {
-            val ds = repo
-            if (ds is com.android.sample.data.shop.FirestoreShopDataSource) {
-                val cur = state.value.coins
-                runCatching { ds.setCoins(uid, cur + amount) }
-                _message.value = "Coins +$amount"
-            }
+            runCatching { repo.addCoins(uid, amount) }
+                .onFailure { _message.value = it.message ?: "Failed to add coins" }
         }
     }
 

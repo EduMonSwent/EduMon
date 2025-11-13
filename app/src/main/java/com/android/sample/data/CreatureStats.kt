@@ -1,8 +1,8 @@
 package com.android.sample.data
 
 data class CreatureStats(
-    val happiness: Float = 85f,
-    val health: Float = 90f,
-    val energy: Float = 70f,
+    val happiness: Int = 85,
+    val health: Int = 90,
+    val energy: Int = 70,
     val level: Int = 5,
 )

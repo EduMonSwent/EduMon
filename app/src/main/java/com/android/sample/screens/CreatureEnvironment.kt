@@ -171,7 +171,7 @@ fun CreatureStatsCard(stats: CreatureStats, modifier: Modifier = Modifier) {
 @Composable
 private fun StatRow(
     title: String,
-    value: Float,
+    value: Int,
     icon: ImageVector,
     barColor: Color,
 ) {

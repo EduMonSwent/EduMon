@@ -51,9 +51,10 @@ class FirestoreShopDataSource : ShopRepository {
         }
     }
 
-    // utilitaire dev, si tu veux forcer un montant
-    suspend fun setCoins(uid: String, coins: Int) {
+    override suspend fun addCoins(uid: String, amount: Int) {
+        // Safe increment, creates the field if missing
         val ref = db.collection("users").document(uid)
-        ref.set(mapOf("coins" to coins), SetOptions.merge()).await()
+        ref.update("coins", FieldValue.increment(amount.toLong()))
+            .await()
     }
 }

@@ -1,61 +1,59 @@
 package com.android.sample.pet
 
-import com.android.sample.pet.data.PetRepository
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.pet.data.PetRepository
 import com.android.sample.profile.ProfileRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
- * Bridges Profile to PetRepository. Applies deltas from study minutes, mirrors coins, and propagates equipment.
+ * Wires the Profile repository to the Pet repository.
+ * Listens to study minutes, coins, and equipped accessories from the profile,
+ * and forwards the changes to the pet engine.
  */
 object PetController {
 
-    private var scope: CoroutineScope? = null
-    private var startedUid: String? = null
-    private var lastMinutes: Int = 0
-    private var lastEquippedKey: String = ""
-    private var lastCoins: Int = -1
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var collectJob: Job? = null
+    private var startedForUid: String? = null
 
-    fun start(uid: String) {
-        if (startedUid == uid && scope != null) return
-        scope?.cancel()
-        startedUid = uid
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    suspend fun start(uid: String) {
+        if (uid == startedForUid) return
+        startedForUid = uid
 
         val profileRepo: ProfileRepository = AppRepositories.profileRepository
         val petRepo: PetRepository = AppRepositories.petRepository
 
         petRepo.start(uid)
 
-        scope!!.launch {
-            profileRepo.profile.collectLatest { profile ->
-                val minutes = profile.studyStats.totalTimeMin
-                val added = (minutes - lastMinutes).coerceAtLeast(0)
+        collectJob?.cancel()
+        collectJob = scope.launch {
+            profileRepo.profile.collectLatest { p ->
+                // propagate study minutes delta
+                val cur = petRepo.state.value
+                val added = p.studyStats.totalTimeMin - cur.lastProfileMinutes
                 if (added > 0) {
-                    lastMinutes = minutes
-                    petRepo.onStudyCompleted(added, profile.streak)
+                    petRepo.onStudyCompleted(addedMinutes = added, newStreak = p.streak)
                 }
 
-                if (profile.coins != lastCoins) {
-                    lastCoins = profile.coins
-                    petRepo.onCoinsChanged(profile.coins)
+                // propagate coins
+                if (p.coins != cur.coins) {
+                    petRepo.onCoinsChanged(p.coins)
                 }
 
-                val equipped = profile.accessories
-                    .mapNotNull { s -> s.substringAfter(':', "") }
-                    .filter { it.isNotBlank() && it != "none" }
+                // propagate equipment, convert profile accessories to a flat set of ids
+                val equippedIds = p.accessories
+                    .mapNotNull { it.substringAfter(':', missingDelimiterValue = "") }
+                    .filter { it.isNotBlank() }
                     .toSet()
-                val auraId = equipped.firstOrNull { it.contains("aura", ignoreCase = true) }
-                val key = equipped.sorted().joinToString(",") + "|" + (auraId ?: "")
-                if (key != lastEquippedKey) {
-                    lastEquippedKey = key
-                    petRepo.setEquippedAndRecompute(equipped, auraId)
-                }
+                val auraId = p.accessories.firstOrNull { it.startsWith("head:halo") }?.let { "gold" }
+
+                petRepo.setEquippedAndRecompute(equippedIds, auraId)
             }
         }
     }
@@ -69,11 +67,8 @@ object PetController {
     }
 
     fun stop() {
-        scope?.cancel()
-        scope = null
-        startedUid = null
-        lastMinutes = 0
-        lastEquippedKey = ""
-        lastCoins = -1
+        collectJob?.cancel()
+        scope.cancel()
+        startedForUid = null
     }
 }

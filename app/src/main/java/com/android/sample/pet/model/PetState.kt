@@ -1,12 +1,14 @@
-// Parts of this file were generated with the help of an AI language model.
-
 package com.android.sample.pet.model
 
-/** Current EduMon state, values normalized in 0f..1f */
+/**
+ * Normalized floats for internal engine, plus a few mirrors for convenience.
+ * equippedIds must be a List for Firestore serialization.
+ */
+
 data class PetState(
     val energy: Float = 1f,
     val happiness: Float = 0.5f,
-    val growth: Float = 0f,
+    val growth: Float = 0.4f,
     val coins: Int = 0,
     val equippedIds: List<String> = emptyList(),
     val auraId: String? = null,

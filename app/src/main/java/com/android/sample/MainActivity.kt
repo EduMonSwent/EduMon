@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.android.sample.pet.PetController
 import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -36,16 +35,17 @@ class MainActivity : ComponentActivity() {
         val nav = rememberNavController()
         var user by remember { mutableStateOf(auth.currentUser) }
 
+        // Listen to auth and navigate when state changes
         DisposableEffect(Unit) {
           val l = FirebaseAuth.AuthStateListener { fa ->
             val u = fa.currentUser
+            val target = if (u == null) "login" else "app"
             user = u
-            val goTo = if (u == null) "login" else "app"
-            nav.navigate(goTo) {
+            // Clear back stack and avoid multiple instances
+            nav.navigate(target) {
               popUpTo(nav.graph.startDestinationId) { inclusive = true }
               launchSingleTop = true
             }
-            if (u != null) PetController.start(u.uid) else PetController.stop()
           }
           auth.addAuthStateListener(l)
           onDispose { auth.removeAuthStateListener(l) }
@@ -54,19 +54,23 @@ class MainActivity : ComponentActivity() {
         Scaffold(
           topBar = {
             CenterAlignedTopAppBar(
-              title = { Text(if (user == null) "EduMon (login)" else "EduMon") },
+              title = { Text(if (user == null) "EduMon — Sign in" else "") },
               actions = {
                 if (user != null) {
-                  TextButton(onClick = { signOutAll() }) { Text("Logout") }
+                  TextButton(onClick = { signOutAll() }) { Text("Sign out") }
                 }
               }
             )
           }
         ) { padding ->
+          // App navigation host
           Box(Modifier.fillMaxSize().padding(padding)) {
             NavHost(navController = nav, startDestination = if (user == null) "login" else "app") {
               composable("login") { LoginScreen() }
-              composable("app") { EduMonNavHost() }
+              composable("app") {
+                // Initialization guarded, app falls back to fakes if something goes wrong
+                EduMonNavHost()
+              }
             }
           }
         }

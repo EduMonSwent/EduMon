@@ -1,13 +1,8 @@
-// Parts of this file were generated with the help of an AI assistant.
+// app/src/main/java/com/android/sample/pet/domain/PetEngine.kt
 package com.android.sample.pet.domain
 
 import com.android.sample.pet.model.PetState
 
-/**
- * Pure functions that compute next PetState from profile deltas.
- * Inputs: added study minutes, new coins, equip set, aura id.
- * No I/O here.
- */
 object PetEngine {
     private const val ENERGY_PER_MIN = 0.0025f
     private const val HAPPINESS_PER_MIN = 0.0018f

@@ -19,7 +19,7 @@ data class AccessoryItem(
     val id: String,
     val slot: AccessorySlot,
     val label: String,
-    val iconRes: Int? = null, // TODO remplace par tes drawables quand tu les auras
+    val iconRes: Int? = null,
     val rarity: Rarity = Rarity.COMMON
 )
 

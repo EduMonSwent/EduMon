@@ -12,7 +12,7 @@ interface ShopRepository {
         val price: Int,
         val rarity: String,
         val auraId: String? = null,
-        val drawableName: String? = null   // nom du drawable dans /res/drawable
+        val drawableName: String? = null
     )
 
     data class PurchaseResult(
@@ -25,4 +25,7 @@ interface ShopRepository {
     fun observeCoins(uid: String): Flow<Int>
     fun observeOwnedItemIds(uid: String): Flow<Set<String>>
     suspend fun purchase(uid: String, item: ShopItem): PurchaseResult
+
+    /** Dev utility to credit or debit coins, positive adds, negative removes */
+    suspend fun addCoins(uid: String, amount: Int)
 }

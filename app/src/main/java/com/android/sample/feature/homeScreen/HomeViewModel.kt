@@ -2,7 +2,6 @@ package com.android.sample.feature.homeScreen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
 import com.android.sample.pet.model.PetState
@@ -15,7 +14,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlin.math.floor
-
+import kotlin.math.roundToInt
 
 class HomeViewModel(
     private val petFlow: Flow<PetState> = AppRepositories.petRepository.state,
@@ -39,27 +38,29 @@ class HomeViewModel(
                 todos = todos
             )
         }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = HomeUiState()
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            HomeUiState()
         )
 }
 
+/** Public UI state for the home screen. */
 data class HomeUiState(
     val isLoading: Boolean = true,
-    val creatureStats: CreatureStats = CreatureStats(level = 1, energy = 1f, happiness = 0.5f, health = 0f),
+    val creatureStats: CreatureStats = CreatureStats(level = 1, energy = 100, happiness = 50, health = 0),
     val userStats: UserProfile = UserProfile(),
     val quote: String = "",
     val todos: List<ToDo> = emptyList()
 )
 
-
+/** Maps PetState floats to integer percentages for the UI cards. */
 private fun PetState.toCreatureStats(): CreatureStats {
     val lvl = floor(this.growth * 10f).toInt().coerceAtLeast(1)
+    fun pct(x: Float) = (x.coerceIn(0f, 1f) * 100f).roundToInt()
     return CreatureStats(
         level = lvl,
-        energy = this.energy.coerceIn(0f, 1f),
-        happiness = this.happiness.coerceIn(0f, 1f),
-        health = this.growth.coerceIn(0f, 1f)
+        energy = pct(this.energy),
+        happiness = pct(this.happiness),
+        health = pct(this.growth)
     )
 }

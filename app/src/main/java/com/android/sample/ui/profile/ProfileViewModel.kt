@@ -1,117 +1,183 @@
+// app/src/main/java/com/android/sample/ui/profile/ProfileViewModel.kt
 package com.android.sample.ui.profile
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
-import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
 import com.android.sample.pet.model.PetState
 import com.android.sample.profile.ProfileRepository
-import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
-import com.android.sample.ui.theme.AccentBlue
-import com.android.sample.ui.theme.AccentMagenta
-import com.android.sample.ui.theme.AccentMint
-import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.EventColorSports
+import com.android.sample.data.shop.ShopRepository
+import com.android.sample.data.shop.ShopRepositoryProvider
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
+/**
+ * Single source of truth for Profile.
+ * Reads Pet state from PetRepository, user profile from ProfileRepository,
+ * owned cosmetics from ShopRepository.
+ * All mutations go through ProfileRepository.
+ */
 class ProfileViewModel(
-    private val repository: ProfileRepository = ProfileRepositoryProvider.repository
+    private val repository: ProfileRepository = AppRepositories.profileRepository,
+    private val shopRepo: ShopRepository = ShopRepositoryProvider.repository
 ) : ViewModel() {
 
+    /** Pet state shared across screens. */
     val petState: StateFlow<PetState> = AppRepositories.petRepository.state
 
-    private val _userProfile = MutableStateFlow(repository.profile.value)
+    /** Editable mirror of the profile, optimistic updates first, then persist. */
+    private val _userProfile = MutableStateFlow(repository.profile.value.copy())
     val userProfile: StateFlow<UserProfile> = _userProfile
 
-    init {
-        viewModelScope.launch {
-            repository.profile.collect { remote ->
-                _userProfile.value = remote
-            }
-        }
-    }
-
+    /** Owned cosmetic ids coming from Firestore shop document. */
     val ownedIds: StateFlow<Set<String>> =
-        repository.profile.map { it.owned.toSet() }
+        shopRepo.observeOwnedItemIds(Firebase.auth.currentUser?.uid.orEmpty())
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
-    val accentPalette: List<Color> =
-        listOf(AccentViolet, AccentBlue, AccentMint, EventColorSports, AccentMagenta)
+    /** Accent color palette offered by the UI. */
+    val accentPalette: List<Color> = listOf(
+        Color(0xFF7C4DFF),
+        Color(0xFF2962FF),
+        Color(0xFF00C853),
+        Color(0xFFFF6D00),
+        Color(0xFFD500F9)
+    )
 
-    val accessoryCatalog: List<AccessoryItem> =
-        listOf(
-            AccessoryItem("none", AccessorySlot.HEAD, "None"),
-            AccessoryItem("halo", AccessorySlot.HEAD, "Halo", rarity = Rarity.EPIC),
-            AccessoryItem("crown", AccessorySlot.HEAD, "Crown", rarity = Rarity.RARE),
-            AccessoryItem("antenna", AccessorySlot.HEAD, "Antenna", rarity = Rarity.COMMON),
-            AccessoryItem("none", AccessorySlot.TORSO, "None"),
-            AccessoryItem("badge", AccessorySlot.TORSO, "Badge", rarity = Rarity.COMMON),
-            AccessoryItem("scarf", AccessorySlot.TORSO, "Scarf", rarity = Rarity.RARE),
-            AccessoryItem("armor", AccessorySlot.TORSO, "Armor", rarity = Rarity.EPIC),
-            AccessoryItem("none", AccessorySlot.LEGS, "None"),
-            AccessoryItem("boots", AccessorySlot.LEGS, "Boots", rarity = Rarity.COMMON),
-            AccessoryItem("rocket", AccessorySlot.LEGS, "Rocket", rarity = Rarity.LEGENDARY),
-            AccessoryItem("skates", AccessorySlot.LEGS, "Skates", rarity = Rarity.RARE),
-        )
-
+    /** Visual variant chosen locally (not persisted). */
     private val accentVariant = MutableStateFlow(AccentVariant.Base)
+    /** Exposed for UI collection. */
     val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
+    /** Effective accent color after applying the local variant. */
     val accentEffective: StateFlow<Color> =
-        combine(userProfile, accentVariantFlow) { user, variant ->
+        combine(_userProfile, accentVariant) { user, variant ->
             applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccentViolet)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
+
+    /** Base catalog known by the app, one "none" item per slot. */
+    private val baseCatalog: List<AccessoryItem> = listOf(
+        // head
+        AccessoryItem(id = "none", slot = AccessorySlot.HEAD, label = "None"),
+        AccessoryItem(id = "halo", slot = AccessorySlot.HEAD, label = "Halo"),
+        AccessoryItem(id = "crown", slot = AccessorySlot.HEAD, label = "Crown"),
+        AccessoryItem(id = "antenna", slot = AccessorySlot.HEAD, label = "Antenna"),
+        // torso
+        AccessoryItem(id = "none", slot = AccessorySlot.TORSO, label = "None"),
+        AccessoryItem(id = "badge", slot = AccessorySlot.TORSO, label = "Badge"),
+        AccessoryItem(id = "scarf", slot = AccessorySlot.TORSO, label = "Scarf"),
+        AccessoryItem(id = "armor", slot = AccessorySlot.TORSO, label = "Armor"),
+        // legs
+        AccessoryItem(id = "none", slot = AccessorySlot.LEGS, label = "None"),
+        AccessoryItem(id = "boots", slot = AccessorySlot.LEGS, label = "Boots"),
+        AccessoryItem(id = "rocket", slot = AccessorySlot.LEGS, label = "Rocket"),
+        AccessoryItem(id = "skates", slot = AccessorySlot.LEGS, label = "Skates"),
+    )
+
+    /**
+     * Final catalog presented to the screen.
+     * Shows one "none" per slot, then only items the user owns.
+     * Aura items are handled by a dedicated section, so they are excluded here.
+     */
+    val accessoryCatalog: StateFlow<List<AccessoryItem>> =
+        ownedIds.map { owned ->
+            val keepNone = baseCatalog.filter { it.id == "none" }
+            val ownedFiltered = owned.filterNot { it.startsWith("aura", true) }
+            val knownIds = baseCatalog.map { it.id }.toSet()
+
+            val baseOwned = baseCatalog.filter { it.id != "none" && it.id in ownedFiltered }
+
+            val extras = ownedFiltered.filter { it !in knownIds }.map { id ->
+                AccessoryItem(
+                    id = id,
+                    slot = guessSlotFor(id),
+                    label = id.replaceFirstChar { it.uppercase() }
+                )
+            }
+            keepNone + baseOwned + extras
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            baseCatalog.filter { it.id == "none" }
+        )
+
+    /** Auras owned by the user, used by the Aura section. */
+    val ownedAuras: StateFlow<List<String>> =
+        ownedIds.map { ids -> ids.filter { it.startsWith("aura", ignoreCase = true) } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // -------- Intents
 
     fun setAvatarAccent(color: Color) {
-        val argb: Long = color.toArgb().toLong()
-        val updated = _userProfile.value.copy(avatarAccent = argb)
-        _userProfile.value = updated
-        pushProfile(updated)
+        // Persist ARGB as long, same shape as before.
+        val argb: Long = color.value.toLong()
+        _userProfile.update { it.copy(avatarAccent = argb) }
+        pushProfile()
     }
 
-    fun setAccentVariant(v: AccentVariant) { accentVariant.value = v }
+    fun setAccentVariant(variant: AccentVariant) {
+        accentVariant.value = variant
+    }
 
-    fun toggleNotifications() = updateLocal { it.copy(notificationsEnabled = !it.notificationsEnabled) }
     fun toggleLocation() = updateLocal { it.copy(locationEnabled = !it.locationEnabled) }
+
     fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
 
+    fun addCoins(amount: Int) = updateLocal { it.copy(coins = it.coins + amount) }
+
+    /** Equip an item for a given slot, accessories are stored as "slot:id". */
     fun equip(slot: AccessorySlot, id: String) {
         val cur = _userProfile.value
-        val prefix = slot.name.lowercase() + ":"
-        val cleaned = cur.accessories.filterNot { it.startsWith(prefix) }
-        val next = if (id == "none") cleaned else cleaned + (prefix + id)
-        val updated = cur.copy(accessories = next)
-        _userProfile.value = updated
-        pushProfile(updated)
+        val prefixesToClean = if (slot == AccessorySlot.LEGS) listOf("legs:", "leg:")
+        else listOf(slot.name.lowercase() + ":")
+        val cleaned = cur.accessories.filterNot { s -> prefixesToClean.any { p -> s.startsWith(p) } }
+        val next = if (id == "none") cleaned else cleaned + (slot.name.lowercase() + ":" + id)
+        _userProfile.value = cur.copy(accessories = next)
+        pushProfile()
     }
 
+    /** Unequip the current item of a slot. */
     fun unequip(slot: AccessorySlot) {
         val cur = _userProfile.value
         val prefix = slot.name.lowercase() + ":"
-        val updated = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
-        _userProfile.value = updated
-        pushProfile(updated)
+        _userProfile.value = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
+        pushProfile()
     }
 
+    /** Currently equipped id for a slot, or null. */
     fun equippedId(slot: AccessorySlot): String? {
-        val prefix = slot.name.lowercase() + ":"
-        val s = _userProfile.value.accessories.firstOrNull { it.startsWith(prefix) }
+        val prefixes = if (slot == AccessorySlot.LEGS) listOf("legs:", "leg:")
+        else listOf(slot.name.lowercase() + ":")
+        val s = _userProfile.value.accessories.firstOrNull { a -> prefixes.any { p -> a.startsWith(p) } }
         return s?.substringAfter(':')
     }
 
-    fun addCoins(amount: Int) = updateLocal { it.copy(coins = it.coins + amount) }
+    /** Currently equipped aura id, or null. */
+    fun currentAuraId(): String? =
+        _userProfile.value.accessories.firstOrNull { it.startsWith("aura:") }?.substringAfter(':')
+
+    /** Equip or remove an aura. Pass null or "none" to remove. */
+    fun equipAura(id: String?) {
+        val cur = _userProfile.value
+        val cleaned = cur.accessories.filterNot { it.startsWith("aura:") }
+        val next = if (id == null || id == "none") cleaned else cleaned + "aura:$id"
+        _userProfile.value = cur.copy(accessories = next)
+        pushProfile()
+    }
+
+    /** Helper used by UI to check ownership quickly. */
+    fun isOwned(id: String): Boolean = ownedIds.value.contains(id)
+
+    // -------- Internals
 
     private fun updateLocal(block: (UserProfile) -> UserProfile) {
         val updated = block(_userProfile.value)
@@ -123,6 +189,18 @@ class ProfileViewModel(
         viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
     }
 
+    private fun guessSlotFor(id: String): AccessorySlot {
+        val s = id.lowercase()
+        return when {
+            "scarf" in s || "badge" in s || "armor" in s || "torso" in s -> AccessorySlot.TORSO
+            "boots" in s || "skate" in s || "leg" in s || "pants" in s -> AccessorySlot.LEGS
+            else -> AccessorySlot.HEAD
+        }
+    }
+
+    // -------- Color helpers
+
+    /** Apply a local visual variant to the base accent color. */
     private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
         when (v) {
             AccentVariant.Base -> base
