@@ -16,6 +16,7 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+/** This class was implemented with the help of ai (chatgbt) */
 data class PlannerUiState(
     val classes: List<Class> = emptyList(),
     val attendanceRecords: List<ClassAttendance> = emptyList(),

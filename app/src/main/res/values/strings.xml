@@ -230,6 +230,15 @@
     <string name="day_short_sun">Sun</string>
     <string name="time_separator">:</string>
     <string name="unknown">?</string>
+    <!-- Friends Repository -->
+    <string name="enter_uid">Enter a UID.</string>
+    <string name="friend_exist_already">You\'re already friends.</string>
+    <string name="khalil_user">Khalil</string>
+    <string name="alae_user">Alae</string>
+    <string name="florian_user">Florian</string>
+    <string name="no_user_with_uid">No user found for that UID.</string>
+    <string name="cant_add_yourself">You can’t add yourself.</string>
+    <string name="study_together_no_friends_yet">No friends yet</string>
     <!-- Focus Mode UI -->
     <string name="focus_mode_title">Focus Mode</string>
     <string name="focus_mode_start">Start</string>
@@ -263,6 +272,22 @@
     <string name="completion_done">Completed</string>
     <string name="completion_partially">Partially</string>
     <string name="completion_not_done">Not done</string>
+
+    <!-- Calendar weekday short labels -->
+    <string name="weekday_mon_short">Mon</string>
+    <string name="weekday_tue_short">Tue</string>
+    <string name="weekday_wed_short">Wed</string>
+    <string name="weekday_thu_short">Thu</string>
+    <string name="weekday_fri_short">Fri</string>
+    <string name="weekday_sat_short">Sat</string>
+    <string name="weekday_sun_short">Sun</string>
+
+    <!-- Calendar month-year title -->
+    <string name="calendar_month_year">%1$s %2$d</string>
+
+    <!-- Calendar more-events indicator -->
+    <string name="calendar_more_events">+%1$d more</string>
+    <string name="week_progression">Week progression</string>
 
 
 </resources>
