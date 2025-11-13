@@ -125,11 +125,11 @@ class ProfilesFriendRepository(private val db: FirebaseFirestore, private val au
             .document(frienduid)
             .get()
             .await()
-    if (edgeDoc.exists()) throw IllegalArgumentException("You're already friends.")
+    require(!edgeDoc.exists()) {"You're already friends."}
 
     // Resolve profile
     val doc = db.collection("profiles").document(frienduid).get().await()
-    if (!doc.exists()) throw IllegalArgumentException("No user found for that UID.")
+    require(doc.exists()){"No user found for that UID."}
 
     val status =
         doc.toFriendStatus(frienduid)
