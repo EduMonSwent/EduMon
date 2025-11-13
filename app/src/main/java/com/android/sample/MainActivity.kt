@@ -16,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.theme.EduMonTheme
@@ -88,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
                       composable("app") {
                         LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
-                        EduMonNavHost()
+                        EduMonNavHost(startDestination = startRoute)
                       }
                     }
               }
