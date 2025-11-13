@@ -79,7 +79,9 @@ class StudyTogetherScreenFullTest {
   // --- 4️⃣ Test global du composable principal (vérifie qu'il ne crash pas)
   @Test
   fun studyTogetherScreen_rendersWithoutCrashing() {
-    composeTestRule.setContent { StudyTogetherScreen() }
+    // Use a fake repo-backed ViewModel and disable the map to avoid runtime deps in tests
+    val vm = StudyTogetherViewModel(friendRepository = FakeFriendRepository(), liveLocation = false)
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
     composeTestRule.waitForIdle()
   }
 

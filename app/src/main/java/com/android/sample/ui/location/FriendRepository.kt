@@ -12,8 +12,6 @@ interface FriendRepository {
   suspend fun addFriendByUid(frienduid: String): FriendStatus
 
   suspend fun removeFriend(frienduid: String) {}
-
-  suspend fun addFriendByUsername(username: String): FriendStatus
 }
 
 /** Simple in-memory repo useful for previews/tests. */
@@ -47,26 +45,8 @@ class FakeFriendRepository(
     return newFriend
   }
 
-  override suspend fun addFriendByUsername(username: String): FriendStatus {
-    // keep it dead simple for tests
-    return addFriendByUid(username)
-  }
-
   override suspend fun removeFriend(frienduid: String) {
     _state.value = _state.value.filterNot { it.id == frienduid }
-  }
-
-  /** Simulate a friend moving to a new Lat/Lon (emits to the flow). */
-  fun move(frienduid: String, lat: Double, lon: Double) {
-    _state.value =
-        _state.value.map { f ->
-          if (f.id == frienduid)
-              f.copy(
-                  latitude = lat,
-                  longitude = lon,
-              )
-          else f
-        }
   }
 
   // Small helper to avoid overlapping markers when auto-creating test friends.

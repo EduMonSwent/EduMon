@@ -142,17 +142,6 @@ class ProfilesFriendRepositoryEmulatorTest {
   }
 
   @Test
-  fun addFriendByUsername_resolves_and_emits() = runBlocking {
-    seedProfile("U_NAME", name = "UserName", username = "uname42", mode = "idle")
-    val status = repo.addFriendByUsername("uname42")
-    assertEquals("UserName", status.name)
-    assertEquals(FriendMode.IDLE, status.mode)
-
-    val emitted = withTimeout(4000) { repo.friendsFlow.first { it.any { it.id == "U_NAME" } } }
-    assertTrue(emitted.any { it.id == "U_NAME" })
-  }
-
-  @Test
   fun add_many_friends_triggers_chunking_and_sorts() = runBlocking {
     // >10 UIDs triggers multiple whereIn chunks
     for (i in 0 until 12) {
