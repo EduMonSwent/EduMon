@@ -114,9 +114,12 @@ class CreateDeckScreenTest {
 
   @Test
   fun saveDeck_trimsTitleAndDescription_andFiltersBlankCards() {
-    // Use the real VM that defaults to the provider-backed repo
+    // 1) Get ONE shared repo instance first
+    val sharedRepo = FlashcardsRepositoryProvider.repository
+
+    // 2) Inject it into the VM so save() writes to the same instance you’ll read from
     val vm =
-        CreateDeckViewModel().apply {
+        CreateDeckViewModel(repo = sharedRepo).apply {
           addEmptyCard() // will be filled
           addEmptyCard() // remains blank and should be filtered
           updateCard(0, question = "  Q?  ", answer = "  A!  ")
@@ -134,19 +137,22 @@ class CreateDeckScreenTest {
     composeRule.onNodeWithText("Save Deck").performClick()
 
     // Wait until the VM calls onSaved(id)
-    composeRule.waitUntil(3_000) { savedId.get() != null }
+    composeRule.waitUntil(10_000) { savedId.get() != null } // give it more time on emulator/CI
 
     val id = requireNotNull(savedId.get())
 
-    val repo = FlashcardsRepositoryProvider.repository
-    val deck = kotlinx.coroutines.runBlocking { repo.observeDeck(id).first() }
+    // 3) Read back from the SAME repo instance
+    val deck = kotlinx.coroutines.runBlocking { sharedRepo.observeDeck(id).first() }
     requireNotNull(deck)
 
+    // Title/description are trimmed by the VM
     assert(deck.title == "Title")
     assert(deck.description == "Desc")
 
+    // Blank card was filtered; only the filled one remains
     assert(deck.cards.size == 1)
 
+    // Card text is not trimmed by VM (only filtered), so spaces remain
     assert(deck.cards[0].question == "  Q?  ")
     assert(deck.cards[0].answer == "  A!  ")
   }

@@ -195,6 +195,12 @@
     <string name="no_user_with_uid">No user found for that UID.</string>
     <string name="cant_add_yourself">You can’t add yourself.</string>
     <string name="study_together_no_friends_yet">No friends yet</string>
+    <!-- Focus Mode UI -->
+    <string name="focus_mode_title">Focus Mode</string>
+    <string name="focus_mode_start">Start</string>
+    <string name="focus_mode_stop">Stop</string>
+    <string name="focus_mode_start_description">Start a 25-minute deep focus session</string>
+    <string name="focus_mode_running_message">Stay focused — you got this 💪</string>
     <!-- Tabs -->
     <string name="tab_day">Day</string>
     <string name="tab_week">Week</string>

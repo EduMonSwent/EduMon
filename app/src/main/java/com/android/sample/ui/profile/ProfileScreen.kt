@@ -94,7 +94,8 @@ private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(),
-    onOpenNotifications: () -> Unit = {} // navigate to "notifications"
+    onOpenFocusMode: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {}
 ) {
   val user by viewModel.userProfile.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
@@ -138,7 +139,8 @@ fun ProfileScreen(
                   user = user,
                   onToggleLocation = viewModel::toggleLocation,
                   onToggleFocusMode = viewModel::toggleFocusMode,
-                  onOpenNotifications = onOpenNotifications)
+                  onOpenNotifications = onOpenNotifications,
+                  onEnterFocusMode = onOpenFocusMode)
             }
           }
         }
@@ -520,7 +522,8 @@ fun SettingsCard(
     user: UserProfile,
     onToggleLocation: () -> Unit,
     onToggleFocusMode: () -> Unit,
-    onOpenNotifications: () -> Unit
+    onOpenNotifications: () -> Unit,
+    onEnterFocusMode: () -> Unit
 ) {
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
@@ -529,21 +532,28 @@ fun SettingsCard(
         fontWeight = FontWeight.SemiBold)
     Spacer(modifier = Modifier.height(8.dp))
 
-    // Removed old "notifications" toggle. We now navigate to a dedicated Notifications screen.
-
+    // --- Location toggle ---
     SettingRow(
         stringResource(id = R.string.settings_location),
         stringResource(id = R.string.settings_location_desc),
         user.locationEnabled,
         onToggleLocation,
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
+
     Divider(color = DarkDivider)
 
+    // --- Focus mode toggle ---
     SettingRow(
         stringResource(id = R.string.settings_focus),
         stringResource(id = R.string.settings_focus_desc),
         user.focusModeEnabled,
-        onToggleFocusMode,
+        onToggle = {
+          onToggleFocusMode()
+          if (!user.focusModeEnabled) {
+            // Si on vient d’activer le focus mode → on lance l’écran
+            onEnterFocusMode()
+          }
+        },
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
 
     Spacer(Modifier.height(12.dp))
