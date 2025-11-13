@@ -50,10 +50,10 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             topBar = {
               CenterAlignedTopAppBar(
-                  title = { Text(if (user == null) "EduMon — Connexion" else "") },
+                  title = { Text(if (user == null) "EduMon — Connection " else "") },
                   actions = {
                     if (user != null) {
-                      TextButton(onClick = { signOutAll() }) { Text("Déconnexion") }
+                      TextButton(onClick = { signOutAll() }) { Text("Logout") }
                     }
                   })
             }) { padding ->
