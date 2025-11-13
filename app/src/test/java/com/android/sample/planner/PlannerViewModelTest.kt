@@ -4,9 +4,15 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.model.planner.*
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
+import com.android.sample.feature.schedule.data.planner.ClassAttendance
+import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
+import com.android.sample.feature.schedule.viewmodel.PlannerViewModel
 import com.android.sample.repositories.ToDoRepositoryLocal
-import com.android.sample.ui.viewmodel.PlannerViewModel
+import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -236,11 +242,11 @@ class PlannerViewModelTest {
                             listOf(
                                 ToDo(
                                     title = "Finish report",
-                                    dueDate = java.time.LocalDate.now(),
+                                    dueDate = LocalDate.now(),
                                     priority = Priority.HIGH),
                                 ToDo(
                                     title = "Read chapter",
-                                    dueDate = java.time.LocalDate.now().plusDays(1),
+                                    dueDate = LocalDate.now().plusDays(1),
                                     priority = Priority.MEDIUM))))
 
         // Let collectors run (UnconfinedTestDispatcher -> small delay is fine)

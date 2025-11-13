@@ -1,9 +1,9 @@
 package com.android.sample.screen.calendar
 
-import com.android.sample.model.PlannerRepository
-import com.android.sample.model.PlannerRepositoryImpl
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.runBlocking
@@ -14,7 +14,7 @@ class PlannerRepositoryImplTest {
 
   @Test
   fun save_get_update_delete_flow() = runBlocking {
-    val repo: PlannerRepository = PlannerRepositoryImpl() // pre-seeded
+    val repo: CalendarRepository = CalendarRepositoryImpl() // pre-seeded
     val d = LocalDate.now()
 
     val item =
@@ -44,7 +44,7 @@ class PlannerRepositoryImplTest {
 
   @Test
   fun getAllTasksReflectsMutations() = runBlocking {
-    val repo: PlannerRepository = PlannerRepositoryImpl()
+    val repo: CalendarRepository = CalendarRepositoryImpl()
     val initial = repo.getAllTasks().size
 
     val newItem =

@@ -1,6 +1,6 @@
 package com.android.sample.planner
 
-import com.android.sample.model.planner.*
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*

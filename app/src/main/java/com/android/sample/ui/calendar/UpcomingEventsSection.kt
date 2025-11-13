@@ -1,7 +1,5 @@
 package com.android.sample.ui.calendar
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,23 +10,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
+import com.android.sample.feature.weeks.ui.GlassSurface
 import com.android.sample.ui.theme.Blue
-import com.android.sample.ui.theme.DarkBlue
-import com.android.sample.ui.theme.DarkerBlue
-import com.android.sample.ui.theme.EventViolet
-import com.android.sample.ui.theme.LightViolet
 import com.android.sample.ui.theme.Pink
 import com.android.sample.ui.theme.PurpleCalendar
-import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletLilas
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -39,20 +30,14 @@ fun UpcomingEventsSection(
     selectedDate: LocalDate,
     onAddTaskClick: (LocalDate) -> Unit,
     onTaskClick: (StudyItem) -> Unit,
+    modifier: Modifier = Modifier, // Added modifier
     title: String = stringResource(R.string.upcoming_events)
 ) {
   val sortedTasks = remember(tasks) { tasks.sortedBy { it.date } }
+  val cs = MaterialTheme.colorScheme
 
-  Card(
-      modifier =
-          Modifier.fillMaxWidth()
-              .padding(top = 20.dp)
-              .border(width = 1.dp, color = PurplePrimary, shape = RoundedCornerShape(20.dp))
-              .shadow(8.dp, RoundedCornerShape(20.dp)),
-      colors =
-          CardDefaults.cardColors(
-              containerColor =
-                  brushColor(Brush.verticalGradient(colors = listOf(DarkBlue, DarkerBlue)))),
+  GlassSurface(
+      modifier = modifier.fillMaxWidth(), // Use the passed modifier
       shape = RoundedCornerShape(20.dp)) {
         Column(modifier = Modifier.padding(20.dp)) {
           // Header Row
@@ -64,15 +49,16 @@ fun UpcomingEventsSection(
                     text = title,
                     style =
                         MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold, color = LightViolet))
+                            fontWeight = FontWeight.Bold, color = cs.onSurface))
 
                 // Properly sized and aligned "Add Event" button
-                FilledTonalButton(
+                Button( // Changed to Button for more control over background
                     onClick = { onAddTaskClick(selectedDate) },
                     shape = RoundedCornerShape(12.dp),
                     colors =
-                        ButtonDefaults.filledTonalButtonColors(
-                            containerColor = PurplePrimary, contentColor = Color.White),
+                        ButtonDefaults.buttonColors(
+                            containerColor = cs.primary, // Use primary color
+                            contentColor = cs.onPrimary),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
                     modifier = Modifier.height(38.dp).wrapContentWidth()) {
@@ -95,7 +81,7 @@ fun UpcomingEventsSection(
           if (sortedTasks.isEmpty()) {
             Text(
                 text = stringResource(R.string.no_upcoming_events),
-                color = EventViolet,
+                color = cs.onSurface.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.align(Alignment.CenterHorizontally))
           } else {
@@ -116,13 +102,10 @@ private fun EventCard(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
         TaskType.PERSONAL -> VioletLilas
         else -> PurpleCalendar
       }
+  val cs = MaterialTheme.colorScheme
 
-  Card(
-      modifier =
-          Modifier.fillMaxWidth()
-              .clickable { onTaskClick(task) }
-              .border(1.dp, PurplePrimary.copy(alpha = 0.4f), RoundedCornerShape(16.dp)),
-      colors = CardDefaults.cardColors(containerColor = DarkBlue),
+  GlassSurface( // Use GlassSurface for individual event cards
+      modifier = Modifier.fillMaxWidth().clickable { onTaskClick(task) },
       shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically) {
@@ -130,7 +113,8 @@ private fun EventCard(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
                 text = task.date.format(DateTimeFormatter.ofPattern("MMM dd")),
                 style =
                     MaterialTheme.typography.labelLarge.copy(
-                        color = EventViolet, fontWeight = FontWeight.Medium),
+                        color = cs.primary, // Use theme primary
+                        fontWeight = FontWeight.Medium),
                 modifier = Modifier.weight(1f))
             Surface(color = tagColor.copy(alpha = 0.15f), shape = RoundedCornerShape(8.dp)) {
               Text(
@@ -147,7 +131,8 @@ private fun EventCard(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
               text = task.title,
               style =
                   MaterialTheme.typography.bodyLarge.copy(
-                      color = Color.White, fontWeight = FontWeight.SemiBold))
+                      color = cs.onSurface, // Use theme onSurface
+                      fontWeight = FontWeight.SemiBold))
 
           val taskTime =
               when (task) {
@@ -164,13 +149,11 @@ private fun EventCard(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
             Spacer(Modifier.height(2.dp))
             Text(
                 text = taskTime,
-                style = MaterialTheme.typography.labelSmall.copy(color = EventViolet))
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        color = cs.onSurface.copy(alpha = 0.7f)) // Use theme onSurface
+                )
           }
         }
       }
 }
-
-// Helper to use Brush as background color in Card
-@Composable
-fun brushColor(brush: Brush): Color =
-    Color.Transparent.copy(alpha = 0f).also { Box(Modifier.background(brush)) }

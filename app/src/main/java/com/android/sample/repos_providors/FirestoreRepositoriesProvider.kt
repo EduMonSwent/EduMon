@@ -2,12 +2,12 @@ package com.android.sample.repos_providors
 
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.android.sample.model.PlannerRepositoryImpl
-import com.android.sample.model.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
@@ -39,7 +39,7 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
     ToDoBackedStudySessionRepository()
   }
 
-  override val calendarRepository: PlannerRepositoryImpl by lazy { PlannerRepositoryImpl() }
+  override val calendarRepository: CalendarRepositoryImpl by lazy { CalendarRepositoryImpl() }
 
   override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
   override val profileRepository: ProfileRepository by lazy { FakeProfileRepository() }

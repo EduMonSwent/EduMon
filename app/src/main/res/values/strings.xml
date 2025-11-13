@@ -54,6 +54,7 @@
     <string name="did_you_review_lecture">Did you finish reviewing today’s lecture materials?</string>
     <string name="did_you_finish_exercise">Did you finish the exercise?</string>
     <string name="did_you_finish_lab">Did you finish the lab?</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Wellness Event Item -->
     <string name="wellness_event_yoga_title">Yoga Session @ Sports Center</string>
@@ -191,5 +192,33 @@
     <string name="focus_mode_stop">Stop</string>
     <string name="focus_mode_start_description">Start a 25-minute deep focus session</string>
     <string name="focus_mode_running_message">Stay focused — you got this 💪</string>
+    <!-- Tabs -->
+    <string name="tab_day">Day</string>
+    <string name="tab_week">Week</string>
+    <string name="tab_month">Month</string>
+    <string name="tab_agenda">Agenda</string>
+
+    <!-- Today card -->
+    <string name="today_title_fmt">Today • %1$s</string>
+    <string name="classes_label">Classes</string>
+    <string name="no_classes_today">No classes scheduled today</string>
+    <string name="wellness_events_label">Wellness Events</string>
+
+    <!-- Class row -->
+    <string name="class_title_fmt">%1$s (%2$s)</string>
+    <string name="class_type_paren">(%1$s)</string>
+    <string name="class_time_range_fmt">%1$s - %2$s</string>
+    <string name="class_location_prof_fmt">%1$s • %2$s</string>
+
+    <!-- Attendance labels -->
+    <string name="attendance_attended">Attended</string>
+    <string name="attendance_arrived_late">Arrived late</string>
+    <string name="attendance_missed">Missed</string>
+
+    <!-- Completion labels -->
+    <string name="completion_done">Completed</string>
+    <string name="completion_partially">Partially</string>
+    <string name="completion_not_done">Not done</string>
+
 
 </resources>
