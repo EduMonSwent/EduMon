@@ -4,6 +4,7 @@ import com.android.sample.ui.flashcards.model.Deck
 import com.android.sample.ui.flashcards.model.Flashcard
 import java.lang.reflect.Field
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.*
@@ -78,5 +79,74 @@ class InMemoryFlashcardsRepositoryTest {
     // Assert
     assertEquals(initialDecksState, finalDecksState)
     assertTrue(InMemoryFlashcardsRepository.deck(deckId)!!.cards.isEmpty())
+  }
+
+  @Test
+  fun observeDecks_emits_current_decks_and_reflects_add_and_delete() = runTest {
+    // Initially empty
+    val initial = InMemoryFlashcardsRepository.observeDecks().first()
+    assertTrue(initial.isEmpty())
+
+    // Add two decks
+    val deckId1 = InMemoryFlashcardsRepository.createDeck("Deck 1", "Desc 1", emptyList())
+    val deckId2 =
+        InMemoryFlashcardsRepository.createDeck(
+            "Deck 2", "Desc 2", listOf(Flashcard(id = "c1", question = "Q", answer = "A")))
+
+    val afterCreate = InMemoryFlashcardsRepository.observeDecks().first()
+    assertEquals(2, afterCreate.size)
+    assertTrue(afterCreate.any { it.id == deckId1 })
+    assertTrue(afterCreate.any { it.id == deckId2 })
+
+    // Delete one deck
+    InMemoryFlashcardsRepository.deleteDeck(deckId1)
+
+    val afterDelete = InMemoryFlashcardsRepository.observeDecks().first()
+    assertEquals(1, afterDelete.size)
+    assertFalse(afterDelete.any { it.id == deckId1 })
+    assertTrue(afterDelete.any { it.id == deckId2 })
+  }
+
+  @Test
+  fun observeDeck_emits_deck_and_then_null_after_deletion() = runTest {
+    // Arrange: create a deck
+    val deckId =
+        InMemoryFlashcardsRepository.createDeck(
+            "Single Deck", "Only one", listOf(Flashcard(id = "c1", question = "Q1", answer = "A1")))
+
+    // First emission: deck exists
+    val deckBeforeDelete = InMemoryFlashcardsRepository.observeDeck(deckId).first()
+    assertNotNull(deckBeforeDelete)
+    assertEquals(deckId, deckBeforeDelete!!.id)
+    assertEquals("Single Deck", deckBeforeDelete.title)
+
+    // Act: delete the deck
+    InMemoryFlashcardsRepository.deleteDeck(deckId)
+
+    // After delete: observeDeck should emit null for that id
+    val deckAfterDelete = InMemoryFlashcardsRepository.observeDeck(deckId).first()
+    assertNull(deckAfterDelete)
+  }
+
+  @Test
+  fun deleteDeck_removes_only_the_specified_deck() = runTest {
+    // Arrange: two decks
+    val deckId1 = InMemoryFlashcardsRepository.createDeck("To Delete", "Temp", emptyList())
+    val deckId2 = InMemoryFlashcardsRepository.createDeck("To Keep", "Important", emptyList())
+
+    // Sanity: both exist
+    assertNotNull(InMemoryFlashcardsRepository.deck(deckId1))
+    assertNotNull(InMemoryFlashcardsRepository.deck(deckId2))
+
+    // Act: delete the first deck
+    InMemoryFlashcardsRepository.deleteDeck(deckId1)
+
+    // Assert: first deck gone, second still present
+    assertNull(InMemoryFlashcardsRepository.deck(deckId1))
+    assertNotNull(InMemoryFlashcardsRepository.deck(deckId2))
+
+    val allDecks = InMemoryFlashcardsRepository.observeDecks().first()
+    assertFalse(allDecks.any { it.id == deckId1 })
+    assertTrue(allDecks.any { it.id == deckId2 })
   }
 }

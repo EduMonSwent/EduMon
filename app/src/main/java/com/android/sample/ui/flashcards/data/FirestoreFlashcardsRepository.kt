@@ -46,13 +46,10 @@ class FirestoreFlashcardsRepository(
   private data class DeckFs(
       val title: String = "",
       val description: String = "",
-      val createdAtMillis: Long? = null,
+      val createdAtMillis: Long? = null
   )
 
-  private data class CardFs(
-      val q: String = "",
-      val a: String = "",
-  )
+  private data class CardFs(val q: String = "", val a: String = "")
 
   private fun DocumentSnapshot.toDeckFs(): DeckFs =
       DeckFs(
@@ -84,31 +81,23 @@ class FirestoreFlashcardsRepository(
     }
 
     val reg =
-        decksCol().addSnapshotListener { decksSnap, err ->
-          if (err != null) {
-            close(err)
-            return@addSnapshotListener
-          }
+        decksCol().addSnapshotListener { decksSnap, _ ->
           val snap = decksSnap ?: return@addSnapshotListener
 
           launch(dispatchers.io) {
-            try {
-              val decks =
-                  snap.documents.map { d ->
-                    val deckId = d.id
-                    val deckFs = d.toDeckFs()
-                    val cardsSnap = Tasks.await(cardsCol(deckId).get())
-                    val cards =
-                        cardsSnap.documents
-                            .map { it.id to it.toCardFs() }
-                            .filter { (_, c) -> c.q.isNotBlank() && c.a.isNotBlank() }
-                            .map { (id, c) -> cardFrom(id, c) }
-                    deckFrom(deckId, deckFs, cards)
-                  }
-              trySend(decks).isSuccess
-            } catch (t: Throwable) {
-              close(t)
-            }
+            val decks =
+                snap.documents.map { d ->
+                  val deckId = d.id
+                  val deckFs = d.toDeckFs()
+                  val cardsSnap = Tasks.await(cardsCol(deckId).get())
+                  val cards =
+                      cardsSnap.documents
+                          .map { it.id to it.toCardFs() }
+                          .filter { (_, c) -> c.q.isNotBlank() && c.a.isNotBlank() }
+                          .map { (id, c) -> cardFrom(id, c) }
+                  deckFrom(deckId, deckFs, cards)
+                }
+            trySend(decks).isSuccess
           }
         }
     awaitClose { reg.remove() }
@@ -122,30 +111,22 @@ class FirestoreFlashcardsRepository(
     }
 
     val reg =
-        deckDoc(deckId).addSnapshotListener { docSnap, err ->
-          if (err != null) {
-            close(err)
-            return@addSnapshotListener
-          }
+        deckDoc(deckId).addSnapshotListener { docSnap, _ ->
           if (docSnap == null || !docSnap.exists()) {
             trySend(null)
             return@addSnapshotListener
           }
 
           launch(dispatchers.io) {
-            try {
-              val deckFs = docSnap.toDeckFs()
-              val cardsSnap = Tasks.await(cardsCol(deckId).get())
-              val cards =
-                  cardsSnap.documents
-                      .map { it.id to it.toCardFs() }
-                      .filter { (_, c) -> c.q.isNotBlank() && c.a.isNotBlank() }
-                      .map { (id, c) -> cardFrom(id, c) }
+            val deckFs = docSnap.toDeckFs()
+            val cardsSnap = Tasks.await(cardsCol(deckId).get())
+            val cards =
+                cardsSnap.documents
+                    .map { it.id to it.toCardFs() }
+                    .filter { (_, c) -> c.q.isNotBlank() && c.a.isNotBlank() }
+                    .map { (id, c) -> cardFrom(id, c) }
 
-              trySend(deckFrom(deckId, deckFs, cards)).isSuccess
-            } catch (t: Throwable) {
-              close(t)
-            }
+            trySend(deckFrom(deckId, deckFs, cards)).isSuccess
           }
         }
     awaitClose { reg.remove() }
