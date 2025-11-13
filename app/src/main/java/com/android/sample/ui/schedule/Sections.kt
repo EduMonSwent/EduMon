@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.sample.feature.weeks.ui.GlassSurface
 
 @Composable
 private fun GlassSurfaceCompact(
@@ -105,5 +107,27 @@ fun ThemedTabRow(selected: Int, onSelected: (Int) -> Unit, labels: List<String>)
                 }
           }
         }
+  }
+}
+
+@Composable
+fun SectionBox(
+    title: String? = null,
+    header: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+  val cs = MaterialTheme.colorScheme
+  GlassSurface(shape = RoundedCornerShape(16.dp)) {
+    when {
+      header != null -> header()
+      title != null ->
+          Text(
+              title,
+              style =
+                  MaterialTheme.typography.titleMedium.copy(
+                      fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
+              modifier = Modifier.padding(bottom = 8.dp))
+    }
+    Column(content = content)
   }
 }

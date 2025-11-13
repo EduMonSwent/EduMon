@@ -36,6 +36,7 @@ import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
 import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
+import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +76,7 @@ fun ScheduleScreen() {
   var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
   var showAddModal by remember { mutableStateOf(false) }
   var addDate by remember { mutableStateOf<LocalDate?>(null) }
+  val currentMonth = YearMonth.from(state.selectedDate)
 
   // Snackbar for VM events
   val snackbarHostState = remember { SnackbarHostState() }
@@ -156,7 +158,11 @@ fun ScheduleScreen() {
                   // TODO: implement Week
                 }
                 ScheduleTab.MONTH -> {
-                  // TODO: implement Month
+                  MonthTabContent(
+                      vm = vm,
+                      currentMonth = YearMonth.from(state.selectedDate),
+                      allTasks = allTasks,
+                      selectedDate = state.selectedDate)
                 }
                 ScheduleTab.AGENDA -> {
                   // TODO: implement Agenda

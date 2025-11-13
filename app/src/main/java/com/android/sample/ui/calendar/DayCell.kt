@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -54,10 +53,10 @@ fun DayCell(
                   shape = RoundedCornerShape(12.dp))
               .clickable { onDateClick(date) },
       contentAlignment = Alignment.Center) {
-        if (isSelected) {
+        /*if (isSelected) {
           // Optional: Add a subtle shadow/glow for selected state if desired
           Box(modifier = Modifier.matchParentSize().shadow(8.dp, RoundedCornerShape(12.dp)))
-        }
+        }*/
 
         Column(
             modifier = Modifier.fillMaxSize(),

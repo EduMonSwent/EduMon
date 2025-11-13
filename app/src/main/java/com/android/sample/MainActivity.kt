@@ -3,15 +3,9 @@ package com.android.sample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import com.android.sample.ui.schedule.ScheduleScreen
 import com.android.sample.ui.theme.EduMonTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,7 +15,7 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
 
     setContent {
-      EduMonTheme {
+      /*EduMonTheme {
         val nav = rememberNavController()
 
         Scaffold(topBar = { CenterAlignedTopAppBar(title = { Text("EduMon") }) }) { padding ->
@@ -31,7 +25,8 @@ class MainActivity : ComponentActivity() {
             }
           }
         }
-      }
+      }*/
+      EduMonTheme { ScheduleScreen() }
     }
   }
 }

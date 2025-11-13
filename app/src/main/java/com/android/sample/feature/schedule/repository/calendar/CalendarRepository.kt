@@ -1,5 +1,6 @@
 package com.android.sample.feature.schedule.repository.calendar
 
+import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import java.time.LocalDate
@@ -35,6 +36,7 @@ class CalendarRepositoryImpl : CalendarRepository {
                 date = LocalDate.now(),
                 time = LocalTime.of(10, 0),
                 isCompleted = false,
+                priority = Priority.MEDIUM,
                 type = TaskType.STUDY),
             StudyItem(
                 title = "Plan Project Structure",
@@ -42,12 +44,14 @@ class CalendarRepositoryImpl : CalendarRepository {
                 date = LocalDate.now().plusDays(1),
                 time = LocalTime.of(14, 30),
                 isCompleted = false,
+                priority = Priority.HIGH,
                 type = TaskType.WORK),
             StudyItem(
                 title = "Read Clean Architecture",
                 description = "Chapter 5: Boundaries.",
                 date = LocalDate.now().minusDays(2),
                 isCompleted = true,
+                priority = Priority.LOW,
                 type = TaskType.STUDY),
             StudyItem(
                 title = "Implement Calendar UI",
@@ -55,11 +59,13 @@ class CalendarRepositoryImpl : CalendarRepository {
                 date = LocalDate.now(),
                 time = LocalTime.of(9, 0),
                 isCompleted = false,
+                priority = Priority.HIGH,
                 type = TaskType.STUDY),
             StudyItem(
                 title = "Yoga Session",
                 date = LocalDate.now().plusWeeks(1),
                 isCompleted = false,
+                priority = Priority.LOW,
                 type = TaskType.PERSONAL))
   }
 

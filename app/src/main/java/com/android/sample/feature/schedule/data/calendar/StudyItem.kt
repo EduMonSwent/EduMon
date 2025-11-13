@@ -13,7 +13,7 @@ data class StudyItem(
     val time: LocalTime? = null,
     val durationMinutes: Int? = null,
     val isCompleted: Boolean = false,
-    val priority: Priority = Priority.MEDIUM, // Example
+    val priority: Priority,
     val type: TaskType
 )
 
