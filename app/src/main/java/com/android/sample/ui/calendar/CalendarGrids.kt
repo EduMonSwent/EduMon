@@ -180,16 +180,17 @@ private fun WeekDayCard(
     tasksForDay: List<StudyItem>,
     onDayClick: (LocalDate) -> Unit
 ) {
+  val tagShape = RoundedCornerShape(8.dp)
   Box(
       modifier =
           Modifier.width(140.dp)
               .height(160.dp)
-              .clip(RoundedCornerShape(18.dp))
+              .clip(tagShape)
               .background(brush = Brush.verticalGradient(listOf(Blue, DarkerBlue)))
               .border(
                   width = if (isSelected) 2.dp else 1.dp,
                   color = if (isSelected) PurpleBorder else PurplePrimary.copy(alpha = 0.4f),
-                  shape = RoundedCornerShape(18.dp))
+                  shape = tagShape)
               .clickable { onDayClick(day) }
               .padding(10.dp)
               .testTag("${CalendarScreenTestTags.WEEK_DAY_BOX_PREFIX}${day.dayOfMonth}")) {
