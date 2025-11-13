@@ -186,6 +186,12 @@
     <string name="class_description_fmt">%1$s %2$s %3$s %4$s %5$s</string>
     <string name="keyword_at">at</string>
 
+    <!-- Focus Mode UI -->
+    <string name="focus_mode_title">Focus Mode</string>
+    <string name="focus_mode_start">Start</string>
+    <string name="focus_mode_stop">Stop</string>
+    <string name="focus_mode_start_description">Start a 25-minute deep focus session</string>
+    <string name="focus_mode_running_message">Stay focused — you got this 💪</string>
     <!-- Tabs -->
     <string name="tab_day">Day</string>
     <string name="tab_week">Week</string>
