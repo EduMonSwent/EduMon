@@ -23,57 +23,54 @@ import com.android.sample.R
 @Composable
 fun LoginScreen(onLoggedIn: () -> Unit) {
 
-    val context = LocalContext.current
-    val activity = context as Activity
-    val vm: LoginViewModel = viewModel()
+  val context = LocalContext.current
+  val activity = context as Activity
+  val vm: LoginViewModel = viewModel()
 
-    val state by vm.state.collectAsState()
-    val credentialManager = remember { CredentialManager.create(activity) }
+  val state by vm.state.collectAsState()
+  val credentialManager = remember { CredentialManager.create(activity) }
 
-    LaunchedEffect(state.user) {
-        if (state.user != null) {
-            onLoggedIn()
-        }
+  LaunchedEffect(state.user) {
+    if (state.user != null) {
+      onLoggedIn()
     }
+  }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFF12122A), Color(0xFF181830)))),
-        contentAlignment = Alignment.Center
-    ) {
+  Box(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(Brush.verticalGradient(listOf(Color(0xFF12122A), Color(0xFF181830)))),
+      contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Image(
+              painter = painterResource(R.drawable.edumon),
+              contentDescription = "logo",
+              modifier = Modifier.size(120.dp))
 
-            Image(
-                painter = painterResource(R.drawable.edumon),
-                contentDescription = "logo",
-                modifier = Modifier.size(120.dp)
-            )
+          Spacer(Modifier.height(40.dp))
 
-            Spacer(Modifier.height(40.dp))
+          Text("Connect yourself to EduMon.", color = Color.White, fontSize = 22.sp)
 
-            Text("Connect yourself to EduMon.", color = Color.White, fontSize = 22.sp)
+          Spacer(Modifier.height(32.dp))
 
-            Spacer(Modifier.height(32.dp))
-
-            Button(
-                onClick = { vm.signIn(activity, credentialManager) },
-                enabled = !state.loading,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-            ) {
+          Button(
+              onClick = { vm.signIn(activity, credentialManager) },
+              enabled = !state.loading,
+              colors = ButtonDefaults.buttonColors(containerColor = Color.White)) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_google),
                     contentDescription = "Google icon",
-                    modifier = Modifier.size(18.dp)
-                )
+                    modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (state.loading) "Connexion..." else "Continue with google", color = Color.Black)
-            }
+                Text(
+                    if (state.loading) "Connexion..." else "Continue with google",
+                    color = Color.Black)
+              }
 
-            state.error?.let {
-                Spacer(Modifier.height(12.dp))
-                Text(it, color = Color(0xFFFF6B6B))
-            }
+          state.error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = Color(0xFFFF6B6B))
+          }
         }
-    }
+      }
 }

@@ -5,7 +5,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.GoogleAuthProvider
 
-
 object GoogleAuthHelper {
 
   fun fromBundle(bundle: Bundle): GoogleIdTokenCredential =
