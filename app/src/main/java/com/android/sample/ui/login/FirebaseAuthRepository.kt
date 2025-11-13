@@ -7,6 +7,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.tasks.await
 
+private const val ERROR_NO_USER_AFTER_LOGIN = "No user after connexion"
+private const val ERROR_CREDENTIAL_NOT_SUPPORTED = "Credential not supported"
+
 class FirebaseAuthRepository(private val auth: FirebaseAuth = FirebaseAuth.getInstance()) :
     AuthRepository {
 
@@ -18,9 +21,9 @@ class FirebaseAuthRepository(private val auth: FirebaseAuth = FirebaseAuth.getIn
         val firebaseCred = GoogleAuthHelper.toFirebaseCredential(idToken)
         val user = auth.signInWithCredential(firebaseCred).await().user
         if (user != null) Result.success(user)
-        else Result.failure(IllegalStateException("No user after connexion"))
+        else Result.failure(IllegalStateException(ERROR_NO_USER_AFTER_LOGIN))
       } else {
-        Result.failure(IllegalArgumentException("Credential not supported"))
+        Result.failure(IllegalArgumentException(ERROR_CREDENTIAL_NOT_SUPPORTED))
       }
     } catch (e: Exception) {
       Result.failure(e)

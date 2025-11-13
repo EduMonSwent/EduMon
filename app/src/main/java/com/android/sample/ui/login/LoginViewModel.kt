@@ -61,14 +61,18 @@ class LoginViewModel(
             }
             .onFailure { e ->
               _state.update {
-                it.copy(loading = false, user = null, error = e.message ?: "Login failed")
+                it.copy(
+                    loading = false,
+                    user = null,
+                    error = context.getString(R.string.error_login_failed))
               }
             }
       } catch (e: Exception) {
-        // IMPORTANT: this is the branch ton test essaie de vérifier
         _state.update {
           it.copy(
-              loading = false, user = null, error = e.message ?: "Unexpected error during login")
+              loading = false,
+              user = null,
+              error = e.message ?: context.getString(R.string.error_login_unexpected))
         }
       }
     }

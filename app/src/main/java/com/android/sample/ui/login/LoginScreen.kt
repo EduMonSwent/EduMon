@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
@@ -49,7 +50,7 @@ fun LoginScreen(onLoggedIn: () -> Unit) {
 
           Spacer(Modifier.height(40.dp))
 
-          Text("Connect yourself to EduMon.", color = Color.White, fontSize = 22.sp)
+          Text(stringResource(R.string.login_title), color = Color.White, fontSize = 22.sp)
 
           Spacer(Modifier.height(32.dp))
 
@@ -63,7 +64,8 @@ fun LoginScreen(onLoggedIn: () -> Unit) {
                     modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (state.loading) "Connexion..." else "Continue with google",
+                    if (state.loading) stringResource(R.string.login_button_loading)
+                    else stringResource(R.string.login_button_google),
                     color = Color.Black)
               }
 

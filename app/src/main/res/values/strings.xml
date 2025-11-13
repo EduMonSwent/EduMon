@@ -214,5 +214,16 @@
     <string name="completion_partially">Partially</string>
     <string name="completion_not_done">Not done</string>
 
+    <!-- Login / auth -->
+    <string name="login_title">Connect yourself to EduMon.</string>
+    <string name="login_button_google">Continue with Google</string>
+    <string name="login_button_loading">Connection...</string>
+
+    <string name="error_login_failed">Login failed</string>
+    <string name="error_login_unexpected">Unexpected error during login</string>
+
+    <string name="error_no_user_after_login">No user after connection</string>
+    <string name="error_credential_not_supported">Credential not supported</string>
+
 
 </resources>
