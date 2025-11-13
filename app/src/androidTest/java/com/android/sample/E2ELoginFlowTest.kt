@@ -31,7 +31,7 @@ class E2ELoginFlowTest {
 
     // Then: Title and Google button text are visible
     compose.onNodeWithText("Connect yourself to EduMon.").assertIsDisplayed()
-    compose.onNodeWithText("Continue with google").assertIsDisplayed()
+    compose.onNodeWithText("Continue with Google").assertIsDisplayed()
   }
 
   @Test

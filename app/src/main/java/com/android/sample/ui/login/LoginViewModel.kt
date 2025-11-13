@@ -40,12 +40,7 @@ class LoginViewModel(
   private val _state = MutableStateFlow(LoginUIState())
   val state: StateFlow<LoginUIState> = _state
 
-  fun clearError() {
-    _state.update { it.copy(error = null) }
-  }
-
   fun signIn(context: Context, credentialManager: CredentialManager) {
-    // Prevent multiple simultaneous calls
     if (_state.value.loading) return
 
     viewModelScope.launch {
@@ -59,12 +54,13 @@ class LoginViewModel(
             .onSuccess { user ->
               _state.update { it.copy(loading = false, user = user, error = null) }
             }
-            .onFailure { e ->
+            .onFailure { throwable ->
               _state.update {
                 it.copy(
                     loading = false,
                     user = null,
-                    error = context.getString(R.string.error_login_failed))
+                    // No hardcoded string here, we just propagate the error message
+                    error = throwable.message)
               }
             }
       } catch (e: Exception) {
@@ -72,9 +68,14 @@ class LoginViewModel(
           it.copy(
               loading = false,
               user = null,
-              error = e.message ?: context.getString(R.string.error_login_unexpected))
+              // Same here, use the exception message
+              error = e.message)
         }
       }
     }
+  }
+
+  fun clearError() {
+    _state.update { it.copy(error = null) }
   }
 }
