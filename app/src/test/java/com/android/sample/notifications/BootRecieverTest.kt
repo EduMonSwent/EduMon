@@ -7,11 +7,12 @@ import androidx.test.core.app.ApplicationProvider
 import com.android.sample.data.notifications.BootReceiver
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
-import com.android.sample.repos_providors.FakeRepositoriesProvider
+import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -31,10 +32,33 @@ class BootReceiverTest {
 
   private val context: Context = ApplicationProvider.getApplicationContext()
 
+  // Fake minimal controllable CalendarRepository for this test
+  private class FakeCalendarRepository : CalendarRepository {
+    private val _flow = MutableStateFlow<List<StudyItem>>(emptyList())
+    override val tasksFlow = _flow
+
+    override suspend fun getAllTasks(): List<StudyItem> = _flow.value
+
+    override suspend fun getTaskById(taskId: String): StudyItem? =
+        _flow.value.find { it.id == taskId }
+
+    override suspend fun saveTask(task: StudyItem) {
+      _flow.value = _flow.value + task
+    }
+
+    override suspend fun deleteTask(taskId: String) {
+      _flow.value = _flow.value.filter { it.id != taskId }
+    }
+
+    fun setAll(list: List<StudyItem>) {
+      _flow.value = list
+    }
+  }
+
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun `bootReceiver schedules next study task alarm 15min before`() = runTest {
-    val repo = FakeRepositoriesProvider.calendarRepository
+    val repo = FakeCalendarRepository()
 
     val futureDate = LocalDate.now().plusDays(1)
     val futureTime = LocalTime.of(10, 0)
@@ -50,16 +74,15 @@ class BootReceiverTest {
             isCompleted = false,
             type = TaskType.STUDY)
 
-    // Injection via API repository
-    repo.run { saveTask(task) }
+    // Inject only our task to avoid interference with any prefilled data
+    repo.setAll(listOf(task))
 
-    // Injecte un scope de test contrôlable
     val testScope = TestScope(UnconfinedTestDispatcher())
     val receiver = BootReceiver(repo, testScope)
     val intent = Intent(Intent.ACTION_BOOT_COMPLETED)
     receiver.onReceive(context, intent)
 
-    // Laisse tourner la coroutine dans le scope injecté
+    // Let coroutine finish
     testScope.advanceUntilIdle()
 
     val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
