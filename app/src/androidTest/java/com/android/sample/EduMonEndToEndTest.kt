@@ -15,7 +15,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.android.sample.feature.homeScreen.AppDestination
@@ -36,8 +35,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MotivationCalendarStudyProfileGamesEndToEndTest {
 
-  @get:Rule
-  val composeRule = createAndroidComposeRule<ComponentActivity>()
+  @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
   private lateinit var loggedInState: MutableState<Boolean>
   private var originalRepositories = AppRepositories
@@ -72,8 +70,8 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
 
     // 0) LOGIN SCREEN
     composeRule.waitUntilExactlyOneExists(
-      hasText("Connect yourself to EduMon."),
-      timeoutMillis = 20_000,
+        hasText("Connect yourself to EduMon."),
+        timeoutMillis = 20_000,
     )
     composeRule.onNodeWithText("Connect yourself to EduMon.").assertExists()
     composeRule.onNodeWithText("Continue with Google").assertExists()
@@ -94,13 +92,14 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
 
     // 3) HOME -> CALENDAR VIA BOTTOM NAV
     composeRule
-      .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Calendar.route), useUnmergedTree = true)
-      .assertExists()
-      .performClick()
+        .onNodeWithTag(
+            HomeTestTags.bottomTag(AppDestination.Calendar.route), useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-      hasTestTag(CalendarScreenTestTags.CALENDAR_CARD),
-      timeoutMillis = 20_000,
+        hasTestTag(CalendarScreenTestTags.CALENDAR_CARD),
+        timeoutMillis = 20_000,
     )
 
     composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_HEADER).assertExists()
@@ -108,9 +107,9 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
 
     // Optional: toggle view, Calendar must still exist
     composeRule
-      .onNodeWithTag(CalendarScreenTestTags.VIEW_TOGGLE_BUTTON)
-      .assertExists()
-      .performClick()
+        .onNodeWithTag(CalendarScreenTestTags.VIEW_TOGGLE_BUTTON)
+        .assertExists()
+        .performClick()
     composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertExists()
 
     // Back to Home
@@ -120,18 +119,18 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
 
     composeRule
-      .onNodeWithTag(HomeTestTags.QUICK_STUDY, useUnmergedTree = true)
-      .assertExists()
-      .performClick()
+        .onNodeWithTag(HomeTestTags.QUICK_STUDY, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-      hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
-      timeoutMillis = 20_000,
+        hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
+        timeoutMillis = 20_000,
     )
 
     composeRule
-      .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Study"))
-      .assertExists()
+        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Study"))
+        .assertExists()
 
     composeRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertExists()
     composeRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertExists()
@@ -141,36 +140,36 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
 
     // 5) HOME -> PROFILE VIA BOTTOM NAV
     composeRule
-      .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Profile.route), useUnmergedTree = true)
-      .assertExists()
-      .performClick()
+        .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Profile.route), useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-      hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
-      timeoutMillis = 20_000,
+        hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
+        timeoutMillis = 20_000,
     )
 
     composeRule
-      .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Profile"))
-      .assertExists()
+        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Profile"))
+        .assertExists()
 
     // Back to Home
     goBackToHome()
 
     // 6) HOME -> GAMES VIA BOTTOM NAV, THEN BACK
     composeRule
-      .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Games.route), useUnmergedTree = true)
-      .assertExists()
-      .performClick()
+        .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Games.route), useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-      hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
-      timeoutMillis = 20_000,
+        hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
+        timeoutMillis = 20_000,
     )
 
     composeRule
-      .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Games"))
-      .assertExists()
+        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Games"))
+        .assertExists()
 
     // Directly back to Home from Games
     goBackToHome()
@@ -186,17 +185,14 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
   @OptIn(ExperimentalTestApi::class)
   private fun waitForHome() {
     composeRule.waitUntilExactlyOneExists(
-      hasTestTag(HomeTestTags.MENU_BUTTON),
-      timeoutMillis = 20_000,
+        hasTestTag(HomeTestTags.MENU_BUTTON),
+        timeoutMillis = 20_000,
     )
   }
 
   @OptIn(ExperimentalTestApi::class)
   private fun goBackToHome() {
-    composeRule
-      .onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON)
-      .assertExists()
-      .performClick()
+    composeRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertExists().performClick()
 
     composeRule.waitForIdle()
     composeRule.mainClock.advanceTimeBy(500)
@@ -210,15 +206,13 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // 1) Wait until *some* node with that tag exists in the semantics tree
     composeRule.waitUntil(timeoutMillis = 20_000) {
       runCatching {
-        composeRule.onAllNodesWithTag(childTag, useUnmergedTree = true).fetchSemanticsNodes()
-      }
-        .getOrNull()
-        ?.isNotEmpty() == true
+            composeRule.onAllNodesWithTag(childTag, useUnmergedTree = true).fetchSemanticsNodes()
+          }
+          .getOrNull()
+          ?.isNotEmpty() == true
     }
 
     // 2) Scroll directly to the child. This will scroll its scrollable parent.
-    composeRule
-      .onNode(hasTestTag(childTag), useUnmergedTree = true)
-      .performScrollTo()
+    composeRule.onNode(hasTestTag(childTag), useUnmergedTree = true).performScrollTo()
   }
 }
