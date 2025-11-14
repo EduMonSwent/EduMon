@@ -186,6 +186,15 @@
     <string name="class_description_fmt">%1$s %2$s %3$s %4$s %5$s</string>
     <string name="keyword_at">at</string>
 
+    <!-- Friends Repository -->
+    <string name="enter_uid">Enter a UID.</string>
+    <string name="friend_exist_already">You\'re already friends.</string>
+    <string name="khalil_user">Khalil</string>
+    <string name="alae_user">Alae</string>
+    <string name="florian_user">Florian</string>
+    <string name="no_user_with_uid">No user found for that UID.</string>
+    <string name="cant_add_yourself">You can’t add yourself.</string>
+    <string name="study_together_no_friends_yet">No friends yet</string>
     <!-- Focus Mode UI -->
     <string name="focus_mode_title">Focus Mode</string>
     <string name="focus_mode_start">Start</string>
@@ -219,6 +228,16 @@
     <string name="completion_partially">Partially</string>
     <string name="completion_not_done">Not done</string>
 
+    <!-- Login / auth -->
+    <string name="login_title">Connect yourself to EduMon.</string>
+    <string name="login_button_google">Continue with Google</string>
+    <string name="login_button_loading">Connection...</string>
+
+    <string name="error_login_failed">Login failed</string>
+    <string name="error_login_unexpected">Unexpected error during login</string>
+
+    <string name="error_no_user_after_login">No user after connection</string>
+    <string name="error_credential_not_supported">Credential not supported</string>
     <!-- Calendar weekday short labels -->
     <string name="weekday_mon_short">Mon</string>
     <string name="weekday_tue_short">Tue</string>

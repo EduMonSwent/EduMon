@@ -16,6 +16,7 @@ import com.android.sample.session.StudySessionRepository
 import com.android.sample.session.ToDoBackedStudySessionRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository
+import com.android.sample.ui.location.FakeFriendRepository
 import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 
@@ -30,6 +31,8 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val homeRepository: HomeRepository = FakeHomeRepository()
 
   override val calendarRepository: CalendarRepositoryImpl = CalendarRepositoryImpl()
+
+  override val friendRepository: FakeFriendRepository = FakeFriendRepository()
 
   override val toDoRepository: ToDoRepository = ToDoRepositoryLocal()
   override val profileRepository: ProfileRepository = FakeProfileRepository()
