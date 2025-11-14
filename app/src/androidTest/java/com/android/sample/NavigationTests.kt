@@ -21,10 +21,8 @@ class HomeNavigationTests {
 
   @get:Rule
   val locationPermissionRule: GrantPermissionRule =
-    GrantPermissionRule.grant(
-      Manifest.permission.ACCESS_FINE_LOCATION,
-      Manifest.permission.ACCESS_COARSE_LOCATION
-    )
+      GrantPermissionRule.grant(
+          Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
   @get:Rule val rule = createComposeRule()
 
@@ -34,9 +32,7 @@ class HomeNavigationTests {
   private fun setContent() {
     rule.setContent {
       val ctx = LocalContext.current
-      nav = TestNavHostController(ctx).apply {
-        navigatorProvider.addNavigator(ComposeNavigator())
-      }
+      nav = TestNavHostController(ctx).apply { navigatorProvider.addNavigator(ComposeNavigator()) }
       MaterialTheme { EduMonNavHost(navController = nav) }
     }
     // Ensure Home is rendered before proceeding
@@ -47,8 +43,7 @@ class HomeNavigationTests {
     assertEquals(expected, nav.currentBackStackEntry?.destination?.route)
   }
 
-  private fun hasRoute(route: String): Boolean =
-    nav.graph.findNode(route) != null
+  private fun hasRoute(route: String): Boolean = nav.graph.findNode(route) != null
 
   @OptIn(ExperimentalTestApi::class)
   private fun assertTopBarTitle(expected: String) {
@@ -79,19 +74,21 @@ class HomeNavigationTests {
     setContent()
 
     // Only include routes that exist in the current graph
-    val cases = listOf(
-      AppDestination.Planner.route to "Planner",
-      AppDestination.Profile.route to "Profile",
-      AppDestination.Calendar.route to "Calendar",
-      AppDestination.Stats.route to "Stats",
-      AppDestination.Games.route to "Games",
-      AppDestination.Study.route to "Study",
-      AppDestination.Flashcards.route to "Study",   // current title in graph
-      AppDestination.Todo.route to "Todo",
-      AppDestination.Mood.route to "Daily Reflection",
-      // AppDestination.Shop.route, AppDestination.StudyTogether.route
-      // are intentionally omitted if not in the graph
-    ).filter { (route, _) -> hasRoute(route) }
+    val cases =
+        listOf(
+                AppDestination.Planner.route to "Planner",
+                AppDestination.Profile.route to "Profile",
+                AppDestination.Calendar.route to "Calendar",
+                AppDestination.Stats.route to "Stats",
+                AppDestination.Games.route to "Games",
+                AppDestination.Study.route to "Study",
+                AppDestination.Flashcards.route to "Study", // current title in graph
+                AppDestination.Todo.route to "Todo",
+                AppDestination.Mood.route to "Daily Reflection",
+                // AppDestination.Shop.route, AppDestination.StudyTogether.route
+                // are intentionally omitted if not in the graph
+            )
+            .filter { (route, _) -> hasRoute(route) }
 
     cases.forEach { (route, title) ->
       navigateDirect(route)
@@ -103,14 +100,15 @@ class HomeNavigationTests {
   fun topBar_back_navigates_to_home_for_stack_sections() {
     setContent()
 
-    val stackSections = listOf(
-      AppDestination.Planner.route to "Planner",
-      AppDestination.Profile.route to "Profile",
-      AppDestination.Study.route to "Study",
-      AppDestination.Flashcards.route to "Study",
-      AppDestination.Todo.route to "Todo",
-      AppDestination.Mood.route to "Daily Reflection"
-    ).filter { (route, _) -> hasRoute(route) }
+    val stackSections =
+        listOf(
+                AppDestination.Planner.route to "Planner",
+                AppDestination.Profile.route to "Profile",
+                AppDestination.Study.route to "Study",
+                AppDestination.Flashcards.route to "Study",
+                AppDestination.Todo.route to "Todo",
+                AppDestination.Mood.route to "Daily Reflection")
+            .filter { (route, _) -> hasRoute(route) }
 
     stackSections.forEach { (route, title) ->
       navigateDirect(route)
@@ -125,12 +123,13 @@ class HomeNavigationTests {
   fun game_routes_show_correct_titles() {
     setContent()
 
-    val games = listOf(
-      "memory" to "Memory Game",
-      "reaction" to "Reaction Test",
-      "focus" to "Focus Breathing",
-      "runner" to "EduMon Runner"
-    ).filter { (route, _) -> hasRoute(route) }
+    val games =
+        listOf(
+                "memory" to "Memory Game",
+                "reaction" to "Reaction Test",
+                "focus" to "Focus Breathing",
+                "runner" to "EduMon Runner")
+            .filter { (route, _) -> hasRoute(route) }
 
     games.forEach { (route, title) ->
       navigateDirect(route)
