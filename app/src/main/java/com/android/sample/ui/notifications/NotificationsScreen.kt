@@ -1,5 +1,7 @@
 package com.android.sample.ui.notifications
 
+import android.Manifest
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
@@ -84,6 +86,155 @@ internal fun formatDayTimeLabelLocalized(day: Int, times: Map<Int, Pair<Int, Int
   return "%s %02d:%02d".format(localizedDayName(day), h.coerceIn(0, 23), m.coerceIn(0, 59))
 }
 
+/* -------------------------- Sub-composables (extraits) -------------------------- */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HeaderBar(onBack: () -> Unit, onGoHome: () -> Unit) {
+  TopAppBar(
+      title = {
+        Text(
+            stringResource(id = R.string.notifications_title),
+            modifier = Modifier.testTag("notifications_title"))
+      },
+      navigationIcon = {
+        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null) }
+      },
+      actions = { IconButton(onClick = onGoHome) { Icon(Icons.Outlined.Home, null) } })
+}
+
+@Composable
+private fun StartupErrorBanner(startupError: String?) {
+  startupError?.let { msg ->
+    Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+      Text(stringResource(R.string.notification_setup_error_fmt, msg), color = Color.Red)
+    }
+  }
+}
+
+@Composable
+private fun KickoffSection(
+    kickoffEnabled: Boolean,
+    kickoffDays: Set<Int>,
+    kickoffTimes: Map<Int, Pair<Int, Int>>,
+    onToggleKickoff: (Boolean) -> Unit,
+    onToggleDay: (Int) -> Unit,
+    onPickRequest: (Int) -> Unit,
+    onApply: () -> Unit
+) {
+  SectionCard(
+      title = stringResource(R.string.study_kickoff_title),
+      subtitle = stringResource(R.string.study_kickoff_subtitle),
+      enabled = kickoffEnabled,
+      onToggle = onToggleKickoff) {
+        DayChipsRow(selected = kickoffDays, onToggle = onToggleDay, enabled = kickoffEnabled)
+        if (kickoffDays.isEmpty()) {
+          Text(
+              if (kickoffEnabled) stringResource(R.string.select_days_set_times)
+              else stringResource(R.string.enable_to_configure_schedule),
+              color = TextLight.copy(0.7f))
+        }
+        if (kickoffDays.isNotEmpty()) {
+          TimeChipsRow(
+              days = kickoffDays,
+              times = kickoffTimes,
+              enabled = kickoffEnabled,
+              onPickRequest = onPickRequest)
+          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            OutlinedButton(enabled = kickoffEnabled, onClick = onApply) {
+              Text(stringResource(R.string.apply_kickoff_schedule))
+            }
+          }
+        }
+      }
+}
+
+@Composable
+private fun StreakSection(streakEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+  SectionCard(
+      title = stringResource(R.string.keep_streak_title),
+      subtitle = stringResource(R.string.keep_streak_subtitle),
+      enabled = streakEnabled,
+      onToggle = onToggle) {
+        Text(
+            stringResource(R.string.keep_streak_desc),
+            color = TextLight.copy(0.75f),
+            style = MaterialTheme.typography.bodySmall)
+      }
+}
+
+@Composable
+private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+  SectionCard(
+      title = stringResource(R.string.task_notifications_title),
+      subtitle = stringResource(R.string.task_notifications_subtitle),
+      enabled = taskEnabled,
+      onToggle = onToggle) {
+        Text(
+            stringResource(R.string.task_notifications_desc),
+            color = TextLight.copy(0.75f),
+            style = MaterialTheme.typography.bodySmall)
+      }
+}
+
+@Composable
+private fun TestNotificationButton(
+    vm: NotificationsUiModel,
+    ctx: android.content.Context,
+    launcherTest: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+) {
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    Button(
+        modifier = Modifier.testTag("btn_test_1_min"),
+        onClick = { vm.requestOrSchedule(ctx) { permission -> launcherTest.launch(permission) } }) {
+          Text(stringResource(R.string.send_notification_1_min))
+        }
+  }
+}
+
+@Composable
+private fun DeepLinkDemoButton(
+    vm: NotificationsUiModel,
+    ctx: android.content.Context,
+    launcherDemo: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+) {
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    val needs = vm.needsNotificationPermission(ctx)
+    Button(
+        modifier = Modifier.testTag("btn_demo_deep_link"),
+        onClick = {
+          if (needs && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            launcherDemo.launch(Manifest.permission.POST_NOTIFICATIONS)
+          } else {
+            vm.sendDeepLinkDemoNotification(ctx)
+          }
+        }) {
+          Text(stringResource(R.string.send_deep_link_demo))
+        }
+  }
+}
+
+@Composable
+private fun StartScheduleObserver(
+    taskNotificationsEnabled: Boolean,
+    vm: NotificationsUiModel,
+    ctx: android.content.Context,
+    onError: (String?) -> Unit
+) {
+  LaunchedEffect(taskNotificationsEnabled) {
+    if (!taskNotificationsEnabled) {
+      onError(null)
+      return@LaunchedEffect
+    }
+    runCatching { vm.startObservingSchedule(ctx) }
+        .onSuccess { onError(null) }
+        .onFailure {
+          android.util.Log.e("NotificationsScreen", "Failed", it)
+          onError(it.message ?: "Failed to start schedule observer")
+        }
+  }
+}
+
 /* ------------------------------------ UI ------------------------------------ */
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,7 +251,6 @@ fun NotificationsScreen(
       rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) vm.scheduleTestNotification(ctx)
       }
-
   val launcherDemo =
       rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) vm.sendDeepLinkDemoNotification(ctx)
@@ -113,136 +263,40 @@ fun NotificationsScreen(
   val streakEnabled by vm.streakEnabled.collectAsState()
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
-
   var startupError by remember { mutableStateOf<String?>(null) }
-  LaunchedEffect(taskNotificationsEnabled) {
-    if (taskNotificationsEnabled) {
-      try {
-        vm.startObservingSchedule(ctx)
-        startupError = null
-      } catch (e: Throwable) {
-        android.util.Log.e("NotificationsScreen", "Failed", e)
-        startupError = e.message ?: "Failed to start schedule observer"
-      }
-    } else {
-      startupError = null
-    }
+
+  StartScheduleObserver(taskNotificationsEnabled, vm, ctx) { startupError = it }
+
+  Scaffold(topBar = { HeaderBar(onBack, onGoHome) }) { padding ->
+    Column(
+        Modifier.fillMaxSize()
+            .background(Brush.verticalGradient(listOf(Color(0xFF0E102A), Color(0xFF171A36))))
+            .padding(padding)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+          StartupErrorBanner(startupError)
+
+          KickoffSection(
+              kickoffEnabled = kickoffEnabled,
+              kickoffDays = kickoffDays,
+              kickoffTimes = kickoffTimes,
+              onToggleKickoff = { on -> vm.setKickoffEnabled(ctx, on) },
+              onToggleDay = vm::toggleKickoffDay,
+              onPickRequest = { day -> kickoffPickDay = day },
+              onApply = { vm.applyKickoffSchedule(ctx) })
+
+          StreakSection(
+              streakEnabled = streakEnabled, onToggle = { on -> vm.setStreakEnabled(ctx, on) })
+
+          TaskNotificationsSection(
+              taskEnabled = taskNotificationsEnabled,
+              onToggle = { on -> vm.setTaskNotificationsEnabled(ctx, on) })
+
+          TestNotificationButton(vm, ctx, launcherTest)
+          DeepLinkDemoButton(vm, ctx, launcherDemo)
+        }
   }
-
-  Scaffold(
-      topBar = {
-        TopAppBar(
-            title = {
-              Text(
-                  stringResource(id = R.string.notifications_title),
-                  modifier = Modifier.testTag("notifications_title"))
-            },
-            navigationIcon = {
-              IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null) }
-            },
-            actions = { IconButton(onClick = onGoHome) { Icon(Icons.Outlined.Home, null) } })
-      }) { padding ->
-        Column(
-            Modifier.fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFF0E102A), Color(0xFF171A36))))
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
-              startupError?.let { msg ->
-                Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-                  Text(
-                      stringResource(R.string.notification_setup_error_fmt, msg), color = Color.Red)
-                }
-              }
-
-              /* ---- Study kickoff ---- */
-              SectionCard(
-                  title = stringResource(R.string.study_kickoff_title),
-                  subtitle = stringResource(R.string.study_kickoff_subtitle),
-                  enabled = kickoffEnabled,
-                  onToggle = { on -> vm.setKickoffEnabled(ctx, on) }) {
-                    DayChipsRow(
-                        selected = kickoffDays,
-                        onToggle = vm::toggleKickoffDay,
-                        enabled = kickoffEnabled)
-
-                    if (kickoffDays.isEmpty()) {
-                      Text(
-                          if (kickoffEnabled) stringResource(R.string.select_days_set_times)
-                          else stringResource(R.string.enable_to_configure_schedule),
-                          color = TextLight.copy(0.7f))
-                    } else {
-                      TimeChipsRow(
-                          days = kickoffDays,
-                          times = kickoffTimes,
-                          enabled = kickoffEnabled,
-                          onPickRequest = { day -> kickoffPickDay = day })
-                      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        OutlinedButton(
-                            enabled = kickoffEnabled, onClick = { vm.applyKickoffSchedule(ctx) }) {
-                              Text(stringResource(R.string.apply_kickoff_schedule))
-                            }
-                      }
-                    }
-                  }
-
-              /* ---- Keep streak ---- */
-              SectionCard(
-                  title = stringResource(R.string.keep_streak_title),
-                  subtitle = stringResource(R.string.keep_streak_subtitle),
-                  enabled = streakEnabled,
-                  onToggle = { on -> vm.setStreakEnabled(ctx, on) }) {
-                    Text(
-                        stringResource(R.string.keep_streak_desc),
-                        color = TextLight.copy(0.75f),
-                        style = MaterialTheme.typography.bodySmall)
-                  }
-
-              /* ---- Task notifications ---- */
-              SectionCard(
-                  title = stringResource(R.string.task_notifications_title),
-                  subtitle = stringResource(R.string.task_notifications_subtitle),
-                  enabled = taskNotificationsEnabled,
-                  onToggle = { on -> vm.setTaskNotificationsEnabled(ctx, on) }) {
-                    Text(
-                        stringResource(R.string.task_notifications_desc),
-                        color = TextLight.copy(0.75f),
-                        style = MaterialTheme.typography.bodySmall)
-                  }
-
-              /* ---- Test notification button ---- */
-              Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Button(
-                    modifier = Modifier.testTag("btn_test_1_min"),
-                    onClick = {
-                      vm.requestOrSchedule(ctx) { permission -> launcherTest.launch(permission) }
-                    }) {
-                      Text(stringResource(R.string.send_notification_1_min))
-                    }
-              }
-
-              /* ---- Deep-link demo ---- */
-              Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Button(
-                    modifier = Modifier.testTag("btn_demo_deep_link"),
-                    onClick = {
-                      if (vm.needsNotificationPermission(ctx)) {
-                        if (android.os.Build.VERSION.SDK_INT >=
-                            android.os.Build.VERSION_CODES.TIRAMISU) {
-                          launcherDemo.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                        } else {
-                          vm.sendDeepLinkDemoNotification(ctx)
-                        }
-                      } else {
-                        vm.sendDeepLinkDemoNotification(ctx)
-                      }
-                    }) {
-                      Text(stringResource(R.string.send_deep_link_demo))
-                    }
-              }
-            }
-      }
 
   val openFor = kickoffPickDay ?: forceDialogForDay
   openFor?.let { day ->

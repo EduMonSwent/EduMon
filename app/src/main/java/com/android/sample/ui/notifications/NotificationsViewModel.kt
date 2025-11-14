@@ -1,6 +1,7 @@
 package com.android.sample.ui.notifications
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -163,6 +164,7 @@ class NotificationsViewModel(
     repo.setDailyEnabled(ctx, NotificationKind.KEEP_STREAK, on, DEFAULT_STREAK_HOUR)
   }
 
+  @SuppressLint("ScheduleExactAlarm")
   @androidx.annotation.RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
   override fun setTaskNotificationsEnabled(ctx: Context, on: Boolean) {
     _taskNotificationsEnabled.value = on
@@ -187,6 +189,7 @@ class NotificationsViewModel(
   private var scheduledTaskId: String? = null
   private var scheduleObserverJob: Job? = null
 
+  @SuppressLint("ScheduleExactAlarm")
   @OptIn(FlowPreview::class)
   @androidx.annotation.RequiresPermission(android.Manifest.permission.SCHEDULE_EXACT_ALARM)
   override fun startObservingSchedule(ctx: Context) {
@@ -227,6 +230,7 @@ class NotificationsViewModel(
         }
   }
 
+  @SuppressLint("ScheduleExactAlarm")
   @androidx.annotation.RequiresPermission(android.Manifest.permission.SCHEDULE_EXACT_ALARM)
   fun scheduleNextStudySessionNotification(ctx: Context) {
     val tasks = safeTasksValue(calendarRepository)
@@ -280,7 +284,9 @@ class NotificationsViewModel(
               .build()
 
       NotificationManagerCompat.from(ctx).notify(DEMO_NOTIFICATION_ID, n)
-    } catch (_: Exception) {}
+    } catch (_: Exception) {
+      Log.e("NotificationsVM", "Failed to send demo notification")
+    }
   }
 
   override fun onCleared() {
