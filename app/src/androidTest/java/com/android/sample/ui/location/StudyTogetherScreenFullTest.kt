@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
@@ -15,10 +15,10 @@ class StudyTogetherScreenFullTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  // --- 1️⃣ Test de la data class
   @Test
   fun friendStatus_hasCorrectFields() {
-    val f = FriendStatus("Alae", 46.52, 6.56, FriendMode.STUDY)
+    val f = FriendStatus("U0", "Alae", 46.52, 6.56, FriendMode.STUDY)
+    assert(f.id == "U0")
     assert(f.name == "Alae")
     assert(f.latitude == 46.52)
     assert(f.longitude == 6.56)
@@ -31,7 +31,7 @@ class StudyTogetherScreenFullTest {
     composeTestRule.setContent {
       UserStatusCard(isStudyMode = true, modifier = Modifier.testTag("study_card"))
     }
-    composeTestRule.onNodeWithText("🧠 You’re in Study Mode").assertExists()
+    composeTestRule.onNodeWithText("You’re studying").assertExists()
   }
 
   // --- 2️⃣-B Test UserStatusCard (Break Mode)
@@ -40,17 +40,18 @@ class StudyTogetherScreenFullTest {
     composeTestRule.setContent {
       UserStatusCard(isStudyMode = false, modifier = Modifier.testTag("break_card"))
     }
-    composeTestRule.onNodeWithText("🧠 You’re in Break Mode").assertExists()
+    composeTestRule.onNodeWithText("You’re on a break").assertExists()
   }
 
-  // --- 3️⃣ Test FriendInfoCard pour tous les statuts
   @Test
   fun friendInfoCard_displaysStudyStatus() {
     composeTestRule.setContent {
       FriendInfoCard(
           name = "Alae", mode = FriendMode.STUDY, modifier = Modifier.testTag("friend_study"))
     }
-    composeTestRule.onNodeWithText("📚 Alae is currently in Study Mode").assertExists()
+    // Shows name and chip text
+    composeTestRule.onNodeWithText("Alae").assertExists()
+    composeTestRule.onNodeWithText("Studying").assertExists()
   }
 
   @Test
@@ -59,7 +60,8 @@ class StudyTogetherScreenFullTest {
       FriendInfoCard(
           name = "Florian", mode = FriendMode.BREAK, modifier = Modifier.testTag("friend_break"))
     }
-    composeTestRule.onNodeWithText("☕ Florian is currently in Break Mode").assertExists()
+    composeTestRule.onNodeWithText("Florian").assertExists()
+    composeTestRule.onNodeWithText("Break").assertExists()
   }
 
   @Test
@@ -68,13 +70,15 @@ class StudyTogetherScreenFullTest {
       FriendInfoCard(
           name = "Khalil", mode = FriendMode.IDLE, modifier = Modifier.testTag("friend_idle"))
     }
-    composeTestRule.onNodeWithText("💤 Khalil is currently in Idle Mode").assertExists()
+    composeTestRule.onNodeWithText("Khalil").assertExists()
+    composeTestRule.onNodeWithText("Idle").assertExists()
   }
 
-  // --- 4️⃣ Test global du composable principal (vérifie qu'il ne crash pas)
   @Test
   fun studyTogetherScreen_rendersWithoutCrashing() {
-    composeTestRule.setContent { StudyTogetherScreen() }
+    // Use a fake repo-backed ViewModel and disable the map to avoid runtime deps in tests
+    val vm = StudyTogetherViewModel(friendRepository = FakeFriendRepository(), liveLocation = false)
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
     composeTestRule.waitForIdle()
   }
 
@@ -102,14 +106,15 @@ class StudyTogetherScreenFullTest {
   @Test
   fun animatedVisibility_displaysFriendCard() {
     composeTestRule.setContent {
-      TestAnimatedVisibilitySample(FriendStatus("Alae", 0.0, 0.0, FriendMode.STUDY), false)
+      TestAnimatedVisibilitySample(FriendStatus("U1", "Alae", 0.0, 0.0, FriendMode.STUDY), false)
     }
-    composeTestRule.onNodeWithText("📚 Alae is currently in Study Mode").assertExists()
+    composeTestRule.onNodeWithText("Alae").assertExists()
+    composeTestRule.onNodeWithText("Studying").assertExists()
   }
 
   @Test
   fun animatedVisibility_displaysUserCard() {
     composeTestRule.setContent { TestAnimatedVisibilitySample(null, true) }
-    composeTestRule.onNodeWithText("🧠 You’re in Study Mode").assertExists()
+    composeTestRule.onNodeWithText("You’re studying").assertExists()
   }
 }

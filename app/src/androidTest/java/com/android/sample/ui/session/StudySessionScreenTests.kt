@@ -180,4 +180,55 @@ class StudySessionScreenTest {
         .assertIsDisplayed()
         .assert(hasText(expectedText))
   }
+
+  @Test
+  fun deepLinkEventId_preselectsTask() {
+    val target =
+        com.android.sample.data.ToDo(
+            title = "Deep Linked Task",
+            priority = com.android.sample.data.Priority.MEDIUM,
+            status = com.android.sample.data.Status.TODO,
+            dueDate = java.time.LocalDate.of(2025, 1, 10))
+    val customRepo =
+        object : com.android.sample.repositories.ToDoRepository {
+          private val local = com.android.sample.repositories.ToDoRepositoryLocal()
+          override val todos = local.todos
+
+          override suspend fun add(todo: com.android.sample.data.ToDo) = local.add(todo)
+
+          override suspend fun update(todo: com.android.sample.data.ToDo) = local.update(todo)
+
+          override suspend fun remove(id: String) = local.remove(id)
+
+          override suspend fun getById(id: String) = local.getById(id)
+        }
+    // Injecter la tâche
+    kotlinx.coroutines.runBlocking { customRepo.add(target) }
+    com.android.sample.repositories.ToDoRepositoryProvider.repository = customRepo
+
+    val vm =
+        StudySessionViewModel(
+            repository =
+                object : StudySessionRepository {
+                  override suspend fun saveCompletedSession(session: StudySessionUiState) {}
+
+                  override suspend fun getSuggestedTasks(): List<com.android.sample.data.ToDo> =
+                      listOf(target)
+                })
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(
+            eventId = target.id, viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val expected = context.getString(R.string.selected_task_txt) + " " + target.title
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.SELECTED_TASK)
+        .assertIsDisplayed()
+        .assert(hasText(expected))
+  }
 }

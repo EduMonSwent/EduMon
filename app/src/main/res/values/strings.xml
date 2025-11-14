@@ -54,6 +54,7 @@
     <string name="did_you_review_lecture">Did you finish reviewing today’s lecture materials?</string>
     <string name="did_you_finish_exercise">Did you finish the exercise?</string>
     <string name="did_you_finish_lab">Did you finish the lab?</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Wellness Event Item -->
     <string name="wellness_event_yoga_title">Yoga Session @ Sports Center</string>
@@ -184,5 +185,119 @@
 
     <string name="class_description_fmt">%1$s %2$s %3$s %4$s %5$s</string>
     <string name="keyword_at">at</string>
+
+    <!-- Notifications screen strings -->
+    <string name="notifications_title">Notifications</string>
+    <string name="study_kickoff_title">Study kickoff</string>
+    <string name="study_kickoff_subtitle">Plan your first session at set times</string>
+    <string name="select_days_set_times">Select days to set times</string>
+    <string name="enable_to_configure_schedule">Enable to configure schedule</string>
+    <string name="apply_kickoff_schedule">Apply kickoff schedule</string>
+
+    <string name="keep_streak_title">Keep your streak</string>
+    <string name="keep_streak_subtitle">Daily reminder uses your current streak</string>
+    <string name="keep_streak_desc">We\u2019ll remind you once a day. The message shows your current streak.</string>
+
+    <string name="task_notifications_title">Task notifications</string>
+    <string name="task_notifications_subtitle">Notify 15 minutes before your next study task</string>
+    <string name="task_notifications_desc">When enabled, EduMon will notify you 15 minutes before your next scheduled study task.</string>
+
+    <string name="send_notification_1_min">Send notification in 1 min</string>
+    <string name="send_deep_link_demo">Send deep-link demo notification</string>
+
+    <string name="notification_setup_error_fmt">Notification setup error: %1$s</string>
+
+    <!-- Notification payload texts -->
+    <string name="demo_notification_title">Demo: Start your study session</string>
+    <string name="demo_notification_text">Tap to open the study session</string>
+    <string name="study_alarm_title">Start your study session</string>
+    <string name="study_alarm_text">Your next task starts soon — open Study Session</string>
+
+    <string name="pick_time">Pick time</string>
+    <string name="hh_label">HH</string>
+    <string name="mm_label">MM</string>
+
+    <!-- Deep link format -->
+    <string name="deep_link_format">edumon://study_session/%1$s</string>
+
+    <!-- Short day names -->
+    <string name="day_short_mon">Mon</string>
+    <string name="day_short_tue">Tue</string>
+    <string name="day_short_wed">Wed</string>
+    <string name="day_short_thu">Thu</string>
+    <string name="day_short_fri">Fri</string>
+    <string name="day_short_sat">Sat</string>
+    <string name="day_short_sun">Sun</string>
+    <string name="time_separator">:</string>
+    <string name="unknown">?</string>
+    <!-- Friends Repository -->
+    <string name="enter_uid">Enter a UID.</string>
+    <string name="friend_exist_already">You\'re already friends.</string>
+    <string name="khalil_user">Khalil</string>
+    <string name="alae_user">Alae</string>
+    <string name="florian_user">Florian</string>
+    <string name="no_user_with_uid">No user found for that UID.</string>
+    <string name="cant_add_yourself">You can’t add yourself.</string>
+    <string name="study_together_no_friends_yet">No friends yet</string>
+    <!-- Focus Mode UI -->
+    <string name="focus_mode_title">Focus Mode</string>
+    <string name="focus_mode_start">Start</string>
+    <string name="focus_mode_stop">Stop</string>
+    <string name="focus_mode_start_description">Start a 25-minute deep focus session</string>
+    <string name="focus_mode_running_message">Stay focused — you got this 💪</string>
+    <!-- Tabs -->
+    <string name="tab_day">Day</string>
+    <string name="tab_week">Week</string>
+    <string name="tab_month">Month</string>
+
+    <!-- Today card -->
+    <string name="today_title_fmt">Today • %1$s</string>
+    <string name="classes_label">Classes</string>
+    <string name="no_classes_today">No classes scheduled today</string>
+    <string name="wellness_events_label">Wellness Events</string>
+
+    <!-- Class row -->
+    <string name="class_title_fmt">%1$s (%2$s)</string>
+    <string name="class_type_paren">(%1$s)</string>
+    <string name="class_time_range_fmt">%1$s - %2$s</string>
+    <string name="class_location_prof_fmt">%1$s • %2$s</string>
+
+    <!-- Attendance labels -->
+    <string name="attendance_attended">Attended</string>
+    <string name="attendance_arrived_late">Arrived late</string>
+    <string name="attendance_missed">Missed</string>
+
+    <!-- Completion labels -->
+    <string name="completion_done">Completed</string>
+    <string name="completion_partially">Partially</string>
+    <string name="completion_not_done">Not done</string>
+
+    <!-- Login / auth -->
+    <string name="login_title">Connect yourself to EduMon.</string>
+    <string name="login_button_google">Continue with Google</string>
+    <string name="login_button_loading">Connection...</string>
+
+    <string name="error_login_failed">Login failed</string>
+    <string name="error_login_unexpected">Unexpected error during login</string>
+
+    <string name="error_no_user_after_login">No user after connection</string>
+    <string name="error_credential_not_supported">Credential not supported</string>
+    <!-- Calendar weekday short labels -->
+    <string name="weekday_mon_short">Mon</string>
+    <string name="weekday_tue_short">Tue</string>
+    <string name="weekday_wed_short">Wed</string>
+    <string name="weekday_thu_short">Thu</string>
+    <string name="weekday_fri_short">Fri</string>
+    <string name="weekday_sat_short">Sat</string>
+    <string name="weekday_sun_short">Sun</string>
+
+    <!-- Calendar month-year title -->
+    <string name="calendar_month_year">%1$s %2$d</string>
+
+    <!-- Calendar more-events indicator -->
+    <string name="calendar_more_events">+%1$d more</string>
+    <string name="week_progression">Week progression</string>
+    <string name="schedule_month_important_title">Most important this month</string>
+    <string name="schedule_month_no_important">No important events this month</string>
 
 </resources>

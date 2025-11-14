@@ -9,8 +9,9 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
+import com.android.sample.feature.schedule.data.calendar.Priority
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.ui.calendar.MonthGrid
 import java.time.LocalDate
 import java.time.YearMonth
@@ -29,8 +30,16 @@ class MonthGridTest {
     val selected = mutableStateOf(LocalDate.of(2025, 10, 14))
     val tasks =
         listOf(
-            StudyItem(title = "Meet", date = LocalDate.of(2025, 10, 3), type = TaskType.PERSONAL),
-            StudyItem(title = "Study", date = LocalDate.of(2025, 10, 14), type = TaskType.STUDY))
+            StudyItem(
+                title = "Meet",
+                date = LocalDate.of(2025, 10, 3),
+                priority = Priority.MEDIUM,
+                type = TaskType.PERSONAL),
+            StudyItem(
+                title = "Study",
+                date = LocalDate.of(2025, 10, 14),
+                priority = Priority.MEDIUM,
+                type = TaskType.STUDY))
     var clicked: LocalDate? = null
 
     composeRule.setContent {
@@ -42,9 +51,7 @@ class MonthGridTest {
             onDateClick = { d ->
               clicked = d
               selected.value = d
-            },
-            onPrevClick = {},
-            onNextClick = {})
+            })
       }
     }
 

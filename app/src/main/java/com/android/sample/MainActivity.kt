@@ -1,5 +1,6 @@
 package com.android.sample
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,7 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,7 +24,6 @@ import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 
 class MainActivity : ComponentActivity() {
 
@@ -27,20 +33,29 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
+    // Capture the intent data (deep link) if present
+    val startUri: Uri? = intent?.data
+
+    // Compute start destination based on deep link
+    val (startRoute, _) =
+        if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
+          val id = startUri.pathSegments.firstOrNull()
+          if (!id.isNullOrEmpty()) "study/$id" to id
+          else com.android.sample.feature.homeScreen.AppDestination.Home.route to null
+        } else com.android.sample.feature.homeScreen.AppDestination.Home.route to null
+
     setContent {
       EduMonTheme {
         val nav = rememberNavController()
         var user by remember { mutableStateOf(auth.currentUser) }
         val scope = rememberCoroutineScope()
 
-        // Écoute auth et navigue automatiquement
         DisposableEffect(Unit) {
           val l =
               FirebaseAuth.AuthStateListener { fa ->
                 val u = fa.currentUser
                 val goTo = if (u == null) "login" else "app"
                 user = u
-                // évite les doublons de back stack
                 nav.navigate(goTo) {
                   popUpTo(nav.graph.startDestinationId) { inclusive = true }
                   launchSingleTop = true
@@ -53,28 +68,29 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             topBar = {
               CenterAlignedTopAppBar(
-                  title = { Text(if (user == null) "EduMon — Connexion" else "") },
+                  title = { Text(if (user == null) "EduMon — Connection " else "") },
                   actions = {
                     if (user != null) {
-                      TextButton(onClick = { signOutAll() }) { Text("Déconnexion") }
+                      TextButton(onClick = { signOutAll() }) { Text("Logout") }
                     }
                   })
             }) { padding ->
               Box(Modifier.fillMaxSize().padding(padding)) {
                 NavHost(
                     navController = nav, startDestination = if (user == null) "login" else "app") {
-                      composable("login") { LoginScreen() }
+                      composable("login") {
+                        LoginScreen(
+                            onLoggedIn = {
+                              nav.navigate("app") {
+                                popUpTo("login") { inclusive = true }
+                                launchSingleTop = true
+                              }
+                            })
+                      }
 
                       composable("app") {
-                        LaunchedEffect(user?.uid) {
-                          user?.let {
-                            try {} catch (_: Exception) {
-                              // en cas d’erreur Firestore: l’UI reste sur le mode Scénarios (fake)
-                            }
-                          }
-                        }
-
-                        EduMonNavHost()
+                        LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
+                        EduMonNavHost(startDestination = startRoute)
                       }
                     }
               }

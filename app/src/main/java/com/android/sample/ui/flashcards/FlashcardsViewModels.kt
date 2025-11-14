@@ -1,3 +1,6 @@
+// app/src/main/java/com/android/sample/ui/flashcards/FlashcardsModule.kt
+@file:Suppress("MemberVisibilityCanBePrivate")
+
 package com.android.sample.ui.flashcards
 
 import androidx.lifecycle.ViewModel
@@ -7,27 +10,76 @@ import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryProvider
+import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepoProvider
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
-import com.android.sample.ui.flashcards.data.FlashcardsRepositoryProvider
-import com.android.sample.ui.flashcards.model.*
+import com.android.sample.ui.flashcards.model.Confidence
+import com.android.sample.ui.flashcards.model.Deck
+import com.android.sample.ui.flashcards.model.Flashcard
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import java.time.LocalDate
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+
+/**
+ * Ensures FirebaseAuth has a user (anonymous) when required. Use requireAuth=false in tests to skip
+ * hitting Firebase.
+ */
+object FlashcardsAuth {
+  suspend fun ensureSignedInIfRequired(
+      requireAuth: Boolean = true,
+      auth: FirebaseAuth = Firebase.auth
+  ) {
+    if (!requireAuth) return
+    if (auth.currentUser == null) {
+      auth.signInAnonymously().await()
+    }
+  }
+}
 
 /** ViewModel that exposes the list of decks from the repository. */
 class DeckListViewModel(
-    private val repo: FlashcardsRepository = FlashcardsRepositoryProvider.repository
+    private val repo: FlashcardsRepository = FirestoreFlashcardsRepoProvider.get(),
+    private val requireAuth: Boolean = true
 ) : ViewModel() {
-  val decks = repo.observeDecks()
 
-  fun deleteDeck(id: String) = viewModelScope.launch { repo.deleteDeck(id) }
+  constructor(repo: FlashcardsRepository) : this(repo, requireAuth = false)
+
+  // Ensure auth once, then start collecting the repository flow.
+  val decks: StateFlow<List<Deck>> =
+      flow {
+            FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+            emitAll(repo.observeDecks())
+          }
+          .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+  fun deleteDeck(id: String) =
+      viewModelScope.launch {
+        FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+        repo.deleteDeck(id)
+      }
 }
 
 /** ViewModel for creating a new deck. */
 class CreateDeckViewModel(
     private val toDoRepo: ToDoRepository = ToDoRepositoryProvider.repository,
-    private val repo: FlashcardsRepository = FlashcardsRepositoryProvider.repository
+    private val repo: FlashcardsRepository = FirestoreFlashcardsRepoProvider.get(),
+    private val requireAuth: Boolean = true
 ) : ViewModel() {
+
+  constructor(
+      toDoRepo: ToDoRepository,
+      repo: FlashcardsRepository
+  ) : this(toDoRepo, repo, requireAuth = false)
 
   private val _title = MutableStateFlow("")
   private val _description = MutableStateFlow("")
@@ -63,6 +115,8 @@ class CreateDeckViewModel(
 
   fun save(onSaved: (String) -> Unit) =
       viewModelScope.launch {
+        FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+
         val id =
             repo.createDeck(
                 title = _title.value.trim(),
@@ -81,6 +135,7 @@ class CreateDeckViewModel(
         onSaved(id)
       }
 }
+
 /**
  * Immutable UI state for studying a deck. Tracks current index and whether the answer is visible.
  */
@@ -105,24 +160,29 @@ data class StudyState(
 
 class StudyViewModel(
     private val deckId: String,
-    private val repo: FlashcardsRepository = FlashcardsRepositoryProvider.repository
+    private val repo: FlashcardsRepository = FirestoreFlashcardsRepoProvider.get(),
+    private val requireAuth: Boolean = true
 ) : ViewModel() {
+  constructor(deckId: String, repo: FlashcardsRepository) : this(deckId, repo, requireAuth = false)
 
   private val _state = MutableStateFlow(StudyState())
   val state: StateFlow<StudyState> = _state
 
   init {
     viewModelScope.launch {
-      runCatching {
-            repo.observeDeck(deckId).collect { deck ->
+      try {
+        FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+        repo.observeDeck(deckId).collect { deck ->
+          _state.value =
               if (deck == null) {
-                _state.value = StudyState(error = "Deck not found")
+                StudyState(error = "Deck not found")
               } else {
-                _state.value = StudyState(deck = deck, index = 0, showingAnswer = false)
+                StudyState(deck = deck, index = 0, showingAnswer = false)
               }
-            }
-          }
-          .onFailure { e -> _state.value = StudyState(error = "Failed to load deck: ${e.message}") }
+        }
+      } catch (t: Throwable) {
+        _state.value = StudyState(error = "Failed to load deck: ${t.message}")
+      }
     }
   }
 
@@ -130,31 +190,18 @@ class StudyViewModel(
 
   fun next() =
       _state.update { s ->
-        val total = s.total
-        if (total == 0) s
-        else {
-          val newIndex = (s.index + 1).coerceAtMost(total - 1)
-          s.copy(index = newIndex, showingAnswer = false)
-        }
+        if (s.total == 0) s
+        else s.copy(index = (s.index + 1).coerceAtMost(s.total - 1), showingAnswer = false)
       }
 
   fun prev() =
       _state.update { s ->
-        val total = s.total
-        if (total == 0) s
-        else {
-          val newIndex = (s.index - 1).coerceAtLeast(0)
-          s.copy(index = newIndex, showingAnswer = false)
-        }
+        if (s.total == 0) s
+        else s.copy(index = (s.index - 1).coerceAtLeast(0), showingAnswer = false)
       }
 
-  // StudyViewModel.kt
   fun record(confidence: Confidence) {
-    // Don’t allow answering unless the answer is visible
-    val canGrade = state.value.showingAnswer
-    if (!canGrade) return
-
-    // TODO: apply SRS here later
-    next()
+    if (!state.value.showingAnswer) return
+    next() // TODO: plug in SRS grading later
   }
 }

@@ -11,8 +11,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
+import com.android.sample.feature.schedule.data.calendar.Priority
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.ui.calendar.DayCell
 import java.time.LocalDate
 import org.junit.Rule
@@ -29,8 +30,8 @@ class DayCellTest {
     val date = LocalDate.of(2025, 10, 14)
     val items =
         listOf(
-            StudyItem(title = "A", date = date, type = TaskType.STUDY),
-            StudyItem(title = "B", date = date, type = TaskType.WORK))
+            StudyItem(title = "A", date = date, priority = Priority.MEDIUM, type = TaskType.STUDY),
+            StudyItem(title = "B", date = date, priority = Priority.MEDIUM, type = TaskType.WORK))
     val selected = mutableStateOf(false)
 
     composeRule.setContent {

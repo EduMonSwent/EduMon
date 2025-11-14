@@ -3,8 +3,9 @@ package com.android.sample.ui.calendar
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import com.android.sample.model.StudyItem
-import com.android.sample.model.TaskType
+import com.android.sample.feature.schedule.data.calendar.Priority
+import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.calendar.TaskType
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Rule
@@ -24,12 +25,14 @@ class UpcomingEventsSectionTest {
                 title = "Math Revision",
                 date = today,
                 time = LocalTime.of(10, 0),
+                priority = Priority.MEDIUM,
                 type = TaskType.STUDY),
             StudyItem(
                 id = "2",
                 title = "Team Meeting",
                 date = today.plusDays(1),
                 time = LocalTime.of(8, 0),
+                priority = Priority.MEDIUM,
                 type = TaskType.WORK))
 
     composeTestRule.setContent {

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -11,13 +12,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.ui.calendar.CalendarScreen
 import com.android.sample.ui.flashcards.FlashcardsApp
+import com.android.sample.ui.focus.FocusModeScreen
 import com.android.sample.ui.games.FlappyEduMonScreen
 import com.android.sample.ui.games.FocusBreathingScreen
 import com.android.sample.ui.games.GamesScreen
@@ -51,13 +55,14 @@ private object GameRoutes {
 @Composable
 fun EduMonNavHost(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = com.android.sample.feature.homeScreen.AppDestination.Home.route
 ) {
   val nav = navController
 
   NavHost(
-      navController = nav,
-      startDestination = AppDestination.Home.route,
+      navController = navController,
+      startDestination = startDestination,
       modifier = modifier.testTag(NavigationTestTags.NAV_HOST)) {
 
         // HOME
@@ -86,7 +91,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -106,13 +111,14 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) {
                   ProfileScreen(
-                      onOpenNotifications = { nav.navigate("notifications") } // <-- ICI
+                      onOpenNotifications = { nav.navigate("notifications") },
+                      onOpenFocusMode = { nav.navigate("focus_mode") } // <-- ICI
                       )
                 }
               }
@@ -131,7 +137,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -151,7 +157,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -171,7 +177,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -193,7 +199,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -214,7 +220,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -235,7 +241,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -256,7 +262,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -274,15 +280,61 @@ fun EduMonNavHost(
                     },
                     navigationIcon = {
                       IconButton(
-                          onClick = { nav.popBackStack() },
+                          onClick = {
+                            val popped = nav.popBackStack()
+                            if (!popped) {
+                              nav.navigate(AppDestination.Home.route) {
+                                popUpTo(AppDestination.Home.route) { inclusive = true }
+                                launchSingleTop = true
+                                restoreState = true
+                              }
+                            }
+                          },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) { StudySessionScreen() }
               }
         }
+
+        // Deep-linkable study route: study/{eventId}
+        composable(
+            route = "study/{eventId}",
+            arguments = listOf(navArgument("eventId") { type = NavType.StringType })) {
+                backStackEntry ->
+              val eventId = backStackEntry.arguments?.getString("eventId")
+              Scaffold(
+                  topBar = {
+                    TopAppBar(
+                        title = {
+                          Text(
+                              "Study",
+                              modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                        },
+                        navigationIcon = {
+                          IconButton(
+                              onClick = {
+                                val popped = nav.popBackStack()
+                                if (!popped) {
+                                  nav.navigate(AppDestination.Home.route) {
+                                    popUpTo(AppDestination.Home.route) { inclusive = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                  }
+                                }
+                              },
+                              modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.ArrowBack,
+                                    contentDescription = "Back")
+                              }
+                        })
+                  }) { padding ->
+                    Box(Modifier.fillMaxSize().padding(padding)) { StudySessionScreen(eventId) }
+                  }
+            }
 
         // FLASHCARDS
         composable(AppDestination.Flashcards.route) {
@@ -296,7 +348,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -316,7 +368,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -338,7 +390,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -401,6 +453,26 @@ fun EduMonNavHost(
                   restoreState = true
                 }
               })
+        }
+        composable("focus_mode") {
+          Scaffold(
+              topBar = {
+                TopAppBar(
+                    title = {
+                      Text(
+                          "Focus Mode",
+                          modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                    },
+                    navigationIcon = {
+                      IconButton(
+                          onClick = { nav.popBackStack() },
+                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                          }
+                    })
+              }) { padding ->
+                Box(Modifier.fillMaxSize().padding(padding)) { FocusModeScreen() }
+              }
         }
       }
 }

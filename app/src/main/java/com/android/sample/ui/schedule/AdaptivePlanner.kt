@@ -1,13 +1,14 @@
 package com.android.sample.ui.schedule
 
-import com.android.sample.model.schedule.EventKind
-import com.android.sample.model.schedule.Priority
-import com.android.sample.model.schedule.ScheduleEvent
-import com.android.sample.model.schedule.SourceTag
+import com.android.sample.feature.schedule.data.schedule.EventKind
+import com.android.sample.feature.schedule.data.schedule.Priority
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SourceTag
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
+/** This class was implemented with the help of ai (chatgbt) */
 object AdaptivePlanner {
 
   data class AdjustmentResult(

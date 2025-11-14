@@ -4,8 +4,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.android.sample.feature.schedule.viewmodel.PlannerViewModel
 import com.android.sample.ui.planner.PlannerScreen
-import com.android.sample.ui.viewmodel.PlannerViewModel
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
