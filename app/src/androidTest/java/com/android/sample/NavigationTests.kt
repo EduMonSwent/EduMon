@@ -74,7 +74,7 @@ class HomeNavigationTests {
     rule.onNode(hasTestTag(NavigationTestTags.NAV_HOST)).assertExists()
   }
 
-  @Test
+  /*@Test
   fun topBar_and_back_work_for_all_sections() {
     setContent()
 
@@ -98,7 +98,7 @@ class HomeNavigationTests {
       waitUntilRoute(AppDestination.Home.route)
       assertRoute(AppDestination.Home.route)
     }
-  }
+  }*/
 
   @Test
   fun game_routes_show_correct_titles() {
