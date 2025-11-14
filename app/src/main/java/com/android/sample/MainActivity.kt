@@ -1,5 +1,6 @@
 package com.android.sample
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +32,17 @@ class MainActivity : ComponentActivity() {
   @OptIn(ExperimentalMaterial3Api::class)
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    // Capture the intent data (deep link) if present
+    val startUri: Uri? = intent?.data
+
+    // Compute start destination based on deep link
+    val (startRoute, _) =
+        if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
+          val id = startUri.pathSegments.firstOrNull()
+          if (!id.isNullOrEmpty()) "study/$id" to id
+          else com.android.sample.feature.homeScreen.AppDestination.Home.route to null
+        } else com.android.sample.feature.homeScreen.AppDestination.Home.route to null
 
     setContent {
       EduMonTheme {
@@ -78,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
                       composable("app") {
                         LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
-                        EduMonNavHost()
+                        EduMonNavHost(startDestination = startRoute)
                       }
                     }
               }
