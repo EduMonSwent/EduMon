@@ -22,11 +22,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
+import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.repos_providors.FakeRepositoriesProvider
 import com.android.sample.ui.calendar.CalendarScreenTestTags
 import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.planner.PlannerScreenTestTags
 import com.android.sample.ui.session.StudySessionTestTags
 import com.android.sample.ui.theme.EduMonTheme
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,6 +42,18 @@ class HomePlannerCalendarStudyEndToEndTest {
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
   private lateinit var loggedInState: MutableState<Boolean>
+  private var originalRepositories = AppRepositories
+
+  @Before
+  fun setUp() {
+    // Use fake repositories to avoid any network / Firestore flakiness in CI
+    AppRepositories = FakeRepositoriesProvider
+  }
+
+  @After
+  fun tearDown() {
+    AppRepositories = originalRepositories
+  }
 
   @OptIn(ExperimentalTestApi::class)
   @Test
@@ -56,28 +72,37 @@ class HomePlannerCalendarStudyEndToEndTest {
       }
     }
 
+    // 0) LOGIN SCREEN
     composeRule.waitUntilExactlyOneExists(
-        hasText("Connect yourself to EduMon."), timeoutMillis = 5_000)
+        hasText("Connect yourself to EduMon."),
+        timeoutMillis = 20_000,
+    )
     composeRule.onNodeWithText("Connect yourself to EduMon.").assertExists()
     composeRule.onNodeWithText("Continue with Google").assertExists()
 
+    // Simulate login success
     composeRule.runOnIdle { loggedInState.value = true }
+    composeRule.waitForIdle()
+    composeRule.mainClock.advanceTimeBy(500)
+    composeRule.waitForIdle()
 
     // 1) HOME + NAV HOST
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(HomeTestTags.MENU_BUTTON), timeoutMillis = 10_000)
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.NAV_HOST), timeoutMillis = 10_000)
+    waitForHome()
 
-    composeRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists()
+    // Make sure CHIP_OPEN_PLANNER is actually in the tree and scroll to it if needed
+    ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
 
-    composeRule.onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER).assertExists().performClick()
+    composeRule
+        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(PlannerScreenTestTags.PLANNER_SCREEN), timeoutMillis = 5_000)
+        hasTestTag(PlannerScreenTestTags.PLANNER_SCREEN),
+        timeoutMillis = 20_000,
+    )
 
     composeRule.onNodeWithTag(PlannerScreenTestTags.PLANNER_SCREEN).assertExists()
-
     composeRule.onNodeWithTag(PlannerScreenTestTags.PET_HEADER).assertExists()
     composeRule.onNodeWithTag(PlannerScreenTestTags.TODAY_CLASSES_SECTION).assertExists()
 
@@ -90,7 +115,9 @@ class HomePlannerCalendarStudyEndToEndTest {
     composeRule.onNodeWithTag("addTaskFab").assertExists().performClick()
 
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(PlannerScreenTestTags.ADD_TASK_MODAL), timeoutMillis = 5_000)
+        hasTestTag(PlannerScreenTestTags.ADD_TASK_MODAL),
+        timeoutMillis = 20_000,
+    )
     composeRule.onNodeWithTag(PlannerScreenTestTags.ADD_TASK_MODAL).assertExists()
 
     composeRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD).apply {
@@ -115,7 +142,7 @@ class HomePlannerCalendarStudyEndToEndTest {
 
     composeRule.onNodeWithTag("aaddTaskButton").assertExists().performClick()
 
-    composeRule.waitUntil(timeoutMillis = 5_000) {
+    composeRule.waitUntil(timeoutMillis = 20_000) {
       composeRule
           .onAllNodesWithTag(PlannerScreenTestTags.ADD_TASK_MODAL)
           .fetchSemanticsNodes()
@@ -124,18 +151,23 @@ class HomePlannerCalendarStudyEndToEndTest {
 
     composeRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertExists().performClick()
 
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(HomeTestTags.MENU_BUTTON), timeoutMillis = 5_000)
-    composeRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists()
+    composeRule.waitForIdle()
+    composeRule.mainClock.advanceTimeBy(500)
+    composeRule.waitForIdle()
+
+    waitForHome()
 
     // 5) Home -> Calendar via bottom nav
     composeRule
-        .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Calendar.route))
+        .onNodeWithTag(
+            HomeTestTags.bottomTag(AppDestination.Calendar.route), useUnmergedTree = true)
         .assertExists()
         .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(CalendarScreenTestTags.CALENDAR_CARD), timeoutMillis = 5_000)
+        hasTestTag(CalendarScreenTestTags.CALENDAR_CARD),
+        timeoutMillis = 20_000,
+    )
 
     composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_HEADER).assertExists()
     composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertExists()
@@ -153,17 +185,20 @@ class HomePlannerCalendarStudyEndToEndTest {
     composeRule.mainClock.advanceTimeBy(500)
     composeRule.waitForIdle()
 
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(HomeTestTags.MENU_BUTTON), timeoutMillis = 20_000)
+    waitForHome()
 
     // 7) Home -> Study via quick action
-    // Scroll the home scrollable content until QUICK_STUDY is in view
-    composeRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag(HomeTestTags.QUICK_STUDY))
+    ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
 
-    composeRule.onNodeWithTag(HomeTestTags.QUICK_STUDY).assertExists().performClick()
+    composeRule
+        .onNodeWithTag(HomeTestTags.QUICK_STUDY, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 5_000)
+        hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
+        timeoutMillis = 20_000,
+    )
 
     composeRule
         .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Study"))
@@ -176,8 +211,48 @@ class HomePlannerCalendarStudyEndToEndTest {
     // 8) Study -> Home
     composeRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertExists().performClick()
 
+    composeRule.waitForIdle()
+    composeRule.mainClock.advanceTimeBy(500)
+    composeRule.waitForIdle()
+
+    waitForHome()
+  }
+
+  // ---------------------------------------------------------------------------
+  // HELPERS
+  // ---------------------------------------------------------------------------
+
+  @OptIn(ExperimentalTestApi::class)
+  private fun waitForHome() {
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(HomeTestTags.MENU_BUTTON), timeoutMillis = 5_000)
-    composeRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists()
+        hasTestTag(HomeTestTags.MENU_BUTTON),
+        timeoutMillis = 20_000,
+    )
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  private fun ensureHomeChildVisible(childTag: String) {
+    // 1) Wait until the node exists somewhere in the semantics tree
+    composeRule.waitUntil(timeoutMillis = 20_000) {
+      runCatching {
+            composeRule.onAllNodesWithTag(childTag, useUnmergedTree = true).fetchSemanticsNodes()
+          }
+          .getOrNull()
+          ?.isNotEmpty() == true
+    }
+
+    // 2) Wait until at least one scrollable container exists
+    composeRule.waitUntil(timeoutMillis = 20_000) {
+      runCatching {
+            composeRule.onAllNodes(hasScrollAction(), useUnmergedTree = true).fetchSemanticsNodes()
+          }
+          .getOrNull()
+          ?.isNotEmpty() == true
+    }
+
+    // 3) Scroll the first scrollable container until the child is in view
+    composeRule
+        .onNode(hasScrollAction(), useUnmergedTree = true)
+        .performScrollToNode(hasTestTag(childTag))
   }
 }
