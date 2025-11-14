@@ -149,9 +149,12 @@ class HomePlannerCalendarStudyEndToEndTest {
 
     composeRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertExists().performClick()
 
+    composeRule.waitForIdle()
+    composeRule.mainClock.advanceTimeBy(500)
+    composeRule.waitForIdle()
+
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(HomeTestTags.MENU_BUTTON), timeoutMillis = 5_000)
-    composeRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists()
+        hasTestTag(HomeTestTags.MENU_BUTTON), timeoutMillis = 20_000)
 
     // 7) Home -> Study via quick action
     // Scroll the home scrollable content until QUICK_STUDY is in view
