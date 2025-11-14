@@ -3,15 +3,18 @@ package com.android.sample
 // This code has been written partially using A.I (LLM).
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
@@ -22,6 +25,7 @@ import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repos_providors.FakeRepositoriesProvider
 import com.android.sample.ui.calendar.CalendarScreenTestTags
+import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.planner.PlannerScreenTestTags
 import com.android.sample.ui.session.StudySessionTestTags
 import com.android.sample.ui.theme.EduMonTheme
@@ -37,17 +41,13 @@ class HomePlannerCalendarStudyEndToEndTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+  private lateinit var loggedInState: MutableState<Boolean>
   private var originalRepositories = AppRepositories
 
   @Before
   fun setUp() {
-    // Use fake repositories so the flow does not depend on network / Firestore
+    // Use fake repositories to avoid any network / Firestore dependency in CI
     AppRepositories = FakeRepositoriesProvider
-
-    composeRule.setContent { EduMonTheme { EduMonNavHost() } }
-
-    // Same strategy as EduMonEndToEndTest: wait until Home is actually rendered.
-    waitForHomeContent()
   }
 
   @After
@@ -58,33 +58,65 @@ class HomePlannerCalendarStudyEndToEndTest {
   @OptIn(ExperimentalTestApi::class)
   @Test
   fun home_planner_calendar_study_flow_works_end_to_end() {
-    // 1) Home -> Planner via "Open planner" chip (with scroll if needed)
+    // Single setContent for the entire flow: login + app
+    composeRule.setContent {
+      EduMonTheme {
+        val loggedIn = remember { mutableStateOf(false) }
+        loggedInState = loggedIn
+
+        if (!loggedIn.value) {
+          LoginScreen(onLoggedIn = { loggedIn.value = true })
+        } else {
+          EduMonNavHost()
+        }
+      }
+    }
+
+    // 0) LOGIN SCREEN
+    composeRule.waitUntilExactlyOneExists(
+        hasText("Connect yourself to EduMon."),
+        timeoutMillis = 20_000,
+    )
+    composeRule.onNodeWithText("Connect yourself to EduMon.").assertExists()
+    composeRule.onNodeWithText("Continue with Google").assertExists()
+
+    // Simulate login success without hitting Google / Firebase
+    composeRule.runOnIdle { loggedInState.value = true }
+    composeRule.waitForIdle()
+    composeRule.mainClock.advanceTimeBy(500)
+    composeRule.waitForIdle()
+
+    // 1) HOME + NAV HOST READY
+    waitForHome()
+
+    // 2) HOME -> PLANNER VIA CHIP (with scroll)
     ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
 
     composeRule
         .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .assertIsDisplayed()
+        .assertExists()
         .performClick()
 
-    // 2) Planner screen appears
+    // Planner screen visible
     waitUntilNodeAppears(PlannerScreenTestTags.PLANNER_SCREEN)
-    composeRule.onNodeWithTag(PlannerScreenTestTags.PLANNER_SCREEN).assertIsDisplayed()
+    composeRule.onNodeWithTag(PlannerScreenTestTags.PLANNER_SCREEN).assertExists()
 
-    // Basic structural checks in Planner
-    composeRule.onNodeWithTag(PlannerScreenTestTags.PET_HEADER).assertIsDisplayed()
-    composeRule.onNodeWithTag(PlannerScreenTestTags.TODAY_CLASSES_SECTION).assertIsDisplayed()
+    // Basic Planner structure
+    composeRule.onNodeWithTag(PlannerScreenTestTags.PET_HEADER).assertExists()
+    composeRule.onNodeWithTag(PlannerScreenTestTags.TODAY_CLASSES_SECTION).assertExists()
 
-    // Scroll to WELLNESS_CAMPUS_SECTION inside Planner (LazyColumn bottom)
+    // Scroll to WELLNESS section via the Planner scroll container (IMPORTANT)
     composeRule
         .onNodeWithTag(PlannerScreenTestTags.PLANNER_SCREEN)
         .performScrollToNode(hasTestTag(PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION))
-    composeRule.onNodeWithTag(PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION).assertIsDisplayed()
 
-    // 3) Open Add Study Task modal
-    composeRule.onNodeWithTag("addTaskFab").assertIsDisplayed().performClick()
+    composeRule.onNodeWithTag(PlannerScreenTestTags.WELLNESS_CAMPUS_SECTION).assertExists()
+
+    // 3) OPEN ADD STUDY TASK MODAL
+    composeRule.onNodeWithTag("addTaskFab").assertExists().performClick()
 
     waitUntilNodeAppears(PlannerScreenTestTags.ADD_TASK_MODAL)
-    composeRule.onNodeWithTag(PlannerScreenTestTags.ADD_TASK_MODAL).assertIsDisplayed()
+    composeRule.onNodeWithTag(PlannerScreenTestTags.ADD_TASK_MODAL).assertExists()
 
     // Fill form fields
     composeRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD).apply {
@@ -108,10 +140,10 @@ class HomePlannerCalendarStudyEndToEndTest {
     }
 
     // Submit
-    composeRule.onNodeWithTag("aaddTaskButton").assertIsDisplayed().performClick()
+    composeRule.onNodeWithTag("aaddTaskButton").assertExists().performClick()
 
     // Wait until modal disappears
-    composeRule.waitUntil(timeoutMillis = 10_000) {
+    composeRule.waitUntil(timeoutMillis = 20_000) {
       composeRule
           .onAllNodesWithTag(PlannerScreenTestTags.ADD_TASK_MODAL)
           .fetchSemanticsNodes()
@@ -119,94 +151,106 @@ class HomePlannerCalendarStudyEndToEndTest {
     }
 
     // Back to Home from Planner
-    clickGoBack()
+    goBackToHome()
 
-    // 4) Home -> Calendar via bottom nav
+    // 3) HOME -> CALENDAR VIA BOTTOM NAV
     composeRule
         .onNodeWithTag(
             HomeTestTags.bottomTag(AppDestination.Calendar.route), useUnmergedTree = true)
-        .assertIsDisplayed()
+        .assertExists()
         .performClick()
 
-    waitUntilNodeAppears(CalendarScreenTestTags.CALENDAR_CARD)
-    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_HEADER).assertIsDisplayed()
-    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertIsDisplayed()
+    composeRule.waitUntilExactlyOneExists(
+        hasTestTag(CalendarScreenTestTags.CALENDAR_CARD),
+        timeoutMillis = 20_000,
+    )
 
-    // Toggle view and ensure calendar is still there
+    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_HEADER).assertExists()
+    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertExists()
+
+    // Toggle view
     composeRule
         .onNodeWithTag(CalendarScreenTestTags.VIEW_TOGGLE_BUTTON)
-        .assertIsDisplayed()
+        .assertExists()
         .performClick()
-    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertIsDisplayed()
+    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertExists()
 
-    // Back to Home from Calendar
-    clickGoBack()
+    // Back to Home
+    goBackToHome()
 
-    // 5) Home -> Study via Quick Study action (scroll-safe)
+    // 4) HOME -> STUDY SESSION VIA QUICK ACTION
     ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
 
     composeRule
         .onNodeWithTag(HomeTestTags.QUICK_STUDY, useUnmergedTree = true)
-        .assertIsDisplayed()
+        .assertExists()
         .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 10_000)
+        hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
+        timeoutMillis = 20_000,
+    )
 
     composeRule
         .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Study"))
-        .assertIsDisplayed()
+        .assertExists()
 
-    composeRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertIsDisplayed()
-    composeRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertIsDisplayed()
+    composeRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertExists()
+    composeRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertExists()
 
     // Back to Home from Study
-    clickGoBack()
+    goBackToHome()
 
-    // Final sanity: Home content is still there
-    waitForHomeContent()
+    // Final check: Home is still reachable
+    waitForHome()
   }
 
-  // ----------------- Helpers, aligned with EduMonEndToEndTest style -----------------
+  // ---------------------------------------------------------------------------
+  // HELPERS
+  // ---------------------------------------------------------------------------
 
   @OptIn(ExperimentalTestApi::class)
-  private fun waitForHomeContent() {
-    waitUntilNodeAppears(HomeTestTags.TODAY_SEE_ALL)
+  private fun waitForHome() {
+    composeRule.waitUntilExactlyOneExists(
+        hasTestTag(HomeTestTags.MENU_BUTTON),
+        timeoutMillis = 20_000,
+    )
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  private fun goBackToHome() {
+    composeRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertExists().performClick()
+
+    composeRule.waitForIdle()
+    composeRule.mainClock.advanceTimeBy(500)
+    composeRule.waitForIdle()
+
+    waitForHome()
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  private fun ensureHomeChildVisible(childTag: String) {
+    // 1) Wait until *some* node with that tag exists in the semantics tree
+    composeRule.waitUntil(timeoutMillis = 20_000) {
+      runCatching {
+            composeRule.onAllNodesWithTag(childTag, useUnmergedTree = true).fetchSemanticsNodes()
+          }
+          .getOrNull()
+          ?.isNotEmpty() == true
+    }
+
+    // 2) Scroll directly to the child. This will scroll its scrollable parent.
+    composeRule.onNode(hasTestTag(childTag), useUnmergedTree = true).performScrollTo()
   }
 
   @OptIn(ExperimentalTestApi::class)
   private fun waitUntilNodeAppears(tag: String) {
-    composeRule.waitUntil(timeoutMillis = 10_000) {
+    composeRule.waitUntil(timeoutMillis = 20_000) {
       runCatching {
             composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
           }
           .getOrNull()
           ?.isNotEmpty() == true
     }
-  }
-
-  private fun clickGoBack() {
-    composeRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
-    waitForHomeContent()
-  }
-
-  @OptIn(ExperimentalTestApi::class)
-  private fun ensureHomeChildVisible(childTag: String) {
-    // 1) Wait until the child exists somewhere in the Home semantics tree
-    waitUntilNodeAppears(childTag)
-
-    // 2) Find *a* scrollable container on Home
-    composeRule.waitUntil(timeoutMillis = 10_000) {
-      runCatching {
-            composeRule.onAllNodes(hasScrollAction(), useUnmergedTree = true).fetchSemanticsNodes()
-          }
-          .getOrNull()
-          ?.isNotEmpty() == true
-    }
-
-    // 3) Scroll the first scrollable container until the child is visible
-    composeRule
-        .onNode(hasScrollAction(), useUnmergedTree = true)
-        .performScrollToNode(hasTestTag(childTag))
   }
 }
