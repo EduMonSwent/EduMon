@@ -151,78 +151,102 @@ fun WeekRow(
               .padding(vertical = 8.dp)
               .testTag(CalendarScreenTestTags.WEEK_ROW)) {
         items(weekDays) { day ->
-          // O(1) lookup; already sorted
           val tasksForDay = tasksByDate[day].orEmpty()
           val isSelected = day == selectedDate
-
-          Box(
-              modifier =
-                  Modifier.width(140.dp)
-                      .height(160.dp)
-                      .clip(RoundedCornerShape(18.dp))
-                      .background(brush = Brush.verticalGradient(listOf(Blue, DarkerBlue)))
-                      .border(
-                          width = if (isSelected) 2.dp else 1.dp,
-                          color =
-                              if (isSelected) PurpleBorder else PurplePrimary.copy(alpha = 0.4f),
-                          shape = RoundedCornerShape(18.dp))
-                      .clickable { onDayClick(day) }
-                      .padding(10.dp)
-                      .testTag("${CalendarScreenTestTags.WEEK_DAY_BOX_PREFIX}${day.dayOfMonth}")) {
-                Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
-                  Text(
-                      text = day.dayOfMonth.toString(),
-                      style =
-                          MaterialTheme.typography.bodyLarge.copy(
-                              color = MaterialTheme.colorScheme.onPrimary,
-                              fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium))
-
-                  Spacer(Modifier.height(6.dp))
-
-                  tasksForDay.take(2).forEach { task ->
-                    val tagColor =
-                        when (task.type) {
-                          TaskType.STUDY -> LightBlue
-                          TaskType.WORK -> Pink
-                          TaskType.PERSONAL -> VioletLilas
-                        }
-
-                    Surface(
-                        color = tagColor.copy(alpha = 0.25f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier =
-                            Modifier.padding(vertical = 3.dp)
-                                .testTag("${CalendarScreenTestTags.WEEK_EVENT_PREFIX}${task.id}")) {
-                          val maxLength = 22
-                          val truncatedTitle =
-                              if (task.title.length > maxLength) {
-                                task.title.take(maxLength) + "…"
-                              } else {
-                                task.title
-                              }
-
-                          Text(
-                              text = truncatedTitle,
-                              color = tagColor,
-                              style =
-                                  MaterialTheme.typography.labelSmall.copy(
-                                      fontWeight = FontWeight.Medium),
-                              modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
-                        }
-                  }
-
-                  if (tasksForDay.size > 2) {
-                    val remainingCount = tasksForDay.size - 2
-                    Text(
-                        text = stringResource(id = R.string.calendar_more_events, remainingCount),
-                        color = PurpleCalendar,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(top = 4.dp))
-                  }
-                }
-              }
+          WeekDayCard(
+              day = day,
+              isSelected = isSelected,
+              tasksForDay = tasksForDay,
+              onDayClick = onDayClick)
         }
       }
+}
+
+@Composable
+private fun WeekDayCard(
+    day: LocalDate,
+    isSelected: Boolean,
+    tasksForDay: List<StudyItem>,
+    onDayClick: (LocalDate) -> Unit
+) {
+  Box(
+      modifier =
+          Modifier.width(140.dp)
+              .height(160.dp)
+              .clip(RoundedCornerShape(18.dp))
+              .background(brush = Brush.verticalGradient(listOf(Blue, DarkerBlue)))
+              .border(
+                  width = if (isSelected) 2.dp else 1.dp,
+                  color = if (isSelected) PurpleBorder else PurplePrimary.copy(alpha = 0.4f),
+                  shape = RoundedCornerShape(18.dp))
+              .clickable { onDayClick(day) }
+              .padding(10.dp)
+              .testTag("${CalendarScreenTestTags.WEEK_DAY_BOX_PREFIX}${day.dayOfMonth}")) {
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
+          DayNumberLabel(day = day, isSelected = isSelected)
+          Spacer(Modifier.height(6.dp))
+          DayTasksPreview(tasksForDay = tasksForDay)
+          MoreEventsLabel(tasksForDay = tasksForDay)
+        }
+      }
+}
+
+@Composable
+private fun DayNumberLabel(day: LocalDate, isSelected: Boolean) {
+  Text(
+      text = day.dayOfMonth.toString(),
+      style =
+          MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onPrimary,
+              fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium))
+}
+
+@Composable
+private fun DayTasksPreview(tasksForDay: List<StudyItem>) {
+  tasksForDay.take(2).forEach { task -> TaskChip(task = task) }
+}
+
+@Composable
+private fun TaskChip(task: StudyItem) {
+  val tagColor =
+      when (task.type) {
+        TaskType.STUDY -> LightBlue
+        TaskType.WORK -> Pink
+        TaskType.PERSONAL -> VioletLilas
+      }
+
+  Surface(
+      color = tagColor.copy(alpha = 0.25f),
+      shape = RoundedCornerShape(8.dp),
+      modifier =
+          Modifier.padding(vertical = 3.dp)
+              .testTag("${CalendarScreenTestTags.WEEK_EVENT_PREFIX}${task.id}")) {
+        val maxLength = 22
+        val truncatedTitle =
+            if (task.title.length > maxLength) {
+              task.title.take(maxLength) + "…"
+            } else {
+              task.title
+            }
+
+        Text(
+            text = truncatedTitle,
+            color = tagColor,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
+      }
+}
+
+@Composable
+private fun MoreEventsLabel(tasksForDay: List<StudyItem>) {
+  if (tasksForDay.size <= 2) return
+
+  val remainingCount = tasksForDay.size - 2
+  Text(
+      text = stringResource(id = R.string.calendar_more_events, remainingCount),
+      color = PurpleCalendar,
+      style = MaterialTheme.typography.labelSmall,
+      modifier = Modifier.padding(top = 4.dp))
 }
 
 @Composable

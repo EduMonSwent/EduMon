@@ -16,6 +16,7 @@ import com.android.sample.feature.schedule.repository.planner.FakePlannerReposit
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.ui.calendar.CalendarScreenTestTags
+import com.android.sample.ui.schedule.MONTH_TAB_CONTENT
 import com.android.sample.ui.schedule.MonthTabContent
 import java.time.LocalDate
 import java.time.LocalTime
@@ -134,11 +135,17 @@ class MonthTabContentAllAndroidTest {
     val headerTitle = ctx.getString(R.string.calendar_month_year, monthName, month.year)
 
     rule.setContent {
-      MonthTabContent(vm = vm, allTasks = tasks, selectedDate = selected, currentMonth = month)
+      MonthTabContent(
+          allTasks = tasks,
+          selectedDate = selected,
+          currentMonth = month,
+          onPreviousMonthClick = {},
+          onNextMonthClick = {},
+          onDateSelected = { _ -> })
     }
 
     // Root month content
-    rule.onNodeWithTag("MonthContent", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag(MONTH_TAB_CONTENT, useUnmergedTree = true).assertExists()
 
     // Calendar card (MonthGrid container)
     rule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD, useUnmergedTree = true).assertExists()
@@ -157,7 +164,13 @@ class MonthTabContentAllAndroidTest {
     val tasks = sampleMonthTasks(month)
 
     rule.setContent {
-      MonthTabContent(vm = vm, allTasks = tasks, selectedDate = selected, currentMonth = month)
+      MonthTabContent(
+          allTasks = tasks,
+          selectedDate = selected,
+          currentMonth = month,
+          onPreviousMonthClick = {},
+          onNextMonthClick = {},
+          onDateSelected = { _ -> })
     }
 
     // Section title: "Most important this month" (or your localized string)
@@ -202,7 +215,13 @@ class MonthTabContentAllAndroidTest {
                 priority = Priority.LOW))
 
     rule.setContent {
-      MonthTabContent(vm = vm, allTasks = tasks, selectedDate = selected, currentMonth = month)
+      MonthTabContent(
+          allTasks = tasks,
+          selectedDate = selected,
+          currentMonth = month,
+          onPreviousMonthClick = {},
+          onNextMonthClick = {},
+          onDateSelected = { _ -> })
     }
 
     val noImportantText = ctx.getString(R.string.schedule_month_no_important)

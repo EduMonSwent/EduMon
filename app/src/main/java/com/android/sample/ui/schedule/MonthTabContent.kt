@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.sp
 import com.android.sample.R
 import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
-import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.ui.calendar.CalendarHeader
 import com.android.sample.ui.calendar.CalendarScreenTestTags
 import com.android.sample.ui.calendar.MonthGrid
@@ -40,18 +39,22 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /** This class was implemented with the help of ai (chatgbt) */
+const val MONTH_TAB_CONTENT = "MonthTabContent"
+
 @Composable
 fun MonthTabContent(
-    vm: ScheduleViewModel,
     allTasks: List<StudyItem>,
     selectedDate: LocalDate,
-    currentMonth: YearMonth
+    currentMonth: YearMonth,
+    onPreviousMonthClick: () -> Unit,
+    onNextMonthClick: () -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
 ) {
   val monthName = currentMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }
   val headerTitle = stringResource(id = R.string.calendar_month_year, monthName, currentMonth.year)
 
   LazyColumn(
-      modifier = Modifier.fillMaxSize().testTag("MonthContent"),
+      modifier = Modifier.fillMaxSize().testTag(MONTH_TAB_CONTENT),
       verticalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(bottom = 96.dp)) {
         item("month-big-frame") {
@@ -62,8 +65,8 @@ fun MonthTabContent(
             // ───────────── Header ─────────────
             CalendarHeader(
                 title = headerTitle,
-                onPrevClick = { vm.onPreviousMonthWeekClicked() },
-                onNextClick = { vm.onNextMonthWeekClicked() })
+                onPrevClick = { onPreviousMonthClick },
+                onNextClick = { onNextMonthClick })
 
             Spacer(Modifier.height(8.dp))
 
@@ -84,7 +87,7 @@ fun MonthTabContent(
                             currentMonth = currentMonth,
                             selectedDate = selectedDate,
                             allTasks = allTasks,
-                            onDateClick = { vm.onDateSelected(it) })
+                            onDateClick = { onDateSelected })
                       }
                 }
 

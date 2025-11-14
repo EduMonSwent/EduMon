@@ -161,10 +161,13 @@ fun ScheduleScreen() {
                 }
                 ScheduleTab.MONTH -> {
                   MonthTabContent(
-                      vm = vm,
-                      currentMonth = YearMonth.from(state.selectedDate),
                       allTasks = allTasks,
-                      selectedDate = state.selectedDate)
+                      selectedDate = state.selectedDate,
+                      currentMonth = YearMonth.from(state.selectedDate),
+                      onPreviousMonthClick = { vm.onPreviousMonthWeekClicked() },
+                      onNextMonthClick = { vm.onNextMonthWeekClicked() },
+                      onDateSelected = { vm.onDateSelected(it) },
+                  )
                 }
               }
             }
