@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -90,7 +89,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -110,7 +109,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -136,7 +135,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -156,7 +155,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -176,7 +175,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -198,7 +197,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -219,7 +218,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -240,7 +239,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -261,7 +260,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -283,14 +282,14 @@ fun EduMonNavHost(
                             val popped = nav.popBackStack()
                             if (!popped) {
                               nav.navigate(AppDestination.Home.route) {
-                                popUpTo(nav.graph.findStartDestination().id) { inclusive = true }
+                                popUpTo(AppDestination.Home.route) { inclusive = true }
                                 launchSingleTop = true
                                 restoreState = true
                               }
                             }
                           },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -318,9 +317,7 @@ fun EduMonNavHost(
                                 val popped = nav.popBackStack()
                                 if (!popped) {
                                   nav.navigate(AppDestination.Home.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) {
-                                      inclusive = true
-                                    }
+                                    popUpTo(AppDestination.Home.route) { inclusive = true }
                                     launchSingleTop = true
                                     restoreState = true
                                   }
@@ -349,7 +346,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -369,7 +366,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -391,7 +388,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
@@ -422,7 +419,7 @@ fun EduMonNavHost(
                       IconButton(
                           onClick = { nav.popBackStack() },
                           modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                           }
                     })
               }) { padding ->
