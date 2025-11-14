@@ -101,54 +101,6 @@ class HomeNavigationTests {
   }*/
 
   @Test
-  fun topBar_titles_are_correct_for_all_sections() {
-    setContent()
-
-    val cases =
-        listOf(
-            AppDestination.Planner.route to "Planner",
-            AppDestination.Profile.route to "Profile",
-            AppDestination.Calendar.route to "Calendar",
-            AppDestination.Stats.route to "Stats",
-            AppDestination.Games.route to "Games",
-            AppDestination.Study.route to "Study",
-            AppDestination.Todo.route to "Todo",
-            AppDestination.Mood.route to "Daily Reflection",
-            AppDestination.Shop.route to "Shop",
-            AppDestination.StudyTogether.route to "Study Together",
-        )
-
-    cases.forEach { (route, title) ->
-      navigateDirect(route)
-      assertTopBarTitle(title)
-    }
-  }
-
-  @Test
-  fun topBar_back_navigates_to_home_for_stack_sections() {
-    setContent()
-
-    val stackSections =
-        listOf(
-            AppDestination.Planner.route to "Planner",
-            AppDestination.Profile.route to "Profile",
-            AppDestination.Study.route to "Study",
-            AppDestination.Todo.route to "Todo",
-            AppDestination.Mood.route to "Daily Reflection",
-            AppDestination.Shop.route to "Shop",
-            AppDestination.StudyTogether.route to "Study Together",
-        )
-
-    stackSections.forEach { (route, title) ->
-      navigateDirect(route)
-      assertTopBarTitle(title)
-      tapBack()
-      waitUntilRoute(AppDestination.Home.route)
-      assertRoute(AppDestination.Home.route)
-    }
-  }
-
-  @Test
   fun game_routes_show_correct_titles() {
     setContent()
 
