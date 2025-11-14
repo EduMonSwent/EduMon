@@ -5,9 +5,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.data.notifications.BootReceiver
+import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
-import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -33,7 +33,8 @@ class BootReceiverTest {
   private val context: Context = ApplicationProvider.getApplicationContext()
 
   // Fake minimal controllable CalendarRepository for this test
-  private class FakeCalendarRepository : CalendarRepository {
+  private class FakeCalendarRepository :
+      com.android.sample.feature.schedule.repository.calendar.CalendarRepository {
     private val _flow = MutableStateFlow<List<StudyItem>>(emptyList())
     override val tasksFlow = _flow
 
@@ -72,6 +73,7 @@ class BootReceiverTest {
             time = futureTime,
             durationMinutes = 60,
             isCompleted = false,
+            priority = Priority.MEDIUM,
             type = TaskType.STUDY)
 
     // Inject only our task to avoid interference with any prefilled data
