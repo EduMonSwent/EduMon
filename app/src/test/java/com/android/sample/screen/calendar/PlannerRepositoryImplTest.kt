@@ -1,5 +1,6 @@
 package com.android.sample.screen.calendar
 
+import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
@@ -23,6 +24,7 @@ class PlannerRepositoryImplTest {
             date = d,
             time = LocalTime.of(9, 30),
             durationMinutes = 45,
+            priority = Priority.MEDIUM,
             type = TaskType.WORK)
 
     // create
@@ -49,7 +51,11 @@ class PlannerRepositoryImplTest {
 
     val newItem =
         StudyItem(
-            title = "New", date = LocalDate.now(), durationMinutes = null, type = TaskType.PERSONAL)
+            title = "New",
+            date = LocalDate.now(),
+            durationMinutes = null,
+            type = TaskType.PERSONAL,
+            priority = Priority.MEDIUM)
     repo.saveTask(newItem)
     Assert.assertEquals(initial + 1, repo.getAllTasks().size)
 

@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.ui.calendar.UpcomingEventsSection
@@ -42,9 +43,14 @@ class UpcomingEventsSectionExtraTest {
                 title = "Study Math",
                 date = today,
                 time = LocalTime.of(10, 0),
+                priority = Priority.MEDIUM,
                 type = TaskType.STUDY),
             StudyItem(
-                id = "2", title = "Team meeting", date = today.plusDays(1), type = TaskType.WORK))
+                id = "2",
+                title = "Team meeting",
+                date = today.plusDays(1),
+                priority = Priority.MEDIUM,
+                type = TaskType.WORK))
 
     composeTestRule.setContent {
       UpcomingEventsSection(

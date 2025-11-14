@@ -3,6 +3,7 @@ package com.android.sample.ui.schedule
 // fake
 import android.content.res.Resources
 import androidx.test.core.app.ApplicationProvider
+import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.feature.schedule.data.schedule.EventKind
@@ -71,9 +72,17 @@ class ScheduleRepositoryImplTest {
         tasksRepo.emitTasks(
             listOf(
                 StudyItem(
-                    title = "T0", date = today, time = LocalTime.of(8, 0), type = TaskType.STUDY),
+                    title = "T0",
+                    date = today,
+                    time = LocalTime.of(8, 0),
+                    priority = Priority.MEDIUM,
+                    type = TaskType.STUDY),
                 StudyItem(
-                    title = "T1", date = today, time = LocalTime.of(10, 0), type = TaskType.STUDY)))
+                    title = "T1",
+                    date = today,
+                    time = LocalTime.of(10, 0),
+                    priority = Priority.MEDIUM,
+                    type = TaskType.STUDY)))
         // classesRepo already emits [Algorithms 9:00, Data Structures 11:00, Networks 14:00]
         advanceUntilIdle()
 

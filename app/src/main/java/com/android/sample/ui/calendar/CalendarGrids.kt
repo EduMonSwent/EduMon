@@ -55,28 +55,17 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 
+/** This class was implemented with the help of ai (chatgbt) */
 @Composable
 fun MonthGrid(
     currentMonth: YearMonth,
     selectedDate: LocalDate,
     allTasks: List<StudyItem>,
-    onDateClick: (LocalDate) -> Unit,
-    onPrevClick: () -> Unit,
-    onNextClick: () -> Unit
+    onDateClick: (LocalDate) -> Unit
 ) {
-  val monthName =
-      remember(currentMonth) {
-        currentMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }
-      }
-
-  val title = stringResource(id = R.string.calendar_month_year, monthName, currentMonth.year)
-
-  // Group tasks by date once, recompute only when allTasks changes
   val tasksByDate = remember(allTasks) { allTasks.groupBy { it.date } }
 
   Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    CalendarHeader(title = title, onPrevClick = onPrevClick, onNextClick = onNextClick)
-
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween) {
