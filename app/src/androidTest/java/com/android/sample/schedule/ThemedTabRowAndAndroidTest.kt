@@ -17,7 +17,7 @@ class ThemedTabRowAndroidTest {
   @Test
   fun clickingTabs_updatesSelectedIndex() {
     var selected by mutableStateOf(0)
-    val labels = listOf("Day", "Week", "Month", "Agenda")
+    val labels = listOf("Day", "Week", "Month")
 
     rule.setContent {
       ThemedTabRow(selected = selected, onSelected = { selected = it }, labels = labels)

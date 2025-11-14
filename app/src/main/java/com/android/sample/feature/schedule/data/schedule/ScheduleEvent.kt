@@ -83,6 +83,5 @@ enum class SourceTag {
 enum class ScheduleTab {
   DAY,
   WEEK,
-  MONTH,
-  AGENDA
+  MONTH
 }
