@@ -442,11 +442,14 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     }
     Spacer(Modifier.height(8.dp))
 
-    val slotItems =
-        remember(viewModel.accessoryCatalog, selectedTab) {
+      val user by viewModel.userProfile.collectAsState()
+
+      val slotItems = remember(user, selectedTab) {
           viewModel.accessoryCatalog.filter { it.slot == selectedTab }
-        }
-    val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
+      }
+
+
+      val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
 
     AccessoriesGrid(
         items = slotItems,

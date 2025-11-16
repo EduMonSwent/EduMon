@@ -44,7 +44,7 @@ data class UserProfile(
         const val DEFAULT_EMAIL = "alex@university.edu"
         const val DEFAULT_LEVEL = 5
         const val DEFAULT_POINTS = 1250
-        const val DEFAULT_COINS = 0
+        const val DEFAULT_COINS = 1000
         const val DEFAULT_STREAK = 7
         const val DEFAULT_STUDY_TIME = 45
         const val DEFAULT_DAILY_GOAL = 180

@@ -1,45 +1,54 @@
 package com.android.sample.ui.shop
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.android.sample.R
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.android.sample.profile.ProfileRepository
+import com.android.sample.profile.ProfileRepositoryProvider
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
-class ShopViewModel : ViewModel() {
+class ShopViewModel(
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository
+) : ViewModel() {
 
-  private val _userCoins = MutableStateFlow(1500)
-  val userCoins: StateFlow<Int> = _userCoins
+    val userCoins: StateFlow<Int> =
+        profileRepository.profile.map { it.coins }
+            .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), 0)
 
-  private val _items = MutableStateFlow(initialCosmetics())
-  val items: StateFlow<List<CosmeticItem>> = _items
+    private val _items = kotlinx.coroutines.flow.MutableStateFlow(initialCosmetics())
+    val items: StateFlow<List<CosmeticItem>> = _items
 
-  /**
-   * Attempts to buy an item.
-   *
-   * @return true if the purchase succeeds, false otherwise.
-   */
-  fun buyItem(item: CosmeticItem): Boolean {
-    val coins = _userCoins.value
-    return if (coins >= item.price && !item.owned) {
-      _userCoins.value = coins - item.price
-      _items.value =
-          _items.value.map { currentItem ->
-            if (currentItem.id == item.id) currentItem.copy(owned = true) else currentItem
-          }
-      true
-    } else {
-      false
+    fun buyItem(item: CosmeticItem): Boolean {
+        val profile = profileRepository.profile.value
+
+        if (profile.coins < item.price || item.owned) return false
+
+        val updatedProfile = profile.copy(
+            coins = profile.coins - item.price,
+            accessories = profile.accessories + "owned:${item.id}"
+        )
+
+        viewModelScope.launch {
+            profileRepository.updateProfile(updatedProfile)
+        }
+
+        _items.value = _items.value.map { current ->
+            if (current.id == item.id) current.copy(owned = true) else current
+        }
+
+        return true
     }
-  }
 }
 
-// Initial cosmetics data
 private fun initialCosmetics() =
     listOf(
-        CosmeticItem("1", "Cool Shades", 500, R.drawable.cosmetic_glasses),
-        CosmeticItem("2", "Wizard Hat", 800, R.drawable.cosmetic_hat),
-        CosmeticItem("3", "Red Scarf", 300, R.drawable.cosmetic_scarf),
-        CosmeticItem("4", "Cyber Wings", 1200, R.drawable.cosmetic_wings),
-        CosmeticItem("5", "Epic Aura", 1000, R.drawable.cosmetic_aura),
-        CosmeticItem("6", "Hero Cape", 700, R.drawable.cosmetic_cape))
+        CosmeticItem("glasses", "Cool Shades", 200, R.drawable.cosmetic_glasses),
+        CosmeticItem("hat", "Wizard Hat", 200, R.drawable.cosmetic_hat),
+        CosmeticItem("scarf", "Red Scarf", 200, R.drawable.cosmetic_scarf),
+        CosmeticItem("wings", "Cyber Wings", 200, R.drawable.cosmetic_wings),
+        CosmeticItem("aura", "Epic Aura", 1500, R.drawable.cosmetic_aura),
+        CosmeticItem("cape", "Hero Cape", 200, R.drawable.cosmetic_cape)
+    )
