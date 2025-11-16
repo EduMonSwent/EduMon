@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Card
@@ -115,6 +116,7 @@ fun ProfileScreen(
               level = user.level,
               accent = accent,
               accessories = user.accessories,
+              viewModel = viewModel,
               variant = variant)
         }
         item {
@@ -160,100 +162,99 @@ fun PetSection(
     accent: Color,
     accessories: List<String>,
     variant: AccentVariant,
+    viewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
-  Box(
-      modifier =
-          modifier
-              .fillMaxWidth()
-              .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
-              .padding(vertical = 20.dp, horizontal = 16.dp)
-              .testTag(ProfileScreenTestTags.PET_SECTION)) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
+                .padding(vertical = 20.dp, horizontal = 16.dp)
+                .testTag(ProfileScreenTestTags.PET_SECTION)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
-              Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatBar("❤️", 0.9f, StatBarHeart)
                 StatBar("💡", 0.85f, StatBarLightbulb)
                 StatBar("⚡", 0.7f, StatBarLightning)
-              }
-
-              Column(
-                  horizontalAlignment = Alignment.CenterHorizontally,
-                  verticalArrangement = Arrangement.Center) {
-                    Box(
-                        modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
-                        contentAlignment = Alignment.Center) {
-                          // aura
-                          Box(
-                              Modifier.fillMaxSize()
-                                  .background(
-                                      brush =
-                                          Brush.radialGradient(
-                                              colors =
-                                                  listOf(
-                                                      accent.copy(alpha = 0.55f),
-                                                      Color.Transparent))))
-                          // avatar
-                          Image(
-                              painter = painterResource(id = R.drawable.edumon),
-                              contentDescription = "EduMon",
-                              modifier = Modifier.size(100.dp).zIndex(1f))
-
-                          // overlays
-                          val equipped =
-                              remember(accessories) {
-                                fun norm(s: String) =
-                                    when (s) {
-                                      "leg" -> "legs"
-                                      else -> s
-                                    }
-                                accessories.associate {
-                                  val p = it.split(":")
-                                  norm(p.getOrNull(0) ?: "") to (p.getOrNull(1) ?: "")
-                                }
-                              }
-
-                          // LEGS
-                          equipped["legs"]?.let {
-                            Box(
-                                Modifier.align(Alignment.BottomCenter)
-                                    .padding(bottom = 6.dp)
-                                    .size(width = 42.dp, height = 6.dp)
-                                    .background(
-                                        Color.White.copy(alpha = 0.85f), RoundedCornerShape(3.dp))
-                                    .zIndex(2f))
-                          }
-
-                          // TORSO
-                          equipped["torso"]?.let {
-                            Icon(
-                                Icons.Filled.AutoAwesome,
-                                contentDescription = "torso",
-                                tint = Color.White.copy(alpha = 0.9f),
-                                modifier = Modifier.align(Alignment.Center).size(20.dp).zIndex(2f))
-                          }
-
-                          // HEAD
-                          equipped["head"]?.let {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "head",
-                                tint = Color(0xFFFFD54F),
-                                modifier =
-                                    Modifier.align(Alignment.TopCenter)
-                                        .padding(top = 2.dp)
-                                        .size(22.dp)
-                                        .zIndex(2f))
-                          }
-                        }
-                    Spacer(Modifier.height(6.dp))
-                    Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
-                  }
             }
-      }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        Modifier.fillMaxSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(accent.copy(alpha = 0.55f), Color.Transparent)
+                                )
+                            )
+                    )
+
+                    val equipped = remember(accessories) {
+                        accessories.associate {
+                            val parts = it.split(":")
+                            parts[0] to parts[1]
+                        }
+                    }
+
+                    Image(
+                        painter = painterResource(id = R.drawable.edumon),
+                        contentDescription = "EduMon",
+                        modifier = Modifier.size(100.dp).zIndex(1f)
+                    )
+
+                    equipped["back"]?.let {
+                        val res = viewModel.accessoryResId(AccessorySlot.BACK, it)
+                        if (res != 0) {
+                            Image(
+                                painter = painterResource(res),
+                                contentDescription = null,
+                                modifier = Modifier.size(100.dp).zIndex(0.5f)
+                            )
+                        }
+                    }
+
+                    equipped["torso"]?.let {
+                        val res = viewModel.accessoryResId(AccessorySlot.TORSO, it)
+                        if (res != 0) {
+                            Image(
+                                painter = painterResource(res),
+                                contentDescription = null,
+                                modifier = Modifier.size(100.dp).zIndex(2f)
+                            )
+                        }
+                    }
+
+                    equipped["head"]?.let {
+                        val res = viewModel.accessoryResId(AccessorySlot.HEAD, it)
+                        if (res != 0) {
+                            Image(
+                                painter = painterResource(res),
+                                contentDescription = null,
+                                modifier = Modifier.size(100.dp).zIndex(3f)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(6.dp))
+                Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
 }
+
 
 @Composable
 fun StatBar(icon: String, percent: Float, color: Color) {
@@ -499,6 +500,7 @@ private fun AccessoriesGrid(
                           AccessorySlot.HEAD -> Icons.Filled.Star
                           AccessorySlot.TORSO -> Icons.Filled.AutoAwesome
                           AccessorySlot.LEGS -> Icons.Filled.Star
+                          AccessorySlot.BACK -> Icons.Filled.BrightnessLow
                         }
                     Icon(
                         fallback,
