@@ -3,17 +3,17 @@ package com.android.sample.data
 import com.android.sample.ui.stats.model.StudyStats
 
 enum class AccessorySlot {
-    HEAD,
-    TORSO,
-    LEGS,
-    BACK
+  HEAD,
+  TORSO,
+  LEGS,
+  BACK
 }
 
 enum class Rarity {
-    COMMON,
-    RARE,
-    EPIC,
-    LEGENDARY
+  COMMON,
+  RARE,
+  EPIC,
+  LEGENDARY
 }
 
 data class AccessoryItem(
@@ -39,25 +39,25 @@ data class UserProfile(
     val studyStats: StudyStats =
         StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL)
 ) {
-    companion object {
-        const val DEFAULT_NAME = "Alex"
-        const val DEFAULT_EMAIL = "alex@university.edu"
-        const val DEFAULT_LEVEL = 5
-        const val DEFAULT_POINTS = 1250
-        const val DEFAULT_COINS = 1000
-        const val DEFAULT_STREAK = 7
-        const val DEFAULT_STUDY_TIME = 45
-        const val DEFAULT_DAILY_GOAL = 180
-        const val DEFAULT_NOTIFICATIONS = true
-        const val DEFAULT_LOCATION = true
-        const val DEFAULT_FOCUS_MODE = false
-        const val DEFAULT_ACCENT = 0xFF9333EAL
-    }
+  companion object {
+    const val DEFAULT_NAME = "Alex"
+    const val DEFAULT_EMAIL = "alex@university.edu"
+    const val DEFAULT_LEVEL = 5
+    const val DEFAULT_POINTS = 1250
+    const val DEFAULT_COINS = 1000
+    const val DEFAULT_STREAK = 7
+    const val DEFAULT_STUDY_TIME = 45
+    const val DEFAULT_DAILY_GOAL = 180
+    const val DEFAULT_NOTIFICATIONS = true
+    const val DEFAULT_LOCATION = true
+    const val DEFAULT_FOCUS_MODE = false
+    const val DEFAULT_ACCENT = 0xFF9333EAL
+  }
 }
 
 enum class AccentVariant {
-    Base,
-    Light,
-    Dark,
-    Vibrant
+  Base,
+  Light,
+  Dark,
+  Vibrant
 }

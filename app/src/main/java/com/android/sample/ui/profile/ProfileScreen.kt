@@ -165,96 +165,87 @@ fun PetSection(
     viewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
-                .padding(vertical = 20.dp, horizontal = 16.dp)
-                .testTag(ProfileScreenTestTags.PET_SECTION)
-    ) {
+  Box(
+      modifier =
+          modifier
+              .fillMaxWidth()
+              .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
+              .padding(vertical = 20.dp, horizontal = 16.dp)
+              .testTag(ProfileScreenTestTags.PET_SECTION)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            verticalAlignment = Alignment.CenterVertically) {
+              Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatBar("❤️", 0.9f, StatBarHeart)
                 StatBar("💡", 0.85f, StatBarLightbulb)
                 StatBar("⚡", 0.7f, StatBarLightning)
-            }
+              }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
+              Column(
+                  horizontalAlignment = Alignment.CenterHorizontally,
+                  verticalArrangement = Arrangement.Center) {
                     Box(
-                        Modifier.fillMaxSize()
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(accent.copy(alpha = 0.55f), Color.Transparent)
-                                )
-                            )
-                    )
+                        modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
+                        contentAlignment = Alignment.Center) {
+                          Box(
+                              Modifier.fillMaxSize()
+                                  .background(
+                                      Brush.radialGradient(
+                                          colors =
+                                              listOf(
+                                                  accent.copy(alpha = 0.55f), Color.Transparent))))
 
-                    val equipped = remember(accessories) {
-                        accessories.associate {
-                            val parts = it.split(":")
-                            parts[0] to parts[1]
+                          val equipped =
+                              remember(accessories) {
+                                accessories.associate {
+                                  val parts = it.split(":")
+                                  parts[0] to parts[1]
+                                }
+                              }
+
+                          Image(
+                              painter = painterResource(id = R.drawable.edumon),
+                              contentDescription = "EduMon",
+                              modifier = Modifier.size(100.dp).zIndex(1f))
+
+                          equipped["back"]?.let {
+                            val res = viewModel.accessoryResId(AccessorySlot.BACK, it)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(0.5f))
+                            }
+                          }
+
+                          equipped["torso"]?.let {
+                            val res = viewModel.accessoryResId(AccessorySlot.TORSO, it)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(2f))
+                            }
+                          }
+
+                          equipped["head"]?.let {
+                            val res = viewModel.accessoryResId(AccessorySlot.HEAD, it)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(3f))
+                            }
+                          }
                         }
-                    }
 
-                    Image(
-                        painter = painterResource(id = R.drawable.edumon),
-                        contentDescription = "EduMon",
-                        modifier = Modifier.size(100.dp).zIndex(1f)
-                    )
-
-                    equipped["back"]?.let {
-                        val res = viewModel.accessoryResId(AccessorySlot.BACK, it)
-                        if (res != 0) {
-                            Image(
-                                painter = painterResource(res),
-                                contentDescription = null,
-                                modifier = Modifier.size(100.dp).zIndex(0.5f)
-                            )
-                        }
-                    }
-
-                    equipped["torso"]?.let {
-                        val res = viewModel.accessoryResId(AccessorySlot.TORSO, it)
-                        if (res != 0) {
-                            Image(
-                                painter = painterResource(res),
-                                contentDescription = null,
-                                modifier = Modifier.size(100.dp).zIndex(2f)
-                            )
-                        }
-                    }
-
-                    equipped["head"]?.let {
-                        val res = viewModel.accessoryResId(AccessorySlot.HEAD, it)
-                        if (res != 0) {
-                            Image(
-                                painter = painterResource(res),
-                                contentDescription = null,
-                                modifier = Modifier.size(100.dp).zIndex(3f)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(6.dp))
-                Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
+                  }
             }
-        }
-    }
+      }
 }
-
 
 @Composable
 fun StatBar(icon: String, percent: Float, color: Color) {
@@ -442,14 +433,12 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     }
     Spacer(Modifier.height(8.dp))
 
-      val user by viewModel.userProfile.collectAsState()
+    val user by viewModel.userProfile.collectAsState()
 
-      val slotItems = remember(user, selectedTab) {
-          viewModel.accessoryCatalog.filter { it.slot == selectedTab }
-      }
+    val slotItems =
+        remember(user, selectedTab) { viewModel.accessoryCatalog.filter { it.slot == selectedTab } }
 
-
-      val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
+    val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
 
     AccessoriesGrid(
         items = slotItems,
@@ -459,11 +448,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 }
 
 @Composable
-private fun AccessoriesGrid(
-    items: List<AccessoryItem>,
-    selectedId: String?,
-    onSelect: (String) -> Unit
-) {
+fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (String) -> Unit) {
   LazyVerticalGrid(
       columns = GridCells.Adaptive(minSize = 96.dp),
       modifier = Modifier.fillMaxWidth().height(200.dp),
