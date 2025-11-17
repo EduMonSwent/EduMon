@@ -9,6 +9,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.rule.GrantPermissionRule
+import kotlinx.coroutines.android.awaitFrame
+import okhttp3.internal.wait
 import org.junit.Rule
 import org.junit.Test
 
@@ -103,4 +105,38 @@ class StudyTogetherScreenTest {
     // Expect the user status card text
     composeTestRule.onNodeWithText("You’re studying").assertExists()
   }
+
+  @Test
+  fun onCampusIndicator_shows_onCampus_when_location_inside_epfl_bbox() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
+
+    // Disable map to avoid GoogleMap swallowing test input; indicator still renders.
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Inside the ViewModel's EPFL bounding box:
+    // lat in [46.515, 46.525], lng in [6.555, 6.575]
+    composeTestRule.runOnUiThread { vm.consumeLocation(46.520, 6.565) }
+
+
+    // Indicator composable should always exist
+    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
+    // Text for on-campus state
+    composeTestRule.onNodeWithText("On EPFL campus").assertExists()
+  }
+
+  @Test
+  fun onCampusIndicator_shows_offCampus_when_location_outside_epfl_bbox() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Clearly outside bounding box: Zürich coords
+    composeTestRule.runOnUiThread { vm.consumeLocation(47.37, 8.54) }
+
+    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
+    composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
+  }
 }
+

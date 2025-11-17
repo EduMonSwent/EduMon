@@ -70,8 +70,12 @@ class StudyTogetherViewModel(
 
     lastDeviceLatLng = userLocation
 
+    val onCampus = isOnEpflCampus(userLocation)
+
     // Always show live device position on the map (simpler UX)
-    _uiState.update { it.copy(userPosition = userLocation) }
+    _uiState.update { it.copy(
+      userPosition = userLocation,
+      isOnCampus = onCampus) }
 
     if (!isSignedIn) return
 
@@ -167,5 +171,20 @@ class StudyTogetherViewModel(
     val out = FloatArray(1)
     android.location.Location.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude, out)
     return out[0]
+  }
+
+  // Rough bounding box around the EPFL Lausanne campus.
+  private fun  isOnEpflCampus(position: LatLng): Boolean {
+    val lat = position.latitude
+    val lng = position.longitude
+
+    val minLat = 46.515
+    val maxLat = 46.525
+    val minLng = 6.555
+    val maxLng = 6.575
+
+    println(lat)
+
+    return lat in minLat..maxLat && lng in minLng..maxLng
   }
 }

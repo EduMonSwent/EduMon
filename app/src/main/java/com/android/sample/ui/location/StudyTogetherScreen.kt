@@ -3,6 +3,7 @@ package com.android.sample.ui.location
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import android.util.Log.e
@@ -14,12 +15,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -51,6 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.ui.theme.BreakYellow
 import com.android.sample.ui.theme.IdleBlue
+import com.android.sample.ui.theme.IndicatorRed
 import com.android.sample.ui.theme.StudyGreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -71,6 +75,9 @@ private const val TAG_FAB_ADD = "fab_add_friend"
 private const val TAG_FIELD_UID = "field_friend_uid"
 private const val TAG_BTN_FRIENDS = "btn_friends"
 private const val TAG_MAP_STUB = "map_stub"
+
+private const val ON_CAMPUS = "on_campus_indicator"
+
 
 @Stable
 private data class AddFriendUiState(
@@ -205,11 +212,21 @@ private fun StudyTogetherContent(
               onFriendSelected = actions.onFriendSelected,
               modifier = Modifier.matchParentSize())
 
+          // On-campus indicator
+            OnCampusIndicator(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 12.dp)
+                        .testTag(ON_CAMPUS),uiState.isOnCampus)
+
           // Compact friends dropdown
           EdumonFriendsDropdown(
               friends = uiState.friends,
               onPick = actions.onFriendSelected,
-              modifier = Modifier.align(Alignment.TopStart).padding(12.dp).testTag(TAG_BTN_FRIENDS))
+              modifier = Modifier.align(Alignment.TopStart)
+                  .padding(12.dp, top = 72.dp)
+                  .testTag(TAG_BTN_FRIENDS))
 
           // Bottom info cards (user / friend status)
           BottomSelectionPanel(
@@ -391,55 +408,142 @@ private fun EdumonFriendsDropdown(
     modifier: Modifier = Modifier,
     label: String = "Friends"
 ) {
-  var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
 
-  Box(modifier = modifier) {
-    FilledTonalButton(
-        onClick = { expanded = true },
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        modifier = Modifier.defaultMinSize(minHeight = 36.dp),
-        shape = RoundedCornerShape(24.dp)) {
-          Icon(
-              painter = painterResource(id = R.drawable.edumon1),
-              contentDescription = null,
-              modifier = Modifier.size(18.dp))
-          Spacer(Modifier.width(6.dp))
-          Text("$label (${friends.size})")
+    Box(modifier = modifier) {
+        // Top pill (same style as campus indicator card)
+        FilledTonalButton(
+            onClick = { expanded = !expanded },
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.defaultMinSize(minHeight = 36.dp),
+            shape = RoundedCornerShape(50), // full pill
+            colors =
+                ButtonDefaults.filledTonalButtonColors(
+                    // Use the same color as your campus indicator card
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )) {
+            Icon(
+                painter = painterResource(id = R.drawable.edumon1),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("$label (${friends.size})")
         }
 
-    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      if (friends.isEmpty()) {
-        DropdownMenuItem(text = { Text("No friends yet") }, onClick = { expanded = false })
-      } else {
-        friends.forEach { friend ->
-          DropdownMenuItem(
-              text = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically) {
-                      Icon(
-                          painter = painterResource(id = edumonFor(friend.id)),
-                          contentDescription = null,
-                          modifier = Modifier.size(18.dp))
-                      Spacer(Modifier.width(8.dp))
-                      Text(
-                          friend.name,
-                          modifier = Modifier.weight(1f),
-                          maxLines = 1,
-                          overflow = TextOverflow.Ellipsis)
-                      Spacer(Modifier.width(8.dp))
-                      StatusChip(mode = friend.mode)
+        // Our own "dropdown", drawn as a Card → only one background, fully rounded
+        if (expanded) {
+            Card(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(top = 44.dp) // show under the pill
+                        .widthIn(min = 220.dp, max = 320.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)) {
+                if (friends.isEmpty()) {
+                    Text(
+                        text = "No friends yet",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    Column(modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp)) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+
+                        friends.forEach { friend ->
+                            FriendDropdownRow(
+                                friend = friend,
+                                onClick = {
+                                    expanded = false
+                                    onPick(friend)
+                                },
+                                modifier = Modifier.fillMaxWidth())
+                            Spacer(Modifier.height(9.dp))
+                        }
                     }
-              },
-              onClick = {
-                expanded = false
-                onPick(friend)
-              })
+                }
+            }
         }
-      }
     }
-  }
 }
+
+@Composable
+private fun FriendDropdownRow(
+    friend: FriendStatus,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(18.dp))
+                .clickable(onClick = onClick)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painter = painterResource(id = edumonFor(friend.id)),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            friend.name,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.width(8.dp))
+        StatusChip(mode = friend.mode)
+    }
+}
+
+@Composable
+private fun OnCampusIndicator(modifier: Modifier = Modifier,onCampus: Boolean) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(50),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)) {
+        if (onCampus) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                // Green dot
+                Box(
+                    modifier =
+                        Modifier.size(10.dp)
+                            .clip(CircleShape)
+                            .background(StudyGreen))
+                Spacer(Modifier.width(8.dp))
+                Text(text = "On EPFL campus", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+        else {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                // Green dot
+                Box(
+                    modifier =
+                        Modifier.size(10.dp)
+                            .clip(CircleShape)
+                            .background(IndicatorRed))
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Outside of EPFL campus", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+
+    }
+}
+
 
 @Composable
 private fun StatusChip(mode: FriendMode) {
@@ -486,7 +590,7 @@ fun FriendInfoCard(name: String, mode: FriendMode, modifier: Modifier = Modifier
       shape = RoundedCornerShape(24.dp),
       colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
       elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
-        Column(Modifier.padding(16.dp)) {
+        Row(Modifier.padding(16.dp)) {
           Text(text = name, style = MaterialTheme.typography.titleMedium)
           Spacer(Modifier.height(6.dp))
           StatusChip(mode)
@@ -502,17 +606,17 @@ private fun edumonFor(friendId: String): Int {
   return all[idx]
 }
 
-private fun dp2px(context: android.content.Context, dp: Float): Int =
+private fun dp2px(context: Context, dp: Float): Int =
     (dp * context.resources.displayMetrics.density).toInt()
 
 private fun loadDrawableAsBitmap(
-    context: android.content.Context,
+    context: Context,
     resId: Int,
     sizeDp: Float
 ): Bitmap {
   val d = AppCompatResources.getDrawable(context, resId) ?: error("Drawable $resId not found")
   val px = dp2px(context, sizeDp)
-  return d.toBitmap(width = px, height = px, config = android.graphics.Bitmap.Config.ARGB_8888)
+  return d.toBitmap(width = px, height = px, config = Bitmap.Config.ARGB_8888)
 }
 
 private suspend fun CameraPositionState.safeAnimateTo(
