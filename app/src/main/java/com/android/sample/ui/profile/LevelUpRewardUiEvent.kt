@@ -1,0 +1,13 @@
+package com.android.sample.ui.profile
+
+import com.android.sample.feature.rewards.GrantedRewardsSummary
+
+/**
+ * One-shot event that the Profile feature can expose when a level-up reward is granted. The UI
+ * layer can observe it and show a toast/dialog/animation.
+ */
+sealed class LevelUpRewardUiEvent {
+
+  data class RewardsGranted(val newLevel: Int, val summary: GrantedRewardsSummary) :
+      LevelUpRewardUiEvent()
+}

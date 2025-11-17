@@ -9,6 +9,7 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.feature.rewards.LevelRewardEngine
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.ui.theme.AccentBlue
@@ -16,7 +17,9 @@ import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.EventColorSports
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,6 +34,13 @@ class ProfileViewModel(
   // ----- Profil LOCAL uniquement -----
   private val _userProfile = MutableStateFlow(repository.profile.value.copy())
   val userProfile: StateFlow<UserProfile> = _userProfile
+
+  // reward engine instance
+  private val rewardEngine = LevelRewardEngine()
+
+  // one-shot events for UI (snackbar/dialog/etc.)
+  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
+  val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
 
   // Palette issue de ton thème
   val accentPalette: List<Color> =
@@ -181,5 +191,42 @@ class ProfileViewModel(
    */
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
     viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+  }
+
+  /**
+   * Applies a change to the profile (via [edit]) and, if that change includes a level increase,
+   * routes the old/new profiles through the reward engine.
+   * - If level didn't increase → just update and push as usual.
+   * - If level increased → apply rewards, update profile, push, and emit UI event.
+   */
+  private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
+    val oldProfile = _userProfile.value
+    val candidate = edit(oldProfile)
+
+    // No level up → regular path
+    if (candidate.level <= oldProfile.level) {
+      _userProfile.value = candidate
+      pushProfile(candidate)
+      return
+    }
+
+    // Level increased → let the reward engine do its job
+    val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
+    val updated = result.updatedProfile
+
+    _userProfile.value = updated
+    pushProfile(updated)
+
+    // Emit UI event only if something was actually rewarded
+    if (!result.summary.isEmpty) {
+      viewModelScope.launch {
+        _rewardEvents.emit(
+            LevelUpRewardUiEvent.RewardsGranted(newLevel = updated.level, summary = result.summary))
+      }
+    }
+  }
+
+  fun debugLevelUpForTests() {
+    applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
   }
 }

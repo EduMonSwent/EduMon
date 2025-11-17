@@ -36,7 +36,8 @@ data class UserProfile(
     val avatarAccent: Long = DEFAULT_ACCENT, // ARGB
     val accessories: List<String> = emptyList(),
     val studyStats: StudyStats =
-        StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL)
+        StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL),
+    val lastRewardedLevel: Int = 0
 ) {
   companion object {
     const val DEFAULT_NAME = "Alex"

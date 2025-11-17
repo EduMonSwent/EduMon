@@ -39,11 +39,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -101,56 +105,86 @@ fun ProfileScreen(
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
 
-  LazyColumn(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(Brush.verticalGradient(GRADIENT_COLORS))
-              .padding(bottom = SCREEN_PADDING)
-              .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      contentPadding = PaddingValues(vertical = SECTION_SPACING),
-      verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
-        item {
-          PetSection(
-              level = user.level,
-              accent = accent,
-              accessories = user.accessories,
-              variant = variant)
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
-          }
-        }
-        item {
-          GlowCard { Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) } }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
-              CustomizePetSection(viewModel)
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  LaunchedEffect(Unit) {
+    viewModel.rewardEvents.collect { event ->
+      when (event) {
+        is LevelUpRewardUiEvent.RewardsGranted -> {
+          val s = event.summary
+          val msg = buildString {
+            append("🎉 Level ${event.newLevel} reached!")
+            if (s.coinsGranted > 0) append(" +${s.coinsGranted} coins")
+            if (s.accessoryIdsGranted.isNotEmpty()) {
+              append(" 🎁 ${s.accessoryIdsGranted.size} new item")
+              if (s.accessoryIdsGranted.size > 1) append("s")
             }
+            if (s.extraPointsGranted > 0) append(" +${s.extraPointsGranted} pts")
           }
+
+          snackbarHostState.showSnackbar(msg)
         }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
-              SettingsCard(
-                  user = user,
-                  onToggleLocation = viewModel::toggleLocation,
-                  onToggleFocusMode = viewModel::toggleFocusMode,
-                  onOpenNotifications = onOpenNotifications,
-                  onEnterFocusMode = onOpenFocusMode)
+      }
+    }
+  }
+
+  Scaffold(
+      snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
+          innerPadding ->
+        LazyColumn(
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(Brush.verticalGradient(GRADIENT_COLORS))
+                    .padding(bottom = SCREEN_PADDING)
+                    .padding(innerPadding)
+                    .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(vertical = SECTION_SPACING),
+            verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
+              item {
+                PetSection(
+                    level = user.level,
+                    accent = accent,
+                    accessories = user.accessories,
+                    variant = variant)
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
+                    CustomizePetSection(viewModel)
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
+                    SettingsCard(
+                        user = user,
+                        onToggleLocation = viewModel::toggleLocation,
+                        onToggleFocusMode = viewModel::toggleFocusMode,
+                        onOpenNotifications = onOpenNotifications,
+                        onEnterFocusMode = onOpenFocusMode)
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
+                    AccountActionsSection()
+                  }
+                }
+              }
             }
-          }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
-              AccountActionsSection()
-            }
-          }
-        }
       }
 }
 
