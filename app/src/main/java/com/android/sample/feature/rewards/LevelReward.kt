@@ -5,8 +5,7 @@ data class LevelReward(
     val level: Int,
     val coins: Int = 0,
     val accessoryIds: List<String> = emptyList(),
-    val extraPoints: Int = 0,
-    val extraStudyTimeMin: Int = 0
+    val extraPoints: Int = 0
 )
 
 /**
@@ -17,14 +16,12 @@ data class GrantedRewardsSummary(
     val rewardedLevels: List<Int> = emptyList(),
     val coinsGranted: Int = 0,
     val accessoryIdsGranted: List<String> = emptyList(),
-    val extraPointsGranted: Int = 0,
-    val extraStudyTimeMinGranted: Int = 0
+    val extraPointsGranted: Int = 0
 ) {
   val isEmpty: Boolean
     get() =
         rewardedLevels.isEmpty() &&
             coinsGranted == 0 &&
             accessoryIdsGranted.isEmpty() &&
-            extraPointsGranted == 0 &&
-            extraStudyTimeMinGranted == 0
+            extraPointsGranted == 0
 }

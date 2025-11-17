@@ -229,4 +229,11 @@ class ProfileViewModel(
   fun debugLevelUpForTests() {
     applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
   }
+
+  fun debugNoLevelChangeForTests() {
+    applyProfileWithPotentialRewards { current ->
+      // Change points, keep level the same
+      current.copy(points = current.points + 10)
+    }
+  }
 }

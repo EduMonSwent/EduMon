@@ -17,7 +17,6 @@ class LevelRewardModelTest {
     assertEquals(0, summary.coinsGranted)
     assertTrue(summary.accessoryIdsGranted.isEmpty())
     assertEquals(0, summary.extraPointsGranted)
-    assertEquals(0, summary.extraStudyTimeMinGranted)
   }
 
   @Test
@@ -45,27 +44,20 @@ class LevelRewardModelTest {
 
   @Test
   fun `summary with extra stats is not empty`() {
-    val summary = GrantedRewardsSummary(extraPointsGranted = 50, extraStudyTimeMinGranted = 10)
+    val summary = GrantedRewardsSummary(extraPointsGranted = 50)
 
     assertFalse(summary.isEmpty)
     assertEquals(50, summary.extraPointsGranted)
-    assertEquals(10, summary.extraStudyTimeMinGranted)
   }
 
   @Test
   fun `level reward stores its fields correctly`() {
     val reward =
-        LevelReward(
-            level = 3,
-            coins = 100,
-            accessoryIds = listOf("boots"),
-            extraPoints = 200,
-            extraStudyTimeMin = 15)
+        LevelReward(level = 3, coins = 100, accessoryIds = listOf("boots"), extraPoints = 200)
 
     assertEquals(3, reward.level)
     assertEquals(100, reward.coins)
     assertEquals(listOf("boots"), reward.accessoryIds)
     assertEquals(200, reward.extraPoints)
-    assertEquals(15, reward.extraStudyTimeMin)
   }
 }
