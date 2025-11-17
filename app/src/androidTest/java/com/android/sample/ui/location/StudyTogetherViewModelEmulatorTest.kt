@@ -182,26 +182,25 @@ class StudyTogetherViewModelEmulatorTest {
     assertEquals(lon, gp.longitude, 1e-5)
   }
 
-    @Test
-    fun isOnEpflCampus_true_for_coordinates_inside_bbox() = runBlocking {
-        val repo = FakeFriendRepository(emptyList())
-        val vm = StudyTogetherViewModel(friendRepository = repo)
+  @Test
+  fun isOnEpflCampus_true_for_coordinates_inside_bbox() = runBlocking {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
 
-        vm.consumeLocation(46.520, 6.565)
+    vm.consumeLocation(46.520, 6.565)
 
-        val state = vm.uiState.first()
-        assertTrue(state.isOnCampus)
-    }
+    val state = vm.uiState.first()
+    assertTrue(state.isOnCampus)
+  }
 
-    @Test
-    fun isOnEpflCampus_false_for_coordinates_outside_bbox() = runBlocking {
-        val repo = FakeFriendRepository(emptyList())
-        val vm = StudyTogetherViewModel(friendRepository = repo)
+  @Test
+  fun isOnEpflCampus_false_for_coordinates_outside_bbox() = runBlocking {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
 
-        vm.consumeLocation(47.37, 8.54)
+    vm.consumeLocation(47.37, 8.54)
 
-        val state = vm.uiState.first()
-        assertFalse(state.isOnCampus)
-    }
-
+    val state = vm.uiState.first()
+    assertFalse(state.isOnCampus)
+  }
 }

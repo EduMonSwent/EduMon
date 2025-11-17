@@ -9,8 +9,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.rule.GrantPermissionRule
-import kotlinx.coroutines.android.awaitFrame
-import okhttp3.internal.wait
 import org.junit.Rule
 import org.junit.Test
 
@@ -118,7 +116,6 @@ class StudyTogetherScreenTest {
     // lat in [46.515, 46.525], lng in [6.555, 6.575]
     composeTestRule.runOnUiThread { vm.consumeLocation(46.520, 6.565) }
 
-
     // Indicator composable should always exist
     composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
     // Text for on-campus state
@@ -139,4 +136,3 @@ class StudyTogetherScreenTest {
     composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
   }
 }
-

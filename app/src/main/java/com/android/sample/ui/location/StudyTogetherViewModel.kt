@@ -73,9 +73,7 @@ class StudyTogetherViewModel(
     val onCampus = isOnEpflCampus(userLocation)
 
     // Always show live device position on the map (simpler UX)
-    _uiState.update { it.copy(
-      userPosition = userLocation,
-      isOnCampus = onCampus) }
+    _uiState.update { it.copy(userPosition = userLocation, isOnCampus = onCampus) }
 
     if (!isSignedIn) return
 
@@ -174,7 +172,7 @@ class StudyTogetherViewModel(
   }
 
   // Rough bounding box around the EPFL Lausanne campus.
-  private fun  isOnEpflCampus(position: LatLng): Boolean {
+  private fun isOnEpflCampus(position: LatLng): Boolean {
     val lat = position.latitude
     val lng = position.longitude
 
