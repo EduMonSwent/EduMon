@@ -91,7 +91,7 @@ class ProfileScreenTest {
     composeRule.setContent {
       Column {
         GlowCard { Text("Inside GlowCard") }
-        Badge(text = "Level 10", bg = Color.Magenta)
+        Badge(text = "Level 10", bg = Color.Companion.Magenta)
       }
     }
     composeRule.onNodeWithText("Inside GlowCard").assertExists()

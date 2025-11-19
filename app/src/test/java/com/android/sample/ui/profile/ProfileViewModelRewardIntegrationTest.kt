@@ -82,4 +82,79 @@ class ProfileViewModelRewardIntegrationTest {
         // and: repository has also been updated via pushProfile()
         assertEquals(updated, repo.profile.value)
       }
+
+  @Test
+  fun `addPoints increases points but not level when threshold not reached`() = runTest {
+    // given: user at level 1 with 100 points
+    val initial = UserProfile(level = 1, points = 100, coins = 0, lastRewardedLevel = 1)
+    val repo = FakeProfileRepository(initial)
+    val viewModel = ProfileViewModel(repository = repo)
+
+    // when: we add less than 200 points (so total < 300)
+    viewModel.addPoints(50) // 100 -> 150
+
+    val updated = viewModel.userProfile.value
+
+    // then: points increased, level unchanged
+    assertEquals(150, updated.points)
+    assertEquals(1, updated.level)
+    assertEquals(1, updated.lastRewardedLevel)
+    advanceUntilIdle()
+
+    // no rewards should be granted; profile pushed to repo
+    assertEquals(updated, repo.profile.value)
+  }
+
+  @Test
+  fun `addPoints crosses threshold and triggers level up and rewards`() = runTest {
+    // Start with 0 points at level 1, and no rewarded levels yet
+    val initial = UserProfile(level = 1, points = 0, coins = 0, lastRewardedLevel = 0)
+    val repo = FakeProfileRepository(initial)
+    val viewModel = ProfileViewModel(repository = repo)
+
+    // Listen for first reward event
+    var receivedEvent: LevelUpRewardUiEvent? = null
+    val job = launch { receivedEvent = viewModel.rewardEvents.first() }
+
+    // when: we add 300 points -> should give level 2
+    viewModel.addPoints(300)
+
+    // wait for event emission
+    job.join()
+
+    val event = receivedEvent
+    assertNotNull("Expected a reward event after level-up", event)
+    assertTrue(event is LevelUpRewardUiEvent.RewardsGranted)
+    event as LevelUpRewardUiEvent.RewardsGranted
+
+    // then: level bumped and rewards applied
+    assertEquals(2, event.newLevel)
+    assertFalse(event.summary.isEmpty)
+
+    // Newly rewarded levels are 1 and 2 (because lastRewardedLevel started at 0)
+    assertTrue(event.summary.rewardedLevels.contains(1))
+    assertTrue(event.summary.rewardedLevels.contains(2))
+
+    // Compute expected total rewards for levels 1 + 2
+    val level1Reward = LevelRewardConfig.rewardForLevel(1)!!
+    val level2Reward = LevelRewardConfig.rewardForLevel(2)!!
+
+    val expectedCoins = level1Reward.coins + level2Reward.coins
+    val expectedExtraPoints = level1Reward.extraPoints + level2Reward.extraPoints
+
+    // Summary should reflect combined rewards
+    assertEquals(expectedCoins, event.summary.coinsGranted)
+    assertEquals(expectedExtraPoints, event.summary.extraPointsGranted)
+
+    // Check profile state
+    val current = viewModel.userProfile.value
+    assertEquals(2, current.level)
+    assertEquals(2, current.lastRewardedLevel)
+
+    // Points: base (300 from addPoints) + extraPoints from level 1 + 2
+    assertEquals(300 + expectedExtraPoints, current.points)
+
+    // Coins: sum of both levels
+    assertEquals(expectedCoins, current.coins)
+  }
 }

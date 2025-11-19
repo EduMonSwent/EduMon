@@ -3,6 +3,7 @@ package com.android.sample.ui.profile
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -360,6 +362,8 @@ fun ProfileCard(user: UserProfile) {
       Badge(text = "Level ${user.level}", bg = AccentViolet)
       Badge(text = "${user.points} pts", bg = Color.White, textColor = AccentViolet)
     }
+    Spacer(Modifier.height(8.dp))
+    LevelProgressBar(level = user.level, points = user.points)
   }
 }
 
@@ -634,4 +638,48 @@ fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit
       onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(text, color = textColor, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
       }
+}
+
+@Composable
+fun LevelProgressBar(level: Int, points: Int, pointsPerLevel: Int = 300) {
+  // Base points for the current level (e.g. level 3 → 600 if 300 pts per level)
+  val levelBase = ((level - 1).coerceAtLeast(0)) * pointsPerLevel
+
+  // How many points into this level we are
+  val rawProgressPoints = (points - levelBase).coerceIn(0, pointsPerLevel)
+  val targetFraction = if (pointsPerLevel == 0) 0f else rawProgressPoints / pointsPerLevel.toFloat()
+
+  // Smooth animation when points / fraction changes
+  val animatedFraction by
+      animateFloatAsState(
+          targetValue = targetFraction,
+          animationSpec = tween(durationMillis = 600),
+          label = "levelProgressAnim")
+
+  Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+    Text(text = "Progress to next level", color = TextLight.copy(alpha = 0.7f), fontSize = 12.sp)
+
+    Spacer(Modifier.height(4.dp))
+
+    Box(
+        modifier =
+            Modifier.fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(DarkCardItem)) {
+          Box(
+              modifier =
+                  Modifier.fillMaxWidth(animatedFraction.coerceIn(0f, 1f))
+                      .fillMaxHeight()
+                      .background(AccentViolet))
+        }
+
+    Spacer(Modifier.height(4.dp))
+
+    val remaining = pointsPerLevel - rawProgressPoints
+    Text(
+        text = "$rawProgressPoints / $pointsPerLevel pts  •  $remaining pts to next level",
+        color = TextLight.copy(alpha = 0.7f),
+        fontSize = 11.sp)
+  }
 }

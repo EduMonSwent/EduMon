@@ -184,6 +184,25 @@ class ProfileViewModel(
     pushProfile(updated) // sync remote
   }
 
+  /**
+   * Adds points to the user, recomputes the level based on total points, and routes the change
+   * through the reward engine.
+   *
+   * If the new level is higher than the old one:
+   * - LevelRewardEngine applies rewards
+   * - lastRewardedLevel is updated
+   * - UI receives a LevelUpRewardUiEvent
+   */
+  fun addPoints(amount: Int) {
+    if (amount <= 0) return
+
+    applyProfileWithPotentialRewards { current ->
+      val newPoints = (current.points + amount).coerceAtLeast(0)
+      val newLevel = computeLevelFromPoints(newPoints)
+      current.copy(points = newPoints, level = newLevel)
+    }
+  }
+
   // --- Helpers ---
   /**
    * Pushes the current or provided profile to the repository. Centralizes the fire-and-forget
@@ -224,6 +243,18 @@ class ProfileViewModel(
             LevelUpRewardUiEvent.RewardsGranted(newLevel = updated.level, summary = result.summary))
       }
     }
+  }
+
+  /**
+   * Computes the level for a given amount of points.
+   *
+   * Simple rule:
+   * - Every 300 points = +1 level
+   * - Minimum level is 1
+   */
+  private fun computeLevelFromPoints(points: Int): Int {
+    if (points <= 0) return 1
+    return 1 + (points / 300)
   }
 
   fun debugLevelUpForTests() {
