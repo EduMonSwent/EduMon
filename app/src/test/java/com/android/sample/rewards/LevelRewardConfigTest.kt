@@ -10,7 +10,7 @@ class LevelRewardConfigTest {
 
   @Test
   fun `config contains rewards for defined levels`() {
-    // The exact levels are from your LevelRewardConfig object
+    // The exact levels are from LevelRewardConfig object
     val reward1 = LevelRewardConfig.rewardForLevel(1)
     val reward2 = LevelRewardConfig.rewardForLevel(2)
     val reward3 = LevelRewardConfig.rewardForLevel(3)

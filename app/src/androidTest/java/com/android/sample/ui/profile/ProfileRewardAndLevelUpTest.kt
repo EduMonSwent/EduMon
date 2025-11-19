@@ -11,6 +11,7 @@ import com.android.sample.ui.theme.EduMonTheme
 import org.junit.Rule
 import org.junit.Test
 
+// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
 class ProfileRewardAndLevelUpTest {
 
   @get:Rule val composeRule = createComposeRule()

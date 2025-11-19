@@ -3,7 +3,7 @@ package com.android.sample.feature.rewards
 /**
  * Provides the mapping between level and rewards.
  *
- * Later, we will load this from remote config / Firestore instead of hardcoding it.
+ * Later, we can load this from remote config / Firestore instead of hardcoding it.
  */
 object LevelRewardConfig {
   val rewardsByLevel: Map<Int, LevelReward> =

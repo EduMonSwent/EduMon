@@ -9,8 +9,8 @@ data class LevelReward(
 )
 
 /**
- * Summary of what was actually granted when applying rewards for one or more levels. Useful for UI
- * feedback.
+ * Summary of what was actually granted when applying rewards for one or more levels. It's useful
+ * for UI feedback.
  */
 data class GrantedRewardsSummary(
     val rewardedLevels: List<Int> = emptyList(),
@@ -18,6 +18,11 @@ data class GrantedRewardsSummary(
     val accessoryIdsGranted: List<String> = emptyList(),
     val extraPointsGranted: Int = 0
 ) {
+  /**
+   * Returns true when this summary represents “no rewards granted”. When all of these fields are
+   * empty/zero, it means the level-up resulted in no actual rewards. UI components can use this to
+   * avoid showing a reward snackbar in these cases.
+   */
   val isEmpty: Boolean
     get() =
         rewardedLevels.isEmpty() &&

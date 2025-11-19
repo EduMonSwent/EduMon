@@ -18,7 +18,6 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelRewardIntegrationTest {
 
-  // 👇 NEW: set a Test Main dispatcher for this class
   @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
   @Test

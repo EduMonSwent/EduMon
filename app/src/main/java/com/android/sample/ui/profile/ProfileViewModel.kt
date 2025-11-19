@@ -256,11 +256,23 @@ class ProfileViewModel(
     if (points <= 0) return 1
     return 1 + (points / 300)
   }
-
+  /**
+   * DEBUG / TEST-ONLY helper.
+   *
+   * This function exists purely to simplify unit testing of the reward system. Not used in
+   * production UI. It's kept to make reward-related tests shorter, more deterministic, and easier
+   * to maintain (if we later decide to change the level up calculation)
+   */
   fun debugLevelUpForTests() {
     applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
   }
-
+  /**
+   * DEBUG / TEST-ONLY helper.
+   *
+   * This function exists purely to simplify unit testing of the reward system. Not used in
+   * production UI. It's kept to make reward-related tests shorter, more deterministic, and easier
+   * to maintain (if we later decide to change the level up calculation)
+   */
   fun debugNoLevelChangeForTests() {
     applyProfileWithPotentialRewards { current ->
       // Change points, keep level the same
