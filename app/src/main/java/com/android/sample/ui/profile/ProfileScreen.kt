@@ -109,26 +109,7 @@ fun ProfileScreen(
 
   val snackbarHostState = remember { SnackbarHostState() }
 
-  LaunchedEffect(Unit) {
-    viewModel.rewardEvents.collect { event ->
-      when (event) {
-        is LevelUpRewardUiEvent.RewardsGranted -> {
-          val s = event.summary
-          val msg = buildString {
-            append("🎉 Level ${event.newLevel} reached!")
-            if (s.coinsGranted > 0) append(" +${s.coinsGranted} coins")
-            if (s.accessoryIdsGranted.isNotEmpty()) {
-              append(" 🎁 ${s.accessoryIdsGranted.size} new item")
-              if (s.accessoryIdsGranted.size > 1) append("s")
-            }
-            if (s.extraPointsGranted > 0) append(" +${s.extraPointsGranted} pts")
-          }
-
-          snackbarHostState.showSnackbar(msg)
-        }
-      }
-    }
-  }
+  LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
   Scaffold(
       snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
@@ -681,5 +662,35 @@ fun LevelProgressBar(level: Int, points: Int, pointsPerLevel: Int = 300) {
         text = "$rawProgressPoints / $pointsPerLevel pts  •  $remaining pts to next level",
         color = TextLight.copy(alpha = 0.7f),
         fontSize = 11.sp)
+  }
+}
+/** Collects level-up reward events from the ViewModel and shows a snackbar for each. */
+@Composable
+private fun LevelUpRewardSnackbarHandler(
+    viewModel: ProfileViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+  LaunchedEffect(Unit) {
+    viewModel.rewardEvents.collect { event ->
+      when (event) {
+        is LevelUpRewardUiEvent.RewardsGranted -> {
+          val msg = buildRewardMessage(event)
+          snackbarHostState.showSnackbar(msg)
+        }
+      }
+    }
+  }
+}
+/** Builds a human-readable message summarizing the granted rewards. */
+private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): String {
+  val s = event.summary
+  return buildString {
+    append("🎉 Level ${event.newLevel} reached!")
+    if (s.coinsGranted > 0) append(" +${s.coinsGranted} coins")
+    if (s.accessoryIdsGranted.isNotEmpty()) {
+      append(" 🎁 ${s.accessoryIdsGranted.size} new item")
+      if (s.accessoryIdsGranted.size > 1) append("s")
+    }
+    if (s.extraPointsGranted > 0) append(" +${s.extraPointsGranted} pts")
   }
 }
