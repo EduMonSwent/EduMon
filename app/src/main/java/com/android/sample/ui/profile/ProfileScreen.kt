@@ -77,6 +77,7 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.ui.profile.ProfileViewModel.Companion.POINTS_PER_LEVEL
 import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
@@ -96,6 +97,13 @@ private val CARD_CORNER_RADIUS = 16.dp
 private val SECTION_SPACING = 16.dp
 private val SCREEN_PADDING = 60.dp
 private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
+private const val LEVEL_PROGRESS_ANIM_DURATION_MS = 600
+private const val LABEL_FONT_SIZE_SP = 12
+private const val VALUE_FONT_SIZE_SP = 11
+private val LEVEL_BAR_HEIGHT = 8.dp
+private val LEVEL_BAR_CORNER_RADIUS = 12.dp
+private val LABEL_ALPHA = 0.7f
+private val SPACING_SMALL = 4.dp
 
 @Composable
 fun ProfileScreen(
@@ -622,31 +630,34 @@ fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit
 }
 
 @Composable
-fun LevelProgressBar(level: Int, points: Int, pointsPerLevel: Int = 300) {
-  // Base points for the current level (e.g. level 3 → 600 if 300 pts per level)
+fun LevelProgressBar(level: Int, points: Int, pointsPerLevel: Int = POINTS_PER_LEVEL) {
+  // Base points for this level
   val levelBase = ((level - 1).coerceAtLeast(0)) * pointsPerLevel
 
-  // How many points into this level we are
+  // Progress within the current level
   val rawProgressPoints = (points - levelBase).coerceIn(0, pointsPerLevel)
   val targetFraction = if (pointsPerLevel == 0) 0f else rawProgressPoints / pointsPerLevel.toFloat()
 
-  // Smooth animation when points / fraction changes
+  // Animated fraction
   val animatedFraction by
       animateFloatAsState(
           targetValue = targetFraction,
-          animationSpec = tween(durationMillis = 600),
+          animationSpec = tween(durationMillis = LEVEL_PROGRESS_ANIM_DURATION_MS),
           label = "levelProgressAnim")
 
   Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-    Text(text = "Progress to next level", color = TextLight.copy(alpha = 0.7f), fontSize = 12.sp)
+    Text(
+        text = "Progress to next level",
+        color = TextLight.copy(alpha = LABEL_ALPHA),
+        fontSize = LABEL_FONT_SIZE_SP.sp)
 
-    Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(SPACING_SMALL))
 
     Box(
         modifier =
             Modifier.fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .height(LEVEL_BAR_HEIGHT)
+                .clip(RoundedCornerShape(LEVEL_BAR_CORNER_RADIUS))
                 .background(DarkCardItem)) {
           Box(
               modifier =
@@ -655,15 +666,17 @@ fun LevelProgressBar(level: Int, points: Int, pointsPerLevel: Int = 300) {
                       .background(AccentViolet))
         }
 
-    Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(SPACING_SMALL))
 
     val remaining = pointsPerLevel - rawProgressPoints
+
     Text(
         text = "$rawProgressPoints / $pointsPerLevel pts  •  $remaining pts to next level",
-        color = TextLight.copy(alpha = 0.7f),
-        fontSize = 11.sp)
+        color = TextLight.copy(alpha = LABEL_ALPHA),
+        fontSize = VALUE_FONT_SIZE_SP.sp)
   }
 }
+
 /** Collects level-up reward events from the ViewModel and shows a snackbar for each. */
 @Composable
 private fun LevelUpRewardSnackbarHandler(

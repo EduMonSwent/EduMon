@@ -31,6 +31,11 @@ class ProfileViewModel(
     private val repository: ProfileRepository = ProfileRepositoryProvider.repository
 ) : ViewModel() {
 
+  companion object {
+    // XP required to advance by one level
+    const val POINTS_PER_LEVEL: Int = 300
+  }
+
   // ----- Profil LOCAL uniquement -----
   private val _userProfile = MutableStateFlow(repository.profile.value.copy())
   val userProfile: StateFlow<UserProfile> = _userProfile
@@ -254,7 +259,7 @@ class ProfileViewModel(
    */
   private fun computeLevelFromPoints(points: Int): Int {
     if (points <= 0) return 1
-    return 1 + (points / 300)
+    return 1 + (points / POINTS_PER_LEVEL)
   }
   /**
    * DEBUG / TEST-ONLY helper.
