@@ -94,20 +94,6 @@ class StudyTogetherViewModelEmulatorTest {
         }
       }
 
-  private fun logProfile(uid: String): com.google.firebase.firestore.ListenerRegistration {
-    val ref = FirebaseEmulator.firestore.collection("profiles").document(uid)
-    return ref.addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE) { s, e ->
-      if (e != null) {
-        println("PROFILE[$uid] ERROR: ${e.message}")
-      } else if (s != null) {
-        val pending = s.metadata.hasPendingWrites()
-        println("PROFILE[$uid] SNAP exists=${s.exists()} pending=$pending data=${s.data}")
-      } else {
-        println("PROFILE[$uid] SNAP null")
-      }
-    }
-  }
-
   // -------------- tests --------------------
 
   @Test
@@ -202,5 +188,144 @@ class StudyTogetherViewModelEmulatorTest {
 
     val state = vm.uiState.first()
     assertFalse(state.isOnCampus)
+  }
+
+  // -------------- Presence Throttle Tests (shouldSendPresence + distanceMeters) --------------
+
+  @Test
+  fun presenceThrottle_smallMovement_lessThanMinDistance() = runBlocking {
+    val lat1 = 46.520
+    val lon1 = 6.565
+    val lat2 = 46.5199
+    val lon2 = 6.565
+
+    vmLiveTrue.consumeLocation(lat1, lon1)
+
+    val firstDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp -> abs(gp.latitude - lat1) < 1e-4 } ?: false
+        }
+    assertTrue(firstDoc.exists())
+
+    vmLiveTrue.consumeLocation(lat2, lon2)
+    kotlinx.coroutines.delay(100)
+
+    val secondDoc = readProfile(myUid)
+    assertNotNull(secondDoc.getGeoPoint("location"))
+  }
+
+  @Test
+  fun presenceThrottle_largeMovement_exceedsMinDistance() = runBlocking {
+    val lat1 = 46.520
+    val lon1 = 6.565
+    val lat2 = 46.525
+    val lon2 = 6.565
+
+    vmLiveTrue.consumeLocation(lat1, lon1)
+
+    val firstDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp -> abs(gp.latitude - lat1) < 1e-4 } ?: false
+        }
+    assertTrue(firstDoc.exists())
+
+    vmLiveTrue.consumeLocation(lat2, lon2)
+
+    val secondDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp -> abs(gp.latitude - lat2) < 1e-4 } ?: false
+        }
+    assertTrue(secondDoc.exists())
+  }
+
+  @Test
+  fun presenceThrottle_diagonalMovement_calculatesDistanceCorrectly() = runBlocking {
+    val lat1 = 46.520
+    val lon1 = 6.565
+    val lat2 = 46.523
+    val lon2 = 6.569
+
+    vmLiveTrue.consumeLocation(lat1, lon1)
+
+    val firstDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp ->
+            abs(gp.latitude - lat1) < 1e-4 && abs(gp.longitude - lon1) < 1e-4
+          } ?: false
+        }
+    assertTrue(firstDoc.exists())
+
+    vmLiveTrue.consumeLocation(lat2, lon2)
+
+    val secondDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp ->
+            abs(gp.latitude - lat2) < 1e-4 && abs(gp.longitude - lon2) < 1e-4
+          } ?: false
+        }
+    assertTrue(secondDoc.exists())
+  }
+
+  @Test
+  fun distanceCalculation_eastWestMovement() = runBlocking {
+    val lat = 46.520
+    val lon1 = 6.560
+    val lon2 = 6.565
+
+    vmLiveTrue.consumeLocation(lat, lon1)
+
+    val firstDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp -> abs(gp.longitude - lon1) < 1e-4 } ?: false
+        }
+    assertTrue(firstDoc.exists())
+
+    vmLiveTrue.consumeLocation(lat, lon2)
+
+    val secondDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp -> abs(gp.longitude - lon2) < 1e-4 } ?: false
+        }
+    assertTrue(secondDoc.exists())
+  }
+
+  @Test
+  fun distanceCalculation_northSouthMovement() = runBlocking {
+    val lat1 = 46.515
+    val lat2 = 46.520
+    val lon = 6.565
+
+    vmLiveTrue.consumeLocation(lat1, lon)
+
+    val firstDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp -> abs(gp.latitude - lat1) < 1e-4 } ?: false
+        }
+    assertTrue(firstDoc.exists())
+
+    vmLiveTrue.consumeLocation(lat2, lon)
+
+    val secondDoc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp -> abs(gp.latitude - lat2) < 1e-4 } ?: false
+        }
+    assertTrue(secondDoc.exists())
+  }
+
+  @Test
+  fun consumeLocation_liveLocationFalse_usesDefaultLocation() = runBlocking {
+    vmLiveFalse.consumeLocation(47.37, 8.54)
+
+    val doc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp ->
+            abs(gp.latitude - DEFAULT_LOCATION.latitude) < 1e-4 &&
+                abs(gp.longitude - DEFAULT_LOCATION.longitude) < 1e-4
+          } ?: false
+        }
+
+    val gp = doc.getGeoPoint("location")!!
+    assertEquals(DEFAULT_LOCATION.latitude, gp.latitude, 1e-5)
+    assertEquals(DEFAULT_LOCATION.longitude, gp.longitude, 1e-5)
   }
 }

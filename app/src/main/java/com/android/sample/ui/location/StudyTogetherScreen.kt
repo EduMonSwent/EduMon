@@ -102,6 +102,8 @@ fun StudyTogetherScreen(
     viewModel: StudyTogetherViewModel = viewModel(),
     /** Set false in tests to avoid GoogleMap swallowing injected touches. */
     showMap: Boolean = true,
+    chooseLocation: Boolean = false,
+    chosenLocation: LatLng = DEFAULT_LOCATION,
 ) {
   val context = LocalContext.current
   val permissions =
@@ -121,7 +123,9 @@ fun StudyTogetherScreen(
     if (permissions.allPermissionsGranted) {
       LocationServices.getFusedLocationProviderClient(context).lastLocation.addOnSuccessListener {
           loc ->
-        loc?.let { viewModel.consumeLocation(it.latitude, it.longitude) }
+        if (chooseLocation) {
+          viewModel.consumeLocation(chosenLocation.latitude, chosenLocation.longitude)
+        } else loc?.let { viewModel.consumeLocation(it.latitude, it.longitude) }
       }
     }
   }

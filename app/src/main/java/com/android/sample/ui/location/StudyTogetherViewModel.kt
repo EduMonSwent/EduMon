@@ -181,8 +181,6 @@ class StudyTogetherViewModel(
     val minLng = 6.555
     val maxLng = 6.575
 
-    println(lat)
-
     return lat in minLat..maxLat && lng in minLng..maxLng
   }
 }
