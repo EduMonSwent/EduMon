@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AttachMoney
 import androidx.compose.material.icons.outlined.Check
@@ -130,6 +131,7 @@ fun ProfileScreen(
               level = user.level,
               accent = accent,
               accessories = user.accessories,
+              viewModel = viewModel,
               variant = variant)
         }
         item {
@@ -179,6 +181,7 @@ fun PetSection(
     accent: Color,
     accessories: List<String>,
     variant: AccentVariant,
+    viewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
   Box(
@@ -207,60 +210,55 @@ fun PetSection(
                           Box(
                               Modifier.fillMaxSize()
                                   .background(
-                                      brush =
-                                          Brush.radialGradient(
-                                              colors =
-                                                  listOf(
-                                                      accent.copy(alpha = 0.55f),
-                                                      Color.Transparent))))
+                                      Brush.radialGradient(
+                                          colors =
+                                              listOf(
+                                                  accent.copy(alpha = 0.55f), Color.Transparent))))
+
+                          val equipped =
+                              remember(accessories) {
+                                accessories.associate {
+                                  val parts = it.split(":")
+                                  parts[0] to parts[1]
+                                }
+                              }
+
                           Image(
                               painter = painterResource(id = R.drawable.edumon),
                               contentDescription = "EduMon",
                               modifier = Modifier.size(100.dp).zIndex(1f))
 
-                          val equipped =
-                              remember(accessories) {
-                                fun norm(s: String) =
-                                    when (s) {
-                                      "leg" -> "legs"
-                                      else -> s
-                                    }
-                                accessories.associate {
-                                  val p = it.split(":")
-                                  norm(p.getOrNull(0) ?: "") to (p.getOrNull(1) ?: "")
-                                }
-                              }
-
-                          equipped["legs"]?.let {
-                            Box(
-                                Modifier.align(Alignment.BottomCenter)
-                                    .padding(bottom = 6.dp)
-                                    .size(width = 42.dp, height = 6.dp)
-                                    .background(
-                                        Color.White.copy(alpha = 0.85f), RoundedCornerShape(3.dp))
-                                    .zIndex(2f))
+                          equipped["back"]?.let {
+                            val res = viewModel.accessoryResId(AccessorySlot.BACK, it)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(0.5f))
+                            }
                           }
 
                           equipped["torso"]?.let {
-                            Icon(
-                                Icons.Filled.AutoAwesome,
-                                contentDescription = "torso",
-                                tint = Color.White.copy(alpha = 0.9f),
-                                modifier = Modifier.align(Alignment.Center).size(20.dp).zIndex(2f))
+                            val res = viewModel.accessoryResId(AccessorySlot.TORSO, it)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(2f))
+                            }
                           }
 
                           equipped["head"]?.let {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "head",
-                                tint = Color(0xFFFFD54F),
-                                modifier =
-                                    Modifier.align(Alignment.TopCenter)
-                                        .padding(top = 2.dp)
-                                        .size(22.dp)
-                                        .zIndex(2f))
+                            val res = viewModel.accessoryResId(AccessorySlot.HEAD, it)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(3f))
+                            }
                           }
                         }
+
                     Spacer(Modifier.height(6.dp))
                     Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
                   }
@@ -465,10 +463,11 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     }
     Spacer(Modifier.height(8.dp))
 
+    val user by viewModel.userProfile.collectAsState()
+
     val slotItems =
-        remember(viewModel.accessoryCatalog, selectedTab) {
-          viewModel.accessoryCatalog.filter { it.slot == selectedTab }
-        }
+        remember(user, selectedTab) { viewModel.accessoryCatalog.filter { it.slot == selectedTab } }
+
     val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
 
     AccessoriesGrid(
@@ -479,11 +478,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 }
 
 @Composable
-private fun AccessoriesGrid(
-    items: List<AccessoryItem>,
-    selectedId: String?,
-    onSelect: (String) -> Unit
-) {
+fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (String) -> Unit) {
   LazyVerticalGrid(
       columns = GridCells.Adaptive(minSize = 96.dp),
       modifier = Modifier.fillMaxWidth().height(200.dp),
@@ -523,6 +518,7 @@ private fun AccessoriesGrid(
                           AccessorySlot.HEAD -> Icons.Filled.Star
                           AccessorySlot.TORSO -> Icons.Filled.AutoAwesome
                           AccessorySlot.LEGS -> Icons.Filled.Star
+                          AccessorySlot.BACK -> Icons.Filled.BrightnessLow
                         }
                     Icon(
                         fallback,
