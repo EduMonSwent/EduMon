@@ -109,4 +109,10 @@ class PomodoroViewModelTest {
     viewModel.nextPhase()
     Assert.assertEquals(PomodoroPhase.WORK, viewModel.phase.value)
   }
+
+  @Test
+  fun updateCycleCountUpdatesState() = runTest {
+    viewModel.updateCycleCount(10)
+    Assert.assertEquals(10, viewModel.cycleCount.value)
+  }
 }

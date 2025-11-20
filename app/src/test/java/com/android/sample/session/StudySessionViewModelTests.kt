@@ -1,5 +1,6 @@
 package com.android.sample.session
 
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
@@ -24,10 +25,11 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
-class StudySessionViewModelTest {
+class StudySessionViewModelTests {
   private lateinit var fakePomodoro: FakePomodoroViewModel
   private lateinit var fakeRepo: FakeStudySessionRepository
   private lateinit var fakeProfileRepo: FakeProfileRepository
+  private lateinit var fakeUserStatsRepo: FakeUserStatsRepository
   private lateinit var viewModel: StudySessionViewModel
   private val testDispatcher = StandardTestDispatcher()
   private val toDoRepo = ToDoRepositoryProvider.repository
@@ -38,8 +40,11 @@ class StudySessionViewModelTest {
     Dispatchers.setMain(testDispatcher)
     fakePomodoro = FakePomodoroViewModel()
     fakeProfileRepo = FakeProfileRepository()
-    fakeRepo = FakeStudySessionRepository() // Make sure this now returns List<ToDo>
-    viewModel = StudySessionViewModel(fakePomodoro, fakeRepo, fakeProfileRepo)
+    fakeRepo = FakeStudySessionRepository()
+    fakeUserStatsRepo = FakeUserStatsRepository()
+
+    // Pass fakeUserStatsRepo to avoid hitting AppRepositories
+    viewModel = StudySessionViewModel(fakePomodoro, fakeRepo, fakeProfileRepo, fakeUserStatsRepo)
   }
 
   @Test
@@ -122,7 +127,9 @@ class StudySessionViewModelTest {
             status = Status.TODO)
     runBlocking { toDoRepo.add(todo) }
 
-    viewModel = StudySessionViewModel(fakePomodoro, DelegatingRepoToTodos())
+    viewModel =
+        StudySessionViewModel(
+            fakePomodoro, DelegatingRepoToTodos(), fakeProfileRepo, fakeUserStatsRepo)
     viewModel.selectTask(todo)
 
     viewModel.setSelectedTaskStatus(Status.IN_PROGRESS)
@@ -144,7 +151,9 @@ class StudySessionViewModelTest {
             status = Status.TODO)
     runBlocking { toDoRepo.add(todo) }
 
-    viewModel = StudySessionViewModel(fakePomodoro, DelegatingRepoToTodos())
+    viewModel =
+        StudySessionViewModel(
+            fakePomodoro, DelegatingRepoToTodos(), fakeProfileRepo, fakeUserStatsRepo)
     viewModel.selectTask(todo)
 
     viewModel.cycleSelectedTaskStatus()
@@ -183,9 +192,10 @@ class StudySessionViewModelTest {
     advanceUntilIdle()
 
     val state = viewModel.uiState.value
+    // Check that it synced to what pomodoroVM has (via repo -> vm sync logic)
     assertEquals(fakePomodoro.cycleCount.value, state.completedPomodoros)
-    assertEquals(fakeProfileRepo.profile.value.studyStats.totalTimeMin, state.totalMinutes)
-    assertEquals(fakeProfileRepo.profile.value.streak, state.streakCount)
+    assertEquals(fakeUserStatsRepo.stats.value.todayStudyMinutes, state.totalMinutes)
+    assertEquals(fakeUserStatsRepo.stats.value.streak, state.streakCount)
     assertEquals(1, fakeRepo.getSavedSessions().size)
   }
 
@@ -233,6 +243,10 @@ class FakePomodoroViewModel : PomodoroViewModelContract {
           PomodoroPhase.SHORT_BREAK -> PomodoroPhase.LONG_BREAK
           PomodoroPhase.LONG_BREAK -> PomodoroPhase.WORK
         }
+  }
+
+  override fun updateCycleCount(count: Int) {
+    _cycleCount.value = count
   }
 
   fun simulatePhaseAndState(phase: PomodoroPhase, state: PomodoroState) {

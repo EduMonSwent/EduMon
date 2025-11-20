@@ -85,7 +85,7 @@
     <string name="study_session_title">Study Session</string>
     <string name="selected_task_txt">Selected:</string>
     <string name="pomodoros_completed_txt">Pomodoros completed:</string>
-    <string name="pomodoro_time_txt">Total study time:</string>
+    <string name="pomodoro_time_txt">Study time today:</string>
     <string name="current_streak">Current streak:</string>
     <!-- Calendar -->
     <string name="calendar_title">Calendar</string>
@@ -121,7 +121,7 @@
     <!-- Profile Screen Stats -->
     <string name="stats_title">Your Stats</string>
     <string name="stats_streak">Current Streak</string>
-    <string name="stats_points">Total Points</string>
+    <string name="stats_points">Total XP</string>
     <string name="stats_coins">Coins</string>
     <string name="stats_study_time">Study Time Today</string>
     <string name="stats_goal">Daily Goal</string>

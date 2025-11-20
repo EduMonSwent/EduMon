@@ -27,15 +27,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.R
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.screens.CreatureStatsCard
 import com.android.sample.ui.theme.AccentViolet
@@ -249,7 +251,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun UserStatsCard(stats: UserProfile, modifier: Modifier = Modifier) {
+fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
   ElevatedCard(
       modifier,
       colors =
@@ -258,27 +260,30 @@ fun UserStatsCard(stats: UserProfile, modifier: Modifier = Modifier) {
               contentColor = MaterialTheme.colorScheme.onSurface),
       shape = RoundedCornerShape(20.dp)) {
         Column(Modifier.padding(16.dp)) {
-          Text("Your Stats", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+          Text(
+              text = stringResource(id = R.string.stats_title),
+              fontWeight = FontWeight.SemiBold,
+              fontSize = 16.sp)
           Spacer(Modifier.height(8.dp))
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
-              Label("Streak")
+              Label(stringResource(id = R.string.stats_streak))
               BigNumber("${stats.streak}d")
             }
             Column {
-              Label("Points")
+              Label(stringResource(id = R.string.stats_points))
               BigNumber("${stats.points}")
             }
           }
           Spacer(Modifier.height(12.dp))
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
-              Label("Study Today")
-              BigNumber("${stats.studyStats.totalTimeMin}m")
+              Label("Study time today") // daily only
+              BigNumber("${stats.todayStudyMinutes}m")
             }
             Column {
-              Label("Daily Goal")
-              BigNumber("${stats.studyStats.dailyGoalMin}m")
+              Label(stringResource(id = R.string.stats_goal))
+              BigNumber("${stats.weeklyGoal}m")
             }
           }
         }

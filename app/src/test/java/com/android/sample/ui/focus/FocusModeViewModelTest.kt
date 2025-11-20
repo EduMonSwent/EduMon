@@ -6,6 +6,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -36,30 +37,29 @@ class FocusModeViewModelTest {
     Dispatchers.resetMain()
   }
 
-  private fun runFocusTimerImmediately(duration: Int) {
-    FocusTimer.stop()
-    FocusTimer.start(duration)
-    FocusTimer.stop()
-  }
-
   @Test
   fun startFocus_startsTimerAndSetsRunningTrue() = runTest {
-    FocusTimer.start(1)
+    // Don't call FocusTimer.start manually before; let viewModel do it
+    // If FocusModeViewModel.startFocus calls FocusTimer.start internally:
     viewModel.startFocus(fakeContext, 1)
 
-    kotlinx.coroutines.delay(50)
+    // Advance time to let coroutines run
+    advanceUntilIdle()
 
     Assert.assertTrue("isRunning should be true after start", FocusTimer.isRunning.value)
+    // Wait, FocusTimer might count down immediately or after 1 second?
+    // If it's a countdown, remainingTime starts at duration.
+    // 1 minute
     Assert.assertEquals(1.minutes, FocusTimer.remainingTime.value)
   }
 
   @Test
   fun startFocus_thenStopFocus_resetsProperly() = runTest {
-    FocusTimer.start(1)
     viewModel.startFocus(fakeContext, 1)
-    kotlinx.coroutines.delay(50)
+    advanceUntilIdle()
+
     viewModel.stopFocus(fakeContext)
-    kotlinx.coroutines.delay(50)
+    advanceUntilIdle()
 
     Assert.assertFalse("isRunning should be false after stop", FocusTimer.isRunning.value)
     Assert.assertEquals(Duration.ZERO, FocusTimer.remainingTime.value)
@@ -68,11 +68,11 @@ class FocusModeViewModelTest {
   @Test
   fun multipleStartFocus_callsRestartTimer() = runTest {
     viewModel.startFocus(fakeContext, 1)
-    kotlinx.coroutines.delay(50)
+    advanceUntilIdle()
     val first = FocusTimer.remainingTime.value
 
     viewModel.startFocus(fakeContext, 1)
-    kotlinx.coroutines.delay(50)
+    advanceUntilIdle()
     val second = FocusTimer.remainingTime.value
 
     Assert.assertTrue("Timer should be running", FocusTimer.isRunning.value)
@@ -82,9 +82,9 @@ class FocusModeViewModelTest {
   @Test
   fun resetFocus_resetsTimerAndState() = runTest {
     viewModel.startFocus(fakeContext, 1)
-    kotlinx.coroutines.delay(50)
+    advanceUntilIdle()
     viewModel.resetFocus()
-    kotlinx.coroutines.delay(50)
+    advanceUntilIdle()
 
     Assert.assertFalse(FocusTimer.isRunning.value)
     Assert.assertEquals(Duration.ZERO, FocusTimer.remainingTime.value)

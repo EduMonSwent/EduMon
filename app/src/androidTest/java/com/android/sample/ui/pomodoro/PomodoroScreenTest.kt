@@ -243,6 +243,10 @@ class FakePomodoroViewModel : ViewModel(), PomodoroViewModelContract {
     nextPhaseCalled = true
   }
 
+  override fun updateCycleCount(count: Int) {
+    _cycleCount.value = count
+  }
+
   fun setPhase(p: PomodoroPhase) {
     _phase.value = p
   }

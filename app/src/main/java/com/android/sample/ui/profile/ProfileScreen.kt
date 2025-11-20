@@ -71,6 +71,7 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
 import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
@@ -98,6 +99,7 @@ fun ProfileScreen(
     onOpenNotifications: () -> Unit = {}
 ) {
   val user by viewModel.userProfile.collectAsState()
+  val stats by viewModel.userStats.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
 
@@ -119,12 +121,19 @@ fun ProfileScreen(
         }
         item {
           GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
+            Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) {
+              ProfileCard(user = user, stats = stats)
+            }
           }
         }
         item {
-          GlowCard { Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) } }
+          GlowCard {
+            Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) {
+              StatsCard(user = user, stats = stats)
+            }
+          }
         }
+
         item {
           GlowCard {
             Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
@@ -297,7 +306,7 @@ fun GlowCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun ProfileCard(user: UserProfile) {
+fun ProfileCard(user: UserProfile, stats: UserStats) {
   Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -324,7 +333,7 @@ fun ProfileCard(user: UserProfile) {
     Spacer(Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
       Badge(text = "Level ${user.level}", bg = AccentViolet)
-      Badge(text = "${user.points} pts", bg = Color.White, textColor = AccentViolet)
+      Badge(text = "${stats.points} pts", bg = Color.White, textColor = AccentViolet)
     }
   }
 }
@@ -340,27 +349,39 @@ fun Badge(text: String, bg: Color, textColor: Color = Color.White) {
 }
 
 @Composable
-fun StatsCard(user: UserProfile) {
+fun StatsCard(user: UserProfile, stats: UserStats) {
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
         text = stringResource(id = R.string.stats_title),
         fontWeight = FontWeight.SemiBold,
         color = TextLight.copy(alpha = 0.8f))
     Spacer(modifier = Modifier.height(8.dp))
+
     StatRow(
         Icons.Outlined.Whatshot,
         stringResource(id = R.string.stats_streak),
-        "${user.streak} ${stringResource(R.string.days)}")
-    StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${user.points}")
-    StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${user.coins}")
+        "${stats.streak} ${stringResource(R.string.days)}")
+
+    StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${stats.points}")
+
+    StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${stats.coins}")
+
+    // Study time today
     StatRow(
         Icons.AutoMirrored.Outlined.MenuBook,
-        stringResource(id = R.string.stats_study_time),
-        "${user.studyStats.totalTimeMin} ${stringResource(R.string.minute)}")
+        "Study time today",
+        "${stats.todayStudyMinutes} ${stringResource(R.string.minute)}")
+
+    // Total study time (lifetime)
+    StatRow(
+        Icons.Outlined.Schedule,
+        "Total study time",
+        "${stats.totalStudyMinutes} ${stringResource(R.string.minute)}")
+
     StatRow(
         Icons.Outlined.Flag,
         stringResource(id = R.string.stats_goal),
-        "${user.studyStats.dailyGoalMin} ${stringResource(R.string.minute)}")
+        "${stats.weeklyGoal} ${stringResource(R.string.minute)}")
   }
 }
 

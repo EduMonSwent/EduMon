@@ -5,7 +5,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
-import com.android.sample.ui.stats.repository.FakeStatsRepository
+import com.android.sample.data.FakeUserStatsRepository
+import com.android.sample.ui.stats.model.StudyStats
 import com.android.sample.ui.theme.EduMonTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -18,10 +19,21 @@ class StatsUiTest {
   @Test
   fun renders_stats_title_and_sections() {
 
-    val repo = FakeStatsRepository()
-    val stats = repo.stats.value
-    val titles = repo.titles
-    val selected = repo.selectedIndex.value
+    val repo = FakeUserStatsRepository()
+    val userStats = repo.stats.value
+
+    // Map UserStats to StudyStats as done in ViewModel
+    val stats =
+        StudyStats(
+            totalTimeMin = userStats.totalStudyMinutes,
+            courseTimesMin = userStats.courseTimesMin,
+            completedGoals = userStats.completedGoals,
+            progressByDayMin = userStats.progressByDayMin,
+            dailyGoalMin = userStats.dailyGoal,
+            weeklyGoalMin = userStats.weeklyGoal)
+
+    val titles = listOf("Semaine")
+    val selected = 0
 
     rule.setContent {
       EduMonTheme {

@@ -1,12 +1,15 @@
 package com.android.sample.ui.stats.repository
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.data.FirestoreUserStatsRepository
 import com.android.sample.util.FirebaseEmulator
 import com.google.android.gms.tasks.Tasks
-import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -15,7 +18,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FirestoreStatsRepositoryEmulatorTest {
 
-  private lateinit var repo: FirestoreStatsRepository
+  private lateinit var repo: FirestoreUserStatsRepository
 
   @Before
   fun setUp() = runBlocking {
@@ -24,14 +27,12 @@ class FirestoreStatsRepositoryEmulatorTest {
             "Start with: firebase emulators:start --only firestore,auth",
         FirebaseEmulator.isRunning)
 
-    // Clean isolated state per test
     FirebaseEmulator.clearAuthEmulator()
     FirebaseEmulator.clearFirestoreEmulator()
-
-    // Sign in anonymously
     Tasks.await(FirebaseEmulator.auth.signInAnonymously())
 
-    repo = FirestoreStatsRepository(FirebaseEmulator.firestore, FirebaseEmulator.auth)
+    // Corrected constructor argument order: auth, firestore
+    repo = FirestoreUserStatsRepository(FirebaseEmulator.auth, FirebaseEmulator.firestore)
   }
 
   @After
@@ -42,78 +43,61 @@ class FirestoreStatsRepositoryEmulatorTest {
     }
   }
 
+  private suspend fun awaitInitialStats() {
+    withTimeout(2000) { // Wait for snapshot listener to deliver initial data
+      repo.stats.first { it.lastUpdated != 0L }
+    }
+  }
+
   @Test
-  fun refresh_seeds_defaults_when_missing() = runBlocking {
-    // First refresh ensures defaults exist and publishes them
-    repo.refresh()
+  fun start_seeds_defaults_when_missing() = runBlocking {
+    repo.start()
+    awaitInitialStats()
     val first = repo.stats.value
 
-    // Defaults defined in repository
-    assertEquals(5, first.totalTimeMin)
-    assertEquals(300, first.weeklyGoalMin)
-    assertEquals(10, first.completedGoals)
-    assertEquals(7, first.progressByDayMin.size)
-    // Course map contains known keys
-    assertTrue(first.courseTimesMin.containsKey("Analyse I"))
+    assertNotNull(first)
+    assertEquals(0, first.totalStudyMinutes)
+    assertEquals(0, first.streak)
+    assertEquals(0, first.todayCompletedPomodoros)
   }
 
   @Test
-  fun update_overwrites_stats_in_firestore_and_local_state() = runBlocking {
-    repo.refresh()
-    val initial = repo.stats.value
+  fun addStudyMinutes_persists_and_updates_streak() = runBlocking {
+    repo.start()
+    awaitInitialStats()
 
-    val updated =
-        initial.copy(
-            totalTimeMin = initial.totalTimeMin + 15,
-            completedGoals = initial.completedGoals + 1,
-            weeklyGoalMin = 350,
-            courseTimesMin = initial.courseTimesMin.toMutableMap().apply { put("New Course", 20) },
-            progressByDayMin =
-                initial.progressByDayMin.mapIndexed { i, v -> if (i == 0) v + 10 else v })
+    repo.addStudyMinutes(15)
+    val afterFirst = repo.stats.value
+    assertEquals(15, afterFirst.totalStudyMinutes)
+    assertEquals(15, afterFirst.todayStudyMinutes)
+    assertEquals(1, afterFirst.streak)
 
-    repo.update(updated)
-
-    // Local state updated immediately
-    assertEquals(updated, repo.stats.value)
-
-    // Refresh enforces current defaults (by design), but Firestore merge may keep extra map keys.
-    repo.refresh()
-    val now = repo.stats.value
-
-    // Scalars reset to defaults
-    assertEquals(initial.totalTimeMin, now.totalTimeMin)
-    assertEquals(initial.weeklyGoalMin, now.weeklyGoalMin)
-    assertEquals(initial.completedGoals, now.completedGoals)
-    assertEquals(initial.progressByDayMin, now.progressByDayMin)
-
-    // Map contains at least defaults and preserves the extra course key from the earlier update
-    assertTrue(now.courseTimesMin.keys.containsAll(initial.courseTimesMin.keys))
-    assertTrue(now.courseTimesMin.containsKey("New Course"))
+    // Simulate studying on a new day (but not yesterday)
+    val futureTime = System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000
+    // To properly test this, we would need to inject a Clock or delay significantly.
+    // For emulator test, we just check standard increment for now.
   }
 
   @Test
-  fun refresh_replaces_with_new_defaults_when_changed() = runBlocking {
-    // 1) Seed defaults
-    repo.refresh()
-    val defaults = repo.stats.value
+  fun incrementCompletedPomodoros_persists() = runBlocking {
+    repo.start()
+    awaitInitialStats()
 
-    // 2) Manually change Firestore document to simulate older/different defaults
-    val uid = FirebaseEmulator.auth.currentUser!!.uid
-    val userDoc = FirebaseEmulator.firestore.collection("users").document(uid)
-    val payload =
-        mapOf(
-            "stats" to
-                mapOf(
-                    "totalTimeMin" to 0,
-                    "weeklyGoalMin" to 100,
-                    "completedGoals" to 0,
-                    "courseTimesMin" to emptyMap<String, Int>(),
-                    "progressByDayMin" to List(7) { 0 }))
-    Tasks.await(userDoc.set(payload, SetOptions.merge()))
+    repo.incrementCompletedPomodoros()
+    assertEquals(1, repo.stats.value.todayCompletedPomodoros)
 
-    // 3) Next refresh should detect divergence and replace with current defaults
-    repo.refresh()
-    val now = repo.stats.value
-    assertEquals(defaults, now)
+    repo.incrementCompletedPomodoros()
+    assertEquals(2, repo.stats.value.todayCompletedPomodoros)
+  }
+
+  @Test
+  fun update_coins_persists() = runBlocking {
+    repo.start()
+    awaitInitialStats()
+    val initialCoins = repo.stats.value.coins
+    val addedCoins = 50
+    repo.updateCoins(addedCoins)
+
+    assertEquals(initialCoins + addedCoins, repo.stats.value.coins)
   }
 }

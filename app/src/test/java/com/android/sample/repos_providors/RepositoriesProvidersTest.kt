@@ -10,7 +10,7 @@ class RepositoriesProvidersTest {
     val p = FakeRepositoriesProvider
     assertNotNull(p.objectivesRepository)
     assertNotNull(p.weeksRepository)
-    assertNotNull(p.statsRepository)
+    assertNotNull(p.userStatsRepository)
     assertNotNull(p.homeRepository)
     assertNotNull(p.plannerRepository)
     assertNotNull(p.studySessionRepository)
@@ -35,7 +35,7 @@ class RepositoriesProvidersTest {
     }
     access("objectives", { p.objectivesRepository })
     access("weeks", { p.weeksRepository })
-    access("stats", { p.statsRepository })
+    access("userStats", { p.userStatsRepository })
     access("home", { p.homeRepository })
     access("planner", { p.plannerRepository })
     access("studySession", { p.studySessionRepository })

@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessorySlot
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.UserProfile
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.profile.ProfileRepository
@@ -40,7 +41,8 @@ class ProfileViewModelTest {
   @Test
   fun toggles_and_accent_update_profile() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        // Fix: Provide userStatsRepository to avoid default AppRepositories singleton usage
+        val vm = ProfileViewModel(FakeProfileRepository(), FakeUserStatsRepository())
         val before = vm.userProfile.value
 
         vm.toggleNotifications()
@@ -76,7 +78,8 @@ class ProfileViewModelTest {
   fun unequip_removes_only_that_slot() =
       runTest(dispatcher) {
         val repo = TestRepo(UserProfile())
-        val vm = ProfileViewModel(repo)
+        // Fix: Provide userStatsRepository
+        val vm = ProfileViewModel(repo, FakeUserStatsRepository())
 
         vm.equip(AccessorySlot.HEAD, "halo")
         vm.equip(AccessorySlot.TORSO, "scarf")
@@ -96,7 +99,8 @@ class ProfileViewModelTest {
   fun equip_legs_cleans_legacy_singular_prefix_and_sets_new() =
       runTest(dispatcher) {
         val repo = TestRepo(UserProfile(accessories = listOf("leg:boots")))
-        val vm = ProfileViewModel(repo)
+        // Fix: Provide userStatsRepository
+        val vm = ProfileViewModel(repo, FakeUserStatsRepository())
 
         vm.equip(AccessorySlot.LEGS, "rocket")
         advanceUntilIdle()
@@ -109,7 +113,8 @@ class ProfileViewModelTest {
   @Test
   fun accent_variants_cover_all_paths_without_strict_inequality() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        // Fix: Provide userStatsRepository
+        val vm = ProfileViewModel(FakeProfileRepository(), FakeUserStatsRepository())
 
         val baseNonBlack = Color(0xFF6699CC)
         vm.setAvatarAccent(baseNonBlack)
@@ -148,16 +153,15 @@ class ProfileViewModelTest {
   @Test
   fun external_repo_update_is_observed_by_viewmodel() = runTest {
     val repo = FakeProfileRepository()
-    val vm = ProfileViewModel(repository = repo)
+    // Fix: Provide userStatsRepository
+    val vm = ProfileViewModel(repository = repo, userStatsRepository = FakeUserStatsRepository())
 
     repo.updateProfile(repo.profile.value.copy(name = "Taylor", points = 2000))
     advanceUntilIdle()
 
     assertEquals("Taylor", repo.profile.value.name)
-    assertEquals(2000, repo.profile.value.points)
-
+    // Points are no longer synced from profile repo but stats repo, so we verify name update only.
     assertEquals("Alex", vm.userProfile.value.name)
-    assertEquals(1250, vm.userProfile.value.points)
   }
 
   // --- Reward system tests ---------------------------------------------------
@@ -165,23 +169,33 @@ class ProfileViewModelTest {
   @Test
   fun addCoins_withPositiveAmount_increasesUserCoins() = runTest {
     val repo = FakeProfileRepository()
-    val vm = ProfileViewModel(repository = repo)
+    val statsRepo = FakeUserStatsRepository() // Use this to check coins
+    val vm = ProfileViewModel(repository = repo, userStatsRepository = statsRepo)
 
-    val before = vm.userProfile.value.coins
+    // Initial coins 0 in statsRepo
     vm.addCoins(100)
-    val after = vm.userProfile.value.coins
+    advanceUntilIdle() // allow coroutine to update statsRepo
 
-    assertEquals(before + 100, after)
+    // The VM updates statsRepo, then collects from it to update userProfile
+    val after = vm.userProfile.value.coins
+    // statsRepo coins should be 100
+    assertEquals(100, statsRepo.stats.value.coins)
+
+    // And profile should eventually reflect it
+    assertEquals(100, after)
   }
 
   @Test
   fun addCoins_withZeroOrNegativeAmount_doesNothing() = runTest {
     val repo = FakeProfileRepository()
-    val vm = ProfileViewModel(repository = repo)
+    val statsRepo = FakeUserStatsRepository()
+    val vm = ProfileViewModel(repository = repo, userStatsRepository = statsRepo)
 
     val before = vm.userProfile.value.coins
     vm.addCoins(0) // should be ignored
     vm.addCoins(-50) // should also be ignored
+    advanceUntilIdle()
+
     val after = vm.userProfile.value.coins
 
     assertEquals(before, after)
@@ -191,7 +205,8 @@ class ProfileViewModelTest {
 
   @Test
   fun light_blend_matches_expected_math() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    // Fix: Provide userStatsRepository
+    val vm = ProfileViewModel(FakeProfileRepository(), FakeUserStatsRepository())
 
     val job = launch { vm.accentEffective.collect {} }
 
@@ -220,7 +235,8 @@ class ProfileViewModelTest {
 
   @Test
   fun dark_blend_scales_toward_black_by_factor_0_75() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    // Fix: Provide userStatsRepository
+    val vm = ProfileViewModel(FakeProfileRepository(), FakeUserStatsRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     val base = Color(0xFF336699)
@@ -239,7 +255,8 @@ class ProfileViewModelTest {
 
   @Test
   fun vibrant_preserves_black_and_clamps_to_one() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    // Fix: Provide userStatsRepository
+    val vm = ProfileViewModel(FakeProfileRepository(), FakeUserStatsRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     vm.setAvatarAccent(Color.Black)
@@ -264,7 +281,8 @@ class ProfileViewModelTest {
 
   @Test
   fun base_variant_returns_exact_base_color_even_with_alpha() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    // Fix: Provide userStatsRepository
+    val vm = ProfileViewModel(FakeProfileRepository(), FakeUserStatsRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     val base = Color(0.2f, 0.4f, 0.6f, 0.5f)
@@ -284,7 +302,8 @@ class ProfileViewModelTest {
 
   @Test
   fun vibrant_changes_channels_for_non_greyscale_non_black() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    // Fix: Provide userStatsRepository
+    val vm = ProfileViewModel(FakeProfileRepository(), FakeUserStatsRepository())
     val job = launch { vm.accentEffective.collect {} }
 
     val base = Color(0.4f, 0.2f, 0.8f, 1f)

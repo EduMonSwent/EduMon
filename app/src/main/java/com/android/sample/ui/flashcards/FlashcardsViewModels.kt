@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.data.UserStatsRepository
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepoProvider
@@ -161,9 +163,15 @@ data class StudyState(
 class StudyViewModel(
     private val deckId: String,
     private val repo: FlashcardsRepository = FirestoreFlashcardsRepoProvider.get(),
+    private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
     private val requireAuth: Boolean = true
 ) : ViewModel() {
-  constructor(deckId: String, repo: FlashcardsRepository) : this(deckId, repo, requireAuth = false)
+
+  // Secondary constructor for tests or simple usage
+  constructor(
+      deckId: String,
+      repo: FlashcardsRepository
+  ) : this(deckId = deckId, repo = repo, requireAuth = false)
 
   private val _state = MutableStateFlow(StudyState())
   val state: StateFlow<StudyState> = _state
@@ -202,6 +210,12 @@ class StudyViewModel(
 
   fun record(confidence: Confidence) {
     if (!state.value.showingAnswer) return
+
+    // Reward user with points for studying a card
+    viewModelScope.launch {
+      userStatsRepository.addPoints(1) // Example: 1 point per card
+    }
+
     next() // TODO: plug in SRS grading later
   }
 }

@@ -1,11 +1,15 @@
 package com.android.sample.ui.session
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroPhase
@@ -21,11 +25,12 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
+private const val POMODORO_MINUTES = 25
+private const val POINTS_PER_COMPLETED_POMODORO = 10
 
 data class StudySessionUiState(
-    val selectedTask: Task? = null, // TODO replace with real task class
-    val suggestedTasks: List<Task> = emptyList(), // TODO replace with real task class
+    val selectedTask: Task? = null,
+    val suggestedTasks: List<Task> = emptyList(),
     val pomodoroState: PomodoroState = PomodoroState.IDLE,
     val timeLeft: Int = 1500,
     val completedPomodoros: Int = 0,
@@ -39,25 +44,39 @@ typealias Task = ToDo
 class StudySessionViewModel(
     val pomodoroViewModel: PomodoroViewModelContract = PomodoroViewModel(),
     private val repository: StudySessionRepository,
-    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
+
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState
+
   private val toDoRepo = ToDoRepositoryProvider.repository
 
   init {
     observePomodoro()
     loadSuggestedTasks()
-    _uiState.update {
-      it.copy(
-          totalMinutes = profileRepository.profile.value.studyStats.totalTimeMin,
-          streakCount = profileRepository.profile.value.streak)
+
+    // Single source of truth for streak, total minutes, and pomodoros
+    userStatsRepository.start()
+    viewModelScope.launch {
+      userStatsRepository.stats.collect { stats ->
+        _uiState.update {
+          it.copy(
+              totalMinutes = stats.todayStudyMinutes, // today only
+              streakCount = stats.streak,
+              completedPomodoros = stats.todayCompletedPomodoros)
+        }
+        // Sync PomodoroViewModel with the persisted daily count
+        pomodoroViewModel.updateCycleCount(stats.todayCompletedPomodoros)
+      }
     }
   }
 
   private fun observePomodoro() {
     var lastPhase: PomodoroPhase? = null
     var lastState: PomodoroState? = null
+
     combine(pomodoroViewModel.phase, pomodoroViewModel.timeLeft, pomodoroViewModel.state) {
             phase,
             timeLeft,
@@ -70,7 +89,8 @@ class StudySessionViewModel(
             it.copy(
                 pomodoroState = state,
                 timeLeft = timeLeft,
-                isSessionActive = state == PomodoroState.RUNNING)
+                isSessionActive = state == PomodoroState.RUNNING,
+            )
           }
 
           // Detect end of a work session to increment stats
@@ -79,35 +99,34 @@ class StudySessionViewModel(
               state == PomodoroState.FINISHED) {
             onPomodoroCompleted()
           }
+
           lastPhase = phase
           lastState = state
         }
         .launchIn(viewModelScope)
   }
 
-  private suspend fun onPomodoroCompleted() {
-    profileRepository.increaseStreakIfCorrect()
-    profileRepository.increaseStudyTimeBy(25)
-    _uiState.update {
-      it.copy(
-          completedPomodoros =
-              pomodoroViewModel.cycleCount
-                  .value, // TODO: update completed pomodoros with a repository call
-          totalMinutes = profileRepository.profile.value.studyStats.totalTimeMin,
-          streakCount = profileRepository.profile.value.streak)
-    }
-    repository.saveCompletedSession(_uiState.value)
-  }
-
   private fun loadSuggestedTasks() {
     viewModelScope.launch {
       val tasks = repository.getSuggestedTasks()
-      _uiState.update { it.copy(suggestedTasks = tasks) }
       val selectedId = _uiState.value.selectedTask?.id
       _uiState.update {
-        it.copy(suggestedTasks = tasks, selectedTask = tasks.find { t -> t.id == selectedId })
+        it.copy(
+            suggestedTasks = tasks,
+            selectedTask = tasks.find { t -> t.id == selectedId },
+        )
       }
     }
+  }
+
+  private suspend fun onPomodoroCompleted() {
+    // Update global stats in the shared UserStatsRepository (single Firestore source)
+    userStatsRepository.addStudyMinutes(POMODORO_MINUTES)
+    userStatsRepository.addPoints(POINTS_PER_COMPLETED_POMODORO)
+    userStatsRepository.incrementCompletedPomodoros()
+
+    // Persist the session summary if needed
+    repository.saveCompletedSession(_uiState.value)
   }
 
   /** Set the status of the currently selected task, then refresh suggestions/selection. */
@@ -124,7 +143,7 @@ class StudySessionViewModel(
     }
   }
 
-  /** Optional: one-tap cycle like your Overview screen. */
+  /** One-tap cycle like the overview screen. */
   fun cycleSelectedTaskStatus() {
     val selectedId = _uiState.value.selectedTask?.id ?: return
     viewModelScope.launch {
@@ -143,11 +162,7 @@ class StudySessionViewModel(
     }
   }
 
-  /**
-   * Selects a task for the study session.
-   *
-   * @param task The task to select.
-   */
+  /** Selects a task for the study session. */
   fun selectTask(task: Task) {
     _uiState.update { it.copy(selectedTask = task) }
   }

@@ -40,6 +40,8 @@ interface PomodoroViewModelContract {
   fun resetTimer()
 
   fun nextPhase()
+
+  fun updateCycleCount(count: Int)
 }
 
 class PomodoroViewModel : ViewModel(), PomodoroViewModelContract {
@@ -77,7 +79,10 @@ class PomodoroViewModel : ViewModel(), PomodoroViewModelContract {
             if (_state.value == PomodoroState.RUNNING)
                 _timeLeft.value -= 1 // condition here to stop timer instantly when pressing pause
           }
-          if (_timeLeft.value <= 0) onPhaseCompleted()
+          // If timer reached 0 naturally while running
+          if (_timeLeft.value <= 0 && _state.value == PomodoroState.RUNNING) {
+            onPhaseCompleted()
+          }
         }
   }
 
@@ -96,12 +101,14 @@ class PomodoroViewModel : ViewModel(), PomodoroViewModelContract {
     _state.value = PomodoroState.IDLE
     _phase.value = PomodoroPhase.WORK
     _timeLeft.value = WORK_TIME
-    _cycleCount.value = 0
+    // Don't reset cycle count as it tracks daily progress
+    // _cycleCount.value = 0
   }
 
   private fun onPhaseCompleted() {
-    _state.value = PomodoroState.FINISHED
     timerJob?.cancel()
+
+    _state.value = PomodoroState.FINISHED
 
     when (_phase.value) {
       PomodoroPhase.WORK -> {
@@ -117,14 +124,16 @@ class PomodoroViewModel : ViewModel(), PomodoroViewModelContract {
         switchPhase(PomodoroPhase.WORK)
       }
     }
-
-    // startTimer() // delete if timer must wait when starting new phase
   }
 
   /** Skip the current phase and move to the next one. */
   override fun nextPhase() {
     // Allow manual skipping
     onPhaseCompleted()
+  }
+
+  override fun updateCycleCount(count: Int) {
+    _cycleCount.value = count
   }
 
   private fun switchPhase(newPhase: PomodoroPhase) {

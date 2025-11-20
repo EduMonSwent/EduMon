@@ -1,15 +1,16 @@
 package com.android.sample
 
 import com.android.sample.data.CreatureStats
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
 import com.android.sample.feature.homeScreen.HomeViewModel
-import com.android.sample.ui.stats.model.StudyStats
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,27 +43,24 @@ class HomeViewModelTest {
       },
       private val creature: CreatureStats =
           CreatureStats(happiness = 10, health = 20, energy = 30, level = 7),
-      private val user: UserProfile =
-          UserProfile(
-              streak = 3,
-              points = 99,
-              studyStats = StudyStats(totalTimeMin = 15, dailyGoalMin = 120)),
       private val quote: String = "Test quote"
   ) : HomeRepository {
     override suspend fun fetchTodos(): List<ToDo> = todos
 
     override suspend fun fetchCreatureStats(): CreatureStats = creature
 
-    override suspend fun fetchUserStats(): UserProfile = user
+    override suspend fun fetchUserStats(): UserProfile = UserProfile() // Placeholder
 
     override fun dailyQuote(nowMillis: Long): String = quote
   }
 
   private val testDispatcher = StandardTestDispatcher()
+  private lateinit var fakeUserStatsRepo: FakeUserStatsRepository
 
   @Before
   fun setUp() {
     Dispatchers.setMain(testDispatcher)
+    fakeUserStatsRepo = FakeUserStatsRepository()
   }
 
   @After
@@ -72,7 +70,10 @@ class HomeViewModelTest {
 
   @Test
   fun `initial refresh populates state and stops loading`() = runTest {
-    val vm = HomeViewModel(repository = TestRepository())
+    // Inject FakeUserStatsRepository
+    fakeUserStatsRepo = FakeUserStatsRepository(UserStats(points = 99))
+    val vm = HomeViewModel(repository = TestRepository(), userStatsRepository = fakeUserStatsRepo)
+
     assertTrue(vm.uiState.value.isLoading)
     advanceUntilIdle()
 
@@ -81,13 +82,15 @@ class HomeViewModelTest {
     assertEquals(3, s.todos.size)
     assertEquals("A", s.todos.first().title)
     assertEquals(7, s.creatureStats.level)
-    assertEquals(99, s.userStats.points)
+    assertEquals(99, s.userStats.points) // Now checking userStats directly
     assertEquals("Test quote", s.quote)
   }
 
   @Test
   fun `refresh toggles loading then updates values`() = runTest {
-    val vm = HomeViewModel(repository = TestRepository(quote = "Q1"))
+    val vm =
+        HomeViewModel(
+            repository = TestRepository(quote = "Q1"), userStatsRepository = fakeUserStatsRepo)
     advanceUntilIdle()
     assertEquals("Q1", vm.uiState.value.quote)
 
@@ -99,7 +102,10 @@ class HomeViewModelTest {
 
   @Test
   fun `supports empty todos`() = runTest {
-    val vm = HomeViewModel(repository = TestRepository(todos = emptyList(), quote = "EmptyQ"))
+    val vm =
+        HomeViewModel(
+            repository = TestRepository(todos = emptyList(), quote = "EmptyQ"),
+            userStatsRepository = fakeUserStatsRepo)
     advanceUntilIdle()
 
     val s = vm.uiState.value
@@ -109,11 +115,15 @@ class HomeViewModelTest {
 
   @Test
   fun `different repos produce different quotes`() = runTest {
-    val vm1 = HomeViewModel(repository = TestRepository(quote = "Q1"))
+    val vm1 =
+        HomeViewModel(
+            repository = TestRepository(quote = "Q1"), userStatsRepository = fakeUserStatsRepo)
     advanceUntilIdle()
     assertEquals("Q1", vm1.uiState.value.quote)
 
-    val vm2 = HomeViewModel(repository = TestRepository(quote = "Q2"))
+    val vm2 =
+        HomeViewModel(
+            repository = TestRepository(quote = "Q2"), userStatsRepository = fakeUserStatsRepo)
     advanceUntilIdle()
     assertEquals("Q2", vm2.uiState.value.quote)
   }
@@ -134,11 +144,11 @@ class HomeViewModelTest {
     val repo = FakeHomeRepository()
     val todos = repo.fetchTodos()
     val creature = repo.fetchCreatureStats()
-    val user = repo.fetchUserStats()
+    // Removed unused variable 'user'
+    repo.fetchUserStats()
 
     assertEquals(3, todos.size)
     assertTrue(creature.level >= 1)
-    assertTrue(user.studyStats.dailyGoalMin > 0)
   }
 
   @Test
@@ -147,7 +157,7 @@ class HomeViewModelTest {
     assertTrue(s.isLoading)
     assertTrue(s.todos.isEmpty())
     assertEquals(5, s.creatureStats.level)
-    assertEquals(180, s.userStats.studyStats.dailyGoalMin)
+    assertEquals(20, s.userStats.dailyGoal) // Updated check
     assertEquals("", s.quote)
   }
 }

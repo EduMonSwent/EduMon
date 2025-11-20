@@ -1,17 +1,14 @@
 package com.android.sample.ui.stats.repository
 
+// This file is deprecated and should be deleted.
+// Use UserStatsRepository instead.
+/*
 import com.android.sample.ui.stats.model.StudyStats
 import kotlinx.coroutines.flow.StateFlow
 
-/** Abstraction for providing StudyStats to the UI. */
 interface StatsRepository {
-  val stats: StateFlow<StudyStats>
-  val selectedIndex: StateFlow<Int>
-  val titles: List<String>
-
-  fun loadScenario(index: Int)
-
-  suspend fun refresh()
-
+  val stats: StateFlow<StudyStats?>
+  fun start()
   suspend fun update(stats: StudyStats)
 }
+*/

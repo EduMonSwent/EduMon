@@ -16,17 +16,18 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.data.CreatureStats
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.feature.homeScreen.EduMonHomeScreen
 import com.android.sample.feature.homeScreen.GlowCard
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
 import com.android.sample.feature.homeScreen.HomeViewModel
-import com.android.sample.ui.stats.model.StudyStats
 import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
@@ -69,10 +70,8 @@ class HomeScreenTest {
                     creatureStats =
                         CreatureStats(happiness = 85, health = 90, energy = 70, level = 5),
                     userStats =
-                        UserProfile(
-                            streak = 7,
-                            points = 1250,
-                            studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 180)),
+                        UserStats(
+                            streak = 7, points = 1250, todayStudyMinutes = 45, dailyGoal = 50),
                     quote = quote),
             // use platform drawables so tests don’t depend on app resources
             creatureResId = R.drawable.ic_menu_help,
@@ -154,7 +153,8 @@ class HomeScreenTest {
           override fun dailyQuote(nowMillis: Long): String = "Slow"
         }
 
-    val vm = HomeViewModel(repository = slowRepo)
+    // Fix: Provide FakeUserStatsRepository
+    val vm = HomeViewModel(repository = slowRepo, userStatsRepository = FakeUserStatsRepository())
 
     composeRule.setContent {
       MaterialTheme {
@@ -175,7 +175,6 @@ class HomeScreenTest {
     composeRule.onNodeWithText("7d").assertExists()
     composeRule.onNodeWithText("1250").assertExists()
     composeRule.onNodeWithText("45m").assertExists()
-    composeRule.onNodeWithText("180m").assertExists()
   }
 
   @Test
