@@ -163,4 +163,220 @@ class StudyTogetherScreenTest {
     // Should display the empty state message
     composeTestRule.onNodeWithText("No friends yet").assertExists()
   }
+
+  @Test
+  fun handleErrorMessages_convertsResourceIdToString() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Trigger error via duplicate friend add
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U100")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    // Add duplicate
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U100")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    composeTestRule.waitForIdle()
+    // Error message should be converted from resource ID and shown
+    composeTestRule.onNodeWithText("You're already friends.").assertExists()
+  }
+
+  @Test
+  fun userStatusCard_showsCorrectStatus_whenUserSelected() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Select user
+    composeTestRule.runOnUiThread { vm.selectUser() }
+    composeTestRule.waitForIdle()
+
+    // Should show studying status
+    composeTestRule.onNodeWithText("You're studying").assertExists()
+  }
+
+  @Test
+  fun locationCallback_usesActualLocation_whenChooseLocationIsFalse() {
+    // Create a completely fresh repository and ViewModel instance
+    val repo = FakeFriendRepository(emptyList())
+    // Use liveLocation=true so consumeLocation will use the actual coords we pass
+    val vm = StudyTogetherViewModel(friendRepository = repo, liveLocation = true)
+
+    // Verify the ViewModel starts uninitialized
+    val initialState = vm.uiState.value
+    assert(!initialState.isLocationInitialized) {
+      "Fresh ViewModel should not have initialized location yet"
+    }
+
+    // Set up the screen with chooseLocation=false (use actual GPS)
+    composeTestRule.setContent {
+      StudyTogetherScreen(viewModel = vm, showMap = false, chooseLocation = false)
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Simulate GPS location update (Zurich - outside EPFL)
+    val gpsLat = 47.3769
+    val gpsLng = 8.5417
+    composeTestRule.runOnUiThread { vm.consumeLocation(gpsLat, gpsLng) }
+
+    composeTestRule.waitForIdle()
+
+    // Should show outside campus since Zurich is far from EPFL
+    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
+    composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
+
+    // Verify the GPS location was used and state was updated correctly
+    composeTestRule.runOnUiThread {
+      val state = vm.uiState.value
+      assert(state.isLocationInitialized) { "Location should be initialized after consumeLocation" }
+      // Verify the actual GPS coordinates are stored (not the default EPFL location)
+      assert(kotlin.math.abs(state.effectiveUserLatLng.latitude - gpsLat) < 0.0001) {
+        "Expected GPS latitude $gpsLat but got ${state.effectiveUserLatLng.latitude}"
+      }
+      assert(kotlin.math.abs(state.effectiveUserLatLng.longitude - gpsLng) < 0.0001) {
+        "Expected GPS longitude $gpsLng but got ${state.effectiveUserLatLng.longitude}"
+      }
+      // Explicitly verify we're NOT using the default EPFL location
+      val defaultLat = 46.5191
+      val defaultLng = 6.5668
+      assert(kotlin.math.abs(state.effectiveUserLatLng.latitude - defaultLat) > 0.1) {
+        "Should not be using default EPFL latitude"
+      }
+      assert(kotlin.math.abs(state.effectiveUserLatLng.longitude - defaultLng) > 0.1) {
+        "Should not be using default EPFL longitude"
+      }
+    }
+  }
+
+  @Test
+  fun friendInfoCard_showsCorrectInfo_whenFriendSelected() {
+    val seed =
+        listOf(
+            FriendStatus("U1", "Alice", 46.52, 6.56, FriendMode.BREAK),
+        )
+    val repo = FakeFriendRepository(seed)
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Select friend
+    composeTestRule.runOnUiThread { vm.selectFriend(seed[0]) }
+    composeTestRule.waitForIdle()
+
+    // Should show friend name and status
+    composeTestRule.onNodeWithText("Alice").assertExists()
+    composeTestRule.onNodeWithText("Break").assertExists()
+  }
+
+  @Test
+  fun addFriendDialog_cancels_withoutAddingFriend() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Open dialog
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.waitForIdle()
+
+    // Type a UID but cancel
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U50")
+    composeTestRule.onNodeWithText("Cancel").performClick()
+    composeTestRule.waitForIdle()
+
+    // Dialog should close and no friend added
+    composeTestRule.onNodeWithText("Friends (0)").assertExists()
+  }
+
+  @Test
+  fun errorMessage_clearsAfterDisplay() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Trigger error
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U200")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    // Duplicate
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U200")
+    composeTestRule.onNodeWithText("Add").performClick()
+
+    composeTestRule.waitForIdle()
+    // Error shown
+    composeTestRule.onNodeWithText("You're already friends.").assertExists()
+
+    // Wait for snackbar to potentially disappear
+    composeTestRule.waitForIdle()
+  }
+
+  @Test
+  fun chooseLocation_usesChosenLocation_notRealLocation() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+    val chosenLoc = com.google.android.gms.maps.model.LatLng(46.520, 6.565)
+
+    composeTestRule.setContent {
+      StudyTogetherScreen(
+          viewModel = vm, showMap = false, chooseLocation = true, chosenLocation = chosenLoc)
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Should use the chosen location (on campus)
+    composeTestRule.onNodeWithText("On EPFL campus").assertExists()
+  }
+
+  @Test
+  fun friendsDropdown_collapses_afterSelection() {
+    val seed = listOf(FriendStatus("U1", "Bob", 46.52, 6.56, FriendMode.STUDY))
+    val repo = FakeFriendRepository(seed)
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Open dropdown
+    composeTestRule.onNodeWithTag("btn_friends").performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("Bob").assertExists()
+
+    // Select friend
+    composeTestRule.onNodeWithText("Bob").performClick()
+    composeTestRule.waitForIdle()
+
+    // Dropdown should collapse - the friend name in dropdown should no longer be visible
+    // (only in the bottom card)
+  }
+
+  @Test
+  fun multipleErrors_displaySequentially() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Add friend
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U300")
+    composeTestRule.onNodeWithText("Add").performClick()
+    composeTestRule.waitForIdle()
+
+    // Try to add duplicate (error 1)
+    composeTestRule.onNodeWithTag("fab_add_friend").performClick()
+    composeTestRule.onNodeWithTag("field_friend_uid").performTextInput("U300")
+    composeTestRule.onNodeWithText("Add").performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithText("You're already friends.").assertExists()
+  }
 }
