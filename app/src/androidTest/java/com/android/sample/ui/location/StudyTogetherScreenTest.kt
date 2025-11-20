@@ -186,7 +186,6 @@ class StudyTogetherScreenTest {
     composeTestRule.onNodeWithText("You're already friends.").assertExists()
   }
 
-
   @Test
   fun userStatusCard_showsCorrectStatus_whenUserSelected() {
     val repo = FakeFriendRepository(emptyList())
@@ -241,7 +240,6 @@ class StudyTogetherScreenTest {
     // Dialog should close and no friend added
     composeTestRule.onNodeWithText("Friends (0)").assertExists()
   }
-
 
   @Test
   fun errorMessage_clearsAfterDisplay() {

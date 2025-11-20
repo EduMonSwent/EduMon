@@ -21,4 +21,3 @@ internal fun resolveLocationCoordinates(
     actualLocation
   }
 }
-

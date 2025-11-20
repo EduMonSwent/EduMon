@@ -6,8 +6,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Unit tests for location resolution logic.
- * These tests ensure that the location selection logic is properly covered.
+ * Unit tests for location resolution logic. These tests ensure that the location selection logic is
+ * properly covered.
  */
 class LocationHelperTest {
 
@@ -100,4 +100,3 @@ class LocationHelperTest {
     assertEquals(-58.3816, resultActual?.second ?: 0.0, 0.0001)
   }
 }
-
