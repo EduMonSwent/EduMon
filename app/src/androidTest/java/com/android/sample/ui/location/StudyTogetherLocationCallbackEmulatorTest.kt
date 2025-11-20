@@ -19,9 +19,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Integration tests for StudyTogetherScreen location callback logic using Firebase Emulator.
- * These tests verify that location updates (both chosen and actual GPS) work correctly
- * and persist to Firestore when needed.
+ * Integration tests for StudyTogetherScreen location callback logic using Firebase Emulator. These
+ * tests verify that location updates (both chosen and actual GPS) work correctly and persist to
+ * Firestore when needed.
  */
 @RunWith(AndroidJUnit4::class)
 class StudyTogetherLocationCallbackEmulatorTest {
@@ -93,7 +93,6 @@ class StudyTogetherLocationCallbackEmulatorTest {
     }
   }
 
-
   @Test
   fun locationCallback_multipleUpdates_reflectsLatestLocation() {
     val vm = StudyTogetherViewModel(friendRepository = repo)
@@ -123,7 +122,6 @@ class StudyTogetherLocationCallbackEmulatorTest {
       assert(state.isOnCampus) { "Should be on campus after final update" }
     }
   }
-
 
   @Test
   fun locationCallback_edgeCaseBoundary_correctlyDetectsOnOffCampus() {
@@ -163,4 +161,3 @@ class StudyTogetherLocationCallbackEmulatorTest {
     composeTestRule.onNodeWithText("On EPFL campus").assertExists()
   }
 }
-

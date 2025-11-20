@@ -201,7 +201,6 @@ class StudyTogetherScreenTest {
     composeTestRule.onNodeWithText("You're studying").assertExists()
   }
 
-
   @Test
   fun locationCallback_usesActualLocation_whenChooseLocationIsFalse() {
     // Create a completely fresh repository and ViewModel instance
@@ -236,9 +235,7 @@ class StudyTogetherScreenTest {
     // Verify the GPS location was used and state was updated correctly
     composeTestRule.runOnUiThread {
       val state = vm.uiState.value
-      assert(state.isLocationInitialized) {
-        "Location should be initialized after consumeLocation"
-      }
+      assert(state.isLocationInitialized) { "Location should be initialized after consumeLocation" }
       // Verify the actual GPS coordinates are stored (not the default EPFL location)
       assert(kotlin.math.abs(state.effectiveUserLatLng.latitude - gpsLat) < 0.0001) {
         "Expected GPS latitude $gpsLat but got ${state.effectiveUserLatLng.latitude}"
@@ -257,8 +254,6 @@ class StudyTogetherScreenTest {
       }
     }
   }
-
-
 
   @Test
   fun friendInfoCard_showsCorrectInfo_whenFriendSelected() {
