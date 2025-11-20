@@ -298,7 +298,6 @@ class FirestoreUserStatsRepositoryTest {
     assertEquals(300, stats.weeklyGoal)
     assertEquals(10, stats.coins)
     assertEquals(50, stats.points)
-    // on ne teste pas lastUpdated ici, il peut être 0L ou mis à jour lors d'un futur write
   }
 
   @Test
@@ -338,11 +337,39 @@ class FirestoreUserStatsRepositoryTest {
 
     val stats = repo.stats.value
     assertEquals(200, stats.totalStudyMinutes)
-    assertEquals(0, stats.todayStudyMinutes) // reset attendu car jour différent
+    assertEquals(0, stats.todayStudyMinutes)
     assertEquals(3, stats.streak)
     assertEquals(400, stats.weeklyGoal)
     assertEquals(25, stats.coins)
     assertEquals(90, stats.points)
     assertTrue(stats.lastUpdated >= yesterdayMillis)
+  }
+
+  @Test
+  fun start_with_missing_snapshot_creates_default_document_and_updates_state() {
+    val repo = createRepo()
+
+    var capturedListener: EventListener<DocumentSnapshot>? = null
+    `when`(statsDoc.addSnapshotListener(any<EventListener<DocumentSnapshot>>())).thenAnswer {
+        invocation ->
+      @Suppress("UNCHECKED_CAST")
+      capturedListener = invocation.getArgument(0) as EventListener<DocumentSnapshot>
+      mock(ListenerRegistration::class.java)
+    }
+
+    repo.start()
+
+    capturedListener!!.onEvent(null, null)
+
+    Thread.sleep(50L)
+
+    val stats = repo.stats.value
+
+    assertEquals(0, stats.totalStudyMinutes)
+    assertEquals(0, stats.todayStudyMinutes)
+    assertEquals(0, stats.streak)
+    assertEquals(0, stats.weeklyGoal)
+    assertEquals(0, stats.coins)
+    assertEquals(0, stats.points)
   }
 }
