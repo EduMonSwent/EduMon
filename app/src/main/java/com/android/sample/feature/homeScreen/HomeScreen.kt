@@ -75,6 +75,8 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   Todo("todo", "To-Do", Icons.Outlined.CheckBox),
   // NEW: Daily Reflection / Mood
   Mood("mood", "Daily Reflection", Icons.Outlined.Mood),
+  StudyTogether("study_together", "Study Together", Icons.Outlined.Group),
+  Shop("shop", "Shop", Icons.Outlined.ShoppingCart)
 }
 
 // ---------- Route (hooks up VM to UI) ----------

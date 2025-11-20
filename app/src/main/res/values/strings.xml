@@ -238,7 +238,6 @@
     <string name="florian_user">Florian</string>
     <string name="no_user_with_uid">No user found for that UID.</string>
     <string name="cant_add_yourself">You can’t add yourself.</string>
-    <string name="study_together_no_friends_yet">No friends yet</string>
     <!-- Focus Mode UI -->
     <string name="focus_mode_title">Focus Mode</string>
     <string name="focus_mode_start">Start</string>
@@ -305,5 +304,14 @@
     <string name="task_save_error">Error while saving task</string>
     <string name="task_deleted">Task deleted</string>
     <string name="task_delete_error">Error while deleting task</string>
+    <!-- StudyTogether UI -->
+    <string name="study_together_no_friends_yet">No friends yet</string>
+    <string name="on_campus">On EPFL campus</string>
+
+
+
+
+
+
 
 </resources>
