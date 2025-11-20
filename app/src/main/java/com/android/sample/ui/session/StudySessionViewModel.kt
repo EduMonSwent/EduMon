@@ -7,7 +7,6 @@ import com.android.sample.data.ToDo
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
-import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState

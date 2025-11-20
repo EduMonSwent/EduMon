@@ -30,7 +30,6 @@ import androidx.navigation.navArgument
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.repos_providors.AppRepositories
-import com.android.sample.repositories.ToDoRepositoryProvider
 
 /**
  * The Overview screen shows the list of all To-Dos.
