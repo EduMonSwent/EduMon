@@ -30,6 +30,7 @@ import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.planner.AddStudyTaskModal
 import com.android.sample.ui.planner.PetHeader
 import com.android.sample.ui.theme.BackgroundDark
@@ -43,12 +44,12 @@ import java.time.YearMonth
 @Composable
 fun ScheduleScreen() {
   // Repos
-  val taskRepo = remember { CalendarRepositoryImpl() } // tasks
-  val plannerRepo = remember { FakePlannerRepository() } // classes & attendance
+    val context = LocalContext.current
   val resources = LocalContext.current.resources
 
-  // Schedule repository now needs Resources
-  val scheduleRepo = remember { ScheduleRepositoryImpl(taskRepo, plannerRepo, resources) }
+    val repositories = remember { AppRepositories }
+    val scheduleRepo = remember { repositories.scheduleRepository }
+    val plannerRepo = remember { repositories.plannerRepository }
 
   val vm: ScheduleViewModel =
       viewModel(

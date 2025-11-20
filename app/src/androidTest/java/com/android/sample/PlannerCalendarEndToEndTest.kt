@@ -157,7 +157,7 @@ class HomePlannerCalendarStudyEndToEndTest {
     // ---------- 3) HOME -> CALENDAR ----------
     composeRule
         .onNodeWithTag(
-            HomeTestTags.bottomTag(AppDestination.Calendar.route), useUnmergedTree = true)
+            HomeTestTags.bottomTag(AppDestination.Schedule.route), useUnmergedTree = true)
         .assertExists()
         .performClick()
 

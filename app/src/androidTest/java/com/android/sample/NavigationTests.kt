@@ -65,9 +65,8 @@ class HomeNavigationTests {
 
     val cases =
         listOf(
-            AppDestination.Planner.route to "Planner",
+            AppDestination.Schedule.route to "Schedule",
             AppDestination.Profile.route to "Profile",
-            AppDestination.Calendar.route to "Calendar",
             AppDestination.Stats.route to "Stats",
             AppDestination.Games.route to "Games",
             AppDestination.Study.route to "Study",

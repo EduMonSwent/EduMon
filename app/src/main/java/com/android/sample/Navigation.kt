@@ -31,6 +31,7 @@ import com.android.sample.ui.mood.MoodLoggingRoute
 import com.android.sample.ui.notifications.NotificationsScreen
 import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.profile.ProfileScreen
+import com.android.sample.ui.schedule.ScheduleScreen
 import com.android.sample.ui.session.StudySessionScreen
 import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.todo.TodoNavHostInThisFile
@@ -77,26 +78,6 @@ fun EduMonNavHost(
               })
         }
 
-        // PLANNER
-        composable(AppDestination.Planner.route) {
-          Scaffold(
-              topBar = {
-                TopAppBar(
-                    title = {
-                      Text("Planner", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                    },
-                    navigationIcon = {
-                      IconButton(
-                          onClick = { nav.popBackStack() },
-                          modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-                          }
-                    })
-              }) { padding ->
-                Box(Modifier.fillMaxSize().padding(padding)) { PlannerScreen() }
-              }
-        }
-
         // PROFILE
         composable(AppDestination.Profile.route) {
           Scaffold(
@@ -122,14 +103,14 @@ fun EduMonNavHost(
               }
         }
 
-        // CALENDAR
-        composable(AppDestination.Calendar.route) {
+        // Schedule
+        composable(AppDestination.Schedule.route) {
           Scaffold(
               topBar = {
                 TopAppBar(
                     title = {
                       Text(
-                          "Calendar", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                          "Schedule", modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
                     },
                     navigationIcon = {
                       IconButton(
@@ -139,7 +120,7 @@ fun EduMonNavHost(
                           }
                     })
               }) { padding ->
-                Box(Modifier.fillMaxSize().padding(padding)) { CalendarScreen() }
+                Box(Modifier.fillMaxSize().padding(padding)) { ScheduleScreen() }
               }
         }
 

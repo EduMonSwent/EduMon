@@ -67,8 +67,7 @@ object HomeTestTags {
 enum class AppDestination(val route: String, val label: String, val icon: ImageVector) {
   Home("home", "Home", Icons.Outlined.Home),
   Profile("profile", "Profile", Icons.Outlined.Person),
-  Calendar("calendar", "Calendar", Icons.Outlined.CalendarMonth),
-  Planner("planner", "Planner", Icons.Outlined.EventNote),
+    Schedule("schedule", "Schedule", Icons.Outlined.CalendarMonth),
   Study("study", "Study", Icons.Outlined.Timer),
   Games("games", "Games", Icons.Outlined.Extension),
   Stats("stats", "Stats", Icons.Outlined.ShowChart),
@@ -194,14 +193,14 @@ fun EduMonHomeScreen(
                         }
                     AffirmationsAndRemindersCard(
                         quote = state.quote,
-                        onOpenPlanner = { onNavigate(AppDestination.Planner.route) },
+                        onOpenPlanner = { onNavigate(AppDestination.Schedule.route) },
                         // NEW: quick entry point to Mood screen
                         onOpenMood = { onNavigate(AppDestination.Mood.route) },
                     )
 
                     TodayTodosCard(
                         todos = state.todos,
-                        onSeeAll = { onNavigate(AppDestination.Planner.route) })
+                        onSeeAll = { onNavigate(AppDestination.Schedule.route) })
 
                     QuickActionsCard(
                         onStudy = { onNavigate(AppDestination.Study.route) },
@@ -221,7 +220,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
   val items =
       listOf(
           AppDestination.Home,
-          AppDestination.Calendar,
+          AppDestination.Schedule,
           AppDestination.Study,
           AppDestination.Profile,
           AppDestination.Games,
@@ -395,7 +394,7 @@ fun AffirmationsAndRemindersCard(
           Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             AssistChip(
                 onClick = onOpenPlanner,
-                label = { Text("Open Planner") },
+                label = { Text("Open Schedule") },
                 leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
                 modifier = Modifier.testTag(HomeTestTags.CHIP_OPEN_PLANNER))
             AssistChip(

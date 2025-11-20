@@ -93,7 +93,7 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // 3) HOME -> CALENDAR VIA BOTTOM NAV
     composeRule
         .onNodeWithTag(
-            HomeTestTags.bottomTag(AppDestination.Calendar.route), useUnmergedTree = true)
+            HomeTestTags.bottomTag(AppDestination.Schedule.route), useUnmergedTree = true)
         .assertExists()
         .performClick()
 

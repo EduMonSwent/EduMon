@@ -3,6 +3,9 @@ package com.android.sample.repos_providors
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
+import com.android.sample.feature.schedule.repository.planner.FirestorePlannerRepository
+import com.android.sample.feature.schedule.repository.schedule.FirestoreScheduleRepository
+import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
@@ -40,10 +43,15 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val flashcardsRepository: FlashcardsRepository by lazy {
     FirestoreFlashcardsRepository(db, auth)
   }
+  override val scheduleRepository: ScheduleRepository by lazy {
+    FirestoreScheduleRepository(db, auth)
+  }
+  override val plannerRepository: PlannerRepoForPlanner by lazy {
+    FirestorePlannerRepository(db, auth)
+  }
 
   // Local implementations until remote backends exist
   override val homeRepository: HomeRepository by lazy { FakeHomeRepository() }
-  override val plannerRepository: PlannerRepoForPlanner by lazy { PlannerRepoForPlanner() }
   override val studySessionRepository: StudySessionRepository by lazy {
     ToDoBackedStudySessionRepository()
   }
