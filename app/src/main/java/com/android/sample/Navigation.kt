@@ -19,7 +19,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
-import com.android.sample.ui.calendar.CalendarScreen
 import com.android.sample.ui.flashcards.FlashcardsApp
 import com.android.sample.ui.focus.FocusModeScreen
 import com.android.sample.ui.games.FlappyEduMonScreen
@@ -29,7 +28,6 @@ import com.android.sample.ui.games.MemoryGameScreen
 import com.android.sample.ui.games.ReactionGameScreen
 import com.android.sample.ui.mood.MoodLoggingRoute
 import com.android.sample.ui.notifications.NotificationsScreen
-import com.android.sample.ui.planner.PlannerScreen
 import com.android.sample.ui.profile.ProfileScreen
 import com.android.sample.ui.schedule.ScheduleScreen
 import com.android.sample.ui.session.StudySessionScreen

@@ -67,7 +67,7 @@ object HomeTestTags {
 enum class AppDestination(val route: String, val label: String, val icon: ImageVector) {
   Home("home", "Home", Icons.Outlined.Home),
   Profile("profile", "Profile", Icons.Outlined.Person),
-    Schedule("schedule", "Schedule", Icons.Outlined.CalendarMonth),
+  Schedule("schedule", "Schedule", Icons.Outlined.CalendarMonth),
   Study("study", "Study", Icons.Outlined.Timer),
   Games("games", "Games", Icons.Outlined.Extension),
   Stats("stats", "Stats", Icons.Outlined.ShowChart),

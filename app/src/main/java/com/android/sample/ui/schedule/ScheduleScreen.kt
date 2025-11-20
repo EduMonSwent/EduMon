@@ -23,9 +23,6 @@ import com.android.sample.feature.schedule.data.schedule.Priority
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.data.schedule.ScheduleTab
 import com.android.sample.feature.schedule.data.schedule.SourceTag
-import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl // tasks repo
-import com.android.sample.feature.schedule.repository.planner.FakePlannerRepository // classes+attendance repo
-import com.android.sample.feature.schedule.repository.schedule.ScheduleRepositoryImpl
 import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
@@ -44,12 +41,12 @@ import java.time.YearMonth
 @Composable
 fun ScheduleScreen() {
   // Repos
-    val context = LocalContext.current
+  val context = LocalContext.current
   val resources = LocalContext.current.resources
 
-    val repositories = remember { AppRepositories }
-    val scheduleRepo = remember { repositories.scheduleRepository }
-    val plannerRepo = remember { repositories.plannerRepository }
+  val repositories = remember { AppRepositories }
+  val scheduleRepo = remember { repositories.scheduleRepository }
+  val plannerRepo = remember { repositories.plannerRepository }
 
   val vm: ScheduleViewModel =
       viewModel(

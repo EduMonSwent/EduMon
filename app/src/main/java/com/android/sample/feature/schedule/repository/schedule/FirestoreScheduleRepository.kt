@@ -19,7 +19,6 @@ import kotlinx.coroutines.tasks.await
  * Firestore-backed implementation of the unified ScheduleRepository.
  *
  * Events are stored under: /users/{uid}/schedule/{eventId}
- *
  * - Real-time sync via snapshot listeners
  * - Offline support via Firestore's local cache
  */
@@ -28,95 +27,93 @@ class FirestoreScheduleRepository(
     private val auth: FirebaseAuth,
 ) : ScheduleRepository {
 
-    private val _events = MutableStateFlow<List<ScheduleEvent>>(emptyList())
-    override val events: StateFlow<List<ScheduleEvent>> = _events.asStateFlow()
+  private val _events = MutableStateFlow<List<ScheduleEvent>>(emptyList())
+  override val events: StateFlow<List<ScheduleEvent>> = _events.asStateFlow()
 
-    private val collectionName = "schedule"
-    private val usersCollection = "users"
+  private val collectionName = "schedule"
+  private val usersCollection = "users"
 
-    init {
-        startListening()
+  init {
+    startListening()
+  }
+
+  private fun startListening() {
+    val uid = auth.currentUser?.uid ?: return
+
+    db.collection(usersCollection).document(uid).collection(collectionName).addSnapshotListener {
+        snapshot,
+        error ->
+      if (error != null || snapshot == null) {
+        // You might log the error here
+        return@addSnapshotListener
+      }
+
+      val events =
+          snapshot.documents
+              .mapNotNull { it.toScheduleEvent() }
+              .sortedWith(compareBy<ScheduleEvent> { it.date }.thenBy { it.time ?: LocalTime.MIN })
+
+      _events.value = events
     }
+  }
 
-    private fun startListening() {
-        val uid = auth.currentUser?.uid ?: return
+  private fun userScheduleCollection(uid: String) =
+      db.collection(usersCollection).document(uid).collection(collectionName)
 
-        db.collection(usersCollection)
-            .document(uid)
-            .collection(collectionName)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
-                    // You might log the error here
-                    return@addSnapshotListener
-                }
+  private fun requireUid(): String {
+    return auth.currentUser?.uid
+        ?: throw IllegalStateException("No authenticated user for ScheduleRepository")
+  }
 
-                val events =
-                    snapshot.documents
-                        .mapNotNull { it.toScheduleEvent() }
-                        .sortedWith(
-                            compareBy<ScheduleEvent> { it.date }.thenBy { it.time ?: LocalTime.MIN })
+  override suspend fun save(event: ScheduleEvent) {
+    // Treat save as an upsert
+    val uid = requireUid()
+    val collection = userScheduleCollection(uid)
 
-                _events.value = events
-            }
-    }
+    val id = if (event.id.isBlank()) collection.document().id else event.id
+    val eventWithId = event.copy(id = id)
 
-    private fun userScheduleCollection(uid: String) =
-        db.collection(usersCollection).document(uid).collection(collectionName)
+    collection.document(id).set(eventWithId.toFirestoreMap(), SetOptions.merge()).await()
+    // No need to update _events manually; snapshot listener will fire.
+  }
 
-    private fun requireUid(): String {
-        return auth.currentUser?.uid
-            ?: throw IllegalStateException("No authenticated user for ScheduleRepository")
-    }
+  override suspend fun update(event: ScheduleEvent) {
+    val uid = requireUid()
+    val id =
+        event.id.ifBlank {
+          throw IllegalArgumentException("update() requires an event with a non-blank id")
+        }
 
-    override suspend fun save(event: ScheduleEvent) {
-        // Treat save as an upsert
-        val uid = requireUid()
-        val collection = userScheduleCollection(uid)
+    userScheduleCollection(uid).document(id).set(event.toFirestoreMap(), SetOptions.merge()).await()
+  }
 
-        val id = if (event.id.isBlank()) collection.document().id else event.id
-        val eventWithId = event.copy(id = id)
+  override suspend fun delete(eventId: String) {
+    val uid = requireUid()
+    if (eventId.isBlank()) return
 
-        collection.document(id).set(eventWithId.toFirestoreMap(), SetOptions.merge()).await()
-        // No need to update _events manually; snapshot listener will fire.
-    }
+    userScheduleCollection(uid).document(eventId).delete().await()
+  }
 
-    override suspend fun update(event: ScheduleEvent) {
-        val uid = requireUid()
-        val id =
-            event.id.ifBlank {
-                throw IllegalArgumentException("update() requires an event with a non-blank id")
-            }
+  override suspend fun getEventsBetween(start: LocalDate, end: LocalDate): List<ScheduleEvent> =
+      events.value.filter { it.date in start..end }
 
-        userScheduleCollection(uid).document(id).set(event.toFirestoreMap(), SetOptions.merge()).await()
-    }
+  override suspend fun getById(id: String): ScheduleEvent? =
+      events.value.firstOrNull { it.id == id }
 
-    override suspend fun delete(eventId: String) {
-        val uid = requireUid()
-        if (eventId.isBlank()) return
+  override suspend fun moveEventDate(id: String, newDate: LocalDate): Boolean {
+    val event = getById(id) ?: return false
+    val updated = event.copy(date = newDate)
+    update(updated)
+    return true
+  }
 
-        userScheduleCollection(uid).document(eventId).delete().await()
-    }
+  override suspend fun getEventsForDate(date: LocalDate): List<ScheduleEvent> =
+      events.value.filter { it.date == date }
 
-    override suspend fun getEventsBetween(start: LocalDate, end: LocalDate): List<ScheduleEvent> =
-        events.value.filter { it.date in start..end }
-
-    override suspend fun getById(id: String): ScheduleEvent? =
-        events.value.firstOrNull { it.id == id }
-
-    override suspend fun moveEventDate(id: String, newDate: LocalDate): Boolean {
-        val event = getById(id) ?: return false
-        val updated = event.copy(date = newDate)
-        update(updated)
-        return true
-    }
-
-    override suspend fun getEventsForDate(date: LocalDate): List<ScheduleEvent> =
-        events.value.filter { it.date == date }
-
-    override suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent> {
-        val endDate = startDate.plusDays(6)
-        return getEventsBetween(startDate, endDate)
-    }
+  override suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent> {
+    val endDate = startDate.plusDays(6)
+    return getEventsBetween(startDate, endDate)
+  }
 }
 
 /* ---------- Firestore mapping helpers ---------- */
@@ -137,46 +134,43 @@ private fun ScheduleEvent.toFirestoreMap(): Map<String, Any?> =
     )
 
 private fun DocumentSnapshot.toScheduleEvent(): ScheduleEvent? {
-    val title = getString("title") ?: return null
-    val dateStr = getString("date") ?: return null
+  val title = getString("title") ?: return null
+  val dateStr = getString("date") ?: return null
 
-    val date = kotlin.runCatching { LocalDate.parse(dateStr) }.getOrNull() ?: return null
-    val timeStr = getString("time")
-    val time = timeStr?.let { kotlin.runCatching { LocalTime.parse(it) }.getOrNull() }
+  val date = kotlin.runCatching { LocalDate.parse(dateStr) }.getOrNull() ?: return null
+  val timeStr = getString("time")
+  val time = timeStr?.let { kotlin.runCatching { LocalTime.parse(it) }.getOrNull() }
 
-    val durationMinutes = getLong("durationMinutes")?.toInt()
+  val durationMinutes = getLong("durationMinutes")?.toInt()
 
-    val kindName = getString("kind")
-    val kind =
-        kindName
-            ?.let { kotlin.runCatching { EventKind.valueOf(it) }.getOrNull() }
-            ?: EventKind.STUDY
+  val kindName = getString("kind")
+  val kind =
+      kindName?.let { kotlin.runCatching { EventKind.valueOf(it) }.getOrNull() } ?: EventKind.STUDY
 
-    val isCompleted = getBoolean("isCompleted") ?: false
-    val description = getString("description")
+  val isCompleted = getBoolean("isCompleted") ?: false
+  val description = getString("description")
 
-    val priorityName = getString("priority")
-    val priority =
-        priorityName?.let { kotlin.runCatching { Priority.valueOf(it) }.getOrNull() }
+  val priorityName = getString("priority")
+  val priority = priorityName?.let { kotlin.runCatching { Priority.valueOf(it) }.getOrNull() }
 
-    val courseCode = getString("courseCode")
-    val location = getString("location")
+  val courseCode = getString("courseCode")
+  val location = getString("location")
 
-    val sourceTagName = getString("sourceTag") ?: SourceTag.Task.name
-    val sourceTag =
-        kotlin.runCatching { SourceTag.valueOf(sourceTagName) }.getOrNull() ?: SourceTag.Task
+  val sourceTagName = getString("sourceTag") ?: SourceTag.Task.name
+  val sourceTag =
+      kotlin.runCatching { SourceTag.valueOf(sourceTagName) }.getOrNull() ?: SourceTag.Task
 
-    return ScheduleEvent(
-        id = id, // Firestore doc id
-        title = title,
-        date = date,
-        time = time,
-        durationMinutes = durationMinutes,
-        kind = kind,
-        description = description,
-        isCompleted = isCompleted,
-        priority = priority,
-        courseCode = courseCode,
-        location = location,
-        sourceTag = sourceTag)
+  return ScheduleEvent(
+      id = id, // Firestore doc id
+      title = title,
+      date = date,
+      time = time,
+      durationMinutes = durationMinutes,
+      kind = kind,
+      description = description,
+      isCompleted = isCompleted,
+      priority = priority,
+      courseCode = courseCode,
+      location = location,
+      sourceTag = sourceTag)
 }

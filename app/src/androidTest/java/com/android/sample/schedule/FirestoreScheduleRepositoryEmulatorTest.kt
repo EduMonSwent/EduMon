@@ -22,155 +22,151 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FirestoreScheduleRepositoryEmulatorTest {
 
-    private lateinit var repo: FirestoreScheduleRepository
+  private lateinit var repo: FirestoreScheduleRepository
 
-    @Before
-    fun setUp() = runBlocking {
-        FirebaseEmulator.initIfNeeded(ApplicationProvider.getApplicationContext())
-        FirebaseEmulator.connectIfRunning()
+  @Before
+  fun setUp() = runBlocking {
+    FirebaseEmulator.initIfNeeded(ApplicationProvider.getApplicationContext())
+    FirebaseEmulator.connectIfRunning()
 
-        assertTrue(
-            "Firebase emulators not reachable. Start with: " +
-                    "firebase emulators:start --only firestore,auth",
-            FirebaseEmulator.isRunning
-        )
+    assertTrue(
+        "Firebase emulators not reachable. Start with: " +
+            "firebase emulators:start --only firestore,auth",
+        FirebaseEmulator.isRunning)
 
-        FirebaseEmulator.clearAll()
-        Tasks.await(FirebaseEmulator.auth.signInAnonymously())
+    FirebaseEmulator.clearAll()
+    Tasks.await(FirebaseEmulator.auth.signInAnonymously())
 
-        repo = FirestoreScheduleRepository(FirebaseEmulator.firestore, FirebaseEmulator.auth)
+    repo = FirestoreScheduleRepository(FirebaseEmulator.firestore, FirebaseEmulator.auth)
+  }
+
+  @After
+  fun tearDown() = runBlocking {
+    if (FirebaseEmulator.isRunning) {
+      FirebaseEmulator.clearAll()
     }
+  }
 
-    @After
-    fun tearDown() = runBlocking {
-        if (FirebaseEmulator.isRunning) {
-            FirebaseEmulator.clearAll()
-        }
+  private suspend fun awaitEventsCount(expected: Int, timeoutMs: Long = 5000) {
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < timeoutMs) {
+      if (repo.events.value.size == expected) return
+      delay(50)
     }
+    // If it fails, still assert to show what's actually there
+    assertEquals(expected, repo.events.value.size)
+  }
 
-    private suspend fun awaitEventsCount(expected: Int, timeoutMs: Long = 5000) {
-        val start = System.currentTimeMillis()
-        while (System.currentTimeMillis() - start < timeoutMs) {
-            if (repo.events.value.size == expected) return
-            delay(50)
-        }
-        // If it fails, still assert to show what's actually there
-        assertEquals(expected, repo.events.value.size)
-    }
+  @Test
+  fun save_and_eventsFlow_are_sorted_by_date_and_time() = runBlocking {
+    val today = LocalDate.now()
+    val tomorrow = today.plusDays(1)
 
-    @Test
-    fun save_and_eventsFlow_are_sorted_by_date_and_time() = runBlocking {
-        val today = LocalDate.now()
-        val tomorrow = today.plusDays(1)
-
-        val e1 = ScheduleEvent(
+    val e1 =
+        ScheduleEvent(
             title = "B Task",
             date = today,
             time = LocalTime.of(14, 0),
             kind = EventKind.STUDY,
-            sourceTag = SourceTag.Task
-        )
-        val e2 = ScheduleEvent(
+            sourceTag = SourceTag.Task)
+    val e2 =
+        ScheduleEvent(
             title = "A Task",
             date = today,
             time = LocalTime.of(9, 0),
             kind = EventKind.STUDY,
-            sourceTag = SourceTag.Task
-        )
-        val e3 = ScheduleEvent(
+            sourceTag = SourceTag.Task)
+    val e3 =
+        ScheduleEvent(
             title = "Tomorrow Task",
             date = tomorrow,
             time = LocalTime.of(8, 0),
             kind = EventKind.PROJECT,
-            sourceTag = SourceTag.Task
-        )
+            sourceTag = SourceTag.Task)
 
-        repo.save(e1)
-        repo.save(e2)
-        repo.save(e3)
+    repo.save(e1)
+    repo.save(e2)
+    repo.save(e3)
 
-        awaitEventsCount(3)
+    awaitEventsCount(3)
 
-        val events = repo.events.value
+    val events = repo.events.value
 
-        // Sorted by date, then time
-        assertEquals(
-            listOf("A Task", "B Task", "Tomorrow Task"),
-            events.map { it.title }
-        )
-        assertEquals(listOf(today, today, tomorrow), events.map { it.date })
-    }
+    // Sorted by date, then time
+    assertEquals(listOf("A Task", "B Task", "Tomorrow Task"), events.map { it.title })
+    assertEquals(listOf(today, today, tomorrow), events.map { it.date })
+  }
 
-    @Test
-    fun update_and_delete_modify_persisted_events() = runBlocking {
-        val today = LocalDate.now()
-        val base = ScheduleEvent(
+  @Test
+  fun update_and_delete_modify_persisted_events() = runBlocking {
+    val today = LocalDate.now()
+    val base =
+        ScheduleEvent(
             title = "Original",
             date = today,
             time = LocalTime.of(10, 0),
             kind = EventKind.STUDY,
-            sourceTag = SourceTag.Task
-        )
+            sourceTag = SourceTag.Task)
 
-        repo.save(base)
-        awaitEventsCount(1)
+    repo.save(base)
+    awaitEventsCount(1)
 
-        val saved = repo.events.value.first()
-        val edited = saved.copy(title = "Edited Title")
+    val saved = repo.events.value.first()
+    val edited = saved.copy(title = "Edited Title")
 
-        repo.update(edited)
+    repo.update(edited)
 
-        // Wait for snapshot listener to pick up update
-        val start = System.currentTimeMillis()
-        while (System.currentTimeMillis() - start < 5000) {
-            if (repo.events.value.first().title == "Edited Title") break
-            delay(50)
-        }
-
-        assertEquals("Edited Title", repo.events.value.first().title)
-
-        repo.delete(saved.id)
-        awaitEventsCount(0)
-        assertTrue(repo.events.value.isEmpty())
+    // Wait for snapshot listener to pick up update
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < 5000) {
+      if (repo.events.value.first().title == "Edited Title") break
+      delay(50)
     }
 
-    @Test
-    fun moveEventDate_moves_event_and_reflected_in_queries() = runBlocking {
-        val today = LocalDate.now()
-        val nextWeek = today.plusDays(7)
+    assertEquals("Edited Title", repo.events.value.first().title)
 
-        val event = ScheduleEvent(
+    repo.delete(saved.id)
+    awaitEventsCount(0)
+    assertTrue(repo.events.value.isEmpty())
+  }
+
+  @Test
+  fun moveEventDate_moves_event_and_reflected_in_queries() = runBlocking {
+    val today = LocalDate.now()
+    val nextWeek = today.plusDays(7)
+
+    val event =
+        ScheduleEvent(
             title = "Move Me",
             date = today,
             time = LocalTime.of(15, 0),
             kind = EventKind.STUDY,
-            sourceTag = SourceTag.Task
-        )
+            sourceTag = SourceTag.Task)
 
-        repo.save(event)
-        awaitEventsCount(1)
+    repo.save(event)
+    awaitEventsCount(1)
 
-        val saved = repo.events.value.first()
-        val moved = repo.moveEventDate(saved.id, nextWeek)
-        assertTrue(moved)
+    val saved = repo.events.value.first()
+    val moved = repo.moveEventDate(saved.id, nextWeek)
+    assertTrue(moved)
 
-        // Allow snapshot to update
-        val start = System.currentTimeMillis()
-        while (System.currentTimeMillis() - start < 5000) {
-            val ev = repo.events.value.firstOrNull()
-            if (ev != null && ev.date == nextWeek) break
-            delay(50)
-        }
-
-        val all = repo.events.value
-        assertEquals(1, all.size)
-        assertEquals(nextWeek, all[0].date)
-
-        val todayEvents = repo.getEventsForDate(today)
-        val nextWeekEvents = repo.getEventsForDate(nextWeek)
-
-        assertTrue(todayEvents.isEmpty())
-        assertEquals(1, nextWeekEvents.size)
-        assertEquals("Move Me", nextWeekEvents[0].title)
+    // Allow snapshot to update
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < 5000) {
+      val ev = repo.events.value.firstOrNull()
+      if (ev != null && ev.date == nextWeek) break
+      delay(50)
     }
+
+    val all = repo.events.value
+    assertEquals(1, all.size)
+    assertEquals(nextWeek, all[0].date)
+
+    val todayEvents = repo.getEventsForDate(today)
+    val nextWeekEvents = repo.getEventsForDate(nextWeek)
+
+    assertTrue(todayEvents.isEmpty())
+    assertEquals(1, nextWeekEvents.size)
+    assertEquals("Move Me", nextWeekEvents[0].title)
+  }
 }

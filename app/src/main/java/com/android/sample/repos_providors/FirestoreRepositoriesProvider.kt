@@ -4,9 +4,9 @@ import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
 import com.android.sample.feature.schedule.repository.planner.FirestorePlannerRepository
+import com.android.sample.feature.schedule.repository.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.feature.schedule.repository.schedule.FirestoreScheduleRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
-import com.android.sample.feature.schedule.repository.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository

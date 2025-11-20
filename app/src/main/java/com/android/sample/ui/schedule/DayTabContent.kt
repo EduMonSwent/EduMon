@@ -126,7 +126,10 @@ private fun TodayCard(
               modifier = Modifier.padding(bottom = 8.dp))
         }) {
           if (classes.isEmpty()) {
-            Text(stringResource(R.string.no_classes_today), color = cs.onSurface.copy(alpha = 0.7f), modifier = modifier.fillMaxWidth())
+            Text(
+                stringResource(R.string.no_classes_today),
+                color = cs.onSurface.copy(alpha = 0.7f),
+                modifier = modifier.fillMaxWidth())
           } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
               classes.forEachIndexed { idx, c ->
