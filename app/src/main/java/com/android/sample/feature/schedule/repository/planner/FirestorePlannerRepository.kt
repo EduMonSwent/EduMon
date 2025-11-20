@@ -19,7 +19,7 @@ import kotlinx.coroutines.tasks.await
 
 /**
  * Firestore-backed implementation of PlannerRepository.
- * - Classes: /users/{uid}/planner/classes/{classId}
+ * - Classes: /users/{uid}/classes/{classId}
  * - Attendance: /users/{uid}/planner/attendance/{docId}
  */
 class FirestorePlannerRepository(
@@ -176,15 +176,6 @@ private fun DocumentSnapshot.toPlannerClass(): Class? {
       location = location,
       instructor = instructor)
 }
-
-private fun Class.toFirestoreMap(): Map<String, Any?> =
-    mapOf(
-        "courseName" to courseName,
-        "startTime" to startTime.toString(), // "09:00"
-        "endTime" to endTime.toString(),
-        "type" to type.name,
-        "location" to location,
-        "instructor" to instructor)
 
 private fun DocumentSnapshot.toClassAttendance(): ClassAttendance? {
   val classId = getString("classId") ?: return null
