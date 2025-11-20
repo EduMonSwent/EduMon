@@ -259,9 +259,9 @@ private fun TrackUserLocation(
 
       // First, get last known location for immediate display
       fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
-        if (chooseLocation) {
-          onLocationUpdate(chosenLocation.latitude, chosenLocation.longitude)
-        } else loc?.let { onLocationUpdate(it.latitude, it.longitude) }
+        val actualLoc = loc?.let { it.latitude to it.longitude }
+        resolveLocationCoordinates(chooseLocation, chosenLocation, actualLoc)
+            ?.let { (lat, lng) -> onLocationUpdate(lat, lng) }
       }
 
       // Then set up continuous location updates
@@ -278,13 +278,9 @@ private fun TrackUserLocation(
       val locationCallback =
           object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-              locationResult.lastLocation?.let { location ->
-                if (chooseLocation) {
-                  onLocationUpdate(chosenLocation.latitude, chosenLocation.longitude)
-                } else {
-                  onLocationUpdate(location.latitude, location.longitude)
-                }
-              }
+              val actualLoc = locationResult.lastLocation?.let { it.latitude to it.longitude }
+              resolveLocationCoordinates(chooseLocation, chosenLocation, actualLoc)
+                  ?.let { (lat, lng) -> onLocationUpdate(lat, lng) }
             }
           }
 
