@@ -1,5 +1,7 @@
 package com.android.sample.feature.homeScreen
 
+// This code has been written partially using A.I (LLM).
+
 // 🔽 Only dependency on creature UI:
 
 import androidx.compose.animation.core.LinearEasing
@@ -35,12 +37,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.screens.CreatureStatsCard
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
+
+private const val DAYS_PER_WEEK = 7
 
 /** ---------- Test tags used by UI tests ---------- */
 object HomeTestTags {
@@ -197,7 +201,6 @@ fun EduMonHomeScreen(
                     AffirmationsAndRemindersCard(
                         quote = state.quote,
                         onOpenPlanner = { onNavigate(AppDestination.Planner.route) },
-                        // NEW: quick entry point to Mood screen
                         onOpenMood = { onNavigate(AppDestination.Mood.route) },
                     )
 
@@ -249,7 +252,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun UserStatsCard(stats: UserProfile, modifier: Modifier = Modifier) {
+fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
   ElevatedCard(
       modifier,
       colors =
@@ -274,11 +277,11 @@ fun UserStatsCard(stats: UserProfile, modifier: Modifier = Modifier) {
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
               Label("Study Today")
-              BigNumber("${stats.studyStats.totalTimeMin}m")
+              BigNumber("${stats.todayStudyMinutes}m")
             }
             Column {
-              Label("Daily Goal")
-              BigNumber("${stats.studyStats.dailyGoalMin}m")
+              Label("Weekly Goal")
+              BigNumber("${stats.weeklyGoal}m")
             }
           }
         }

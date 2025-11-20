@@ -1,5 +1,7 @@
 package com.android.sample.ui.profile
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -9,8 +11,11 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
@@ -25,18 +30,30 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
-    private val repository: ProfileRepository = ProfileRepositoryProvider.repository
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
 
-  // ----- Profil LOCAL uniquement -----
-  private val _userProfile = MutableStateFlow(repository.profile.value.copy())
+  // ----- Profile (name, email, avatar, accessories, settings) -----
+  private val _userProfile = MutableStateFlow(profileRepository.profile.value.copy())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
-  // Palette issue de ton thème
+  // ----- Unified stats from Firestore (/users/{uid}/stats/stats) -----
+  private val _userStats = MutableStateFlow(UserStats())
+  val userStats: StateFlow<UserStats> = _userStats
+
+  init {
+    viewModelScope.launch {
+      userStatsRepository.start()
+      userStatsRepository.stats.collect { stats -> _userStats.value = stats }
+    }
+  }
+
+  // Palette from theme
   val accentPalette: List<Color> =
       listOf(AccentViolet, AccentBlue, AccentMint, EventColorSports, AccentMagenta)
 
-  // Catalogue avec rareté + "None" pour chaque slot (déséquiper)
+  // Accessories catalog
   val accessoryCatalog: List<AccessoryItem> =
       listOf(
           // HEAD
@@ -56,23 +73,23 @@ class ProfileViewModel(
           AccessoryItem("skates", AccessorySlot.LEGS, "Skates", rarity = Rarity.RARE),
       )
 
-  // Variation non persistée (Firestore plus tard)
+  // Accent variant (not persisted)
   private val accentVariant = MutableStateFlow(AccentVariant.Base)
   val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
-  // Couleur d’accent effective = base (profil) + variation (LOCAL)
+  // Effective accent color = base (profile) + variant
   val accentEffective: StateFlow<Color> =
       combine(userProfile, accentVariantFlow) { user, variant ->
             applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccentViolet)
 
-  // ---------- Intents (modifient le local, puis tentent de sync repo) ----------
+  // ---------- Intents ----------
 
   fun setAvatarAccent(color: Color) {
     val argb = color.toArgb().toLong()
     _userProfile.update { it.copy(avatarAccent = argb) }
-    pushProfile() // sync remote
+    pushProfile()
   }
 
   fun setAccentVariant(variant: AccentVariant) {
@@ -91,7 +108,7 @@ class ProfileViewModel(
     val cur = _userProfile.value
     val prefixesToClean: List<String> =
         when (slot) {
-          AccessorySlot.LEGS -> listOf("legs:", "leg:") // legacy clean
+          AccessorySlot.LEGS -> listOf("legs:", "leg:")
           else -> listOf(slot.name.lowercase() + ":")
         }
     val cleaned = cur.accessories.filterNot { s -> prefixesToClean.any { p -> s.startsWith(p) } }
@@ -104,7 +121,7 @@ class ProfileViewModel(
         }
     val updated = cur.copy(accessories = next)
     _userProfile.value = updated
-    pushProfile(updated) // sync remote
+    pushProfile(updated)
   }
 
   fun unequip(slot: AccessorySlot) {
@@ -112,7 +129,7 @@ class ProfileViewModel(
     val prefix = slot.name.lowercase() + ":"
     val updated = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
     _userProfile.value = updated
-    pushProfile(updated) // sync remote
+    pushProfile(updated)
   }
 
   fun equippedId(slot: AccessorySlot): String? {
@@ -129,10 +146,11 @@ class ProfileViewModel(
 
   private fun updateLocal(edit: (UserProfile) -> UserProfile) {
     _userProfile.update(edit)
-    pushProfile() // sync remote
+    pushProfile()
   }
 
-  // ---------- Color utils (privées) ----------
+  // ---------- Color helpers ----------
+
   private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
       when (v) {
         AccentVariant.Base -> base
@@ -168,18 +186,12 @@ class ProfileViewModel(
 
   fun addCoins(amount: Int) {
     if (amount <= 0) return
-    val current = _userProfile.value
-    val updated = current.copy(coins = current.coins + amount)
-    _userProfile.value = updated
-    pushProfile(updated) // sync remote
+    viewModelScope.launch { userStatsRepository.updateCoins(amount) }
   }
 
   // --- Helpers ---
-  /**
-   * Pushes the current or provided profile to the repository. Centralizes the fire-and-forget
-   * update with error safety.
-   */
+
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
-    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+    viewModelScope.launch { runCatching { profileRepository.updateProfile(updated) } }
   }
 }

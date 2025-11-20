@@ -5,8 +5,8 @@ package com.android.sample.data
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Repository abstraction for the unified user stats document. This will be used by Home, Profile,
- * StudySession, Stats in PR2.
+ * Repository abstraction for the unified user stats document. Single Firestore document:
+ * /users/{uid}/stats/stats
  */
 interface UserStatsRepository {
 
@@ -16,8 +16,8 @@ interface UserStatsRepository {
   fun start()
 
   /**
-   * Add study minutes to the global counters. Implementations must handle daily reset for
-   * todayStudyMinutes.
+   * Add study minutes to the global counters. Implementations handle daily reset for
+   * todayStudyMinutes and streak updates.
    */
   suspend fun addStudyMinutes(extraMinutes: Int)
 
