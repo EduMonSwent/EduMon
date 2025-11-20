@@ -16,6 +16,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.notifications.AlarmHelper
+import com.android.sample.data.notifications.CampusEntryPollWorker
 import com.android.sample.data.notifications.NotificationUtils
 import com.android.sample.data.notifications.WorkManagerNotificationRepository
 import com.android.sample.feature.schedule.data.calendar.StudyItem
@@ -29,6 +30,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Calendar
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class NotificationsViewModel(
     private val repo: NotificationRepository = WorkManagerNotificationRepository(),
@@ -93,6 +96,9 @@ class NotificationsViewModel(
   private val _taskNotificationsEnabled = MutableStateFlow(true)
   override val taskNotificationsEnabled: StateFlow<Boolean> =
       _taskNotificationsEnabled.asStateFlow()
+
+  private val _campusEntryEnabled = MutableStateFlow(false)
+  override val campusEntryEnabled: StateFlow<Boolean> = _campusEntryEnabled.asStateFlow()
 
   private val allDays =
       setOf(
@@ -181,6 +187,66 @@ class NotificationsViewModel(
       scheduledTaskId = null
     } else {
       startObservingSchedule(ctx)
+    }
+  }
+
+  override fun setCampusEntryEnabled(ctx: Context, on: Boolean) {
+    _campusEntryEnabled.value = on
+    // persist user preference
+    try {
+      ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+          .edit()
+          .putBoolean("campus_entry_enabled", on)
+          .apply()
+    } catch (_: Exception) {}
+    if (on) {
+      // Fetch initial location to populate fallback SharedPreferences
+      fetchAndStoreInitialLocation(ctx)
+      CampusEntryPollWorker.startChain(ctx)
+    } else {
+      CampusEntryPollWorker.cancel(ctx)
+    }
+  }
+
+  private fun fetchAndStoreInitialLocation(ctx: Context) {
+    // Launch in viewModelScope to fetch location in background
+    viewModelScope.launch(Dispatchers.IO) {
+      try {
+        val fusedLocationClient =
+            com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(ctx)
+
+        // Check permission
+        val hasFineLocation =
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        val hasCoarseLocation =
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+
+        if (!hasFineLocation && !hasCoarseLocation) {
+          Log.w("NotificationsVM", "No location permission, cannot fetch initial location")
+          return@launch
+        }
+
+        // Try to get last known location (faster than current location)
+        @Suppress("MissingPermission") val lastLocation = fusedLocationClient.lastLocation.await()
+
+        if (lastLocation != null) {
+          // Store in SharedPreferences for CampusEntryPollWorker fallback
+          ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
+              .edit()
+              .putFloat("lat", lastLocation.latitude.toFloat())
+              .putFloat("lon", lastLocation.longitude.toFloat())
+              .apply()
+          Log.d(
+              "NotificationsVM",
+              "Initial location stored: ${lastLocation.latitude}, ${lastLocation.longitude}")
+        } else {
+          Log.w("NotificationsVM", "No last known location available")
+        }
+      } catch (e: Exception) {
+        Log.e("NotificationsVM", "Failed to fetch initial location", e)
+      }
     }
   }
 
@@ -293,6 +359,40 @@ class NotificationsViewModel(
     super.onCleared()
     scheduleObserverJob?.cancel()
     scheduleObserverJob = null
+    // Do not cancel campus polling here; user preference drives it.
+  }
+
+  // Background location permission helpers for campus entry notifications
+  override fun needsBackgroundLocationPermission(ctx: Context): Boolean {
+    // Only Android 10+ (API 29+) requires separate background location permission
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+
+    // Check if foreground location is granted
+    val hasForeground =
+        ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+
+    if (!hasForeground) return false
+
+    // Check if background location is missing
+    return !hasBackgroundLocationPermission(ctx)
+  }
+
+  override fun hasBackgroundLocationPermission(ctx: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return true
+
+    return ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED
+  }
+
+  override fun requestBackgroundLocationIfNeeded(ctx: Context, launcher: (String) -> Unit) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      if (!hasBackgroundLocationPermission(ctx)) {
+        launcher(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+      }
+    }
   }
 
   @VisibleForTesting internal fun currentScheduledTaskId(): String? = scheduledTaskId

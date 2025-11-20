@@ -303,10 +303,16 @@
     <string name="study_together_no_friends_yet">No friends yet</string>
     <string name="on_campus">On EPFL campus</string>
 
+    <string name="campus_entry_title">Welcome to campus</string>
+    <string name="campus_entry_text">Plan a study session now while you\'re here.</string>
+    <string name="campus_entry_toggle_title">Campus entry notifications</string>
+    <string name="campus_entry_toggle_subtitle">Notify when you arrive on campus (every entry)</string>
 
-
-
-
-
+    <!-- Background Location Permission -->
+    <string name="campus_background_location_needed">⚠️ Background location permission needed for this feature to work when app is closed</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="background_location_dialog_title">Background Location Permission</string>
+    <string name="background_location_dialog_text">To detect when you enter campus while the app is closed or in the background, EduMon needs access to your location in the background.\n\nThis allows us to send you a helpful reminder to plan a study session when you arrive on campus.\n\nYour location data is only used locally on your device and is never sent to any server.</string>
+    <string name="background_location_dialog_instruction">On the next screen, please select "Allow all the time" for the best experience.</string>
 
 </resources>

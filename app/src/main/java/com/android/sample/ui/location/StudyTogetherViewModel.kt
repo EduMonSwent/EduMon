@@ -1,8 +1,17 @@
 // StudyTogetherViewModel.kt
 package com.android.sample.ui.location
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.R
+import com.android.sample.data.notifications.NotificationUtils
 import com.android.sample.repos_providors.AppRepositories
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
@@ -52,6 +61,12 @@ class StudyTogetherViewModel(
   private val minSendIntervalMs = 10_000L // Update Firebase every 10 seconds (was 20s)
   private val minMoveMeters = 10f // Or when moved 10+ meters (was 25m)
 
+  // Foreground campus entry notification support (Option A)
+  private var appContext: Context? = null
+  private var wasOnCampus: Boolean = false
+  private var lastCampusNotifyMs: Long = 0L
+  private val campusNotifyCooldownMs = 60_000L // avoid spamming if jitter
+
   init {
     // Live friends (no changes needed in the screen)
     viewModelScope.launch {
@@ -100,6 +115,50 @@ class StudyTogetherViewModel(
           it.copy(errorMessage = "Presence update failed: ${e.message ?: "unknown"}")
         }
       }
+    }
+
+    // Campus entry detection
+    try {
+      val ctx = appContext
+      if (ctx != null && onCampus && !wasOnCampus) {
+        val prefs = ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+        val enabled = prefs.getBoolean("campus_entry_enabled", false)
+        val nowMs = System.currentTimeMillis()
+        if (enabled && (nowMs - lastCampusNotifyMs) >= campusNotifyCooldownMs) {
+          // Permission check for Android 13+
+          if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+              ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
+                  PackageManager.PERMISSION_GRANTED) {
+            NotificationUtils.ensureChannel(ctx)
+            val deepLink = ctx.getString(R.string.deep_link_format, "campus")
+            val intent =
+                android.content
+                    .Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(deepLink))
+                    .apply { `package` = ctx.packageName }
+            val pi =
+                android.app.PendingIntent.getActivity(
+                    ctx,
+                    0,
+                    intent,
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                        android.app.PendingIntent.FLAG_IMMUTABLE)
+            val n =
+                NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(ctx.getString(R.string.campus_entry_title))
+                    .setContentText(ctx.getString(R.string.campus_entry_text))
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .build()
+            NotificationManagerCompat.from(ctx).notify(9101, n)
+            lastCampusNotifyMs = nowMs
+          }
+        }
+      }
+      wasOnCampus = onCampus
+    } catch (_: Exception) {
+      /* ignore foreground notification failures */
     }
   }
 
@@ -188,5 +247,10 @@ class StudyTogetherViewModel(
     val maxLng = 6.575
 
     return lat in minLat..maxLat && lng in minLng..maxLng
+  }
+
+  fun attachContext(ctx: Context) {
+    // store application context (safe reference)
+    appContext = ctx.applicationContext
   }
 }

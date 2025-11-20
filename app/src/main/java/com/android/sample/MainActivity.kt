@@ -97,6 +97,14 @@ class MainActivity : ComponentActivity() {
             }
       }
     }
+
+    // Start campus polling chain if user enabled (stored in notifications prefs)
+    val campusEnabled =
+        getSharedPreferences("notifications", MODE_PRIVATE)
+            .getBoolean("campus_entry_enabled", false)
+    if (campusEnabled) {
+      com.android.sample.data.notifications.CampusEntryPollWorker.startChain(this)
+    }
   }
 
   private fun signOutAll() {

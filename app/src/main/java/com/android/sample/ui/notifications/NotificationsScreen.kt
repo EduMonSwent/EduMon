@@ -178,6 +178,118 @@ private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -
 }
 
 @Composable
+private fun CampusEntrySection(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+    vm: NotificationsUiModel,
+    ctx: android.content.Context,
+    backgroundLocationLauncher:
+        androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+) {
+  var showBackgroundLocationDialog by remember { mutableStateOf(false) }
+  var pendingEnableRequest by remember { mutableStateOf(false) }
+
+  // Check if we need background location permission
+  val needsBackgroundLocation = remember(enabled) { vm.needsBackgroundLocationPermission(ctx) }
+
+  SectionCard(
+      title = stringResource(R.string.campus_entry_toggle_title),
+      subtitle = stringResource(R.string.campus_entry_toggle_subtitle),
+      enabled = enabled,
+      onToggle = { on ->
+        if (on && vm.needsBackgroundLocationPermission(ctx)) {
+          // Show educational dialog before requesting permission
+          pendingEnableRequest = true
+          showBackgroundLocationDialog = true
+        } else {
+          onToggle(on)
+        }
+      },
+      switchTag = "campus_entry_switch") {
+        Text(
+            text = stringResource(R.string.campus_entry_text),
+            color = TextLight.copy(0.75f),
+            style = MaterialTheme.typography.bodySmall)
+
+        // Show warning if background location is needed but not granted
+        if (enabled && needsBackgroundLocation) {
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+              text = stringResource(R.string.campus_background_location_needed),
+              color = MaterialTheme.colorScheme.error.copy(0.9f),
+              style = MaterialTheme.typography.bodySmall,
+              fontWeight = FontWeight.Bold)
+          TextButton(
+              onClick = {
+                showBackgroundLocationDialog = true
+                pendingEnableRequest = false
+              }) {
+                Text(stringResource(R.string.grant_permission))
+              }
+        }
+      }
+
+  // Educational dialog for background location permission
+  if (showBackgroundLocationDialog) {
+    AlertDialog(
+        onDismissRequest = {
+          showBackgroundLocationDialog = false
+          pendingEnableRequest = false
+        },
+        title = { Text(stringResource(R.string.background_location_dialog_title)) },
+        text = {
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.background_location_dialog_text))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+              Spacer(modifier = Modifier.height(4.dp))
+              Text(
+                  stringResource(R.string.background_location_dialog_instruction),
+                  style = MaterialTheme.typography.bodySmall,
+                  fontWeight = FontWeight.Bold)
+            }
+          }
+        },
+        confirmButton = {
+          TextButton(
+              onClick = {
+                showBackgroundLocationDialog = false
+                vm.requestBackgroundLocationIfNeeded(ctx) { permission ->
+                  backgroundLocationLauncher.launch(permission)
+                }
+              }) {
+                Text(stringResource(R.string.grant_permission))
+              }
+        },
+        dismissButton = {
+          TextButton(
+              onClick = {
+                showBackgroundLocationDialog = false
+                if (pendingEnableRequest) {
+                  // User declined permission, don't enable the feature
+                  pendingEnableRequest = false
+                }
+              }) {
+                Text(stringResource(R.string.cancel))
+              }
+        })
+  }
+
+  // Handle permission result
+  LaunchedEffect(backgroundLocationLauncher) {
+    // This will be triggered when permission result comes back
+    // The actual handling is done through the launcher callback
+  }
+
+  // If we had a pending enable request and permission is now granted, enable the feature
+  LaunchedEffect(pendingEnableRequest) {
+    if (pendingEnableRequest && vm.hasBackgroundLocationPermission(ctx)) {
+      pendingEnableRequest = false
+      onToggle(true)
+    }
+  }
+}
+
+@Composable
 private fun TestNotificationButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
@@ -256,11 +368,21 @@ fun NotificationsScreen(
         if (granted) vm.sendDeepLinkDemoNotification(ctx)
       }
 
+  // Background location permission launcher for campus entry feature
+  val launcherBackgroundLocation =
+      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && vm is NotificationsViewModel) {
+          // Permission granted, enable campus notifications
+          vm.setCampusEntryEnabled(ctx, true)
+        }
+      }
+
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
   val kickoffDays by vm.kickoffDays.collectAsState()
   val kickoffTimes by vm.kickoffTimes.collectAsState()
   val taskNotificationsEnabled by vm.taskNotificationsEnabled.collectAsState()
   val streakEnabled by vm.streakEnabled.collectAsState()
+  val campusEntryEnabled by vm.campusEntryEnabled.collectAsState() // removed cast
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
   var startupError by remember { mutableStateOf<String?>(null) }
@@ -293,6 +415,13 @@ fun NotificationsScreen(
               taskEnabled = taskNotificationsEnabled,
               onToggle = { on -> vm.setTaskNotificationsEnabled(ctx, on) })
 
+          CampusEntrySection(
+              enabled = campusEntryEnabled,
+              onToggle = { on -> vm.setCampusEntryEnabled(ctx, on) },
+              vm = vm,
+              ctx = ctx,
+              backgroundLocationLauncher = launcherBackgroundLocation)
+
           TestNotificationButton(vm, ctx, launcherTest)
           DeepLinkDemoButton(vm, ctx, launcherDemo)
         }
@@ -317,6 +446,7 @@ private fun SectionCard(
     subtitle: String,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
+    switchTag: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
   Card(
@@ -334,7 +464,10 @@ private fun SectionCard(
                       color = TextLight.copy(0.75f),
                       style = MaterialTheme.typography.bodySmall)
                 }
-                Switch(checked = enabled, onCheckedChange = onToggle)
+                Switch(
+                    modifier = if (switchTag != null) Modifier.testTag(switchTag) else Modifier,
+                    checked = enabled,
+                    onCheckedChange = onToggle)
               }
               content()
             }

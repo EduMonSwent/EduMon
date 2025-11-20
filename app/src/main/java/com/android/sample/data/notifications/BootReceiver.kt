@@ -25,6 +25,13 @@ class BootReceiver(
   override fun onReceive(context: Context, intent: Intent) {
     if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
+    // Restart campus polling chain if it was enabled
+    val prefs = context.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+    val campusEnabled = prefs.getBoolean("campus_entry_enabled", false)
+    if (campusEnabled) {
+      CampusEntryPollWorker.startChain(context)
+    }
+
     // Re-schedule next alarms in background
     scope.launch {
       try {
