@@ -149,11 +149,6 @@ class FirestorePlannerRepository(
       Result.failure(e)
     }
   }
-
-  // You can ignore seedDemoData or implement a Firestore seeding method if you like.
-  override suspend fun seedDemoData() {
-    super.seedDemoData()
-  }
 }
 
 /* ---------- Mapping helpers ---------- */

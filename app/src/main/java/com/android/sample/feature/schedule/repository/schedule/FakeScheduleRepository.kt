@@ -18,6 +18,10 @@ object FakeScheduleRepository : ScheduleRepository {
   private val _events = MutableStateFlow<List<ScheduleEvent>>(emptyList())
   override val events: StateFlow<List<ScheduleEvent>> = _events.asStateFlow()
 
+  internal fun clearForTest() {
+    _events.value = emptyList()
+  }
+
   override suspend fun save(event: ScheduleEvent) {
     // Upsert behavior (add or replace by id)
     val current = _events.value.toMutableList()

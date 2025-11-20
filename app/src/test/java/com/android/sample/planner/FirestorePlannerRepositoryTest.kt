@@ -7,6 +7,7 @@ import com.android.sample.feature.schedule.repository.planner.FirestorePlannerRe
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
+import kotlin.test.assertNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -65,5 +66,15 @@ class FirestorePlannerRepositoryTest {
     assertEquals(today, attendance[0].date)
     assertEquals(AttendanceStatus.YES, attendance[0].attendance)
     assertEquals(CompletionStatus.YES, attendance[0].completion)
+  }
+
+  @Test
+  fun getAttendanceForClass_unsigned_returns_null() = runBlocking {
+    val repo = repoWithNoUser()
+
+    val flow = repo.getAttendanceForClass("nonexistent")
+    val value = flow.first()
+
+    assertNull(value)
   }
 }
