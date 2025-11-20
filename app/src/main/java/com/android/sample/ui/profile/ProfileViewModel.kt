@@ -13,6 +13,7 @@ import com.android.sample.data.AccessorySlot
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
+import com.android.sample.feature.rewards.LevelRewardEngine
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
@@ -21,7 +22,9 @@ import com.android.sample.ui.theme.AccentMint
 import com.android.sample.ui.theme.GlowGold
 import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletSoft
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -55,10 +58,22 @@ class ProfileViewModel(
 
   // Accessories catalog
   val accessoryCatalog: List<AccessoryItem> =
+  companion object {
+    // XP required to advance by one level
+    const val POINTS_PER_LEVEL: Int = 300
+  }
+
+  // ----- Profil LOCAL uniquement -----
   private val _userProfile = MutableStateFlow(repository.profile.value.copy())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
   val accentPalette = listOf(PurplePrimary, AccentBlue, AccentMint, GlowGold, VioletSoft)
+  // reward engine instance
+  private val rewardEngine = LevelRewardEngine()
+
+  // one-shot events for UI (snackbar/dialog/etc.)
+  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
+  val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
@@ -197,9 +212,99 @@ class ProfileViewModel(
     viewModelScope.launch { userStatsRepository.updateCoins(amount) }
   }
 
-  // --- Helpers ---
+  /**
+   * Adds points to the user, recomputes the level based on total points, and routes the change
+   * through the reward engine.
+   *
+   * If the new level is higher than the old one:
+   * - LevelRewardEngine applies rewards
+   * - lastRewardedLevel is updated
+   * - UI receives a LevelUpRewardUiEvent
+   */
+  fun addPoints(amount: Int) {
+    if (amount <= 0) return
 
+    applyProfileWithPotentialRewards { current ->
+      val newPoints = (current.points + amount).coerceAtLeast(0)
+      val newLevel = computeLevelFromPoints(newPoints)
+      current.copy(points = newPoints, level = newLevel)
+    }
+  }
+
+  // --- Helpers ---
+  /**
+   * Pushes the current or provided profile to the repository. Centralizes the fire-and-forget
+   * update with error safety.
+   */
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
     viewModelScope.launch { runCatching { profileRepository.updateProfile(updated) } }
+  }
+
+  /**
+   * Applies a change to the profile (via [edit]) and, if that change includes a level increase,
+   * routes the old/new profiles through the reward engine.
+   * - If level didn't increase → just update and push as usual.
+   * - If level increased → apply rewards, update profile, push, and emit UI event.
+   */
+  private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
+    val oldProfile = _userProfile.value
+    val candidate = edit(oldProfile)
+
+    // No level up → regular path
+    if (candidate.level <= oldProfile.level) {
+      _userProfile.value = candidate
+      pushProfile(candidate)
+      return
+    }
+
+    // Level increased → let the reward engine do its job
+    val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
+    val updated = result.updatedProfile
+
+    _userProfile.value = updated
+    pushProfile(updated)
+
+    // Emit UI event only if something was actually rewarded
+    if (!result.summary.isEmpty) {
+      viewModelScope.launch {
+        _rewardEvents.emit(
+            LevelUpRewardUiEvent.RewardsGranted(newLevel = updated.level, summary = result.summary))
+      }
+    }
+  }
+
+  /**
+   * Computes the level for a given amount of points.
+   *
+   * Simple rule:
+   * - Every 300 points = +1 level
+   * - Minimum level is 1
+   */
+  private fun computeLevelFromPoints(points: Int): Int {
+    if (points <= 0) return 1
+    return 1 + (points / POINTS_PER_LEVEL)
+  }
+  /**
+   * DEBUG / TEST-ONLY helper.
+   *
+   * This function exists purely to simplify unit testing of the reward system. Not used in
+   * production UI. It's kept to make reward-related tests shorter, more deterministic, and easier
+   * to maintain (if we later decide to change the level up calculation)
+   */
+  fun debugLevelUpForTests() {
+    applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
+  }
+  /**
+   * DEBUG / TEST-ONLY helper.
+   *
+   * This function exists purely to simplify unit testing of the reward system. Not used in
+   * production UI. It's kept to make reward-related tests shorter, more deterministic, and easier
+   * to maintain (if we later decide to change the level up calculation)
+   */
+  fun debugNoLevelChangeForTests() {
+    applyProfileWithPotentialRewards { current ->
+      // Change points, keep level the same
+      current.copy(points = current.points + 10)
+    }
   }
 }
