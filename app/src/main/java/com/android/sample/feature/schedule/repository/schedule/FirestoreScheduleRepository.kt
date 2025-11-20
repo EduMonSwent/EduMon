@@ -66,15 +66,14 @@ class FirestoreScheduleRepository(
   }
 
   override suspend fun save(event: ScheduleEvent) {
-    // Treat save as an upsert
     val uid = requireUid()
     val collection = userScheduleCollection(uid)
 
     val id = if (event.id.isBlank()) collection.document().id else event.id
     val eventWithId = event.copy(id = id)
 
-    collection.document(id).set(eventWithId.toFirestoreMap(), SetOptions.merge()).await()
-    // No need to update _events manually; snapshot listener will fire.
+    val docRef = collection.document(id)
+    docRef.set(eventWithId.toFirestoreMap(), SetOptions.merge()).await()
   }
 
   override suspend fun update(event: ScheduleEvent) {
@@ -84,12 +83,15 @@ class FirestoreScheduleRepository(
           throw IllegalArgumentException("update() requires an event with a non-blank id")
         }
 
-    userScheduleCollection(uid).document(id).set(event.toFirestoreMap(), SetOptions.merge()).await()
+    val docRef = userScheduleCollection(uid).document(id)
+    docRef.set(event.toFirestoreMap(), SetOptions.merge()).await()
   }
 
   override suspend fun delete(eventId: String) {
     val uid = requireUid()
-    if (eventId.isBlank()) return
+    if (eventId.isBlank()) {
+      throw IllegalArgumentException("delete() requires a non-blank eventId")
+    }
 
     userScheduleCollection(uid).document(eventId).delete().await()
   }

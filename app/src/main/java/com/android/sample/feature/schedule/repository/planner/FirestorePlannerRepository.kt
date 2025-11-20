@@ -15,6 +15,7 @@ import java.time.LocalTime
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -32,10 +33,6 @@ class FirestorePlannerRepository(
   private val classesCollection = "classes"
   private val attendanceCollection = "attendance"
 
-  private fun requireUid(): String =
-      auth.currentUser?.uid
-          ?: throw IllegalStateException("No authenticated user for PlannerRepository")
-
   private fun userPlannerClassesRef(uid: String) =
       db.collection(usersCollection).document(uid).collection(classesCollection)
 
@@ -47,87 +44,64 @@ class FirestorePlannerRepository(
           .collection(attendanceCollection)
 
   // ---------- Classes ----------
-
-  override fun getTodayClassesFlow(): Flow<List<Class>> {
-    val uid = auth.currentUser?.uid
-
-    if (uid == null) {
-      return super.getTodayClassesFlow()
-    }
-
-    return callbackFlow {
-      val registration =
-          userPlannerClassesRef(uid).addSnapshotListener { snapshot, error ->
-            if (error != null || snapshot == null) {
-              trySend(emptyList())
-              return@addSnapshotListener
-            }
-
-            val classes =
-                snapshot.documents.mapNotNull { it.toPlannerClass() }.sortedBy { it.startTime }
-
-            trySend(classes).isSuccess
+  private fun classesSnapshotFlow(uid: String): Flow<List<Class>> = callbackFlow {
+    val registration =
+        userPlannerClassesRef(uid).addSnapshotListener { snapshot, error ->
+          if (error != null || snapshot == null) {
+            trySend(emptyList())
+            return@addSnapshotListener
           }
 
-      awaitClose { registration.remove() }
-    }
+          val classes =
+              snapshot.documents.mapNotNull { it.toPlannerClass() }.sortedBy { it.startTime }
+
+          trySend(classes)
+        }
+
+    awaitClose { registration.remove() }
+  }
+
+  private fun attendanceSnapshotFlow(uid: String, dateIso: String): Flow<List<ClassAttendance>> =
+      callbackFlow {
+        val registration =
+            userPlannerAttendanceRef(uid).addSnapshotListener { snapshot, error ->
+              if (error != null || snapshot == null) {
+                trySend(emptyList())
+                return@addSnapshotListener
+              }
+
+              val records =
+                  snapshot.documents
+                      .mapNotNull { it.toClassAttendance() }
+                      .filter { it.date.toString() == dateIso }
+
+              trySend(records)
+            }
+
+        awaitClose { registration.remove() }
+      }
+
+  override fun getTodayClassesFlow(): Flow<List<Class>> {
+    val uid = auth.currentUser?.uid ?: return super.getTodayClassesFlow()
+    return classesSnapshotFlow(uid)
   }
 
   // ---------- Attendance ----------
 
   override fun getTodayAttendanceFlow(): Flow<List<ClassAttendance>> {
-    val uid = auth.currentUser?.uid
-    if (uid == null) {
-      return super.getTodayAttendanceFlow()
-    }
-
+    val uid = auth.currentUser?.uid ?: return super.getTodayAttendanceFlow()
     val todayStr = LocalDate.now().toString()
 
-    return callbackFlow {
-      val registration =
-          userPlannerAttendanceRef(uid).addSnapshotListener { snapshot, error ->
-            if (error != null || snapshot == null) {
-              trySend(emptyList())
-              return@addSnapshotListener
-            }
-
-            val records =
-                snapshot.documents
-                    .mapNotNull { it.toClassAttendance() }
-                    .filter { it.date.toString() == todayStr }
-
-            trySend(records)
-          }
-
-      awaitClose { registration.remove() }
-    }
+    return attendanceSnapshotFlow(uid, todayStr)
   }
 
   override fun getAttendanceForClass(classId: String): Flow<ClassAttendance?> {
-    val uid = auth.currentUser?.uid
-    if (uid == null) {
-      return super.getAttendanceForClass(classId)
-    }
-
+    val uid = auth.currentUser?.uid ?: return super.getAttendanceForClass(classId)
     val todayStr = LocalDate.now().toString()
 
-    return callbackFlow {
-      val registration =
-          userPlannerAttendanceRef(uid).addSnapshotListener { snapshot, error ->
-            if (error != null || snapshot == null) {
-              trySend(null)
-              return@addSnapshotListener
-            }
-
-            val match =
-                snapshot.documents
-                    .mapNotNull { it.toClassAttendance() }
-                    .firstOrNull { it.classId == classId && it.date.toString() == todayStr }
-
-            trySend(match)
-          }
-
-      awaitClose { registration.remove() }
+    // Re-use shared attendance flow and just pick the matching class for today
+    return attendanceSnapshotFlow(uid, todayStr).map { records ->
+      records.firstOrNull { it.classId == classId }
     }
   }
 
