@@ -1,17 +1,8 @@
 // StudyTogetherViewModel.kt
 package com.android.sample.ui.location
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.R
-import com.android.sample.data.notifications.NotificationUtils
 import com.android.sample.repos_providors.AppRepositories
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
@@ -64,10 +55,8 @@ class StudyTogetherViewModel(
   private val minMoveMeters = 10f // Or when moved 10+ meters (was 25m)
 
   // Foreground campus entry notification support (Option A)
-  private var appContext: Context? = null
-  private var wasOnCampus: Boolean = false
-  private var lastCampusNotifyMs: Long = 0L
-  private val campusNotifyCooldownMs = 60_000L // avoid spamming if jitter
+  // Campus-entry notifications are handled by CampusEntryPollWorker in the background.
+  // The ViewModel no longer posts notifications directly and doesn't need a Context.
 
   init {
     // Live friends (no changes needed in the screen)
@@ -119,35 +108,8 @@ class StudyTogetherViewModel(
       }
     }
 
-    // Campus entry detection
-    try {
-      val ctx = appContext
-      if (ctx != null && onCampus && !wasOnCampus) {
-        val prefs = ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
-        val enabled = prefs.getBoolean("campus_entry_enabled", false)
-        val nowMs = System.currentTimeMillis()
-        if (enabled && (nowMs - lastCampusNotifyMs) >= campusNotifyCooldownMs) {
-          if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-              ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
-                  PackageManager.PERMISSION_GRANTED) {
-            NotificationUtils.ensureChannel(ctx)
-            val n =
-                NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setContentTitle(ctx.getString(R.string.campus_entry_title))
-                    .setContentText(ctx.getString(R.string.campus_entry_text))
-                    .setAutoCancel(true)
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .build()
-            NotificationManagerCompat.from(ctx).notify(9101, n)
-            lastCampusNotifyMs = nowMs
-          }
-        }
-      }
-      wasOnCampus = onCampus
-    } catch (_: Exception) {
-      /* ignore foreground notification failures */
-    }
+    // Campus entry notification no longer handled here. Background polling via
+    // CampusEntryPollWorker posts notifications even when the app is closed.
   }
 
   /** Change user mode; if signed in we send presence with the chosen policy’s location. */
@@ -235,10 +197,5 @@ class StudyTogetherViewModel(
     val maxLng = 6.575
 
     return lat in minLat..maxLat && lng in minLng..maxLng
-  }
-
-  fun attachContext(ctx: Context) {
-    // store application context (safe reference)
-    appContext = ctx.applicationContext
   }
 }

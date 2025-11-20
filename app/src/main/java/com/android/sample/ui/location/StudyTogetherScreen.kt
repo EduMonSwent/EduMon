@@ -290,7 +290,8 @@ fun StudyTogetherScreen(
       actions = actions,
   )
 
-  LaunchedEffect(Unit) { viewModel.attachContext(context) }
+  // Context attachment removed: campus-entry notifications are handled by
+  // CampusEntryPollWorker so the UI no longer needs to give the ViewModel a Context.
 }
 
 /* ---------- Main screen layout (reduced complexity) ---------- */

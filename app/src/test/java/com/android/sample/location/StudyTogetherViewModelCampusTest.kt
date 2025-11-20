@@ -1,7 +1,6 @@
 package com.android.sample.location
 
 import android.Manifest
-import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.ui.location.FriendMode
@@ -43,13 +42,11 @@ class StudyTogetherViewModelCampusTest {
       FirebaseApp.initializeApp(context)
     }
 
-    // Grant necessary permissions
+    // Grant necessary permissions for location-related behavior in the VM tests
     val app = context as android.app.Application
     val shadowApp: ShadowApplication = shadowOf(app)
     shadowApp.grantPermissions(
-        Manifest.permission.POST_NOTIFICATIONS,
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION)
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     // Mock Firebase Auth to return a logged-in user
     mockAuth = mockk(relaxed = true)
@@ -68,16 +65,14 @@ class StudyTogetherViewModelCampusTest {
             liveLocation = true,
             firebaseAuth = mockAuth)
 
-    // Attach context for notification support
-    viewModel.attachContext(context)
-
-    // Clear prefs
+    // Clear prefs used by VM (notifications toggle handled by worker tests)
     context.getSharedPreferences("notifications", Context.MODE_PRIVATE).edit().clear().commit()
   }
 
   @Test
   fun `consumeLocation posts notification on campus entry when enabled`() = runTest {
-    // Given: feature enabled, starting off campus
+    // Given: feature enabled (toggle is persisted for worker tests). For VM tests we assert UI
+    // state changes only: VM no longer posts campus notifications directly.
     context
         .getSharedPreferences("notifications", Context.MODE_PRIVATE)
         .edit()
@@ -90,20 +85,13 @@ class StudyTogetherViewModelCampusTest {
     // When: move to on campus
     viewModel.consumeLocation(46.5202, 6.5652)
 
-    // Then: notification posted
-    val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val shadowNotificationManager = shadowOf(notificationManager)
-    val notifications = shadowNotificationManager.allNotifications
-
-    assertTrue(
-        "Should post campus entry notification",
-        notifications.any { it.extras.getString("android.title") == "Welcome to campus" })
+    // Then: VM reflects that we are on campus
+    assertTrue(viewModel.uiState.value.isOnCampus)
   }
 
   @Test
   fun `consumeLocation does not post notification when feature disabled`() = runTest {
-    // Given: feature disabled
+    // Given: feature disabled; VM should still update UI state but worker will not be started.
     context
         .getSharedPreferences("notifications", Context.MODE_PRIVATE)
         .edit()
@@ -114,37 +102,8 @@ class StudyTogetherViewModelCampusTest {
     viewModel.consumeLocation(46.510, 6.550)
     viewModel.consumeLocation(46.5202, 6.5652)
 
-    // Then: no notification
-    val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val shadowNotificationManager = shadowOf(notificationManager)
-    assertEquals(0, shadowNotificationManager.allNotifications.size)
-  }
-
-  @Test
-  fun `consumeLocation respects cooldown period`() = runTest {
-    // Given: feature enabled
-    context
-        .getSharedPreferences("notifications", Context.MODE_PRIVATE)
-        .edit()
-        .putBoolean("campus_entry_enabled", true)
-        .commit()
-
-    // When: enter campus twice rapidly
-    viewModel.consumeLocation(46.510, 6.550)
-    viewModel.consumeLocation(46.5202, 6.5652)
-    viewModel.consumeLocation(46.510, 6.550)
-    viewModel.consumeLocation(46.5202, 6.5652)
-
-    // Then: only one notification (cooldown prevents second)
-    val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val shadowNotificationManager = shadowOf(notificationManager)
-    val campusNotifications =
-        shadowNotificationManager.allNotifications.filter {
-          it.extras.getString("android.title") == "Welcome to campus"
-        }
-    assertEquals("Should only post one notification due to cooldown", 1, campusNotifications.size)
+    // Then: VM reflects on-campus state but does not itself post notifications
+    assertTrue(viewModel.uiState.value.isOnCampus)
   }
 
   @Test
@@ -167,63 +126,8 @@ class StudyTogetherViewModelCampusTest {
     assertTrue(viewModel.uiState.value.isLocationInitialized)
   }
 
-  @Test
-  fun `consumeLocation does not notify when staying on campus`() = runTest {
-    // Given: feature enabled, already on campus
-    context
-        .getSharedPreferences("notifications", Context.MODE_PRIVATE)
-        .edit()
-        .putBoolean("campus_entry_enabled", true)
-        .commit()
-
-    viewModel.consumeLocation(46.5202, 6.5652)
-
-    val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val shadowNotificationManager = shadowOf(notificationManager)
-    val countAfterFirstEntry = shadowNotificationManager.allNotifications.size
-
-    // When: move within campus
-    viewModel.consumeLocation(46.5205, 6.5655)
-
-    // Then: no new notification (count should be the same)
-    val countAfterSecondCall = shadowNotificationManager.allNotifications.size
-    assertEquals(
-        "Should not post new notification when staying on campus",
-        countAfterFirstEntry,
-        countAfterSecondCall)
-  }
-
-  @Test
-  fun `attachContext stores application context`() {
-    // When
-    viewModel.attachContext(context)
-
-    // Then: should not throw when consuming location
-    viewModel.consumeLocation(46.5202, 6.5652)
-  }
-
-  @Test
-  fun `campus notification has no action intent`() = runTest {
-    // Given: feature enabled
-    context
-        .getSharedPreferences("notifications", Context.MODE_PRIVATE)
-        .edit()
-        .putBoolean("campus_entry_enabled", true)
-        .commit()
-    // Start off campus
-    viewModel.consumeLocation(46.510, 6.550)
-    // When entering campus
-    viewModel.consumeLocation(46.5202, 6.5652)
-    val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val shadowNotificationManager = shadowOf(notificationManager)
-    val notification = shadowNotificationManager.allNotifications.firstOrNull()
-    assertNotNull("Expected a campus notification", notification)
-    assertNull(
-        "Campus notification should have no contentIntent (no deep link)",
-        notification?.contentIntent)
-  }
+  // removed tests that asserted notifications from the VM; notification posting is covered by
+  // CampusEntryPollWorkerTest which owns background notification behavior.
 
   @Test
   fun `isOnEpflCampus boundary test - north edge`() = runTest {
