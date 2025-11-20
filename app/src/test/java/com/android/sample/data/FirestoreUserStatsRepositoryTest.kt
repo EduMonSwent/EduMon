@@ -6,7 +6,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Calendar
@@ -18,6 +21,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
+import org.mockito.kotlin.any
 
 class FirestoreUserStatsRepositoryTest {
 
@@ -254,5 +258,91 @@ class FirestoreUserStatsRepositoryTest {
 
     assertTrue(sameDayResult)
     assertEquals(false, differentDayResult)
+  }
+
+  @Test
+  fun start_with_snapshot_same_day_uses_raw_stats_without_reset() {
+    val repo = createRepo()
+
+    var capturedListener: EventListener<DocumentSnapshot>? = null
+    `when`(statsDoc.addSnapshotListener(any<EventListener<DocumentSnapshot>>())).thenAnswer {
+        invocation ->
+      @Suppress("UNCHECKED_CAST")
+      capturedListener = invocation.getArgument(0) as EventListener<DocumentSnapshot>
+      mock(ListenerRegistration::class.java)
+    }
+
+    repo.start()
+
+    val snapshot = mock(DocumentSnapshot::class.java)
+    val map =
+        mapOf(
+            "totalStudyMinutes" to 100,
+            "todayStudyMinutes" to 40,
+            "streak" to 2,
+            "weeklyGoal" to 300,
+            "coins" to 10,
+            "points" to 50,
+            // lastUpdated = 0L -> branche rawStats.lastUpdated == DEFAULT_LONG_VALUE
+            "lastUpdated" to 0L)
+
+    `when`(snapshot.exists()).thenReturn(true)
+    `when`(snapshot.data).thenReturn(map)
+
+    capturedListener!!.onEvent(snapshot, null)
+
+    val stats = repo.stats.value
+    assertEquals(100, stats.totalStudyMinutes)
+    assertEquals(40, stats.todayStudyMinutes)
+    assertEquals(2, stats.streak)
+    assertEquals(300, stats.weeklyGoal)
+    assertEquals(10, stats.coins)
+    assertEquals(50, stats.points)
+    // on ne teste pas lastUpdated ici, il peut être 0L ou mis à jour lors d'un futur write
+  }
+
+  @Test
+  fun start_with_snapshot_previous_day_resets_today_and_updates_lastUpdated() {
+    val repo = createRepo()
+
+    var capturedListener: EventListener<DocumentSnapshot>? = null
+    `when`(statsDoc.addSnapshotListener(any<EventListener<DocumentSnapshot>>())).thenAnswer {
+        invocation ->
+      @Suppress("UNCHECKED_CAST")
+      capturedListener = invocation.getArgument(0) as EventListener<DocumentSnapshot>
+      mock(ListenerRegistration::class.java)
+    }
+
+    repo.start()
+
+    val snapshot = mock(DocumentSnapshot::class.java)
+
+    val cal = Calendar.getInstance()
+    cal.add(Calendar.DAY_OF_YEAR, -1)
+    val yesterdayMillis = cal.timeInMillis
+
+    val map =
+        mapOf(
+            "totalStudyMinutes" to 200,
+            "todayStudyMinutes" to 80,
+            "streak" to 3,
+            "weeklyGoal" to 400,
+            "coins" to 25,
+            "points" to 90,
+            "lastUpdated" to yesterdayMillis)
+
+    `when`(snapshot.exists()).thenReturn(true)
+    `when`(snapshot.data).thenReturn(map)
+
+    capturedListener!!.onEvent(snapshot, null)
+
+    val stats = repo.stats.value
+    assertEquals(200, stats.totalStudyMinutes)
+    assertEquals(0, stats.todayStudyMinutes) // reset attendu car jour différent
+    assertEquals(3, stats.streak)
+    assertEquals(400, stats.weeklyGoal)
+    assertEquals(25, stats.coins)
+    assertEquals(90, stats.points)
+    assertTrue(stats.lastUpdated >= yesterdayMillis)
   }
 }
