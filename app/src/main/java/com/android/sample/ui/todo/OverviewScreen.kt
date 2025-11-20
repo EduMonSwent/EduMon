@@ -29,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepositoryProvider
 
 /**
@@ -51,7 +52,7 @@ fun OverviewScreen(
               object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                  return OverviewViewModel(ToDoRepositoryProvider.repository) as T
+                  return OverviewViewModel(AppRepositories.toDoRepository) as T
                 }
               })
 

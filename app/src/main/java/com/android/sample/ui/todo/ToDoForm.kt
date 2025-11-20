@@ -12,6 +12,9 @@ import androidx.compose.ui.unit.dp
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import java.time.LocalDate
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 
 /**
  * ToDoForm shared by AddToDo screen and EditToDoScreen. Some parts of this code have been generated
@@ -44,8 +47,10 @@ fun TodoForm(
     onSave: () -> Unit
 ) {
   var showOptional by remember { mutableStateOf(showOptionalInitial) }
+    val scrollState = rememberScrollState()
 
-  val fieldColors =
+
+    val fieldColors =
       OutlinedTextFieldDefaults.colors(
           focusedTextColor = TodoColors.OnCard,
           unfocusedTextColor = TodoColors.OnCard,
@@ -72,7 +77,13 @@ fun TodoForm(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = TodoColors.Background))
       }) { padding ->
         Column(
-            Modifier.padding(padding).padding(16.dp).background(TodoColors.Background),
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(16.dp)
+                    .background(TodoColors.Background),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
               OutlinedTextField(
                   value = title,
