@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -37,6 +38,16 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /** This class was implemented with the help of ai (chatgbt) */
+object ScheduleScreenTestTags {
+  const val ROOT = "schedule_root"
+  const val TAB_ROW = "schedule_tab_row"
+  const val FAB_ADD = "schedule_fab_add"
+
+  const val CONTENT_DAY = "schedule_content_day"
+  const val CONTENT_WEEK = "schedule_content_week"
+  const val CONTENT_MONTH = "schedule_content_month"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen() {
@@ -102,6 +113,7 @@ fun ScheduleScreen() {
       snackbarHost = { SnackbarHost(snackbarHostState) },
       floatingActionButton = {
         FloatingActionButton(
+            modifier = Modifier.testTag(ScheduleScreenTestTags.FAB_ADD),
             onClick = {
               addDate =
                   when (currentTab) {
@@ -124,7 +136,8 @@ fun ScheduleScreen() {
             modifier =
                 Modifier.fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .testTag(ScheduleScreenTestTags.ROOT),
             horizontalAlignment = Alignment.CenterHorizontally) {
               // Header now matches Home (use the updated PetHeader you implemented)
               PetHeader(level = 5)
@@ -132,14 +145,16 @@ fun ScheduleScreen() {
               Spacer(Modifier.height(8.dp))
 
               // ThemedTabRow will now use the GlassSurface background and adjusted styling
-              ThemedTabRow(
-                  selected = currentTab.ordinal,
-                  onSelected = { currentTab = ScheduleTab.values()[it] },
-                  labels =
-                      listOf(
-                          stringResource(R.string.tab_day),
-                          stringResource(R.string.tab_week),
-                          stringResource(R.string.tab_month)))
+              Box(Modifier.testTag(ScheduleScreenTestTags.TAB_ROW)) {
+                ThemedTabRow(
+                    selected = currentTab.ordinal,
+                    onSelected = { currentTab = ScheduleTab.values()[it] },
+                    labels =
+                        listOf(
+                            stringResource(R.string.tab_day),
+                            stringResource(R.string.tab_week),
+                            stringResource(R.string.tab_month)))
+              }
 
               Spacer(Modifier.height(8.dp))
               if (state.isAdjustingPlan) {
@@ -149,23 +164,35 @@ fun ScheduleScreen() {
 
               when (currentTab) {
                 ScheduleTab.DAY ->
-                    DayTabContent(vm = vm, state = state, objectivesVm = objectivesVm)
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_DAY)) {
+                          DayTabContent(vm = vm, state = state, objectivesVm = objectivesVm)
+                        }
                 ScheduleTab.WEEK -> {
-                  WeekTabContent(
-                      vm = vm,
-                      objectivesVm = objectivesVm,
-                      allTasks = allTasks,
-                      selectedDate = state.selectedDate)
+                  Box(
+                      modifier =
+                          Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_WEEK)) {
+                        WeekTabContent(
+                            vm = vm,
+                            objectivesVm = objectivesVm,
+                            allTasks = allTasks,
+                            selectedDate = state.selectedDate)
+                      }
                 }
                 ScheduleTab.MONTH -> {
-                  MonthTabContent(
-                      allTasks = allTasks,
-                      selectedDate = state.selectedDate,
-                      currentMonth = YearMonth.from(state.selectedDate),
-                      onPreviousMonthClick = { vm.onPreviousMonthWeekClicked() },
-                      onNextMonthClick = { vm.onNextMonthWeekClicked() },
-                      onDateSelected = { vm.onDateSelected(it) },
-                  )
+                  Box(
+                      modifier =
+                          Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_MONTH)) {
+                        MonthTabContent(
+                            allTasks = allTasks,
+                            selectedDate = state.selectedDate,
+                            currentMonth = YearMonth.from(state.selectedDate),
+                            onPreviousMonthClick = { vm.onPreviousMonthWeekClicked() },
+                            onNextMonthClick = { vm.onNextMonthWeekClicked() },
+                            onDateSelected = { vm.onDateSelected(it) },
+                        )
+                      }
                 }
               }
             }
