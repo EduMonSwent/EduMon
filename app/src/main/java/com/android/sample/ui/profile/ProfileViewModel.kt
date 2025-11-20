@@ -11,6 +11,11 @@ import com.android.sample.data.AccessorySlot
 import com.android.sample.data.UserProfile
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
+import com.android.sample.ui.theme.AccentBlue
+import com.android.sample.ui.theme.AccentMint
+import com.android.sample.ui.theme.GlowGold
+import com.android.sample.ui.theme.PurplePrimary
+import com.android.sample.ui.theme.VioletSoft
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,13 +31,7 @@ class ProfileViewModel(
   private val _userProfile = MutableStateFlow(repository.profile.value.copy())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
-  val accentPalette: List<Color> =
-      listOf(
-          Color(0xFF7C4DFF),
-          Color(0xFF2979FF),
-          Color(0xFF00E676),
-          Color(0xFFFF6D00),
-          Color(0xFFE040FB))
+  val accentPalette = listOf(PurplePrimary, AccentBlue, AccentMint, GlowGold, VioletSoft)
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
