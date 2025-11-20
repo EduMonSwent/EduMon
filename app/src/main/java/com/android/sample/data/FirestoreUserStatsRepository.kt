@@ -5,8 +5,6 @@ package com.android.sample.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import java.util.Calendar
-import java.util.TimeZone
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -206,18 +204,10 @@ class FirestoreUserStatsRepository(
   }
 
   private fun isSameDay(firstMillis: Long, secondMillis: Long): Boolean {
-    val cal1 = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = firstMillis }
-    val cal2 = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = secondMillis }
-
-    val year1 = cal1.get(Calendar.YEAR)
-    val year2 = cal2.get(Calendar.YEAR)
-    if (year1 != year2) {
-      return false
-    }
-
-    val day1 = cal1.get(Calendar.DAY_OF_YEAR)
-    val day2 = cal2.get(Calendar.DAY_OF_YEAR)
-    return day1 == day2
+    val zone = java.time.ZoneId.systemDefault()
+    val d1 = java.time.Instant.ofEpochMilli(firstMillis).atZone(zone).toLocalDate()
+    val d2 = java.time.Instant.ofEpochMilli(secondMillis).atZone(zone).toLocalDate()
+    return d1 == d2
   }
 
   private fun persistStats(stats: UserStats, uid: String) {

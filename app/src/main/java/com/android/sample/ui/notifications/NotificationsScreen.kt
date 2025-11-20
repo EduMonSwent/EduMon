@@ -224,56 +224,26 @@ private fun CampusEntrySection(
         }
       }
 
-  // Educational dialog for background location permission
+  // Educational dialog extracted
   if (showBackgroundLocationDialog) {
-    AlertDialog(
-        onDismissRequest = {
+    BackgroundLocationEducationDialog(
+        pendingEnableRequest = pendingEnableRequest,
+        onConfirmGrant = {
           showBackgroundLocationDialog = false
-          pendingEnableRequest = false
-        },
-        title = { Text(stringResource(R.string.background_location_dialog_title)) },
-        text = {
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.background_location_dialog_text))
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-              Spacer(modifier = Modifier.height(4.dp))
-              Text(
-                  stringResource(R.string.background_location_dialog_instruction),
-                  style = MaterialTheme.typography.bodySmall,
-                  fontWeight = FontWeight.Bold)
-            }
+          vm.requestBackgroundLocationIfNeeded(ctx) { permission ->
+            requestBackgroundPermission(permission)
           }
         },
-        confirmButton = {
-          TextButton(
-              onClick = {
-                showBackgroundLocationDialog = false
-                vm.requestBackgroundLocationIfNeeded(ctx) { permission ->
-                  requestBackgroundPermission(permission)
-                }
-              }) {
-                Text(stringResource(R.string.grant_permission))
-              }
-        },
-        dismissButton = {
-          TextButton(
-              onClick = {
-                showBackgroundLocationDialog = false
-                if (pendingEnableRequest) {
-                  // User declined permission, don't enable the feature
-                  pendingEnableRequest = false
-                }
-              }) {
-                Text(stringResource(R.string.cancel))
-              }
+        onCancel = {
+          showBackgroundLocationDialog = false
+          if (pendingEnableRequest) {
+            pendingEnableRequest = false // user declined
+          }
         })
   }
 
   // Handle permission result
-  LaunchedEffect(Unit) {
-    // This will be triggered when permission result comes back
-    // The actual handling is done through the launcher callback
-  }
+  LaunchedEffect(Unit) {}
 
   // If we had a pending enable request and permission is now granted, enable the feature
   LaunchedEffect(pendingEnableRequest) {
@@ -282,6 +252,38 @@ private fun CampusEntrySection(
       onToggle(true)
     }
   }
+}
+
+// Extracted dialog composable
+@Composable
+private fun BackgroundLocationEducationDialog(
+    pendingEnableRequest: Boolean,
+    onConfirmGrant: () -> Unit,
+    onCancel: () -> Unit
+) {
+  AlertDialog(
+      onDismissRequest = { onCancel() },
+      title = { Text(stringResource(R.string.background_location_dialog_title)) },
+      text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Text(stringResource(R.string.background_location_dialog_text))
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.background_location_dialog_instruction),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold)
+          }
+        }
+      },
+      confirmButton = {
+        TextButton(onClick = { onConfirmGrant() }) {
+          Text(stringResource(R.string.grant_permission))
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { onCancel() }) { Text(stringResource(R.string.cancel)) }
+      })
 }
 
 @Composable

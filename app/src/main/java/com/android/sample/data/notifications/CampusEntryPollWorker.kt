@@ -37,141 +37,124 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
 
   override suspend fun doWork(): Result {
-    // Reschedule first (fire and forget) to sustain the chain even if current run fails later.
-    // Allow tests to disable the chaining via input data flag.
-    val disableChain = inputData.getBoolean(KEY_DISABLE_CHAIN, false)
-    if (!disableChain) {
-      scheduleNext(applicationContext)
-    }
+    // Sustain chain (unless disabled by tests)
+    if (!inputData.getBoolean(KEY_DISABLE_CHAIN, false)) scheduleNext(applicationContext)
 
-    // Permissions: need fine or coarse location; background recommended for reliability.
-    val fineGranted =
-        ContextCompat.checkSelfPermission(
-            applicationContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-    val coarseGranted =
-        ContextCompat.checkSelfPermission(
-            applicationContext, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-    if (!(fineGranted || coarseGranted)) {
+    // Guard: location permission
+    if (!hasLocationPermission(applicationContext)) {
       Log.w(TAG, "Location permission not granted, skipping campus detection")
       return Result.success()
     }
 
-    // POST_NOTIFICATIONS (Android 13+)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      val notifGranted =
-          ContextCompat.checkSelfPermission(
-              applicationContext, Manifest.permission.POST_NOTIFICATIONS) ==
-              PackageManager.PERMISSION_GRANTED
-      if (!notifGranted) {
-        Log.w(TAG, "Notification permission not granted, skipping campus detection")
-        return Result.success()
-      }
+    // Guard: notifications permission (T+)
+    if (!hasNotifPermission(applicationContext)) {
+      Log.w(TAG, "Notification permission not granted, skipping campus detection")
+      return Result.success()
     }
 
-    // ---------- Test shortcuts & Robolectric fallback ----------
+    // Resolve a position (test/robolectric/normal)
     val skipFetch = inputData.getBoolean(KEY_TEST_SKIP_FETCH, false)
     val testLat = inputData.getDouble(KEY_TEST_LAT, Double.NaN)
     val testLon = inputData.getDouble(KEY_TEST_LON, Double.NaN)
 
-    val position: LatLng =
-        when {
-          // Explicit test coordinates provided
-          skipFetch && !testLat.isNaN() && !testLon.isNaN() -> LatLng(testLat, testLon)
-          // Skip fetch and try prefs or default center
-          skipFetch -> {
-            val locPrefs =
-                applicationContext.getSharedPreferences("last_location", Context.MODE_PRIVATE)
-            val hasStored = locPrefs.contains("lat") && locPrefs.contains("lon")
-            if (!hasStored) {
-              Log.w(TAG, "Skip-fetch without stored location; skipping campus detection")
-              return Result.success()
-            }
-            val lat = locPrefs.getFloat("lat", 46.5202f).toDouble()
-            val lon = locPrefs.getFloat("lon", 6.5652f).toDouble()
-            LatLng(lat, lon)
-          }
-          // Robolectric environment: avoid FusedLocationProviderClient which may hang
-          Build.FINGERPRINT.startsWith("robolectric") -> {
-            val locPrefs =
-                applicationContext.getSharedPreferences("last_location", Context.MODE_PRIVATE)
-            val hasStored = locPrefs.contains("lat") && locPrefs.contains("lon")
-            if (!hasStored) {
-              Log.w(TAG, "Robolectric without stored location; skipping campus detection")
-              return Result.success()
-            }
-            val lat = locPrefs.getFloat("lat", 46.5202f).toDouble()
-            val lon = locPrefs.getFloat("lon", 6.5652f).toDouble()
-            LatLng(lat, lon)
-          }
-          // Normal production path: active fetch with fallback
-          else -> {
-            try {
-              getCurrentLocation(applicationContext)
-            } catch (e: Exception) {
-              Log.w(TAG, "Failed to get current location: ${e.message}")
-              val locPrefs =
-                  applicationContext.getSharedPreferences("last_location", Context.MODE_PRIVATE)
-              if (locPrefs.contains("lat") && locPrefs.contains("lon")) {
-                val lat = locPrefs.getFloat("lat", 46.5200f).toDouble()
-                val lon = locPrefs.getFloat("lon", 6.5650f).toDouble()
-                LatLng(lat, lon)
-              } else {
-                Log.w(TAG, "No location available, skipping campus detection")
-                return Result.success()
-              }
-            }
-          }
-        }
+    val position =
+        resolvePosition(applicationContext, skipFetch, testLat, testLon)
+            ?: return Result.success() // nothing to do
 
-    // Store the fetched / chosen location for other components to use
-    applicationContext
-        .getSharedPreferences("last_location", Context.MODE_PRIVATE)
-        .edit()
-        .putFloat("lat", position.latitude.toFloat())
-        .putFloat("lon", position.longitude.toFloat())
-        .apply()
+    // Persist last location for other components and future fallbacks
+    persistLastLocation(applicationContext, position)
 
     val onCampus = isOnEpflCampus(position)
 
-    // Simple dedupe: read last flag stored in DataStore/SharedPreferences (lightweight here using a
-    // static key)
-    val prefs = applicationContext.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
-    val wasOnCampus = prefs.getBoolean(KEY_WAS_ON_CAMPUS, false)
-
-    if (onCampus && !wasOnCampus) {
-      // Fire notification if permission granted
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-          ContextCompat.checkSelfPermission(
-              applicationContext, Manifest.permission.POST_NOTIFICATIONS) ==
-              PackageManager.PERMISSION_GRANTED) {
+    if (shouldPostCampusEntry(applicationContext, onCampus)) {
+      // Fire-and-forget notification (permission already checked)
+      try {
         postCampusEntryNotification(applicationContext)
+      } catch (se: SecurityException) {
+        Log.w(TAG, "Notification post aborted due to missing permission at runtime", se)
       }
     }
 
-    // Persist current state
-    prefs.edit().putBoolean(KEY_WAS_ON_CAMPUS, onCampus).apply()
+    // Persist new state for next run
+    updateCampusFlag(applicationContext, onCampus)
 
     return Result.success()
   }
 
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-  private fun postCampusEntryNotification(ctx: Context) {
-    NotificationUtils.ensureChannel(ctx)
+  /* ---------------------------- helpers: permissions ---------------------------- */
 
-    // Removed deep link: we no longer attach a content intent so tapping does nothing.
-    val n =
-        NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(ctx.getString(R.string.campus_entry_title))
-            .setContentText(ctx.getString(R.string.campus_entry_text))
-            // .setContentIntent(pi) // removed
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
+  private fun hasLocationPermission(ctx: Context): Boolean {
+    val fine =
+        ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+    val coarse =
+        ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+    return fine || coarse
+  }
 
-    NotificationManagerCompat.from(ctx).notify(CAMPUS_ENTRY_NOTIFICATION_ID, n)
+  private fun hasNotifPermission(ctx: Context): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
+          PackageManager.PERMISSION_GRANTED
+    } else true
+  }
+
+  /* ---------------------------- helpers: location IO ---------------------------- */
+
+  private fun readStoredLocation(ctx: Context): LatLng? {
+    val sp = ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
+    if (!sp.contains("lat") || !sp.contains("lon")) return null
+    val lat = sp.getFloat("lat", DEFAULT_LAT).toDouble()
+    val lon = sp.getFloat("lon", DEFAULT_LON).toDouble()
+    return LatLng(lat, lon)
+  }
+
+  private fun persistLastLocation(ctx: Context, pos: LatLng) {
+    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
+        .edit()
+        .putFloat("lat", pos.latitude.toFloat())
+        .putFloat("lon", pos.longitude.toFloat())
+        .apply()
+  }
+
+  private suspend fun resolvePosition(
+      ctx: Context,
+      skipFetch: Boolean,
+      testLat: Double,
+      testLon: Double
+  ): LatLng? {
+    testCoordinatesOrNull(skipFetch, testLat, testLon)?.let {
+      return it
+    }
+    if (skipFetch || Build.FINGERPRINT.startsWith("robolectric")) {
+      return storedLocationOrWarn(
+          ctx, "Skip-fetch/Robolectric without stored location; skipping campus detection")
+    }
+    return activeFetchOrStored(ctx)
+  }
+  // Return explicit test coordinates if both provided and skipFetch requested
+  private fun testCoordinatesOrNull(skipFetch: Boolean, lat: Double, lon: Double): LatLng? {
+    return if (skipFetch && !lat.isNaN() && !lon.isNaN()) LatLng(lat, lon) else null
+  }
+  // Try stored location else log and return null
+  private fun storedLocationOrWarn(ctx: Context, warnMsg: String): LatLng? {
+    val stored = readStoredLocation(ctx)
+    if (stored == null) Log.w(TAG, warnMsg)
+    return stored
+  }
+  // Production path: attempt active fetch; fallback to stored; else warn
+  private suspend fun activeFetchOrStored(ctx: Context): LatLng? {
+    return try {
+      getCurrentLocation(ctx)
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to get current location: ${e.message}")
+      readStoredLocation(ctx)
+          ?: run {
+            Log.w(TAG, "No location available, skipping campus detection")
+            null
+          }
+    }
   }
 
   /**
@@ -183,7 +166,6 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
   private suspend fun getCurrentLocation(context: Context): LatLng {
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
-    // Try to get current location with a timeout
     val cancellationTokenSource = CancellationTokenSource()
     val location =
         fusedLocationClient
@@ -194,7 +176,6 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
     return if (location != null) {
       LatLng(location.latitude, location.longitude)
     } else {
-      // Fallback to last known location if current location fails
       val lastLocation = fusedLocationClient.lastLocation.await()
       if (lastLocation != null) {
         LatLng(lastLocation.latitude, lastLocation.longitude)
@@ -202,6 +183,38 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
         throw IllegalStateException("No location available")
       }
     }
+  }
+
+  /* ---------------------------- helpers: state & gating ---------------------------- */
+
+  private fun shouldPostCampusEntry(ctx: Context, onCampus: Boolean): Boolean {
+    val prefs = ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
+    val wasOnCampus = prefs.getBoolean(KEY_WAS_ON_CAMPUS, false)
+    return onCampus && !wasOnCampus
+  }
+
+  private fun updateCampusFlag(ctx: Context, onCampus: Boolean) {
+    ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
+        .edit()
+        .putBoolean(KEY_WAS_ON_CAMPUS, onCampus)
+        .apply()
+  }
+
+  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  private fun postCampusEntryNotification(ctx: Context) {
+    NotificationUtils.ensureChannel(ctx)
+
+    // No deep link: tapping the notification does nothing
+    val n =
+        NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(ctx.getString(R.string.campus_entry_title))
+            .setContentText(ctx.getString(R.string.campus_entry_text))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+    NotificationManagerCompat.from(ctx).notify(CAMPUS_ENTRY_NOTIFICATION_ID, n)
   }
 
   private fun isOnEpflCampus(position: LatLng): Boolean {
@@ -216,6 +229,9 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
 
   companion object {
     private const val TAG = "CampusEntryPollWorker"
+    // Default campus center fallback coordinates (EPFL Lausanne approximate)
+    private const val DEFAULT_LAT = 46.5202f
+    private const val DEFAULT_LON = 6.5652f
     private const val KEY_WAS_ON_CAMPUS = "was_on_campus"
     private const val CAMPUS_ENTRY_NOTIFICATION_ID = 9101
     private const val UNIQUE_WORK_NAME = "campus_entry_poll"
