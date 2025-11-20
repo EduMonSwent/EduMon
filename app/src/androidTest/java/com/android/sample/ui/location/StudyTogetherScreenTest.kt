@@ -99,8 +99,68 @@ class StudyTogetherScreenTest {
 
     // Simulate clicking the user marker by invoking VM helper directly
     composeTestRule.runOnUiThread { vm.selectUser() }
+    // Wait for AnimatedVisibility animation to complete
+    composeTestRule.waitForIdle()
 
     // Expect the user status card text
-    composeTestRule.onNodeWithText("You’re studying").assertExists()
+    composeTestRule.onNodeWithText("You're studying").assertExists()
+  }
+
+  @Test
+  fun onCampusIndicator_shows_onCampus_when_location_inside_epfl_bbox() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
+
+    // Disable map to avoid GoogleMap swallowing test input; indicator still renders.
+    composeTestRule.setContent {
+      StudyTogetherScreen(viewModel = vm, showMap = false, chooseLocation = true)
+    }
+
+    // Inside the ViewModel's EPFL bounding box:
+    // lat in [46.515, 46.525], lng in [6.555, 6.575]
+    composeTestRule.runOnUiThread { vm.consumeLocation(46.520, 6.565) }
+
+    // Wait for state update and recomposition
+    composeTestRule.waitForIdle()
+
+    // Indicator composable should always exist
+    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
+    // Text for on-campus state
+    composeTestRule.onNodeWithText("On EPFL campus").assertExists()
+  }
+
+  @Test
+  fun onCampusIndicator_shows_offCampus_when_location_outside_epfl_bbox() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Clearly outside bounding box: Zürich coords
+    composeTestRule.runOnUiThread { vm.consumeLocation(47.37, 8.54) }
+
+    // Wait for state update and recomposition
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
+    composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
+  }
+
+  @Test
+  fun friendsDropdown_showsEmptyState_whenNoFriends() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Should show "Friends (0)" button
+    composeTestRule.onNodeWithText("Friends (0)").assertExists()
+
+    // Open the dropdown
+    composeTestRule.onNodeWithTag("btn_friends").performClick()
+    composeTestRule.waitForIdle()
+
+    // Should display the empty state message
+    composeTestRule.onNodeWithText("No friends yet").assertExists()
   }
 }

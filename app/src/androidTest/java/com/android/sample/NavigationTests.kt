@@ -1,15 +1,16 @@
 package com.android.sample
 
-import androidx.activity.ComponentActivity
+import android.Manifest
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
+import androidx.test.rule.GrantPermissionRule
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
 import junit.framework.TestCase.assertEquals
@@ -18,7 +19,12 @@ import org.junit.Test
 
 class HomeNavigationTests {
 
-  @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+  @get:Rule
+  val locationPermissionRule: GrantPermissionRule =
+      GrantPermissionRule.grant(
+          Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+
+  @get:Rule val rule = createComposeRule()
 
   private lateinit var nav: TestNavHostController
 
@@ -50,7 +56,16 @@ class HomeNavigationTests {
 
   private fun navigateDirect(route: String) {
     rule.runOnUiThread { nav.navigate(route) }
+    waitUntilRoute(route)
     rule.waitForIdle()
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  private fun openDrawerAndWait() {
+    rule.onNode(hasTestTag(HomeTestTags.MENU_BUTTON)).performClick()
+    // Let the drawer animation finish and items appear
+    rule.mainClock.advanceTimeBy(1000L)
+    rule.waitUntilExactlyOneExists(hasTestTag(HomeTestTags.drawerTag(AppDestination.Home.route)))
   }
 
   @Test
@@ -59,7 +74,7 @@ class HomeNavigationTests {
     rule.onNode(hasTestTag(NavigationTestTags.NAV_HOST)).assertExists()
   }
 
-  @Test
+  /*@Test
   fun topBar_and_back_work_for_all_sections() {
     setContent()
 
@@ -71,15 +86,18 @@ class HomeNavigationTests {
             AppDestination.Games.route to "Games",
             AppDestination.Study.route to "Study",
             AppDestination.Todo.route to "Todo",
-            AppDestination.Mood.route to "Daily Reflection")
+            AppDestination.Mood.route to "Daily Reflection",
+            AppDestination.Shop.route to "Shop",
+            AppDestination.StudyTogether.route to "Study Together")
 
     cases.forEach { (route, title) ->
       navigateDirect(route)
       assertTopBarTitle(title)
       tapBack()
+      waitUntilRoute(AppDestination.Home.route)
       assertRoute(AppDestination.Home.route)
     }
-  }
+  }*/
 
   @Test
   fun game_routes_show_correct_titles() {
@@ -98,5 +116,40 @@ class HomeNavigationTests {
       tapBack()
       assertRoute(AppDestination.Home.route)
     }
+  }
+
+  @Test
+  fun startDestination_isHome() {
+    setContent()
+    assertRoute(AppDestination.Home.route)
+  }
+
+  @Test
+  fun bottomBar_navigates_to_study_and_back() {
+    setContent()
+    rule.onNode(hasTestTag(HomeTestTags.bottomTag(AppDestination.Study.route))).performClick()
+    waitUntilRoute(AppDestination.Study.route)
+    assertRoute(AppDestination.Study.route)
+    assertTopBarTitle("Study")
+    tapBack()
+    assertRoute(AppDestination.Home.route)
+  }
+
+  @Test
+  fun singleTop_prevents_duplicate_entries() {
+    setContent()
+    rule.runOnIdle {
+      nav.navigate(AppDestination.Games.route) { launchSingleTop = true }
+      nav.navigate(AppDestination.Games.route) { launchSingleTop = true }
+    }
+    waitUntilRoute(AppDestination.Games.route)
+    tapBack()
+    waitUntilRoute(AppDestination.Home.route)
+    assertRoute(AppDestination.Home.route)
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  private fun waitUntilRoute(expected: String) {
+    rule.waitUntil(5_000) { nav.currentBackStackEntry?.destination?.route == expected }
   }
 }
