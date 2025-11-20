@@ -6,7 +6,6 @@ import android.content.ContentValues.TAG
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
-import android.util.Log.e
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -149,7 +148,8 @@ private data class StudyTogetherActions(
     val onConfirmAddFriend: (String) -> Unit,
 )
 
-@SuppressLint("MissingPermission")
+/* ---------- Main Screen Entry Point ---------- */
+
 @OptIn(
     ExperimentalPermissionsApi::class,
     ExperimentalMaterial3Api::class,
@@ -162,7 +162,6 @@ fun StudyTogetherScreen(
     chooseLocation: Boolean = false,
     chosenLocation: LatLng = DEFAULT_LOCATION,
 ) {
-  val context = LocalContext.current
   val permissions =
       rememberMultiplePermissionsState(
           listOf(
@@ -173,92 +172,30 @@ fun StudyTogetherScreen(
   var friendUidInput by remember { mutableStateOf("") }
   val snackbarHostState = remember { SnackbarHostState() }
 
-  // Check if permissions are already granted on first composition
   val permissionsAlreadyGranted = remember { permissions.allPermissionsGranted }
 
-  // Ask for permission only if not already granted
-  LaunchedEffect(Unit) {
-    if (!permissionsAlreadyGranted) {
-      permissions.launchMultiplePermissionRequest()
-    }
-  }
+  // Request permissions if not already granted
+  RequestLocationPermissions(
+      permissionsAlreadyGranted = permissionsAlreadyGranted,
+      requestPermissions = { permissions.launchMultiplePermissionRequest() })
 
-  // Fetch location immediately if permissions already granted, or when they become granted
-  // AND set up continuous location updates to track user movement
-  LaunchedEffect(permissions.allPermissionsGranted) {
-    if (permissions.allPermissionsGranted) {
-      val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+  // Track user location with continuous updates
+  TrackUserLocation(
+      permissionsGranted = permissions.allPermissionsGranted,
+      chooseLocation = chooseLocation,
+      chosenLocation = chosenLocation,
+      onLocationUpdate = viewModel::consumeLocation)
 
-      // First, get last known location for immediate display
-      fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
-        if (chooseLocation) {
-          viewModel.consumeLocation(chosenLocation.latitude, chosenLocation.longitude)
-        } else loc?.let { viewModel.consumeLocation(it.latitude, it.longitude) }
-      }
+  // Handle and display error messages
+  HandleErrorMessages(
+      errorMessage = uiState.errorMessage,
+      snackbarHostState = snackbarHostState,
+      onErrorConsumed = viewModel::consumeError)
 
-      // Then set up continuous location updates
-      val locationRequest =
-          LocationRequest.Builder(
-                  Priority.PRIORITY_HIGH_ACCURACY, 10000L // Update every 10 seconds
-                  )
-              .apply {
-                setMinUpdateIntervalMillis(5000L) // But no more than every 5 seconds
-                setMaxUpdateDelayMillis(15000L)
-              }
-              .build()
-
-      val locationCallback =
-          object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-              locationResult.lastLocation?.let { location ->
-                if (chooseLocation) {
-                  viewModel.consumeLocation(chosenLocation.latitude, chosenLocation.longitude)
-                  // Persist chosen location
-                  persistLastLocation(context, chosenLocation.latitude, chosenLocation.longitude)
-                } else {
-                  viewModel.consumeLocation(location.latitude, location.longitude)
-                  persistLastLocation(context, location.latitude, location.longitude)
-                }
-              }
-            }
-          }
-
-      // Start receiving location updates
-      fusedLocationClient.requestLocationUpdates(
-          locationRequest, locationCallback, android.os.Looper.getMainLooper())
-
-      // Clean up when effect leaves composition
-      try {
-        kotlinx.coroutines.awaitCancellation()
-      } finally {
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-      }
-    }
-  }
-
-  LaunchedEffect(uiState.errorMessage) {
-    uiState.errorMessage?.let { raw ->
-      // If the message looks like an Int (e.g. "2131755344"),
-      // treat it as a string resource ID coming from `require { R.string.… }`.
-      val msg =
-          raw.toIntOrNull()?.let { resId ->
-            try {
-              context.getString(resId)
-            } catch (_: Throwable) {
-              raw // fallback if it's not a valid string resource
-            }
-          } ?: raw
-
-      snackbarHostState.showSnackbar(msg)
-      viewModel.consumeError()
-    }
-  }
-
+  // Animate camera to follow user location
   val cameraPosition = rememberCameraPositionState()
-  // Center on the user (EPFL by default, then new GPS forwarded by UI)
-  LaunchedEffect(uiState.effectiveUserLatLng) {
-    cameraPosition.safeAnimateTo(uiState.effectiveUserLatLng, zoom = 16f, durationMs = 600)
-  }
+  AnimateCameraToUser(
+      userLatLng = uiState.effectiveUserLatLng, cameraPositionState = cameraPosition)
 
   val addFriendUiState =
       AddFriendUiState(
@@ -289,9 +226,117 @@ fun StudyTogetherScreen(
       addFriendUiState = addFriendUiState,
       actions = actions,
   )
+}
 
-  // Context attachment removed: campus-entry notifications are handled by
-  // CampusEntryPollWorker so the UI no longer needs to give the ViewModel a Context.
+/* ---------- Permission & Location Side Effects ---------- */
+
+/** Request location permissions if not already granted */
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+private fun RequestLocationPermissions(
+    permissionsAlreadyGranted: Boolean,
+    requestPermissions: () -> Unit
+) {
+  LaunchedEffect(Unit) {
+    if (!permissionsAlreadyGranted) {
+      requestPermissions()
+    }
+  }
+}
+
+/** Set up continuous location tracking with real-time updates */
+@SuppressLint("MissingPermission")
+@Composable
+private fun TrackUserLocation(
+    permissionsGranted: Boolean,
+    chooseLocation: Boolean,
+    chosenLocation: LatLng,
+    onLocationUpdate: (Double, Double) -> Unit
+) {
+  val context = LocalContext.current
+
+  LaunchedEffect(permissionsGranted) {
+    if (permissionsGranted) {
+      val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
+      // First, get last known location for immediate display
+      fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+        val actualLoc = loc?.let { it.latitude to it.longitude }
+        resolveLocationCoordinates(chooseLocation, chosenLocation, actualLoc)?.let { (lat, lng) ->
+          onLocationUpdate(lat, lng)
+        }
+      }
+
+      // Then set up continuous location updates
+      val locationRequest =
+          LocationRequest.Builder(
+                  Priority.PRIORITY_HIGH_ACCURACY, 10000L // Update every 10 seconds
+                  )
+              .apply {
+                setMinUpdateIntervalMillis(5000L) // But no more than every 5 seconds
+                setMaxUpdateDelayMillis(15000L)
+              }
+              .build()
+
+      val locationCallback =
+          object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+              val actualLoc = locationResult.lastLocation?.let { it.latitude to it.longitude }
+              resolveLocationCoordinates(chooseLocation, chosenLocation, actualLoc)?.let {
+                  (lat, lng) ->
+                onLocationUpdate(lat, lng)
+              }
+            }
+          }
+
+      // Start receiving location updates
+      fusedLocationClient.requestLocationUpdates(
+          locationRequest, locationCallback, android.os.Looper.getMainLooper())
+
+      // Clean up when effect leaves composition
+      try {
+        kotlinx.coroutines.awaitCancellation()
+      } finally {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+      }
+    }
+  }
+}
+
+/** Handle error messages from ViewModel, converting resource IDs to strings */
+@Composable
+private fun HandleErrorMessages(
+    errorMessage: String?,
+    snackbarHostState: SnackbarHostState,
+    onErrorConsumed: () -> Unit
+) {
+  val context = LocalContext.current
+
+  LaunchedEffect(errorMessage) {
+    errorMessage?.let { raw ->
+      // If the message looks like an Int (e.g. "2131755344"),
+      // treat it as a string resource ID coming from `require { R.string.… }`.
+      val msg =
+          raw.toIntOrNull()?.let { resId ->
+            try {
+              context.getString(resId)
+            } catch (_: Throwable) {
+              raw // fallback if it's not a valid string resource
+            }
+          } ?: raw
+
+      snackbarHostState.showSnackbar(msg)
+      onErrorConsumed()
+    }
+  }
+}
+
+/** Animate camera to follow user location changes */
+@Composable
+private fun AnimateCameraToUser(userLatLng: LatLng, cameraPositionState: CameraPositionState) {
+  LaunchedEffect(userLatLng) {
+    cameraPositionState.safeAnimateTo(userLatLng, zoom = 16f, durationMs = 600)
+  }
 }
 
 /* ---------- Main screen layout (reduced complexity) ---------- */
