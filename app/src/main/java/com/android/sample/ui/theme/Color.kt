@@ -67,4 +67,6 @@ val StudyGreen = Color(0xFF4CAF50) // Pour le mode "study"
 val BreakYellow = Color(0xFFFFB300) // Pour le mode "break"
 val IdleBlue = Color(0xFF2196F3) // Pour le mode "idle"
 
+val IndicatorRed = Color(0xFFFF5252)
+
 val GlowGold = Color(0xFFFFD700)

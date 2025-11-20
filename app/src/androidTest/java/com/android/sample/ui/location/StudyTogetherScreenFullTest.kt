@@ -31,7 +31,8 @@ class StudyTogetherScreenFullTest {
     composeTestRule.setContent {
       UserStatusCard(isStudyMode = true, modifier = Modifier.testTag("study_card"))
     }
-    composeTestRule.onNodeWithText("You’re studying").assertExists()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("You're studying").assertExists()
   }
 
   // --- 2️⃣-B Test UserStatusCard (Break Mode)
@@ -40,7 +41,8 @@ class StudyTogetherScreenFullTest {
     composeTestRule.setContent {
       UserStatusCard(isStudyMode = false, modifier = Modifier.testTag("break_card"))
     }
-    composeTestRule.onNodeWithText("You’re on a break").assertExists()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("You're on a break").assertExists()
   }
 
   @Test
@@ -49,6 +51,7 @@ class StudyTogetherScreenFullTest {
       FriendInfoCard(
           name = "Alae", mode = FriendMode.STUDY, modifier = Modifier.testTag("friend_study"))
     }
+    composeTestRule.waitForIdle()
     // Shows name and chip text
     composeTestRule.onNodeWithText("Alae").assertExists()
     composeTestRule.onNodeWithText("Studying").assertExists()
@@ -60,6 +63,7 @@ class StudyTogetherScreenFullTest {
       FriendInfoCard(
           name = "Florian", mode = FriendMode.BREAK, modifier = Modifier.testTag("friend_break"))
     }
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("Florian").assertExists()
     composeTestRule.onNodeWithText("Break").assertExists()
   }
@@ -70,6 +74,7 @@ class StudyTogetherScreenFullTest {
       FriendInfoCard(
           name = "Khalil", mode = FriendMode.IDLE, modifier = Modifier.testTag("friend_idle"))
     }
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("Khalil").assertExists()
     composeTestRule.onNodeWithText("Idle").assertExists()
   }
@@ -108,6 +113,7 @@ class StudyTogetherScreenFullTest {
     composeTestRule.setContent {
       TestAnimatedVisibilitySample(FriendStatus("U1", "Alae", 0.0, 0.0, FriendMode.STUDY), false)
     }
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("Alae").assertExists()
     composeTestRule.onNodeWithText("Studying").assertExists()
   }
@@ -115,6 +121,7 @@ class StudyTogetherScreenFullTest {
   @Test
   fun animatedVisibility_displaysUserCard() {
     composeTestRule.setContent { TestAnimatedVisibilitySample(null, true) }
-    composeTestRule.onNodeWithText("You’re studying").assertExists()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("You're studying").assertExists()
   }
 }
