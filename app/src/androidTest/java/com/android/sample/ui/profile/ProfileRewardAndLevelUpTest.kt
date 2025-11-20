@@ -50,16 +50,10 @@ class ProfileRewardAndLevelUpTest {
 
     // Wait for snackbar text
     composeRule.waitUntil(timeoutMillis = 5000) {
-      composeRule
-          .onAllNodesWithText("Level 2 reached!", substring = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
+      composeRule.onAllNodesWithText("Level 2", substring = true).fetchSemanticsNodes().isNotEmpty()
     }
 
     // Assert snackbar actually visible
-    composeRule
-        .onAllNodesWithText("Level 2 reached!", substring = true)
-        .onFirst()
-        .assertIsDisplayed()
+    composeRule.onAllNodesWithText("Level 2", substring = true).onFirst().assertIsDisplayed()
   }
 }

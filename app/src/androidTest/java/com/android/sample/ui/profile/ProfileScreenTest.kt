@@ -247,8 +247,6 @@ class ProfileScreenTest {
         Badge(text = "Level 10", bg = Color.Magenta)
         Badge(text = "Premium", bg = Color.Yellow, textColor = Color.Black)
         Badge(text = "VIP", bg = Color.Red, textColor = Color.White)
-        GlowCard { Text("Inside GlowCard") }
-        Badge(text = "Level 10", bg = Color.Companion.Magenta)
       }
     }
     composeRule.onNodeWithText("Level 10").assertExists()

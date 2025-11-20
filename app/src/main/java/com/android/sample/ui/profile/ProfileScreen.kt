@@ -201,19 +201,22 @@ fun PetSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
+
+              // === Left stat bars ===
               Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatBar("❤️", 0.9f, StatBarHeart)
                 StatBar("💡", 0.85f, StatBarLightbulb)
                 StatBar("⚡", 0.7f, StatBarLightning)
               }
 
+              // === Center avatar & accessories ===
               Column(
                   horizontalAlignment = Alignment.CenterHorizontally,
                   verticalArrangement = Arrangement.Center) {
                     Box(
                         modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
                         contentAlignment = Alignment.Center) {
-                          // aura
+                          // aura glow
                           Box(
                               Modifier.fillMaxSize()
                                   .background(
@@ -222,21 +225,27 @@ fun PetSection(
                                               listOf(
                                                   accent.copy(alpha = 0.55f), Color.Transparent))))
 
+                          // === SAFE ACCESSORY PARSING ===
                           val equipped =
                               remember(accessories) {
-                                accessories.associate {
-                                  val parts = it.split(":")
-                                  parts[0] to parts[1]
-                                }
+                                accessories
+                                    .mapNotNull { raw ->
+                                      val parts = raw.split(":")
+                                      if (parts.size == 2) parts[0] to parts[1]
+                                      else null // ignore malformed entries like "none"
+                                    }
+                                    .toMap()
                               }
 
+                          // Base avatar
                           Image(
                               painter = painterResource(id = R.drawable.edumon),
                               contentDescription = "EduMon",
                               modifier = Modifier.size(100.dp).zIndex(1f))
 
-                          equipped["back"]?.let {
-                            val res = viewModel.accessoryResId(AccessorySlot.BACK, it)
+                          // BACK ACCESSORIES (zIndex < avatar)
+                          equipped["back"]?.let { id ->
+                            val res = viewModel.accessoryResId(AccessorySlot.BACK, id)
                             if (res != 0) {
                               Image(
                                   painter = painterResource(res),
@@ -245,8 +254,9 @@ fun PetSection(
                             }
                           }
 
-                          equipped["torso"]?.let {
-                            val res = viewModel.accessoryResId(AccessorySlot.TORSO, it)
+                          // TORSO ACCESSORIES
+                          equipped["torso"]?.let { id ->
+                            val res = viewModel.accessoryResId(AccessorySlot.TORSO, id)
                             if (res != 0) {
                               Image(
                                   painter = painterResource(res),
@@ -255,8 +265,9 @@ fun PetSection(
                             }
                           }
 
-                          equipped["head"]?.let {
-                            val res = viewModel.accessoryResId(AccessorySlot.HEAD, it)
+                          // HEAD ACCESSORIES
+                          equipped["head"]?.let { id ->
+                            val res = viewModel.accessoryResId(AccessorySlot.HEAD, id)
                             if (res != 0) {
                               Image(
                                   painter = painterResource(res),
