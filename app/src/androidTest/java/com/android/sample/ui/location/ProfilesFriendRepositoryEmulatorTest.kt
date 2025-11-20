@@ -69,6 +69,7 @@ class ProfilesFriendRepositoryEmulatorTest {
     val first = withTimeout(4000) { repo.friendsFlow.first() }
     assertTrue(first.isEmpty())
   }
+  // --- addFriendByUid tests ---
 
   @Test
   fun addFriendByUid_persists_and_emits() = runBlocking {
