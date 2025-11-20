@@ -201,6 +201,65 @@ class StudyTogetherScreenTest {
     composeTestRule.onNodeWithText("You're studying").assertExists()
   }
 
+
+  @Test
+  fun locationCallback_usesActualLocation_whenChooseLocationIsFalse() {
+    // Create a completely fresh repository and ViewModel instance
+    val repo = FakeFriendRepository(emptyList())
+    // Use liveLocation=true so consumeLocation will use the actual coords we pass
+    val vm = StudyTogetherViewModel(friendRepository = repo, liveLocation = true)
+
+    // Verify the ViewModel starts uninitialized
+    val initialState = vm.uiState.value
+    assert(!initialState.isLocationInitialized) {
+      "Fresh ViewModel should not have initialized location yet"
+    }
+
+    // Set up the screen with chooseLocation=false (use actual GPS)
+    composeTestRule.setContent {
+      StudyTogetherScreen(viewModel = vm, showMap = false, chooseLocation = false)
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Simulate GPS location update (Zurich - outside EPFL)
+    val gpsLat = 47.3769
+    val gpsLng = 8.5417
+    composeTestRule.runOnUiThread { vm.consumeLocation(gpsLat, gpsLng) }
+
+    composeTestRule.waitForIdle()
+
+    // Should show outside campus since Zurich is far from EPFL
+    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
+    composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
+
+    // Verify the GPS location was used and state was updated correctly
+    composeTestRule.runOnUiThread {
+      val state = vm.uiState.value
+      assert(state.isLocationInitialized) {
+        "Location should be initialized after consumeLocation"
+      }
+      // Verify the actual GPS coordinates are stored (not the default EPFL location)
+      assert(kotlin.math.abs(state.effectiveUserLatLng.latitude - gpsLat) < 0.0001) {
+        "Expected GPS latitude $gpsLat but got ${state.effectiveUserLatLng.latitude}"
+      }
+      assert(kotlin.math.abs(state.effectiveUserLatLng.longitude - gpsLng) < 0.0001) {
+        "Expected GPS longitude $gpsLng but got ${state.effectiveUserLatLng.longitude}"
+      }
+      // Explicitly verify we're NOT using the default EPFL location
+      val defaultLat = 46.5191
+      val defaultLng = 6.5668
+      assert(kotlin.math.abs(state.effectiveUserLatLng.latitude - defaultLat) > 0.1) {
+        "Should not be using default EPFL latitude"
+      }
+      assert(kotlin.math.abs(state.effectiveUserLatLng.longitude - defaultLng) > 0.1) {
+        "Should not be using default EPFL longitude"
+      }
+    }
+  }
+
+
+
   @Test
   fun friendInfoCard_showsCorrectInfo_whenFriendSelected() {
     val seed =
