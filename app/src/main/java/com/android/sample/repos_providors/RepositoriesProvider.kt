@@ -1,5 +1,8 @@
 package com.android.sample.repos_providors
 
+// This code has been written partially using A.I (LLM).
+
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
@@ -21,9 +24,13 @@ import com.android.sample.ui.stats.repository.StatsRepository
  * - FirestoreRepositoriesProvider (Firebase-backed)
  */
 interface RepositoriesProvider {
+
   val objectivesRepository: ObjectivesRepository
   val weeksRepository: WeeksRepository
   val statsRepository: StatsRepository
+
+  // Unified user stats (Firestore document /users/{uid}/stats/stats)
+  val userStatsRepository: UserStatsRepository
 
   // Home / Planner (attendance) / Study Session
   val homeRepository: HomeRepository

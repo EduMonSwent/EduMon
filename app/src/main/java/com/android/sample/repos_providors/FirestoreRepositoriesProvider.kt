@@ -1,5 +1,9 @@
 package com.android.sample.repos_providors
 
+// This code has been written partially using A.I (LLM).
+
+import com.android.sample.data.FirestoreUserStatsRepository
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
@@ -36,10 +40,17 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val objectivesRepository: ObjectivesRepository by lazy {
     FirestoreObjectivesRepository(db, auth)
   }
+
   override val weeksRepository: WeeksRepository by lazy { FirestoreWeeksRepository(db, auth) }
+
   override val statsRepository: StatsRepository by lazy { FirestoreStatsRepository(db, auth) }
 
+  override val userStatsRepository: UserStatsRepository by lazy {
+    FirestoreUserStatsRepository(auth, db)
+  }
+
   override val friendRepository: FriendRepository by lazy { ProfilesFriendRepository(db, auth) }
+
   override val flashcardsRepository: FlashcardsRepository by lazy {
     FirestoreFlashcardsRepository(db, auth)
   }
@@ -52,6 +63,9 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
 
   // Local implementations until remote backends exist
   override val homeRepository: HomeRepository by lazy { FakeHomeRepository() }
+
+  override val plannerRepository: PlannerRepoForPlanner by lazy { PlannerRepoForPlanner() }
+
   override val studySessionRepository: StudySessionRepository by lazy {
     ToDoBackedStudySessionRepository()
   }
@@ -59,6 +73,7 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val calendarRepository: CalendarRepositoryImpl by lazy { CalendarRepositoryImpl() }
 
   override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
+
   override val profileRepository: ProfileRepository by lazy { FakeProfileRepository() }
 }
 
