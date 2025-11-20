@@ -49,8 +49,8 @@ class StudyTogetherViewModel(
   // Throttling for presence writes
   private var lastSentAtMs: Long = 0L
   private var lastSentLatLng: LatLng? = null
-  private val minSendIntervalMs = 20_000L
-  private val minMoveMeters = 25f
+  private val minSendIntervalMs = 10_000L // Update Firebase every 10 seconds (was 20s)
+  private val minMoveMeters = 10f // Or when moved 10+ meters (was 25m)
 
   init {
     // Live friends (no changes needed in the screen)
@@ -73,7 +73,13 @@ class StudyTogetherViewModel(
     val onCampus = isOnEpflCampus(userLocation)
 
     // Always show live device position on the map (simpler UX)
-    _uiState.update { it.copy(userPosition = userLocation, isOnCampus = onCampus) }
+    _uiState.update {
+      it.copy(
+          userPosition = userLocation,
+          isOnCampus = onCampus,
+          isLocationInitialized = true // Mark location as initialized
+          )
+    }
 
     if (!isSignedIn) return
 

@@ -328,4 +328,190 @@ class StudyTogetherViewModelEmulatorTest {
     assertEquals(DEFAULT_LOCATION.latitude, gp.latitude, 1e-5)
     assertEquals(DEFAULT_LOCATION.longitude, gp.longitude, 1e-5)
   }
+
+  // -------------- New Tests: Location Changes & UI Updates --------------
+
+  @Test
+  fun continuousLocationUpdates_userPosition_updatesInUiState() = runBlocking {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo, liveLocation = true)
+
+    // First location
+    val lat1 = 46.520
+    val lon1 = 6.565
+    vm.consumeLocation(lat1, lon1)
+
+    val state1 = vm.uiState.first { it.isLocationInitialized }
+    assertEquals(lat1, state1.userPosition?.latitude ?: 0.0, 1e-5)
+    assertEquals(lon1, state1.userPosition?.longitude ?: 0.0, 1e-5)
+
+    // Second location (user moved)
+    val lat2 = 46.521
+    val lon2 = 6.566
+    vm.consumeLocation(lat2, lon2)
+
+    val state2 =
+        vm.uiState.first {
+          it.userPosition?.let { pos ->
+            abs(pos.latitude - lat2) < 1e-5 && abs(pos.longitude - lon2) < 1e-5
+          } ?: false
+        }
+    assertEquals(lat2, state2.userPosition?.latitude ?: 0.0, 1e-5)
+    assertEquals(lon2, state2.userPosition?.longitude ?: 0.0, 1e-5)
+
+    // Third location (user moved again)
+    val lat3 = 46.522
+    val lon3 = 6.567
+    vm.consumeLocation(lat3, lon3)
+
+    val state3 =
+        vm.uiState.first {
+          it.userPosition?.let { pos ->
+            abs(pos.latitude - lat3) < 1e-5 && abs(pos.longitude - lon3) < 1e-5
+          } ?: false
+        }
+    assertEquals(lat3, state3.userPosition?.latitude ?: 0.0, 1e-5)
+    assertEquals(lon3, state3.userPosition?.longitude ?: 0.0, 1e-5)
+  }
+
+  @Test
+  fun locationInitialized_flag_setsToTrueAfterFirstLocation() = runBlocking {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
+
+    // Initially false
+    val initialState = vm.uiState.first()
+    assertFalse(initialState.isLocationInitialized)
+
+    // Provide first location
+    vm.consumeLocation(46.520, 6.565)
+
+    // Now should be true
+    val updatedState = vm.uiState.first { it.isLocationInitialized }
+    assertTrue(updatedState.isLocationInitialized)
+  }
+
+  @Test
+  fun onCampusIndicator_updates_whenCrossingBoundary() = runBlocking {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo, liveLocation = true)
+
+    // Start inside campus
+    vm.consumeLocation(46.520, 6.565) // Inside EPFL bbox
+    val state1 = vm.uiState.first { it.isLocationInitialized }
+    assertTrue("Should be on campus", state1.isOnCampus)
+
+    // Move outside campus
+    vm.consumeLocation(47.37, 8.54) // Zürich - outside EPFL bbox
+    val state2 = vm.uiState.first { !it.isOnCampus }
+    assertFalse("Should be outside campus", state2.isOnCampus)
+
+    // Move back inside campus
+    vm.consumeLocation(46.521, 6.566) // Inside EPFL bbox again
+    val state3 = vm.uiState.first { it.isOnCampus }
+    assertTrue("Should be back on campus", state3.isOnCampus)
+  }
+
+  @Test
+  fun onCampusIndicator_edgeCase_atBoundary() = runBlocking {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo)
+
+    // EPFL bbox: lat [46.515, 46.525], lng [6.555, 6.575]
+
+    // Test exact boundary (should be ON campus - inclusive)
+    vm.consumeLocation(46.515, 6.555) // Min corner
+    val stateMin = vm.uiState.first { it.isLocationInitialized }
+    assertTrue("Min corner should be on campus", stateMin.isOnCampus)
+
+    vm.consumeLocation(46.525, 6.575) // Max corner
+    val stateMax =
+        vm.uiState.first {
+          it.userPosition?.let { pos -> abs(pos.latitude - 46.525) < 1e-5 } ?: false
+        }
+    assertTrue("Max corner should be on campus", stateMax.isOnCampus)
+
+    // Just outside boundary (should be OFF campus)
+    vm.consumeLocation(46.514, 6.565) // Just south of min lat
+    val stateOutside =
+        vm.uiState.first {
+          it.userPosition?.let { pos -> abs(pos.latitude - 46.514) < 1e-5 } ?: false
+        }
+    assertFalse("Just outside should be off campus", stateOutside.isOnCampus)
+  }
+
+  @Test
+  fun onCampusIndicator_multipleQuickUpdates_withinCampus() = runBlocking {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = StudyTogetherViewModel(friendRepository = repo, liveLocation = true)
+
+    // Simulate quick location updates while walking around campus
+    val locations =
+        listOf(Pair(46.520, 6.565), Pair(46.521, 6.566), Pair(46.522, 6.567), Pair(46.523, 6.568))
+
+    for ((lat, lon) in locations) {
+      vm.consumeLocation(lat, lon)
+      val state =
+          vm.uiState.first {
+            it.userPosition?.let { pos ->
+              abs(pos.latitude - lat) < 1e-5 && abs(pos.longitude - lon) < 1e-5
+            } ?: false
+          }
+      assertTrue("Location ($lat, $lon) should be on campus", state.isOnCampus)
+      assertTrue("Location should be initialized", state.isLocationInitialized)
+    }
+  }
+
+  @Test
+  fun locationUpdate_withFirebase_updatesPresenceAndUiState() = runBlocking {
+    // Test with live location that both Firebase and UI state update correctly
+    val lat = 46.520
+    val lon = 6.565
+
+    vmLiveTrue.consumeLocation(lat, lon)
+
+    // Check UI state updates
+    val uiState = vmLiveTrue.uiState.first { it.isLocationInitialized }
+    assertEquals(lat, uiState.userPosition?.latitude ?: 0.0, 1e-5)
+    assertEquals(lon, uiState.userPosition?.longitude ?: 0.0, 1e-5)
+    assertTrue("Should be on campus", uiState.isOnCampus)
+
+    // Check Firebase updates
+    val doc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp ->
+            abs(gp.latitude - lat) < 1e-4 && abs(gp.longitude - lon) < 1e-4
+          } ?: false
+        }
+
+    val gp = doc.getGeoPoint("location")!!
+    assertEquals(lat, gp.latitude, 1e-5)
+    assertEquals(lon, gp.longitude, 1e-5)
+  }
+
+  @Test
+  fun liveLocationFalse_userPosition_updatesButFirebaseUsesDefault() = runBlocking {
+    val deviceLat = 47.37 // Zürich
+    val deviceLon = 8.54
+
+    vmLiveFalse.consumeLocation(deviceLat, deviceLon)
+
+    // UI state should show device location (for display purposes)
+    val uiState = vmLiveFalse.uiState.first { it.isLocationInitialized }
+    assertEquals(DEFAULT_LOCATION.latitude, uiState.userPosition?.latitude ?: 0.0, 1e-5)
+    assertEquals(DEFAULT_LOCATION.longitude, uiState.userPosition?.longitude ?: 0.0, 1e-5)
+
+    // Firebase should have DEFAULT_LOCATION (privacy mode)
+    val doc =
+        waitUntilProfile(myUid) { snap ->
+          snap.getGeoPoint("location")?.let { gp ->
+            abs(gp.latitude - DEFAULT_LOCATION.latitude) < 1e-4 &&
+                abs(gp.longitude - DEFAULT_LOCATION.longitude) < 1e-4
+          } ?: false
+        }
+
+    val gp = doc.getGeoPoint("location")!!
+    assertEquals(DEFAULT_LOCATION.latitude, gp.latitude, 1e-5)
+    assertEquals(DEFAULT_LOCATION.longitude, gp.longitude, 1e-5)
+  }
 }

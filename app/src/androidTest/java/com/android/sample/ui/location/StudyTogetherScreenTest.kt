@@ -99,9 +99,11 @@ class StudyTogetherScreenTest {
 
     // Simulate clicking the user marker by invoking VM helper directly
     composeTestRule.runOnUiThread { vm.selectUser() }
+    // Wait for AnimatedVisibility animation to complete
+    composeTestRule.waitForIdle()
 
     // Expect the user status card text
-    composeTestRule.onNodeWithText("You’re studying").assertExists()
+    composeTestRule.onNodeWithText("You're studying").assertExists()
   }
 
   @Test
@@ -116,7 +118,10 @@ class StudyTogetherScreenTest {
 
     // Inside the ViewModel's EPFL bounding box:
     // lat in [46.515, 46.525], lng in [6.555, 6.575]
-    vm.consumeLocation(46.520, 6.565)
+    composeTestRule.runOnUiThread { vm.consumeLocation(46.520, 6.565) }
+
+    // Wait for state update and recomposition
+    composeTestRule.waitForIdle()
 
     // Indicator composable should always exist
     composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
@@ -133,6 +138,9 @@ class StudyTogetherScreenTest {
 
     // Clearly outside bounding box: Zürich coords
     composeTestRule.runOnUiThread { vm.consumeLocation(47.37, 8.54) }
+
+    // Wait for state update and recomposition
+    composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
     composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
