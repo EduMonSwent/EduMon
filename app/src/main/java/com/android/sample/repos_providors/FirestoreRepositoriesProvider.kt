@@ -64,8 +64,6 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   // Local implementations until remote backends exist
   override val homeRepository: HomeRepository by lazy { FakeHomeRepository() }
 
-  override val plannerRepository: PlannerRepoForPlanner by lazy { PlannerRepoForPlanner() }
-
   override val studySessionRepository: StudySessionRepository by lazy {
     ToDoBackedStudySessionRepository()
   }
