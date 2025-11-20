@@ -6,6 +6,7 @@ import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
+import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
 import com.android.sample.profile.ProfileRepository
@@ -38,6 +39,7 @@ interface RepositoriesProvider {
 
   // Calendar feature repo (model.calendar.PlannerRepository type)
   val calendarRepository: CalendarRepositoryImpl
+  val scheduleRepository: ScheduleRepository
 
   // To-Do
   val toDoRepository: ToDoRepository

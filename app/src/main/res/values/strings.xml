@@ -229,7 +229,7 @@
     <string name="day_short_sat">Sat</string>
     <string name="day_short_sun">Sun</string>
     <string name="time_separator">:</string>
-    <string name="unknown">?</string>
+    //<string name="unknown">?</string>
     <!-- Friends Repository -->
     <string name="enter_uid">Enter a UID.</string>
     <string name="friend_exist_already">You\'re already friends.</string>
@@ -299,6 +299,11 @@
     <string name="schedule_month_important_title">Most important this month</string>
     <string name="schedule_month_no_important">No important events this month</string>
 
+    <!-- Schedule task snackbar messages -->
+    <string name="task_saved">Task saved successfully</string>
+    <string name="task_save_error">Error while saving task</string>
+    <string name="task_deleted">Task deleted</string>
+    <string name="task_delete_error">Error while deleting task</string>
     <!-- StudyTogether UI -->
     <string name="study_together_no_friends_yet">No friends yet</string>
 
