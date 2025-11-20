@@ -127,18 +127,15 @@ class StudyTogetherViewModel(
         val enabled = prefs.getBoolean("campus_entry_enabled", false)
         val nowMs = System.currentTimeMillis()
         if (enabled && (nowMs - lastCampusNotifyMs) >= campusNotifyCooldownMs) {
-          // Permission check for Android 13+
           if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
               ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
                   PackageManager.PERMISSION_GRANTED) {
             NotificationUtils.ensureChannel(ctx)
-            // Removed deep link intent; notification will have no action when tapped.
             val n =
                 NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentTitle(ctx.getString(R.string.campus_entry_title))
                     .setContentText(ctx.getString(R.string.campus_entry_text))
-                    // .setContentIntent(pi) // removed
                     .setAutoCancel(true)
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .build()

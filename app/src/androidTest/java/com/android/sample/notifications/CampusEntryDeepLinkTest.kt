@@ -48,10 +48,9 @@ class CampusEntryDeepLinkTest {
   @Test
   fun campusEntryStrings_areNotEmpty() {
     val title = context.getString(R.string.campus_entry_title)
-    val text = context.getString(R.string.campus_entry_text)
     val toggleTitle = context.getString(R.string.campus_entry_toggle_title)
     val toggleSubtitle = context.getString(R.string.campus_entry_toggle_subtitle)
-    listOf(title, text, toggleTitle, toggleSubtitle).forEach { s ->
+    listOf(title, toggleTitle, toggleSubtitle).forEach { s ->
       assertTrue("String should not be empty", s.isNotEmpty())
     }
   }

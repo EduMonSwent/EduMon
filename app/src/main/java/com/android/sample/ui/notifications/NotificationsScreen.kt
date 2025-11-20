@@ -208,12 +208,6 @@ private fun CampusEntrySection(
         }
       },
       switchTag = "campus_entry_switch") {
-        Text(
-            text = stringResource(R.string.campus_entry_text),
-            color = TextLight.copy(0.75f),
-            style = MaterialTheme.typography.bodySmall)
-
-        // Show warning if background location is needed but not granted
         if (enabled && needsBackgroundLocation) {
           Spacer(modifier = Modifier.height(8.dp))
           Text(

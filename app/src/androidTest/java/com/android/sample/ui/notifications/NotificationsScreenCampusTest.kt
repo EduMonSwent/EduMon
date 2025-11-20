@@ -142,14 +142,6 @@ class NotificationsScreenCampusTest {
   }
 
   @Test
-  fun campusEntrySection_showsDescriptionText() {
-    val vm = FakeNotificationsVm()
-    composeTestRule.setContent { ScreenWithStrings(vm) }
-    val ctx = composeTestRule.activity
-    composeTestRule.onNodeWithText(ctx.getString(R.string.campus_entry_text)).assertIsDisplayed()
-  }
-
-  @Test
   fun campusEntryToggle_disablingCallsViewModelFalse() {
     val vm = FakeNotificationsVm(campusEntryEnabledInit = true)
     composeTestRule.setContent { ScreenWithStrings(vm) }

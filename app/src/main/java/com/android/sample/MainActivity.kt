@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,7 +53,7 @@ class MainActivity : ComponentActivity() {
           val l =
               FirebaseAuth.AuthStateListener { fa ->
                 val u = fa.currentUser
-                val goTo = if (u == null) "login" else "app"
+                val goTo = "app"
                 user = u
                 nav.navigate(goTo) {
                   popUpTo(nav.graph.startDestinationId) { inclusive = true }
@@ -68,7 +67,7 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             topBar = {
               CenterAlignedTopAppBar(
-                  title = { Text(if (user == null) "EduMon — Connection " else "") },
+                  title = { Text("") },
                   actions = {
                     if (user != null) {
                       TextButton(onClick = { signOutAll() }) { Text("Logout") }
@@ -76,23 +75,22 @@ class MainActivity : ComponentActivity() {
                   })
             }) { padding ->
               Box(Modifier.fillMaxSize().padding(padding)) {
-                NavHost(
-                    navController = nav, startDestination = if (user == null) "login" else "app") {
-                      composable("login") {
-                        LoginScreen(
-                            onLoggedIn = {
-                              nav.navigate("app") {
-                                popUpTo("login") { inclusive = true }
-                                launchSingleTop = true
-                              }
-                            })
-                      }
+                NavHost(navController = nav, startDestination = "app") {
+                  composable("login") {
+                    LoginScreen(
+                        onLoggedIn = {
+                          nav.navigate("app") {
+                            // popUpTo("app") { inclusive = true }
+                            launchSingleTop = true
+                          }
+                        })
+                  }
 
-                      composable("app") {
-                        LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
-                        EduMonNavHost(startDestination = startRoute)
-                      }
-                    }
+                  composable("app") {
+                    // LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
+                    EduMonNavHost(startDestination = startRoute)
+                  }
+                }
               }
             }
       }
