@@ -1,9 +1,9 @@
 package com.android.sample.ui
 
 import androidx.compose.ui.graphics.toArgb
-import com.android.sample.data.FakeUserStatsRepository
-import com.android.sample.data.AccessorySlot
 import com.android.sample.data.AccentVariant
+import com.android.sample.data.AccessorySlot
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.Rarity
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.ui.profile.ProfileViewModel
@@ -12,8 +12,8 @@ import com.android.sample.ui.theme.AccentViolet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
 import org.junit.Assert.*
+import org.junit.Test
 
 class ProfileScreenTest {
 
