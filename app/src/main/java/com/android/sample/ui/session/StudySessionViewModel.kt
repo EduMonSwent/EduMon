@@ -6,6 +6,7 @@ import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroPhase
@@ -43,7 +44,7 @@ class StudySessionViewModel(
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState
-  private val toDoRepo = ToDoRepositoryProvider.repository
+  private val toDoRepo = AppRepositories.toDoRepository
 
   init {
     observePomodoro()
