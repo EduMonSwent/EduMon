@@ -1,11 +1,8 @@
 package com.android.sample.data.notifications
 
 import android.Manifest
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
@@ -24,6 +21,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.tasks.await
+
+// Parts of this code were written with ChatGPT assistance
 
 /**
  * Polling worker to detect campus entry at ~5 minute intervals. Because PeriodicWorkRequest
@@ -161,22 +160,13 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
   private fun postCampusEntryNotification(ctx: Context) {
     NotificationUtils.ensureChannel(ctx)
 
-    val deepLink = ctx.getString(R.string.deep_link_format, "campus")
-    val intent =
-        Intent(Intent.ACTION_VIEW).apply {
-          data = Uri.parse(deepLink)
-          `package` = ctx.packageName
-        }
-    val pi =
-        PendingIntent.getActivity(
-            ctx, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-
+    // Removed deep link: we no longer attach a content intent so tapping does nothing.
     val n =
         NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(ctx.getString(R.string.campus_entry_title))
             .setContentText(ctx.getString(R.string.campus_entry_text))
-            .setContentIntent(pi)
+            // .setContentIntent(pi) // removed
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()

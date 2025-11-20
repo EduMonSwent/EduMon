@@ -23,6 +23,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowApplication
 
+// Parts of this code were written with ChatGPT assistance
+
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], manifest = Config.NONE)
 class StudyTogetherViewModelCampusTest {
@@ -202,27 +204,25 @@ class StudyTogetherViewModelCampusTest {
   }
 
   @Test
-  fun `campus notification includes correct deep link`() = runTest {
+  fun `campus notification has no action intent`() = runTest {
     // Given: feature enabled
     context
         .getSharedPreferences("notifications", Context.MODE_PRIVATE)
         .edit()
         .putBoolean("campus_entry_enabled", true)
         .commit()
-
+    // Start off campus
     viewModel.consumeLocation(46.510, 6.550)
-
-    // When
+    // When entering campus
     viewModel.consumeLocation(46.5202, 6.5652)
-
-    // Then
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val shadowNotificationManager = shadowOf(notificationManager)
     val notification = shadowNotificationManager.allNotifications.firstOrNull()
-
-    assertNotNull(notification)
-    assertNotNull(notification?.contentIntent)
+    assertNotNull("Expected a campus notification", notification)
+    assertNull(
+        "Campus notification should have no contentIntent (no deep link)",
+        notification?.contentIntent)
   }
 
   @Test

@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// Parts of this code were written with ChatGPT assistance
+
 class StudyTogetherViewModel(
     private val friendRepository: FriendRepository = AppRepositories.friendRepository,
     initialMode: FriendMode = FriendMode.STUDY,
@@ -130,24 +132,13 @@ class StudyTogetherViewModel(
               ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
                   PackageManager.PERMISSION_GRANTED) {
             NotificationUtils.ensureChannel(ctx)
-            val deepLink = ctx.getString(R.string.deep_link_format, "campus")
-            val intent =
-                android.content
-                    .Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(deepLink))
-                    .apply { `package` = ctx.packageName }
-            val pi =
-                android.app.PendingIntent.getActivity(
-                    ctx,
-                    0,
-                    intent,
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or
-                        android.app.PendingIntent.FLAG_IMMUTABLE)
+            // Removed deep link intent; notification will have no action when tapped.
             val n =
                 NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentTitle(ctx.getString(R.string.campus_entry_title))
                     .setContentText(ctx.getString(R.string.campus_entry_text))
-                    .setContentIntent(pi)
+                    // .setContentIntent(pi) // removed
                     .setAutoCancel(true)
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .build()

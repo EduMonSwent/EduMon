@@ -18,6 +18,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// Parts of this code were written with ChatGPT assistance
+
 @RunWith(AndroidJUnit4::class)
 class NotificationsScreenCampusTest {
 

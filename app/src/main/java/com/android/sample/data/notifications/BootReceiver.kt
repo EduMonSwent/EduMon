@@ -11,6 +11,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+// Parts of this code were written with ChatGPT assistance
+
 /**
  * Re-register alarms after device reboot. This receiver is invoked on BOOT_COMPLETED. It should
  * query the app's repository for upcoming study tasks and schedule alarms. Here we schedule via

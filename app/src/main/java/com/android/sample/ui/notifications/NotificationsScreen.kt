@@ -33,6 +33,8 @@ import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
+// Parts of this code were written with ChatGPT assistance
+
 /* ---------- Helpers testables ---------- */
 
 @VisibleForTesting

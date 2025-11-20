@@ -40,6 +40,8 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+// Parts of this code were written with ChatGPT assistance
+
 class NotificationsViewModel(
     private val repo: NotificationRepository = WorkManagerNotificationRepository(),
     private val calendarRepository: CalendarRepository = AppRepositories.calendarRepository,

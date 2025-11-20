@@ -19,6 +19,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowApplication
 
+// Parts of this code were written with ChatGPT assistance
+
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], manifest = Config.NONE)
 class CampusEntryPollWorkerTest {

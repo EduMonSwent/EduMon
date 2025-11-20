@@ -73,6 +73,8 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlin.math.abs
 
+// Parts of this code were written with ChatGPT assistance
+
 // Test tags
 private const val TAG_FAB_ADD = "fab_add_friend"
 private const val TAG_FIELD_UID = "field_friend_uid"

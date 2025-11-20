@@ -14,6 +14,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// Parts of this code were written with ChatGPT assistance
+
 // Instrumentation Compose test: verify that clicking the demo button calls the ViewModel
 // method that would post the deep-link notification. We avoid device NotificationManager
 // assertions here and instead assert the VM action, which is reliable in androidTest.
