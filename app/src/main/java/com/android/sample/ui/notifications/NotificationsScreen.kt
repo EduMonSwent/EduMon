@@ -185,8 +185,7 @@ private fun CampusEntrySection(
     onToggle: (Boolean) -> Unit,
     vm: NotificationsUiModel,
     ctx: android.content.Context,
-    backgroundLocationLauncher:
-        androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+    requestBackgroundPermission: (String) -> Unit
 ) {
   var showBackgroundLocationDialog by remember { mutableStateOf(false) }
   var pendingEnableRequest by remember { mutableStateOf(false) }
@@ -250,7 +249,7 @@ private fun CampusEntrySection(
               onClick = {
                 showBackgroundLocationDialog = false
                 vm.requestBackgroundLocationIfNeeded(ctx) { permission ->
-                  backgroundLocationLauncher.launch(permission)
+                  requestBackgroundPermission(permission)
                 }
               }) {
                 Text(stringResource(R.string.grant_permission))
@@ -271,7 +270,7 @@ private fun CampusEntrySection(
   }
 
   // Handle permission result
-  LaunchedEffect(backgroundLocationLauncher) {
+  LaunchedEffect(Unit) {
     // This will be triggered when permission result comes back
     // The actual handling is done through the launcher callback
   }
@@ -289,12 +288,12 @@ private fun CampusEntrySection(
 private fun TestNotificationButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
-    launcherTest: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+    requestPermission: (String) -> Unit
 ) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Button(
         modifier = Modifier.testTag("btn_test_1_min"),
-        onClick = { vm.requestOrSchedule(ctx) { permission -> launcherTest.launch(permission) } }) {
+        onClick = { vm.requestOrSchedule(ctx) { permission -> requestPermission(permission) } }) {
           Text(stringResource(R.string.send_notification_1_min))
         }
   }
@@ -304,7 +303,7 @@ private fun TestNotificationButton(
 private fun DeepLinkDemoButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
-    launcherDemo: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+    requestPermission: (String) -> Unit
 ) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     val needs = vm.needsNotificationPermission(ctx)
@@ -312,7 +311,7 @@ private fun DeepLinkDemoButton(
         modifier = Modifier.testTag("btn_demo_deep_link"),
         onClick = {
           if (needs && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            launcherDemo.launch(Manifest.permission.POST_NOTIFICATIONS)
+            requestPermission(Manifest.permission.POST_NOTIFICATIONS)
           } else {
             vm.sendDeepLinkDemoNotification(ctx)
           }
@@ -351,27 +350,45 @@ fun NotificationsScreen(
     vm: NotificationsUiModel = viewModel<NotificationsViewModel>(),
     onBack: () -> Unit = {},
     onGoHome: () -> Unit = {},
-    forceDialogForDay: Int? = null
+    forceDialogForDay: Int? = null,
+    // New: avoid creating ActivityResult launchers under Robolectric/unit tests
+    testMode: Boolean = false,
 ) {
   val ctx = LocalContext.current
 
-  val launcherTest =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.scheduleTestNotification(ctx)
-      }
-  val launcherDemo =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.sendDeepLinkDemoNotification(ctx)
-      }
-
-  // Background location permission launcher for campus entry feature
-  val launcherBackgroundLocation =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted && vm is NotificationsViewModel) {
-          // Permission granted, enable campus notifications
-          vm.setCampusEntryEnabled(ctx, true)
+  // Build permission request lambdas; under tests we don't create ActivityResult launchers
+  var requestNotifPermissionForTest: (String) -> Unit = { _: String ->
+    vm.scheduleTestNotification(ctx)
+  }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted) vm.scheduleTestNotification(ctx)
         }
-      }
+    requestNotifPermissionForTest = { permission: String -> launcher.launch(permission) }
+  }
+
+  var requestNotifPermissionForDemo: (String) -> Unit = { _: String ->
+    vm.sendDeepLinkDemoNotification(ctx)
+  }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted) vm.sendDeepLinkDemoNotification(ctx)
+        }
+    requestNotifPermissionForDemo = { permission: String -> launcher.launch(permission) }
+  }
+
+  var requestBackgroundLocation: (String) -> Unit = { _: String -> /* no-op in tests */ }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted && vm is NotificationsViewModel) {
+            vm.setCampusEntryEnabled(ctx, true)
+          }
+        }
+    requestBackgroundLocation = { permission: String -> launcher.launch(permission) }
+  }
 
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
   val kickoffDays by vm.kickoffDays.collectAsState()
@@ -416,10 +433,10 @@ fun NotificationsScreen(
               onToggle = { on -> vm.setCampusEntryEnabled(ctx, on) },
               vm = vm,
               ctx = ctx,
-              backgroundLocationLauncher = launcherBackgroundLocation)
+              requestBackgroundPermission = requestBackgroundLocation)
 
-          TestNotificationButton(vm, ctx, launcherTest)
-          DeepLinkDemoButton(vm, ctx, launcherDemo)
+          TestNotificationButton(vm, ctx, requestNotifPermissionForTest)
+          DeepLinkDemoButton(vm, ctx, requestNotifPermissionForDemo)
         }
   }
 

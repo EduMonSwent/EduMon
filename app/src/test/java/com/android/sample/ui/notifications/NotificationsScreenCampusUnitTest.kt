@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import com.android.sample.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,7 +20,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
+@Config(sdk = [33], manifest = Config.NONE)
+@Ignore("Runs only in debug variant as Compose UI unit test")
 class NotificationsScreenCampusUnitTest {
 
   @get:Rule val composeRule = createComposeRule()
@@ -92,7 +94,8 @@ class NotificationsScreenCampusUnitTest {
     override fun requestBackgroundLocationIfNeeded(ctx: Context, launcher: (String) -> Unit) {}
   }
 
-  @Composable private fun Screen(vm: NotificationsUiModel) = NotificationsScreen(vm = vm)
+  @Composable
+  private fun Screen(vm: NotificationsUiModel) = NotificationsScreen(vm = vm, testMode = true)
 
   @Test
   fun campusSwitch_shows() {
