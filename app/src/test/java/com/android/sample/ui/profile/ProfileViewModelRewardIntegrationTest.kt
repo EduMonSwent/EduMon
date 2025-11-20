@@ -25,7 +25,7 @@ class ProfileViewModelRewardIntegrationTest {
     // Start with a user at level 1, lastRewardedLevel = 1, no coins
     val initialProfile = UserProfile(level = 1, coins = 0, points = 0, lastRewardedLevel = 1)
     val repo = FakeProfileRepository(initialProfile)
-    val viewModel = ProfileViewModel(repository = repo)
+    val viewModel = ProfileViewModel(repo)
 
     // Sanity check
     assertEquals(1, viewModel.userProfile.value.level)
@@ -67,7 +67,7 @@ class ProfileViewModelRewardIntegrationTest {
         // given: a user at level 3 with some points
         val initialProfile = UserProfile(level = 3, points = 100, coins = 0, lastRewardedLevel = 3)
         val repo = FakeProfileRepository(initialProfile)
-        val viewModel = ProfileViewModel(repository = repo)
+        val viewModel = ProfileViewModel(repo)
 
         // when: we apply a change that modifies points but NOT the level
         viewModel.debugNoLevelChangeForTests()
@@ -87,7 +87,7 @@ class ProfileViewModelRewardIntegrationTest {
     // given: user at level 1 with 100 points
     val initial = UserProfile(level = 1, points = 100, coins = 0, lastRewardedLevel = 1)
     val repo = FakeProfileRepository(initial)
-    val viewModel = ProfileViewModel(repository = repo)
+    val viewModel = ProfileViewModel(repo)
 
     // when: we add less than 200 points (so total < 300)
     viewModel.addPoints(50) // 100 -> 150
@@ -109,7 +109,7 @@ class ProfileViewModelRewardIntegrationTest {
     // Start with 0 points at level 1, and no rewarded levels yet
     val initial = UserProfile(level = 1, points = 0, coins = 0, lastRewardedLevel = 0)
     val repo = FakeProfileRepository(initial)
-    val viewModel = ProfileViewModel(repository = repo)
+    val viewModel = ProfileViewModel(repo)
 
     // Listen for first reward event
     var receivedEvent: LevelUpRewardUiEvent? = null

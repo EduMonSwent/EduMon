@@ -18,7 +18,10 @@ import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.theme.AccentBlue
+import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
+import com.android.sample.ui.theme.AccentViolet
+import com.android.sample.ui.theme.EventColorSports
 import com.android.sample.ui.theme.GlowGold
 import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletSoft
@@ -54,20 +57,24 @@ class ProfileViewModel(
 
   // Palette from theme
   val accentPalette: List<Color> =
-      listOf(AccentViolet, AccentBlue, AccentMint, EventColorSports, AccentMagenta)
+      listOf(
+          AccentViolet,
+          AccentBlue,
+          AccentMint,
+          EventColorSports,
+          AccentMagenta,
+          PurplePrimary,
+          AccentBlue,
+          AccentMint,
+          GlowGold,
+          VioletSoft)
 
   // Accessories catalog
-  val accessoryCatalog: List<AccessoryItem> =
   companion object {
-    // XP required to advance by one level
     const val POINTS_PER_LEVEL: Int = 300
   }
 
   // ----- Profil LOCAL uniquement -----
-  private val _userProfile = MutableStateFlow(repository.profile.value.copy())
-  val userProfile: StateFlow<UserProfile> = _userProfile
-
-  val accentPalette = listOf(PurplePrimary, AccentBlue, AccentMint, GlowGold, VioletSoft)
   // reward engine instance
   private val rewardEngine = LevelRewardEngine()
 

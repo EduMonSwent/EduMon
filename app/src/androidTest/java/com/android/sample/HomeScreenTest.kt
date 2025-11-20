@@ -20,14 +20,19 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.feature.homeScreen.EduMonHomeScreen
 import com.android.sample.feature.homeScreen.GlowCard
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
 import com.android.sample.feature.homeScreen.HomeViewModel
-import com.android.sample.ui.stats.model.StudyStats
 import java.time.LocalDate
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +41,34 @@ import org.junit.runner.RunWith
 class HomeScreenTest {
 
   @get:Rule val composeRule = createComposeRule()
+
+  // --- Test helper repos ---
+
+  private class FakeUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepository {
+    private val _stats = MutableStateFlow(initial)
+    override val stats: StateFlow<UserStats> = _stats
+
+    override fun start() {
+      // no-op
+    }
+
+    override suspend fun addStudyMinutes(extraMinutes: Int) {
+      _stats.value =
+          _stats.value.copy(totalStudyMinutes = _stats.value.totalStudyMinutes + extraMinutes)
+    }
+
+    override suspend fun updateCoins(delta: Int) {
+      _stats.value = _stats.value.copy(coins = _stats.value.coins + delta)
+    }
+
+    override suspend fun setWeeklyGoal(goalMinutes: Int) {
+      _stats.value = _stats.value.copy(weeklyGoal = goalMinutes)
+    }
+
+    override suspend fun addPoints(delta: Int) {
+      _stats.value = _stats.value.copy(points = _stats.value.points + delta)
+    }
+  }
 
   private fun setHomeContent(quote: String = "Keep going.", onNavigate: (String) -> Unit = {}) {
     val today = LocalDate.now()
@@ -49,7 +82,6 @@ class HomeScreenTest {
                     isLoading = false,
                     todos =
                         listOf(
-                            // one DONE + two pending to hit both branches
                             ToDo(
                                 id = "1",
                                 title = "CS-101: Finish exercise sheet",
@@ -69,12 +101,15 @@ class HomeScreenTest {
                     creatureStats =
                         CreatureStats(happiness = 85, health = 90, energy = 70, level = 5),
                     userStats =
-                        UserProfile(
+                        UserStats(
+                            totalStudyMinutes = 100,
+                            todayStudyMinutes = 45,
                             streak = 7,
+                            weeklyGoal = 180,
+                            coins = 0,
                             points = 1250,
-                            studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 180)),
+                            lastUpdated = 0L),
                     quote = quote),
-            // use platform drawables so tests don’t depend on app resources
             creatureResId = R.drawable.ic_menu_help,
             environmentResId = R.drawable.ic_menu_gallery,
             onNavigate = onNavigate)
@@ -137,24 +172,26 @@ class HomeScreenTest {
     val slowRepo =
         object : HomeRepository {
           override suspend fun fetchTodos(): List<ToDo> {
-            kotlinx.coroutines.delay(5_000)
+            delay(5_000)
             return emptyList()
           }
 
           override suspend fun fetchCreatureStats(): CreatureStats {
-            kotlinx.coroutines.delay(5_000)
+            delay(5_000)
             return CreatureStats()
           }
 
           override suspend fun fetchUserStats(): UserProfile {
-            kotlinx.coroutines.delay(5_000)
+            delay(5_000)
             return UserProfile()
           }
 
           override fun dailyQuote(nowMillis: Long): String = "Slow"
         }
 
-    val vm = HomeViewModel(repository = slowRepo)
+    val vm =
+        HomeViewModel(
+            repository = slowRepo, userStatsRepository = FakeUserStatsRepository(UserStats()))
 
     composeRule.setContent {
       MaterialTheme {
@@ -181,18 +218,9 @@ class HomeScreenTest {
   @Test
   fun todos_showsDoneAndPendingRows_andSeeAllIsClickable() {
     setHomeContent()
-    // One done -> "Completed"; one pending -> verify by title
     composeRule.onNodeWithText("Completed").assertExists()
     composeRule.onNodeWithText("Math review: sequences").assertExists()
-
     composeRule.onNode(hasText("See all") and hasClickAction()).assertExists()
-  }
-
-  @Test
-  fun chips_arePresentAndClickable() {
-    setHomeContent()
-    composeRule.onNodeWithText("Open Planner").performScrollTo().assertHasClickAction()
-    composeRule.onNodeWithText("Focus Mode").performScrollTo().assertHasClickAction()
   }
 
   @Test
@@ -205,5 +233,210 @@ class HomeScreenTest {
   fun glowCard_rendersChildContent() {
     composeRule.setContent { MaterialTheme { GlowCard { Text("Inside Glow") } } }
     composeRule.onNodeWithText("Inside Glow").assertIsDisplayed()
+  }
+
+  @Test
+  fun quickActions_allButtonsAreClickable() {
+    setHomeContent()
+    composeRule.onNodeWithText("Study 30m").performScrollTo().assertHasClickAction()
+    composeRule.onNodeWithText("Take Break").performScrollTo().assertHasClickAction()
+    composeRule.onNodeWithText("Exercise").performScrollTo().assertHasClickAction()
+    composeRule.onNodeWithText("Social Time").performScrollTo().assertHasClickAction()
+  }
+
+  @Test
+  fun bottomNav_showsAllItems() {
+    setHomeContent()
+    composeRule.onNodeWithContentDescription("Home").assertExists()
+    composeRule.onNodeWithContentDescription("Calendar").assertExists()
+    composeRule.onNodeWithContentDescription("Study").assertExists()
+    composeRule.onNodeWithContentDescription("Profile").assertExists()
+    composeRule.onNodeWithContentDescription("Games").assertExists()
+  }
+
+  @Test
+  fun emptyTodos_stillRendersCard() {
+    composeRule.setContent {
+      MaterialTheme {
+        EduMonHomeScreen(
+            state =
+                HomeUiState(
+                    isLoading = false,
+                    todos = emptyList(),
+                    creatureStats = CreatureStats(level = 1),
+                    userStats = UserStats(),
+                    quote = "Empty state"),
+            creatureResId = R.drawable.ic_menu_help,
+            environmentResId = R.drawable.ic_menu_gallery,
+            onNavigate = {})
+      }
+    }
+
+    composeRule.onNodeWithText("Today").performScrollTo().assertIsDisplayed()
+    composeRule.onNode(hasText("See all") and hasClickAction()).assertExists()
+  }
+
+  @Test
+  fun navigation_callbacks_trigger() {
+    var lastRoute = ""
+
+    setHomeContent { route -> lastRoute = route }
+
+    composeRule.onNodeWithText("Open Planner").performClick()
+    assertEquals("planner", lastRoute)
+
+    composeRule.onNode(hasText("See all")).performClick()
+    assertEquals("planner", lastRoute)
+  }
+
+  @Test
+  fun userStats_displaysAllFields() {
+    setHomeContent()
+
+    composeRule.onNodeWithText("Streak").performScrollTo().assertExists()
+    composeRule.onNodeWithText("Points").performScrollTo().assertExists()
+    composeRule.onNodeWithText("Study Today").performScrollTo().assertExists()
+    composeRule.onNodeWithText("Weekly Goal").performScrollTo().assertExists()
+  }
+
+  @Test
+  fun creatureStats_displaysAllFields() {
+    setHomeContent()
+
+    composeRule.onNodeWithText("Buddy Stats").performScrollTo().assertIsDisplayed()
+
+    // Check for progress bars (happiness, health, energy)
+    composeRule
+        .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.85f, 0f..1f, 0)))
+        .performScrollTo()
+        .assertExists()
+  }
+
+  @Test
+  fun todos_showCorrectStatus() {
+    val today = LocalDate.now()
+
+    composeRule.setContent {
+      MaterialTheme {
+        EduMonHomeScreen(
+            state =
+                HomeUiState(
+                    isLoading = false,
+                    todos =
+                        listOf(
+                            ToDo(
+                                id = "1",
+                                title = "Done Task",
+                                dueDate = today,
+                                priority = Priority.HIGH,
+                                status = Status.DONE),
+                            ToDo(
+                                id = "2",
+                                title = "Pending Task",
+                                dueDate = today,
+                                priority = Priority.LOW,
+                                status = Status.IN_PROGRESS)),
+                    creatureStats = CreatureStats(),
+                    userStats = UserStats(),
+                    quote = "Test"),
+            creatureResId = R.drawable.ic_menu_help,
+            environmentResId = R.drawable.ic_menu_gallery,
+            onNavigate = {})
+      }
+    }
+
+    composeRule.onNodeWithText("Done Task").assertExists()
+    composeRule.onNodeWithText("Pending Task").assertExists()
+    composeRule.onNodeWithText("Completed").assertExists()
+  }
+
+  @Test
+  fun focusModeChip_exists() {
+    setHomeContent()
+
+    // Scroll to affirmation section
+    composeRule.onNodeWithText("Affirmation").performScrollTo()
+
+    composeRule.onNodeWithText("Focus Mode").assertIsDisplayed()
+  }
+
+  @Test
+  fun affirmationCard_displaysQuote() {
+    setHomeContent(quote = "Custom affirmation quote")
+
+    composeRule.onNodeWithText("Affirmation").performScrollTo()
+    composeRule.onNodeWithText("Custom affirmation quote").assertExists()
+  }
+
+  @Test
+  fun todayCard_showsMaxThreeTodos() {
+    val today = LocalDate.now()
+    val manyTodos =
+        (1..10).map { i ->
+          ToDo(id = "todo_$i", title = "Task $i", dueDate = today, priority = Priority.LOW)
+        }
+
+    composeRule.setContent {
+      MaterialTheme {
+        EduMonHomeScreen(
+            state =
+                HomeUiState(
+                    isLoading = false,
+                    todos = manyTodos,
+                    creatureStats = CreatureStats(),
+                    userStats = UserStats(),
+                    quote = "Test"),
+            creatureResId = R.drawable.ic_menu_help,
+            environmentResId = R.drawable.ic_menu_gallery,
+            onNavigate = {})
+      }
+    }
+
+    // Should show only first 3
+    composeRule.onNodeWithText("Task 1").assertExists()
+    composeRule.onNodeWithText("Task 2").assertExists()
+    composeRule.onNodeWithText("Task 3").assertExists()
+    composeRule.onNodeWithText("Task 4").assertDoesNotExist()
+  }
+
+  @Test
+  fun quickActionsCard_allActionsPresent() {
+    setHomeContent()
+
+    composeRule.onNodeWithText("Quick Actions").performScrollTo()
+    composeRule.onNodeWithText("Study 30m").assertExists()
+    composeRule.onNodeWithText("Take Break").assertExists()
+    composeRule.onNodeWithText("Exercise").assertExists()
+    composeRule.onNodeWithText("Social Time").assertExists()
+  }
+
+  @Test
+  fun userStatsCard_title_displayed() {
+    setHomeContent()
+
+    composeRule.onNodeWithText("Your Stats").performScrollTo().assertExists()
+  }
+
+  @Test
+  fun creatureStatsCard_title_displayed() {
+    setHomeContent()
+
+    composeRule.onNodeWithText("Buddy Stats").performScrollTo().assertExists()
+  }
+
+  @Test
+  fun navigation_studyButton_triggersCallback() {
+    var navigationCalled = false
+    var route = ""
+
+    setHomeContent { r ->
+      navigationCalled = true
+      route = r
+    }
+
+    composeRule.onNodeWithText("Study 30m").performScrollTo().performClick()
+
+    assert(navigationCalled)
+    assertEquals("study", route)
   }
 }

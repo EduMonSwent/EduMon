@@ -83,6 +83,8 @@ import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
+import com.android.sample.ui.profile.ProfileViewModel.Companion.POINTS_PER_LEVEL
+import com.android.sample.ui.theme.*
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.DarkCardItem
@@ -92,8 +94,6 @@ import com.android.sample.ui.theme.StatBarHeart
 import com.android.sample.ui.theme.StatBarLightbulb
 import com.android.sample.ui.theme.StatBarLightning
 import com.android.sample.ui.theme.TextLight
-import com.android.sample.ui.profile.ProfileViewModel.Companion.POINTS_PER_LEVEL
-import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
   const val PROFILE_SCREEN = "profileScreen"
@@ -164,7 +164,7 @@ fun ProfileScreen(
               }
               item {
                 GlowCard {
-                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) }
+                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user, stats) }
                 }
               }
               item {
