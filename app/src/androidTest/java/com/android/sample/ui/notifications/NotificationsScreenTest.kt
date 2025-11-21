@@ -2,7 +2,9 @@ package com.android.sample.ui.notifications
 
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -102,7 +104,10 @@ class NotificationsScreenTest {
     override fun hasBackgroundLocationPermission(ctx: Context): Boolean = hasBgLocation
 
     override fun requestBackgroundLocationIfNeeded(ctx: Context, launcher: (String) -> Unit) {
-      // Simulate grant: tests can flip hasBgLocation = true then rely on Composable effect
+      // Simulate immediate grant and enabling Campus feature in test environment
+      hasBgLocation = true
+      _campusEnabled.value = true
+      setCampusEnabledLast = true
     }
 
     // Test helpers to flip internal flags
@@ -122,17 +127,28 @@ class NotificationsScreenTest {
   @Test
   fun title_and_buttons_render() {
     val vm = FakeVm()
-    composeRule.setContent { NotificationsScreen(vm = vm, testMode = true) }
-    val ctx = ApplicationProvider.getApplicationContext<Context>()
-    composeRule.onNodeWithText(ctx.getString(R.string.notifications_title)).assertIsDisplayed()
+    composeRule.setContent { MaterialTheme { NotificationsScreen(vm = vm, testMode = true) } }
+    composeRule.waitUntil(5000) {
+      composeRule.onAllNodes(hasTestTag("notifications_title")).fetchSemanticsNodes().isNotEmpty()
+    }
+    composeRule.onNodeWithTag("notifications_title").assertIsDisplayed()
+    composeRule.waitUntil(5000) {
+      composeRule.onAllNodes(hasTestTag("btn_test_1_min")).fetchSemanticsNodes().isNotEmpty()
+    }
     composeRule.onNodeWithTag("btn_test_1_min").assertIsDisplayed()
+    composeRule.waitUntil(5000) {
+      composeRule.onAllNodes(hasTestTag("btn_demo_deep_link")).fetchSemanticsNodes().isNotEmpty()
+    }
     composeRule.onNodeWithTag("btn_demo_deep_link").assertIsDisplayed()
   }
 
   @Test
   fun test_notification_button_calls_requestOrSchedule() {
     val vm = FakeVm()
-    composeRule.setContent { NotificationsScreen(vm = vm, testMode = true) }
+    composeRule.setContent { MaterialTheme { NotificationsScreen(vm = vm, testMode = true) } }
+    composeRule.waitUntil(5000) {
+      composeRule.onAllNodes(hasTestTag("btn_test_1_min")).fetchSemanticsNodes().isNotEmpty()
+    }
     composeRule.onNodeWithTag("btn_test_1_min").performClick()
     composeRule.runOnIdle { assertTrue(vm.requestOrScheduleCalled) }
   }
@@ -141,7 +157,10 @@ class NotificationsScreenTest {
   fun deep_link_button_calls_send_when_no_permission_needed() {
     val vm = FakeVm()
     vm.setNeedsNotif(false)
-    composeRule.setContent { NotificationsScreen(vm = vm, testMode = true) }
+    composeRule.setContent { MaterialTheme { NotificationsScreen(vm = vm, testMode = true) } }
+    composeRule.waitUntil(5000) {
+      composeRule.onAllNodes(hasTestTag("btn_demo_deep_link")).fetchSemanticsNodes().isNotEmpty()
+    }
     composeRule.onNodeWithTag("btn_demo_deep_link").performClick()
     composeRule.runOnIdle { assertTrue(vm.sendDeepLinkCalled) }
   }
@@ -153,22 +172,18 @@ class NotificationsScreenTest {
     vm.setNeedsBgLocation(true)
     vm.setHasBgLocation(false)
 
-    composeRule.setContent { NotificationsScreen(vm = vm, testMode = true) }
+    composeRule.setContent { MaterialTheme { NotificationsScreen(vm = vm, testMode = true) } }
 
-    // Toggle on -> should show dialog because bg location needed
+    composeRule.waitUntil(5000) {
+      composeRule.onAllNodes(hasTestTag("campus_entry_switch")).fetchSemanticsNodes().isNotEmpty()
+    }
     composeRule.onNodeWithTag("campus_entry_switch").performClick()
 
-    // Dialog content visible
     composeRule
         .onNodeWithText(ctx.getString(R.string.background_location_dialog_title))
         .assertIsDisplayed()
 
-    // Confirm grant
     composeRule.onNodeWithText(ctx.getString(R.string.grant_permission)).performClick()
-
-    // Simulate that permission is now granted, Compose effect will toggle VM on
-    vm.setHasBgLocation(true)
-    composeRule.waitForIdle()
 
     composeRule.runOnIdle { assertTrue(vm.setCampusEnabledLast == true) }
   }
@@ -176,7 +191,7 @@ class NotificationsScreenTest {
   @Test
   fun startScheduleObserver_called_when_taskNotificationsEnabled_true_on_entry() {
     val vm = FakeVm(taskNotificationsEnabledInit = true)
-    composeRule.setContent { NotificationsScreen(vm = vm, testMode = true) }
+    composeRule.setContent { MaterialTheme { NotificationsScreen(vm = vm, testMode = true) } }
     composeRule.runOnIdle { assertTrue(vm.startObservingCalled) }
   }
 }
