@@ -8,10 +8,6 @@ import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.repos_providors.AppRepositories
-import com.android.sample.repositories.ToDoRepositoryProvider
-import com.android.sample.profile.ProfileRepository
-import com.android.sample.profile.ProfileRepositoryProvider
-import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
@@ -51,7 +47,8 @@ class StudySessionViewModel(
   private val _uiState = MutableStateFlow(StudySessionUiState())
   val uiState: StateFlow<StudySessionUiState> = _uiState
 
-  private val toDoRepo = ToDoRepositoryProvider.repository
+  // IMPORTANT: use the same repository as tests (AppRepositories.toDoRepository)
+  private val toDoRepo = AppRepositories.toDoRepository
 
   init {
     observePomodoro()
@@ -76,11 +73,11 @@ class StudySessionViewModel(
   private fun observePomodoro() {
     var lastPhase: PomodoroPhase? = null
     var lastState: PomodoroState? = null
+
     combine(pomodoroViewModel.phase, pomodoroViewModel.timeLeft, pomodoroViewModel.state) {
             phase,
             timeLeft,
-            state,
-          ->
+            state ->
           Triple(phase, timeLeft, state)
         }
         .onEach { (phase, timeLeft, state) ->
@@ -97,6 +94,7 @@ class StudySessionViewModel(
               state == PomodoroState.FINISHED) {
             onPomodoroCompleted()
           }
+
           lastPhase = phase
           lastState = state
         }
@@ -109,8 +107,7 @@ class StudySessionViewModel(
       userStatsRepository.addStudyMinutes(POMODORO_MINUTES)
       userStatsRepository.addPoints(POINTS_PER_COMPLETED_POMODORO)
 
-      // No need to manually touch completedPomodoros/totalMinutes/streak here:
-      // they are updated by the collector above.
+      // UI stats are updated by the collector in init.
       repository.saveCompletedSession(_uiState.value)
     }
   }
@@ -118,10 +115,10 @@ class StudySessionViewModel(
   private fun loadSuggestedTasks() {
     viewModelScope.launch {
       val tasks = repository.getSuggestedTasks()
-      _uiState.update { it.copy(suggestedTasks = tasks) }
       val selectedId = _uiState.value.selectedTask?.id
-      _uiState.update {
-        it.copy(suggestedTasks = tasks, selectedTask = tasks.find { t -> t.id == selectedId })
+      _uiState.update { current ->
+        val refreshedSelected = tasks.firstOrNull { it.id == selectedId } ?: current.selectedTask
+        current.copy(suggestedTasks = tasks, selectedTask = refreshedSelected)
       }
     }
   }
@@ -133,14 +130,14 @@ class StudySessionViewModel(
       val todo = toDoRepo.getById(selectedId) ?: return@launch
       toDoRepo.update(todo.copy(status = newStatus))
 
-      // Refresh suggestions & selection
+      // Refresh suggestions & selection based on updated repo state
       loadSuggestedTasks()
       val updated = toDoRepo.todos.first().firstOrNull { it.id == selectedId }
       _uiState.update { it.copy(selectedTask = updated) }
     }
   }
 
-  /** Optional: one-tap cycle like your Overview screen. */
+  /** One-tap status cycle: TODO -> IN_PROGRESS -> DONE -> TODO. */
   fun cycleSelectedTaskStatus() {
     val selectedId = _uiState.value.selectedTask?.id ?: return
     viewModelScope.launch {
