@@ -12,6 +12,7 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.stats.model.StudyStats
@@ -256,13 +257,14 @@ class ProfileScreenTest {
 
   @Test
   fun statsCardDisplaysAllStats() {
-    val user =
+    val profile =
         UserProfile(
             streak = 10,
             points = 200,
             coins = 150,
             studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 60))
-    composeRule.setContent { StatsCard(user) }
+    val stats = UserStats(streak = 10, points = 200, coins = 150, todayStudyMinutes = 45)
+    composeRule.setContent { StatsCard(profile, stats) }
 
     composeRule.onNodeWithText("Current Streak").assertExists()
     composeRule.onNodeWithText("Total Points").assertExists()
@@ -518,30 +520,32 @@ class ProfileScreenTest {
 
   @Test
   fun statsCardWithZeroValues() {
-    val user =
+    val profile =
         UserProfile(
             streak = 0,
             points = 0,
             coins = 0,
             studyStats = StudyStats(totalTimeMin = 0, dailyGoalMin = 0))
-    composeRule.setContent { StatsCard(user) }
+    val stats = UserStats(streak = 0, points = 0, coins = 0, todayStudyMinutes = 0)
+    composeRule.setContent { StatsCard(profile, stats) }
 
-    composeRule.onNodeWithText("0 days").assertExists()
+    composeRule.onNodeWithText("0 day").assertExists() // Singular form
     // "0" appears twice (points and coins)
     composeRule.onAllNodesWithText("0").assertCountEquals(2)
-    // "0 min" appears twice (totalTimeMin and dailyGoalMin)
+    // "0 min" appears twice (todayStudyMinutes and dailyGoalMin)
     composeRule.onAllNodesWithText("0 min").assertCountEquals(2)
   }
 
   @Test
   fun statsCardWithLargeValues() {
-    val user =
+    val profile =
         UserProfile(
             streak = 365,
             points = 999999,
             coins = 888888,
             studyStats = StudyStats(totalTimeMin = 9999, dailyGoalMin = 500))
-    composeRule.setContent { StatsCard(user) }
+    val stats = UserStats(streak = 365, points = 999999, coins = 888888, todayStudyMinutes = 9999)
+    composeRule.setContent { StatsCard(profile, stats) }
 
     composeRule.onNodeWithText("365 days").assertExists()
     composeRule.onNodeWithText("999999").assertExists()
@@ -585,5 +589,84 @@ class ProfileScreenTest {
 
     composeRule.onNodeWithTag("open_notifications_screen").performClick()
     assert(notificationsOpened)
+  }
+
+  @Test
+  fun levelProgressBar_displaysCorrectly() {
+    composeRule.setContent { LevelProgressBar(level = 5, points = 450, pointsPerLevel = 100) }
+
+    composeRule.onNodeWithText("Progress to next level").assertExists()
+    // At level 5 with 450 points: levelBase = 4*100 = 400, so 50/100 progress
+    composeRule.onNodeWithText("50 / 100 pts  •  50 pts to next level").assertExists()
+  }
+
+  @Test
+  fun levelProgressBar_atMaxProgress() {
+    composeRule.setContent { LevelProgressBar(level = 3, points = 300, pointsPerLevel = 100) }
+
+    // At level 3 with 300 points: levelBase = 2*100 = 200, so 100/100 progress
+    composeRule.onNodeWithText("100 / 100 pts  •  0 pts to next level").assertExists()
+  }
+
+  @Test
+  fun levelProgressBar_atStartOfLevel() {
+    composeRule.setContent { LevelProgressBar(level = 2, points = 100, pointsPerLevel = 100) }
+
+    // At level 2 with 100 points: levelBase = 1*100 = 100, so 0/100 progress
+    composeRule.onNodeWithText("0 / 100 pts  •  100 pts to next level").assertExists()
+  }
+
+  @Test
+  fun petSectionWithMalformedAccessories() {
+    val vm = ProfileViewModel(FakeProfileRepository())
+    composeRule.setContent {
+      PetSection(
+          level = 5,
+          accent = Color.Magenta,
+          accessories = listOf("malformed", "head:hat", "invalid_format", "torso:cape"),
+          variant = AccentVariant.Base,
+          viewModel = vm)
+    }
+
+    // Should still display level without crashing
+    composeRule.onNodeWithText("Level 5").assertExists()
+  }
+
+  @Test
+  fun accessoriesGrid_multipleSelection() {
+    val items =
+        listOf(
+            AccessoryItem(
+                id = "hat1",
+                slot = AccessorySlot.HEAD,
+                label = "Hat 1",
+                rarity = Rarity.COMMON,
+                iconRes = null),
+            AccessoryItem(
+                id = "hat2",
+                slot = AccessorySlot.HEAD,
+                label = "Hat 2",
+                rarity = Rarity.RARE,
+                iconRes = null))
+
+    var selectedId: String? = "hat1"
+    composeRule.setContent {
+      AccessoriesGrid(items = items, selectedId = selectedId, onSelect = { selectedId = it })
+    }
+
+    // Select second item
+    composeRule.onNodeWithText("Hat 2").performClick()
+    assert(selectedId == "hat2")
+  }
+
+  @Test
+  fun statsCard_singularDayForm() {
+    val profile = UserProfile(studyStats = StudyStats(totalTimeMin = 10, dailyGoalMin = 30))
+    val stats = UserStats(streak = 1, points = 50, coins = 25, todayStudyMinutes = 10)
+
+    composeRule.setContent { StatsCard(profile, stats) }
+
+    // Should use "day" instead of "days" for streak = 1
+    composeRule.onNodeWithText("1 day").assertExists()
   }
 }

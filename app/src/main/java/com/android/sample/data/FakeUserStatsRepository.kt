@@ -24,10 +24,12 @@ class FakeUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepos
       return
     }
     val current = _stats.value
+    val isFirstStudyToday = current.todayStudyMinutes == 0
     _stats.value =
         current.copy(
             totalStudyMinutes = current.totalStudyMinutes + extraMinutes,
-            todayStudyMinutes = current.todayStudyMinutes + extraMinutes)
+            todayStudyMinutes = current.todayStudyMinutes + extraMinutes,
+            streak = if (isFirstStudyToday) current.streak + 1 else current.streak)
   }
 
   override suspend fun updateCoins(delta: Int) {

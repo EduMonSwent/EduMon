@@ -14,6 +14,7 @@ class ProfileRepositoryTest {
   fun initial_state_is_default_user() = runTest {
     val repo = FakeProfileRepository()
     val p = repo.profile.value
+
     assertEquals("Alex", p.name)
     assertEquals("alex@university.edu", p.email)
     assertEquals(true, p.notificationsEnabled)
@@ -24,18 +25,32 @@ class ProfileRepositoryTest {
   @Test
   fun updateProfile_replaces_entire_object() = runTest {
     val repo = FakeProfileRepository()
+
     repo.updateProfile(
-        UserProfile(name = "Khalil", email = "k@ex.com", notificationsEnabled = false))
+        UserProfile(
+            name = "Khalil",
+            email = "k@ex.com",
+            notificationsEnabled = false,
+            locationEnabled = false,
+            focusModeEnabled = true,
+        ))
+
     val p = repo.profile.value
     assertEquals("Khalil", p.name)
     assertEquals("k@ex.com", p.email)
     assertEquals(false, p.notificationsEnabled)
+    assertEquals(false, p.locationEnabled)
+    assertEquals(true, p.focusModeEnabled)
   }
 
   @Test
   fun multiple_updates_apply_in_order() = runTest {
     val repo = FakeProfileRepository()
+
+    // first update
     repo.updateProfile(repo.profile.value.copy(points = 200))
+
+    // second update
     repo.updateProfile(repo.profile.value.copy(points = 350, streak = 10))
 
     val p = repo.profile.value

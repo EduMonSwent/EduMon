@@ -41,7 +41,7 @@ class ProfileRewardAndLevelUpTest {
   fun profileScreen_showsSnackbarOnLevelUpReward() {
     val initial = UserProfile(level = 1, points = 0, coins = 0, lastRewardedLevel = 0)
     val repo = FakeProfileRepository(initial)
-    val viewModel = ProfileViewModel(repository = repo)
+    val viewModel = ProfileViewModel(repo)
 
     composeRule.setContent { EduMonTheme { ProfileScreen(viewModel = viewModel) } }
 

@@ -1,5 +1,7 @@
 package com.android.sample.ui.profile
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -9,11 +11,17 @@ import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.rewards.LevelRewardEngine
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.theme.AccentBlue
+import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
+import com.android.sample.ui.theme.AccentViolet
+import com.android.sample.ui.theme.EventColorSports
 import com.android.sample.ui.theme.GlowGold
 import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletSoft
@@ -28,19 +36,45 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
-    private val repository: ProfileRepository = ProfileRepositoryProvider.repository
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
 
+  // ----- Profile (name, email, avatar, accessories, settings) -----
+  private val _userProfile = MutableStateFlow(profileRepository.profile.value.copy())
+  val userProfile: StateFlow<UserProfile> = _userProfile
+
+  // ----- Unified stats from Firestore (/users/{uid}/stats/stats) -----
+  private val _userStats = MutableStateFlow(UserStats())
+  val userStats: StateFlow<UserStats> = _userStats
+
+  init {
+    viewModelScope.launch {
+      userStatsRepository.start()
+      userStatsRepository.stats.collect { stats -> _userStats.value = stats }
+    }
+  }
+
+  // Palette from theme
+  val accentPalette: List<Color> =
+      listOf(
+          AccentViolet,
+          AccentBlue,
+          AccentMint,
+          EventColorSports,
+          AccentMagenta,
+          PurplePrimary,
+          AccentBlue,
+          AccentMint,
+          GlowGold,
+          VioletSoft)
+
+  // Accessories catalog
   companion object {
-    // XP required to advance by one level
     const val POINTS_PER_LEVEL: Int = 300
   }
 
   // ----- Profil LOCAL uniquement -----
-  private val _userProfile = MutableStateFlow(repository.profile.value.copy())
-  val userProfile: StateFlow<UserProfile> = _userProfile
-
-  val accentPalette = listOf(PurplePrimary, AccentBlue, AccentMint, GlowGold, VioletSoft)
   // reward engine instance
   private val rewardEngine = LevelRewardEngine()
 
@@ -159,6 +193,8 @@ class ProfileViewModel(
     pushProfile()
   }
 
+  // ---------- Color helpers ----------
+
   private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
       when (v) {
         AccentVariant.Base -> base
@@ -180,10 +216,7 @@ class ProfileViewModel(
 
   fun addCoins(amount: Int) {
     if (amount <= 0) return
-    val current = _userProfile.value
-    val updated = current.copy(coins = current.coins + amount)
-    _userProfile.value = updated
-    pushProfile(updated)
+    viewModelScope.launch { userStatsRepository.updateCoins(amount) }
   }
 
   /**
@@ -211,7 +244,7 @@ class ProfileViewModel(
    * update with error safety.
    */
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
-    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+    viewModelScope.launch { runCatching { profileRepository.updateProfile(updated) } }
   }
 
   /**

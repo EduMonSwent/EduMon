@@ -92,9 +92,13 @@ class FirestoreUserStatsRepositoryTest {
   fun addStudyMinutes_same_day_increments_total_and_today() = runTest {
     val repo = createRepo()
 
+    // Use current time to ensure it's treated as "same day"
+    val now = System.currentTimeMillis()
     val initial =
         UserStats(
-            totalStudyMinutes = 10, todayStudyMinutes = 4, lastUpdated = 0L // treated as "same day"
+            totalStudyMinutes = 10,
+            todayStudyMinutes = 4,
+            lastUpdated = now // Use actual timestamp, not 0L which triggers reset
             )
     setInternalStats(repo, initial)
 
@@ -103,7 +107,7 @@ class FirestoreUserStatsRepositoryTest {
     val updated = repo.stats.value
     assertEquals(30, updated.totalStudyMinutes)
     assertEquals(24, updated.todayStudyMinutes)
-    assertTrue(updated.lastUpdated > 0L)
+    assertTrue(updated.lastUpdated >= now)
   }
 
   @Test

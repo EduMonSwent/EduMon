@@ -39,6 +39,11 @@ class FirestoreUserStatsRepository(
 
     private const val DEFAULT_INT_VALUE = 0
     private const val DEFAULT_LONG_VALUE = 0L
+
+    private const val MIN_STREAK_ON_STUDY = 1
+    private const val NEXT_DAY_DIFFERENCE = 1
+    private const val NEXT_YEAR_DIFFERENCE = 1
+    private const val FIRST_DAY_OF_YEAR = 1
   }
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -65,7 +70,7 @@ class FirestoreUserStatsRepository(
 
     docRef.addSnapshotListener { snapshot, error ->
       if (error != null) {
-        // You can log this error if needed.
+        // Optionally log the error.
         return@addSnapshotListener
       }
 
@@ -101,7 +106,7 @@ class FirestoreUserStatsRepository(
   }
 
   override suspend fun addStudyMinutes(extraMinutes: Int) {
-    if (extraMinutes <= 0) {
+    if (extraMinutes <= DEFAULT_INT_VALUE) {
       return
     }
 
@@ -109,13 +114,10 @@ class FirestoreUserStatsRepository(
     val now = System.currentTimeMillis()
     val current = _stats.value
 
-    val sameDay =
-        if (current.lastUpdated == DEFAULT_LONG_VALUE) {
-          true
-        } else {
-          isSameDay(current.lastUpdated, now)
-        }
+    // Same calendar day as last update?
+    val sameDay = current.lastUpdated != DEFAULT_LONG_VALUE && isSameDay(current.lastUpdated, now)
 
+    // Reset today's minutes if we are on a new day.
     val baseToday =
         if (sameDay) {
           current.todayStudyMinutes
@@ -123,18 +125,31 @@ class FirestoreUserStatsRepository(
           DEFAULT_INT_VALUE
         }
 
+    // Streak rules:
+    // - If you never had a streak (>0), first study sets it to 1.
+    // - If you study again the same day, keep the streak.
+    // - If you study on a new day and already had a streak, increment it.
+    val newStreak =
+        when {
+          current.streak <= 0 -> MIN_STREAK_ON_STUDY // from 0 -> 1
+          sameDay -> current.streak // more study same day
+          else -> current.streak + MIN_STREAK_ON_STUDY // new day -> +1
+        }
+
     val updated =
         current.copy(
             totalStudyMinutes = current.totalStudyMinutes + extraMinutes,
             todayStudyMinutes = baseToday + extraMinutes,
-            lastUpdated = now)
+            streak = newStreak,
+            lastUpdated = now,
+        )
 
     _stats.value = updated
     persistStats(updated, currentUser.uid)
   }
 
   override suspend fun updateCoins(delta: Int) {
-    if (delta == 0) {
+    if (delta == DEFAULT_INT_VALUE) {
       return
     }
 
@@ -160,7 +175,7 @@ class FirestoreUserStatsRepository(
   }
 
   override suspend fun addPoints(delta: Int) {
-    if (delta == 0) {
+    if (delta == DEFAULT_INT_VALUE) {
       return
     }
 
@@ -218,6 +233,35 @@ class FirestoreUserStatsRepository(
     val day1 = cal1.get(Calendar.DAY_OF_YEAR)
     val day2 = cal2.get(Calendar.DAY_OF_YEAR)
     return day1 == day2
+  }
+
+  /** Returns true if [secondMillis] is exactly the next calendar day after [firstMillis]. */
+  private fun isNextDay(firstMillis: Long, secondMillis: Long): Boolean {
+    if (firstMillis == DEFAULT_LONG_VALUE) {
+      return false
+    }
+
+    val cal1 = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = firstMillis }
+    val cal2 = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = secondMillis }
+
+    val year1 = cal1.get(Calendar.YEAR)
+    val year2 = cal2.get(Calendar.YEAR)
+
+    val day1 = cal1.get(Calendar.DAY_OF_YEAR)
+    val day2 = cal2.get(Calendar.DAY_OF_YEAR)
+
+    // Same year, consecutive days.
+    if (year1 == year2 && day2 - day1 == NEXT_DAY_DIFFERENCE) {
+      return true
+    }
+
+    // Year rollover: Dec 31 -> Jan 1.
+    if (year2 - year1 == NEXT_YEAR_DIFFERENCE) {
+      val maxDayYear1 = cal1.getActualMaximum(Calendar.DAY_OF_YEAR)
+      return day1 == maxDayYear1 && day2 == FIRST_DAY_OF_YEAR
+    }
+
+    return false
   }
 
   private fun persistStats(stats: UserStats, uid: String) {
