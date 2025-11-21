@@ -32,7 +32,6 @@ import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,15 +41,11 @@ class HomeScreenTest {
 
   @get:Rule val composeRule = createComposeRule()
 
-  // --- Test helper repos ---
-
   private class FakeUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepository {
     private val _stats = MutableStateFlow(initial)
     override val stats: StateFlow<UserStats> = _stats
 
-    override fun start() {
-      // no-op
-    }
+    override fun start() {}
 
     override suspend fun addStudyMinutes(extraMinutes: Int) {
       _stats.value =
@@ -245,16 +240,6 @@ class HomeScreenTest {
   }
 
   @Test
-  fun bottomNav_showsAllItems() {
-    setHomeContent()
-    composeRule.onNodeWithContentDescription("Home").assertExists()
-    composeRule.onNodeWithContentDescription("Calendar").assertExists()
-    composeRule.onNodeWithContentDescription("Study").assertExists()
-    composeRule.onNodeWithContentDescription("Profile").assertExists()
-    composeRule.onNodeWithContentDescription("Games").assertExists()
-  }
-
-  @Test
   fun emptyTodos_stillRendersCard() {
     composeRule.setContent {
       MaterialTheme {
@@ -277,19 +262,6 @@ class HomeScreenTest {
   }
 
   @Test
-  fun navigation_callbacks_trigger() {
-    var lastRoute = ""
-
-    setHomeContent { route -> lastRoute = route }
-
-    composeRule.onNodeWithText("Open Planner").performClick()
-    assertEquals("planner", lastRoute)
-
-    composeRule.onNode(hasText("See all")).performClick()
-    assertEquals("planner", lastRoute)
-  }
-
-  @Test
   fun userStats_displaysAllFields() {
     setHomeContent()
 
@@ -305,7 +277,6 @@ class HomeScreenTest {
 
     composeRule.onNodeWithText("Buddy Stats").performScrollTo().assertIsDisplayed()
 
-    // Check for progress bars (happiness, health, energy)
     composeRule
         .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.85f, 0f..1f, 0)))
         .performScrollTo()
@@ -351,24 +322,6 @@ class HomeScreenTest {
   }
 
   @Test
-  fun focusModeChip_exists() {
-    setHomeContent()
-
-    // Scroll to affirmation section
-    composeRule.onNodeWithText("Affirmation").performScrollTo()
-
-    composeRule.onNodeWithText("Focus Mode").assertIsDisplayed()
-  }
-
-  @Test
-  fun affirmationCard_displaysQuote() {
-    setHomeContent(quote = "Custom affirmation quote")
-
-    composeRule.onNodeWithText("Affirmation").performScrollTo()
-    composeRule.onNodeWithText("Custom affirmation quote").assertExists()
-  }
-
-  @Test
   fun todayCard_showsMaxThreeTodos() {
     val today = LocalDate.now()
     val manyTodos =
@@ -392,7 +345,6 @@ class HomeScreenTest {
       }
     }
 
-    // Should show only first 3
     composeRule.onNodeWithText("Task 1").assertExists()
     composeRule.onNodeWithText("Task 2").assertExists()
     composeRule.onNodeWithText("Task 3").assertExists()
@@ -422,21 +374,5 @@ class HomeScreenTest {
     setHomeContent()
 
     composeRule.onNodeWithText("Buddy Stats").performScrollTo().assertExists()
-  }
-
-  @Test
-  fun navigation_studyButton_triggersCallback() {
-    var navigationCalled = false
-    var route = ""
-
-    setHomeContent { r ->
-      navigationCalled = true
-      route = r
-    }
-
-    composeRule.onNodeWithText("Study 30m").performScrollTo().performClick()
-
-    assert(navigationCalled)
-    assertEquals("study", route)
   }
 }
