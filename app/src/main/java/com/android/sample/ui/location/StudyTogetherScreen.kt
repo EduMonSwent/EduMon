@@ -3,9 +3,9 @@ package com.android.sample.ui.location
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
-import android.util.Log.e
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -14,16 +14,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
@@ -51,10 +51,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.ui.theme.BreakYellow
 import com.android.sample.ui.theme.IdleBlue
+import com.android.sample.ui.theme.IndicatorRed
 import com.android.sample.ui.theme.StudyGreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
@@ -67,10 +72,63 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlin.math.abs
 
+// Test tags
 private const val TAG_FAB_ADD = "fab_add_friend"
 private const val TAG_FIELD_UID = "field_friend_uid"
 private const val TAG_BTN_FRIENDS = "btn_friends"
 private const val TAG_MAP_STUB = "map_stub"
+private const val ON_CAMPUS = "on_campus_indicator"
+
+// Map and camera constants
+private const val DEFAULT_MAP_ZOOM = 16f
+private const val CAMERA_ANIMATION_DURATION_MS = 600
+private const val MARKER_ANCHOR_CENTER = 0.5f
+
+// Marker sizes (in dp)
+private const val USER_MARKER_SIZE_DP = 44f
+private const val FRIEND_MARKER_SIZE_DP = 40f
+
+// Icon sizes (in dp)
+private const val ICON_SIZE_SMALL_DP = 6
+private const val ICON_SIZE_MEDIUM_DP = 10
+private const val ICON_SIZE_REGULAR_DP = 18
+
+// Corner radius (in dp)
+private const val CORNER_RADIUS_CARD_DP = 24
+private const val CORNER_RADIUS_PILL_DP = 50
+private const val CORNER_RADIUS_ROW_DP = 18
+
+// Padding values (in dp)
+private const val PADDING_SMALL_DP = 4
+private const val PADDING_MEDIUM_DP = 8
+private const val PADDING_STANDARD_DP = 12
+private const val PADDING_LARGE_DP = 16
+private const val PADDING_TOP_INDICATOR_DP = 12
+private const val PADDING_TOP_FRIENDS_BUTTON_DP = 72
+private const val PADDING_TOP_DROPDOWN_DP = 44
+
+// Spacing values (in dp)
+private const val SPACING_TINY_DP = 6
+private const val SPACING_SMALL_DP = 8
+private const val SPACING_MEDIUM_DP = 9
+
+// Elevation (in dp)
+private const val ELEVATION_CARD_DP = 6
+private const val ELEVATION_INFO_CARD_DP = 8
+
+// Size constraints (in dp)
+private const val MIN_BUTTON_HEIGHT_DP = 36
+private const val MIN_DROPDOWN_WIDTH_DP = 220
+private const val MAX_DROPDOWN_WIDTH_DP = 320
+
+// Alpha (transparency) ratios
+private const val ALPHA_SURFACE_HIGH = 0.95f
+private const val ALPHA_SURFACE_VERY_HIGH = 0.98f
+private const val ALPHA_SURFACE_MEDIUM = 0.6f
+private const val ALPHA_STATUS_CHIP_BG = 0.18f
+
+// Z-index for map markers
+private const val USER_MARKER_Z_INDEX = 1f
 
 @Stable
 private data class AddFriendUiState(
@@ -88,7 +146,8 @@ private data class StudyTogetherActions(
     val onConfirmAddFriend: (String) -> Unit,
 )
 
-@SuppressLint("MissingPermission")
+/* ---------- Main Screen Entry Point ---------- */
+
 @OptIn(
     ExperimentalPermissionsApi::class,
     ExperimentalMaterial3Api::class,
@@ -98,8 +157,9 @@ fun StudyTogetherScreen(
     viewModel: StudyTogetherViewModel = viewModel(),
     /** Set false in tests to avoid GoogleMap swallowing injected touches. */
     showMap: Boolean = true,
+    chooseLocation: Boolean = false,
+    chosenLocation: LatLng = DEFAULT_LOCATION,
 ) {
-  val context = LocalContext.current
   val permissions =
       rememberMultiplePermissionsState(
           listOf(
@@ -110,41 +170,30 @@ fun StudyTogetherScreen(
   var friendUidInput by remember { mutableStateOf("") }
   val snackbarHostState = remember { SnackbarHostState() }
 
-  // Ask permission, then feed VM one-shot last known location
-  LaunchedEffect(Unit) { permissions.launchMultiplePermissionRequest() }
+  val permissionsAlreadyGranted = remember { permissions.allPermissionsGranted }
 
-  LaunchedEffect(permissions.allPermissionsGranted) {
-    if (permissions.allPermissionsGranted) {
-      LocationServices.getFusedLocationProviderClient(context).lastLocation.addOnSuccessListener {
-          loc ->
-        loc?.let { viewModel.consumeLocation(it.latitude, it.longitude) }
-      }
-    }
-  }
+  // Request permissions if not already granted
+  RequestLocationPermissions(
+      permissionsAlreadyGranted = permissionsAlreadyGranted,
+      requestPermissions = { permissions.launchMultiplePermissionRequest() })
 
-  LaunchedEffect(uiState.errorMessage) {
-    uiState.errorMessage?.let { raw ->
-      // If the message looks like an Int (e.g. "2131755344"),
-      // treat it as a string resource ID coming from `require { R.string.… }`.
-      val msg =
-          raw.toIntOrNull()?.let { resId ->
-            try {
-              context.getString(resId)
-            } catch (_: Throwable) {
-              raw // fallback if it's not a valid string resource
-            }
-          } ?: raw
+  // Track user location with continuous updates
+  TrackUserLocation(
+      permissionsGranted = permissions.allPermissionsGranted,
+      chooseLocation = chooseLocation,
+      chosenLocation = chosenLocation,
+      onLocationUpdate = viewModel::consumeLocation)
 
-      snackbarHostState.showSnackbar(msg)
-      viewModel.consumeError()
-    }
-  }
+  // Handle and display error messages
+  HandleErrorMessages(
+      errorMessage = uiState.errorMessage,
+      snackbarHostState = snackbarHostState,
+      onErrorConsumed = viewModel::consumeError)
 
+  // Animate camera to follow user location
   val cameraPosition = rememberCameraPositionState()
-  // Center on the user (EPFL by default, then new GPS forwarded by UI)
-  LaunchedEffect(uiState.effectiveUserLatLng) {
-    cameraPosition.safeAnimateTo(uiState.effectiveUserLatLng, zoom = 16f, durationMs = 600)
-  }
+  AnimateCameraToUser(
+      userLatLng = uiState.effectiveUserLatLng, cameraPositionState = cameraPosition)
 
   val addFriendUiState =
       AddFriendUiState(
@@ -177,6 +226,117 @@ fun StudyTogetherScreen(
   )
 }
 
+/* ---------- Permission & Location Side Effects ---------- */
+
+/** Request location permissions if not already granted */
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+private fun RequestLocationPermissions(
+    permissionsAlreadyGranted: Boolean,
+    requestPermissions: () -> Unit
+) {
+  LaunchedEffect(Unit) {
+    if (!permissionsAlreadyGranted) {
+      requestPermissions()
+    }
+  }
+}
+
+/** Set up continuous location tracking with real-time updates */
+@SuppressLint("MissingPermission")
+@Composable
+private fun TrackUserLocation(
+    permissionsGranted: Boolean,
+    chooseLocation: Boolean,
+    chosenLocation: LatLng,
+    onLocationUpdate: (Double, Double) -> Unit
+) {
+  val context = LocalContext.current
+
+  LaunchedEffect(permissionsGranted) {
+    if (permissionsGranted) {
+      val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
+      // First, get last known location for immediate display
+      fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+        val actualLoc = loc?.let { it.latitude to it.longitude }
+        resolveLocationCoordinates(chooseLocation, chosenLocation, actualLoc)?.let { (lat, lng) ->
+          onLocationUpdate(lat, lng)
+        }
+      }
+
+      // Then set up continuous location updates
+      val locationRequest =
+          LocationRequest.Builder(
+                  Priority.PRIORITY_HIGH_ACCURACY, 10000L // Update every 10 seconds
+                  )
+              .apply {
+                setMinUpdateIntervalMillis(5000L) // But no more than every 5 seconds
+                setMaxUpdateDelayMillis(15000L)
+              }
+              .build()
+
+      val locationCallback =
+          object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+              val actualLoc = locationResult.lastLocation?.let { it.latitude to it.longitude }
+              resolveLocationCoordinates(chooseLocation, chosenLocation, actualLoc)?.let {
+                  (lat, lng) ->
+                onLocationUpdate(lat, lng)
+              }
+            }
+          }
+
+      // Start receiving location updates
+      fusedLocationClient.requestLocationUpdates(
+          locationRequest, locationCallback, android.os.Looper.getMainLooper())
+
+      // Clean up when effect leaves composition
+      try {
+        kotlinx.coroutines.awaitCancellation()
+      } finally {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+      }
+    }
+  }
+}
+
+/** Handle error messages from ViewModel, converting resource IDs to strings */
+@Composable
+private fun HandleErrorMessages(
+    errorMessage: String?,
+    snackbarHostState: SnackbarHostState,
+    onErrorConsumed: () -> Unit
+) {
+  val context = LocalContext.current
+
+  LaunchedEffect(errorMessage) {
+    errorMessage?.let { raw ->
+      // If the message looks like an Int (e.g. "2131755344"),
+      // treat it as a string resource ID coming from `require { R.string.… }`.
+      val msg =
+          raw.toIntOrNull()?.let { resId ->
+            try {
+              context.getString(resId)
+            } catch (_: Throwable) {
+              raw // fallback if it's not a valid string resource
+            }
+          } ?: raw
+
+      snackbarHostState.showSnackbar(msg)
+      onErrorConsumed()
+    }
+  }
+}
+
+/** Animate camera to follow user location changes */
+@Composable
+private fun AnimateCameraToUser(userLatLng: LatLng, cameraPositionState: CameraPositionState) {
+  LaunchedEffect(userLatLng) {
+    cameraPositionState.safeAnimateTo(userLatLng, zoom = 16f, durationMs = 600)
+  }
+}
+
 /* ---------- Main screen layout (reduced complexity) ---------- */
 
 @Composable
@@ -205,11 +365,24 @@ private fun StudyTogetherContent(
               onFriendSelected = actions.onFriendSelected,
               modifier = Modifier.matchParentSize())
 
+          // On-campus indicator (only show after location is initialized)
+          if (uiState.isLocationInitialized) {
+            OnCampusIndicator(
+                modifier =
+                    Modifier.align(Alignment.TopCenter)
+                        .padding(top = PADDING_TOP_INDICATOR_DP.dp)
+                        .testTag(ON_CAMPUS),
+                uiState.isOnCampus)
+          }
+
           // Compact friends dropdown
           EdumonFriendsDropdown(
               friends = uiState.friends,
               onPick = actions.onFriendSelected,
-              modifier = Modifier.align(Alignment.TopStart).padding(12.dp).testTag(TAG_BTN_FRIENDS))
+              modifier =
+                  Modifier.align(Alignment.TopStart)
+                      .padding(PADDING_STANDARD_DP.dp, top = PADDING_TOP_FRIENDS_BUTTON_DP.dp)
+                      .testTag(TAG_BTN_FRIENDS))
 
           // Bottom info cards (user / friend status)
           BottomSelectionPanel(
@@ -273,7 +446,7 @@ private fun StudyMap(
         // --- User marker (BitmapDescriptorFactory only used *inside* GoogleMap) ---
         val userIcon = remember {
           BitmapDescriptorFactory.fromBitmap(
-              loadDrawableAsBitmap(context, R.drawable.edumon, sizeDp = 44f))
+              loadDrawableAsBitmap(context, R.drawable.edumon, sizeDp = USER_MARKER_SIZE_DP))
         }
         val userMarkerState = remember { MarkerState(position = userLatLng) }
         LaunchedEffect(userLatLng) { userMarkerState.position = userLatLng }
@@ -282,8 +455,8 @@ private fun StudyMap(
             state = userMarkerState,
             title = "You",
             icon = userIcon,
-            anchor = Offset(0.5f, 0.5f),
-            zIndex = 1f,
+            anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
+            zIndex = USER_MARKER_Z_INDEX,
             onClick = {
               onUserSelected()
               true
@@ -300,14 +473,14 @@ private fun StudyMap(
             val iconRes = edumonFor(friend.id)
             val friendIcon =
                 remember(friend.id) {
-                  val bmp = loadDrawableAsBitmap(context, iconRes, sizeDp = 40f)
+                  val bmp = loadDrawableAsBitmap(context, iconRes, sizeDp = FRIEND_MARKER_SIZE_DP)
                   BitmapDescriptorFactory.fromBitmap(bmp)
                 }
             Marker(
                 state = state,
                 title = friend.name,
                 icon = friendIcon,
-                anchor = Offset(0.5f, 0.5f),
+                anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
                 onClick = {
                   onFriendSelected(friend)
                   true
@@ -329,7 +502,7 @@ private fun BoxScope.BottomSelectionPanel(
       visible = selectedFriend != null || isUserSelected,
       enter = slideInVertically { it } + fadeIn(),
       exit = slideOutVertically { it } + fadeOut(),
-      modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)) {
+      modifier = Modifier.align(Alignment.BottomCenter).padding(PADDING_LARGE_DP.dp)) {
         when {
           isUserSelected -> UserStatusCard(isStudyMode = true, modifier = Modifier.fillMaxWidth())
           selectedFriend != null ->
@@ -349,8 +522,9 @@ private fun BoxScope.AddFriendFab(onClick: () -> Unit) {
       onClick = onClick,
       icon = { Icon(Icons.Filled.PersonAdd, contentDescription = null) },
       text = { Text("Add friend") },
-      modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).testTag(TAG_FAB_ADD),
-      shape = RoundedCornerShape(24.dp),
+      modifier =
+          Modifier.align(Alignment.BottomEnd).padding(PADDING_LARGE_DP.dp).testTag(TAG_FAB_ADD),
+      shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
       containerColor = MaterialTheme.colorScheme.primary,
       contentColor = MaterialTheme.colorScheme.onPrimary)
 }
@@ -364,7 +538,7 @@ private fun AddFriendDialog(
 ) {
   AlertDialog(
       onDismissRequest = onDismiss,
-      shape = RoundedCornerShape(24.dp),
+      shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
       title = { Text(text = "Add friend by UID", style = MaterialTheme.typography.titleMedium) },
       text = {
         OutlinedTextField(
@@ -394,51 +568,148 @@ private fun EdumonFriendsDropdown(
   var expanded by remember { mutableStateOf(false) }
 
   Box(modifier = modifier) {
+    // Top pill (same style as campus indicator card)
     FilledTonalButton(
-        onClick = { expanded = true },
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        modifier = Modifier.defaultMinSize(minHeight = 36.dp),
-        shape = RoundedCornerShape(24.dp)) {
+        onClick = { expanded = !expanded },
+        contentPadding =
+            PaddingValues(horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
+        modifier = Modifier.defaultMinSize(minHeight = MIN_BUTTON_HEIGHT_DP.dp),
+        shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP), // full pill
+        colors =
+            ButtonDefaults.filledTonalButtonColors(
+                // Use the same color as your campus indicator card
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = ALPHA_SURFACE_HIGH),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            )) {
           Icon(
               painter = painterResource(id = R.drawable.edumon1),
               contentDescription = null,
-              modifier = Modifier.size(18.dp))
-          Spacer(Modifier.width(6.dp))
+              modifier = Modifier.size(ICON_SIZE_REGULAR_DP.dp))
+          Spacer(Modifier.width(SPACING_TINY_DP.dp))
           Text("$label (${friends.size})")
         }
 
-    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      if (friends.isEmpty()) {
-        DropdownMenuItem(text = { Text("No friends yet") }, onClick = { expanded = false })
-      } else {
-        friends.forEach { friend ->
-          DropdownMenuItem(
-              text = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically) {
-                      Icon(
-                          painter = painterResource(id = edumonFor(friend.id)),
-                          contentDescription = null,
-                          modifier = Modifier.size(18.dp))
-                      Spacer(Modifier.width(8.dp))
-                      Text(
-                          friend.name,
-                          modifier = Modifier.weight(1f),
-                          maxLines = 1,
-                          overflow = TextOverflow.Ellipsis)
-                      Spacer(Modifier.width(8.dp))
-                      StatusChip(mode = friend.mode)
+    // Our own "dropdown", drawn as a Card → only one background, fully rounded
+    if (expanded) {
+      Card(
+          modifier =
+              Modifier.align(Alignment.TopStart)
+                  .padding(top = PADDING_TOP_DROPDOWN_DP.dp) // show under the pill
+                  .widthIn(min = MIN_DROPDOWN_WIDTH_DP.dp, max = MAX_DROPDOWN_WIDTH_DP.dp),
+          shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
+          colors =
+              CardDefaults.cardColors(
+                  containerColor =
+                      MaterialTheme.colorScheme.surface.copy(alpha = ALPHA_SURFACE_VERY_HIGH)),
+          elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
+            if (friends.isEmpty()) {
+              Text(
+                  text = "No friends yet",
+                  modifier =
+                      Modifier.padding(
+                          horizontal = PADDING_LARGE_DP.dp, vertical = PADDING_STANDARD_DP.dp),
+                  style = MaterialTheme.typography.bodyMedium)
+            } else {
+              Column(
+                  modifier =
+                      Modifier.padding(
+                          vertical = PADDING_MEDIUM_DP.dp, horizontal = PADDING_MEDIUM_DP.dp)) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier =
+                            Modifier.padding(
+                                start = PADDING_SMALL_DP.dp, bottom = PADDING_SMALL_DP.dp))
+
+                    friends.forEach { friend ->
+                      FriendDropdownRow(
+                          friend = friend,
+                          onClick = {
+                            expanded = false
+                            onPick(friend)
+                          },
+                          modifier = Modifier.fillMaxWidth())
+                      Spacer(Modifier.height(SPACING_MEDIUM_DP.dp))
                     }
-              },
-              onClick = {
-                expanded = false
-                onPick(friend)
-              })
-        }
-      }
+                  }
+            }
+          }
     }
   }
+}
+
+@Composable
+private fun FriendDropdownRow(
+    friend: FriendStatus,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+  Row(
+      modifier =
+          modifier
+              .clip(RoundedCornerShape(CORNER_RADIUS_ROW_DP.dp))
+              .clickable(onClick = onClick)
+              .background(
+                  MaterialTheme.colorScheme.surfaceVariant.copy(alpha = ALPHA_SURFACE_MEDIUM))
+              .padding(horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
+      verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painter = painterResource(id = edumonFor(friend.id)),
+            contentDescription = null,
+            modifier = Modifier.size(ICON_SIZE_REGULAR_DP.dp))
+        Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+        Text(
+            friend.name,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+        StatusChip(mode = friend.mode)
+      }
+}
+
+@Composable
+private fun OnCampusIndicator(modifier: Modifier = Modifier, onCampus: Boolean) {
+  Card(
+      modifier = modifier,
+      shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
+      colors =
+          CardDefaults.cardColors(
+              containerColor = MaterialTheme.colorScheme.surface.copy(alpha = ALPHA_SURFACE_HIGH)),
+      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
+        if (onCampus) {
+          Row(
+              modifier =
+                  Modifier.padding(
+                      horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
+              verticalAlignment = Alignment.CenterVertically) {
+                // Green dot
+                Box(
+                    modifier =
+                        Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
+                            .clip(CircleShape)
+                            .background(StudyGreen))
+                Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+                Text(text = "On EPFL campus", style = MaterialTheme.typography.labelLarge)
+              }
+        } else {
+          Row(
+              modifier =
+                  Modifier.padding(
+                      horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
+              verticalAlignment = Alignment.CenterVertically) {
+                // Green dot
+                Box(
+                    modifier =
+                        Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
+                            .clip(CircleShape)
+                            .background(IndicatorRed))
+                Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+                Text(text = "Outside of EPFL campus", style = MaterialTheme.typography.labelLarge)
+              }
+        }
+      }
 }
 
 @Composable
@@ -452,12 +723,12 @@ private fun StatusChip(mode: FriendMode) {
 
   Box(
       modifier =
-          Modifier.clip(RoundedCornerShape(50))
-              .background(bg.copy(alpha = 0.18f))
-              .padding(horizontal = 10.dp, vertical = 4.dp)) {
+          Modifier.clip(RoundedCornerShape(CORNER_RADIUS_PILL_DP))
+              .background(bg.copy(alpha = ALPHA_STATUS_CHIP_BG))
+              .padding(horizontal = ICON_SIZE_MEDIUM_DP.dp, vertical = PADDING_SMALL_DP.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(bg))
-          Spacer(Modifier.width(6.dp))
+          Box(modifier = Modifier.size(ICON_SIZE_SMALL_DP.dp).clip(CircleShape).background(bg))
+          Spacer(Modifier.width(SPACING_TINY_DP.dp))
           Text(text = label, style = MaterialTheme.typography.labelMedium)
         }
       }
@@ -469,12 +740,12 @@ private fun StatusChip(mode: FriendMode) {
 fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
   Card(
       modifier = modifier,
-      shape = RoundedCornerShape(24.dp),
+      shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
       colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-      elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
+      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_INFO_CARD_DP.dp)) {
         Text(
-            text = if (isStudyMode) "You’re studying" else "You’re on a break",
-            modifier = Modifier.padding(16.dp),
+            text = if (isStudyMode) "You're studying" else "You're on a break",
+            modifier = Modifier.padding(PADDING_LARGE_DP.dp),
             style = MaterialTheme.typography.bodyMedium)
       }
 }
@@ -483,12 +754,12 @@ fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
 fun FriendInfoCard(name: String, mode: FriendMode, modifier: Modifier = Modifier) {
   Card(
       modifier = modifier,
-      shape = RoundedCornerShape(24.dp),
+      shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
       colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-      elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
-        Column(Modifier.padding(16.dp)) {
+      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_INFO_CARD_DP.dp)) {
+        Row(Modifier.padding(PADDING_LARGE_DP.dp)) {
           Text(text = name, style = MaterialTheme.typography.titleMedium)
-          Spacer(Modifier.height(6.dp))
+          Spacer(Modifier.height(SPACING_TINY_DP.dp))
           StatusChip(mode)
         }
       }
@@ -502,17 +773,13 @@ private fun edumonFor(friendId: String): Int {
   return all[idx]
 }
 
-private fun dp2px(context: android.content.Context, dp: Float): Int =
+private fun dp2px(context: Context, dp: Float): Int =
     (dp * context.resources.displayMetrics.density).toInt()
 
-private fun loadDrawableAsBitmap(
-    context: android.content.Context,
-    resId: Int,
-    sizeDp: Float
-): Bitmap {
+private fun loadDrawableAsBitmap(context: Context, resId: Int, sizeDp: Float): Bitmap {
   val d = AppCompatResources.getDrawable(context, resId) ?: error("Drawable $resId not found")
   val px = dp2px(context, sizeDp)
-  return d.toBitmap(width = px, height = px, config = android.graphics.Bitmap.Config.ARGB_8888)
+  return d.toBitmap(width = px, height = px, config = Bitmap.Config.ARGB_8888)
 }
 
 private suspend fun CameraPositionState.safeAnimateTo(

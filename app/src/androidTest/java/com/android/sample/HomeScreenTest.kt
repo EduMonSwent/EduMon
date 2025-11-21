@@ -191,7 +191,7 @@ class HomeScreenTest {
   @Test
   fun chips_arePresentAndClickable() {
     setHomeContent()
-    composeRule.onNodeWithText("Open Planner").performScrollTo().assertHasClickAction()
+    composeRule.onNodeWithText("Open Schedule").performScrollTo().assertHasClickAction()
     composeRule.onNodeWithText("Focus Mode").performScrollTo().assertHasClickAction()
   }
 

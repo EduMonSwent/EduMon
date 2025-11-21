@@ -28,7 +28,9 @@ data class StudyTogetherUiState(
     val selectedFriend: FriendStatus? = null,
     val isUserSelected: Boolean = false,
     // Optional ephemeral UI error message (one-shot). Set by ViewModel on failures.
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isOnCampus: Boolean = false, // Default to false until we get actual GPS location
+    val isLocationInitialized: Boolean = false // Track if we've received first location
 ) {
   val effectiveUserLatLng: LatLng = userPosition ?: DEFAULT_LOCATION
 }

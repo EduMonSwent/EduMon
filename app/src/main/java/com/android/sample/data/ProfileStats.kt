@@ -5,7 +5,8 @@ import com.android.sample.ui.stats.model.StudyStats
 enum class AccessorySlot {
   HEAD,
   TORSO,
-  LEGS
+  LEGS,
+  BACK
 }
 
 enum class Rarity {
@@ -19,7 +20,7 @@ data class AccessoryItem(
     val id: String,
     val slot: AccessorySlot,
     val label: String,
-    val iconRes: Int? = null, // TODO remplace par tes drawables quand tu les auras
+    val iconRes: Int? = null,
     val rarity: Rarity = Rarity.COMMON
 )
 
@@ -33,17 +34,18 @@ data class UserProfile(
     val notificationsEnabled: Boolean = DEFAULT_NOTIFICATIONS,
     val locationEnabled: Boolean = DEFAULT_LOCATION,
     val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE,
-    val avatarAccent: Long = DEFAULT_ACCENT, // ARGB
+    val avatarAccent: Long = DEFAULT_ACCENT,
     val accessories: List<String> = emptyList(),
     val studyStats: StudyStats =
-        StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL)
+        StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL),
+    val lastRewardedLevel: Int = 0
 ) {
   companion object {
     const val DEFAULT_NAME = "Alex"
     const val DEFAULT_EMAIL = "alex@university.edu"
     const val DEFAULT_LEVEL = 5
     const val DEFAULT_POINTS = 1250
-    const val DEFAULT_COINS = 0
+    const val DEFAULT_COINS = 1000
     const val DEFAULT_STREAK = 7
     const val DEFAULT_STUDY_TIME = 45
     const val DEFAULT_DAILY_GOAL = 180

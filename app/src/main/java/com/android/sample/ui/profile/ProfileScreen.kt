@@ -3,6 +3,7 @@ package com.android.sample.ui.profile
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Card
@@ -39,11 +42,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -71,6 +78,7 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.ui.profile.ProfileViewModel.Companion.POINTS_PER_LEVEL
 import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
@@ -90,6 +98,13 @@ private val CARD_CORNER_RADIUS = 16.dp
 private val SECTION_SPACING = 16.dp
 private val SCREEN_PADDING = 60.dp
 private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
+private const val LEVEL_PROGRESS_ANIM_DURATION_MS = 600
+private const val LABEL_FONT_SIZE_SP = 12
+private const val VALUE_FONT_SIZE_SP = 11
+private val LEVEL_BAR_HEIGHT = 8.dp
+private val LEVEL_BAR_CORNER_RADIUS = 12.dp
+private val LABEL_ALPHA = 0.7f
+private val SPACING_SMALL = 4.dp
 
 @Composable
 fun ProfileScreen(
@@ -101,56 +116,68 @@ fun ProfileScreen(
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
 
-  LazyColumn(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(Brush.verticalGradient(GRADIENT_COLORS))
-              .padding(bottom = SCREEN_PADDING)
-              .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      contentPadding = PaddingValues(vertical = SECTION_SPACING),
-      verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
-        item {
-          PetSection(
-              level = user.level,
-              accent = accent,
-              accessories = user.accessories,
-              variant = variant)
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
-          }
-        }
-        item {
-          GlowCard { Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) } }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
-              CustomizePetSection(viewModel)
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
+
+  Scaffold(
+      snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
+          innerPadding ->
+        LazyColumn(
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(Brush.verticalGradient(GRADIENT_COLORS))
+                    .padding(bottom = SCREEN_PADDING)
+                    .padding(innerPadding)
+                    .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(vertical = SECTION_SPACING),
+            verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
+              item {
+                PetSection(
+                    level = user.level,
+                    accent = accent,
+                    accessories = user.accessories,
+                    viewModel = viewModel,
+                    variant = variant)
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
+                    CustomizePetSection(viewModel)
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
+                    SettingsCard(
+                        user = user,
+                        onToggleLocation = viewModel::toggleLocation,
+                        onToggleFocusMode = viewModel::toggleFocusMode,
+                        onOpenNotifications = onOpenNotifications,
+                        onEnterFocusMode = onOpenFocusMode)
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
+                    AccountActionsSection()
+                  }
+                }
+              }
             }
-          }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
-              SettingsCard(
-                  user = user,
-                  onToggleLocation = viewModel::toggleLocation,
-                  onToggleFocusMode = viewModel::toggleFocusMode,
-                  onOpenNotifications = onOpenNotifications,
-                  onEnterFocusMode = onOpenFocusMode)
-            }
-          }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
-              AccountActionsSection()
-            }
-          }
-        }
       }
 }
 
@@ -160,6 +187,7 @@ fun PetSection(
     accent: Color,
     accessories: List<String>,
     variant: AccentVariant,
+    viewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
   Box(
@@ -173,81 +201,82 @@ fun PetSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
+
+              // === Left stat bars ===
               Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatBar("❤️", 0.9f, StatBarHeart)
                 StatBar("💡", 0.85f, StatBarLightbulb)
                 StatBar("⚡", 0.7f, StatBarLightning)
               }
 
+              // === Center avatar & accessories ===
               Column(
                   horizontalAlignment = Alignment.CenterHorizontally,
                   verticalArrangement = Arrangement.Center) {
                     Box(
                         modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
                         contentAlignment = Alignment.Center) {
-                          // aura
+                          // aura glow
                           Box(
                               Modifier.fillMaxSize()
                                   .background(
-                                      brush =
-                                          Brush.radialGradient(
-                                              colors =
-                                                  listOf(
-                                                      accent.copy(alpha = 0.55f),
-                                                      Color.Transparent))))
-                          // avatar
+                                      Brush.radialGradient(
+                                          colors =
+                                              listOf(
+                                                  accent.copy(alpha = 0.55f), Color.Transparent))))
+
+                          // === SAFE ACCESSORY PARSING ===
+                          val equipped =
+                              remember(accessories) {
+                                accessories
+                                    .mapNotNull { raw ->
+                                      val parts = raw.split(":")
+                                      if (parts.size == 2) parts[0] to parts[1]
+                                      else null // ignore malformed entries like "none"
+                                    }
+                                    .toMap()
+                              }
+
+                          // Base avatar
                           Image(
                               painter = painterResource(id = R.drawable.edumon),
                               contentDescription = "EduMon",
                               modifier = Modifier.size(100.dp).zIndex(1f))
 
-                          // overlays
-                          val equipped =
-                              remember(accessories) {
-                                fun norm(s: String) =
-                                    when (s) {
-                                      "leg" -> "legs"
-                                      else -> s
-                                    }
-                                accessories.associate {
-                                  val p = it.split(":")
-                                  norm(p.getOrNull(0) ?: "") to (p.getOrNull(1) ?: "")
-                                }
-                              }
-
-                          // LEGS
-                          equipped["legs"]?.let {
-                            Box(
-                                Modifier.align(Alignment.BottomCenter)
-                                    .padding(bottom = 6.dp)
-                                    .size(width = 42.dp, height = 6.dp)
-                                    .background(
-                                        Color.White.copy(alpha = 0.85f), RoundedCornerShape(3.dp))
-                                    .zIndex(2f))
+                          // BACK ACCESSORIES (zIndex < avatar)
+                          equipped["back"]?.let { id ->
+                            val res = viewModel.accessoryResId(AccessorySlot.BACK, id)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(0.5f))
+                            }
                           }
 
-                          // TORSO
-                          equipped["torso"]?.let {
-                            Icon(
-                                Icons.Filled.AutoAwesome,
-                                contentDescription = "torso",
-                                tint = Color.White.copy(alpha = 0.9f),
-                                modifier = Modifier.align(Alignment.Center).size(20.dp).zIndex(2f))
+                          // TORSO ACCESSORIES
+                          equipped["torso"]?.let { id ->
+                            val res = viewModel.accessoryResId(AccessorySlot.TORSO, id)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(2f))
+                            }
                           }
 
-                          // HEAD
-                          equipped["head"]?.let {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "head",
-                                tint = Color(0xFFFFD54F),
-                                modifier =
-                                    Modifier.align(Alignment.TopCenter)
-                                        .padding(top = 2.dp)
-                                        .size(22.dp)
-                                        .zIndex(2f))
+                          // HEAD ACCESSORIES
+                          equipped["head"]?.let { id ->
+                            val res = viewModel.accessoryResId(AccessorySlot.HEAD, id)
+                            if (res != 0) {
+                              Image(
+                                  painter = painterResource(res),
+                                  contentDescription = null,
+                                  modifier = Modifier.size(100.dp).zIndex(3f))
+                            }
                           }
                         }
+
                     Spacer(Modifier.height(6.dp))
                     Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
                   }
@@ -326,6 +355,8 @@ fun ProfileCard(user: UserProfile) {
       Badge(text = "Level ${user.level}", bg = AccentViolet)
       Badge(text = "${user.points} pts", bg = Color.White, textColor = AccentViolet)
     }
+    Spacer(Modifier.height(8.dp))
+    LevelProgressBar(level = user.level, points = user.points)
   }
 }
 
@@ -441,10 +472,11 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     }
     Spacer(Modifier.height(8.dp))
 
+    val user by viewModel.userProfile.collectAsState()
+
     val slotItems =
-        remember(viewModel.accessoryCatalog, selectedTab) {
-          viewModel.accessoryCatalog.filter { it.slot == selectedTab }
-        }
+        remember(user, selectedTab) { viewModel.accessoryCatalog.filter { it.slot == selectedTab } }
+
     val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
 
     AccessoriesGrid(
@@ -455,11 +487,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 }
 
 @Composable
-private fun AccessoriesGrid(
-    items: List<AccessoryItem>,
-    selectedId: String?,
-    onSelect: (String) -> Unit
-) {
+fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (String) -> Unit) {
   LazyVerticalGrid(
       columns = GridCells.Adaptive(minSize = 96.dp),
       modifier = Modifier.fillMaxWidth().height(200.dp),
@@ -499,6 +527,7 @@ private fun AccessoriesGrid(
                           AccessorySlot.HEAD -> Icons.Filled.Star
                           AccessorySlot.TORSO -> Icons.Filled.AutoAwesome
                           AccessorySlot.LEGS -> Icons.Filled.Star
+                          AccessorySlot.BACK -> Icons.Filled.BrightnessLow
                         }
                     Icon(
                         fallback,
@@ -600,4 +629,83 @@ fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit
       onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(text, color = textColor, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
       }
+}
+
+@Composable
+fun LevelProgressBar(level: Int, points: Int, pointsPerLevel: Int = POINTS_PER_LEVEL) {
+  // Base points for this level
+  val levelBase = ((level - 1).coerceAtLeast(0)) * pointsPerLevel
+
+  // Progress within the current level
+  val rawProgressPoints = (points - levelBase).coerceIn(0, pointsPerLevel)
+  val targetFraction = if (pointsPerLevel == 0) 0f else rawProgressPoints / pointsPerLevel.toFloat()
+
+  // Animated fraction
+  val animatedFraction by
+      animateFloatAsState(
+          targetValue = targetFraction,
+          animationSpec = tween(durationMillis = LEVEL_PROGRESS_ANIM_DURATION_MS),
+          label = "levelProgressAnim")
+
+  Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+    Text(
+        text = "Progress to next level",
+        color = TextLight.copy(alpha = LABEL_ALPHA),
+        fontSize = LABEL_FONT_SIZE_SP.sp)
+
+    Spacer(Modifier.height(SPACING_SMALL))
+
+    Box(
+        modifier =
+            Modifier.fillMaxWidth()
+                .height(LEVEL_BAR_HEIGHT)
+                .clip(RoundedCornerShape(LEVEL_BAR_CORNER_RADIUS))
+                .background(DarkCardItem)) {
+          Box(
+              modifier =
+                  Modifier.fillMaxWidth(animatedFraction.coerceIn(0f, 1f))
+                      .fillMaxHeight()
+                      .background(AccentViolet))
+        }
+
+    Spacer(Modifier.height(SPACING_SMALL))
+
+    val remaining = pointsPerLevel - rawProgressPoints
+
+    Text(
+        text = "$rawProgressPoints / $pointsPerLevel pts  •  $remaining pts to next level",
+        color = TextLight.copy(alpha = LABEL_ALPHA),
+        fontSize = VALUE_FONT_SIZE_SP.sp)
+  }
+}
+
+/** Collects level-up reward events from the ViewModel and shows a snackbar for each. */
+@Composable
+private fun LevelUpRewardSnackbarHandler(
+    viewModel: ProfileViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+  LaunchedEffect(Unit) {
+    viewModel.rewardEvents.collect { event ->
+      when (event) {
+        is LevelUpRewardUiEvent.RewardsGranted -> {
+          val msg = buildRewardMessage(event)
+          snackbarHostState.showSnackbar(msg)
+        }
+      }
+    }
+  }
+}
+/** Builds a human-readable message summarizing the granted rewards. */
+private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): String {
+  val s = event.summary
+  return buildString {
+    append("🎉 Level ${event.newLevel} reached!")
+    if (s.coinsGranted > 0) append(" +${s.coinsGranted} coins")
+    if (s.accessoryIdsGranted.isNotEmpty()) {
+      append(" 🎁 ${s.accessoryIdsGranted.size} new item")
+      if (s.accessoryIdsGranted.size > 1) append("s")
+    }
+    if (s.extraPointsGranted > 0) append(" +${s.extraPointsGranted} pts")
+  }
 }

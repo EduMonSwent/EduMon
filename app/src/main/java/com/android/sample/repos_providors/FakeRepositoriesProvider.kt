@@ -1,9 +1,14 @@
 package com.android.sample.repos_providors
 
+// This code has been written partially using A.I (LLM).
+
+import com.android.sample.data.FakeUserStatsRepository
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
+import com.android.sample.feature.schedule.repository.schedule.FakeScheduleRepository
 import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
 import com.android.sample.feature.weeks.repository.FakeWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
@@ -22,11 +27,15 @@ import com.android.sample.ui.stats.repository.StatsRepository
 
 /** Provider of in-memory fake repositories (no Firebase). */
 object FakeRepositoriesProvider : RepositoriesProvider {
+
   override val objectivesRepository: ObjectivesRepository = FakeObjectivesRepository
   override val weeksRepository: WeeksRepository = FakeWeeksRepository()
   override val statsRepository: StatsRepository = FakeStatsRepository()
 
+  override val userStatsRepository: UserStatsRepository = FakeUserStatsRepository()
+
   override val plannerRepository: PlannerRepository = PlannerRepository()
+  override val scheduleRepository = FakeScheduleRepository
   override val studySessionRepository: StudySessionRepository = ToDoBackedStudySessionRepository()
   override val homeRepository: HomeRepository = FakeHomeRepository()
 
