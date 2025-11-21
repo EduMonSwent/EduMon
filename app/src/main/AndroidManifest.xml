@@ -7,7 +7,7 @@
     <!-- 📍 Permissions pour la localisation -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <!-- Background location permission for campus polling (optional; request conditionally in code) -->
+    <!-- Background location permission for campus polling -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Needed to receive BOOT_COMPLETED and re-schedule exact alarms -->

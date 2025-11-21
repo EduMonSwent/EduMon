@@ -413,4 +413,83 @@ class CampusEntryPollWorkerTest {
     assertEquals(
         "Should not post duplicate notification when staying on campus", firstCount, secondCount)
   }
+
+  @Test
+  fun `skipFetch without coordinates and without stored location returns success with no state change`() =
+      runTest {
+        // Given: no stored location, skip fetch flag set but no test lat/lon provided
+        campusPollPrefs.edit().putBoolean("was_on_campus", false).commit()
+        val testWorker =
+            TestListenableWorkerBuilder<CampusEntryPollWorker>(context)
+                .setInputData(
+                    androidx.work.Data.Builder()
+                        .putBoolean(CampusEntryPollWorker.KEY_DISABLE_CHAIN, true)
+                        .putBoolean(CampusEntryPollWorker.KEY_TEST_SKIP_FETCH, true)
+                        // no lat/lon
+                        .build())
+                .build()
+
+        // When
+        val result = testWorker.startWork().get()
+
+        // Then
+        assertEquals(ListenableWorker.Result.success(), result)
+        // State should remain false (no detection)
+        assertFalse(campusPollPrefs.getBoolean("was_on_campus", true))
+        // No notification
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        assertTrue(shadowOf(nm).allNotifications.isEmpty())
+      }
+
+  @Test
+  fun `skipFetch without coordinates uses stored on-campus location and posts notification`() =
+      runTest {
+        // Given: stored on-campus location, previous state off-campus
+        locationPrefs.edit().putFloat("lat", 46.5202f).putFloat("lon", 6.5652f).commit()
+        campusPollPrefs.edit().putBoolean("was_on_campus", false).commit()
+        val testWorker =
+            TestListenableWorkerBuilder<CampusEntryPollWorker>(context)
+                .setInputData(
+                    androidx.work.Data.Builder()
+                        .putBoolean(CampusEntryPollWorker.KEY_DISABLE_CHAIN, true)
+                        .putBoolean(CampusEntryPollWorker.KEY_TEST_SKIP_FETCH, true)
+                        .build())
+                .build()
+
+        // When
+        val result = testWorker.startWork().get()
+
+        // Then
+        assertEquals(ListenableWorker.Result.success(), result)
+        assertTrue(campusPollPrefs.getBoolean("was_on_campus", false))
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notifs = shadowOf(nm).allNotifications
+        assertTrue("Notification expected for campus entry", notifs.isNotEmpty())
+      }
+
+  @Test
+  fun `skipFetch without coordinates uses stored off-campus location and updates state without notification`() =
+      runTest {
+        // Given: stored off-campus location, previous state on-campus
+        locationPrefs.edit().putFloat("lat", 46.510f).putFloat("lon", 6.550f).commit()
+        campusPollPrefs.edit().putBoolean("was_on_campus", true).commit()
+        val testWorker =
+            TestListenableWorkerBuilder<CampusEntryPollWorker>(context)
+                .setInputData(
+                    androidx.work.Data.Builder()
+                        .putBoolean(CampusEntryPollWorker.KEY_DISABLE_CHAIN, true)
+                        .putBoolean(CampusEntryPollWorker.KEY_TEST_SKIP_FETCH, true)
+                        .build())
+                .build()
+
+        // When
+        val result = testWorker.startWork().get()
+
+        // Then
+        assertEquals(ListenableWorker.Result.success(), result)
+        assertFalse(campusPollPrefs.getBoolean("was_on_campus", true))
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        assertTrue(
+            "No notification expected for leaving campus", shadowOf(nm).allNotifications.isEmpty())
+      }
 }
