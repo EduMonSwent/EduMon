@@ -80,7 +80,7 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   // NEW: Daily Reflection / Mood
   Mood("mood", "Daily Reflection", Icons.Outlined.Mood),
   StudyTogether("study_together", "Study Together", Icons.Outlined.Group),
-  Shop("shop", "Shop", Icons.Outlined.ShoppingCart)
+  Shop("shop", "Shop", Icons.Outlined.ShoppingCart),
 }
 
 // ---------- Route (hooks up VM to UI) ----------
@@ -124,6 +124,7 @@ fun EduMonHomeScreen(
       drawerState = drawerState,
       drawerContent = {
         ModalDrawerSheet(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
             drawerContainerColor = MaterialTheme.colorScheme.surface,
             drawerContentColor = MaterialTheme.colorScheme.onSurface) {
               Spacer(Modifier.height(16.dp))

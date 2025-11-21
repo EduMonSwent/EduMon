@@ -19,7 +19,6 @@ fun AddToDoScreen(onBack: () -> Unit) {
               object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                  // Get the single shared repository from the provider
                   return AddToDoViewModel(AppRepositories.toDoRepository) as T
                 }
               })

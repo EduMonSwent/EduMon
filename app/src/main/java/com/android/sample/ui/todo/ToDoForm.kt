@@ -2,6 +2,8 @@ package com.android.sample.ui.todo
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -44,6 +46,7 @@ fun TodoForm(
     onSave: () -> Unit
 ) {
   var showOptional by remember { mutableStateOf(showOptionalInitial) }
+  val scrollState = rememberScrollState()
 
   val fieldColors =
       OutlinedTextFieldDefaults.colors(
@@ -72,7 +75,12 @@ fun TodoForm(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = TodoColors.Background))
       }) { padding ->
         Column(
-            Modifier.padding(padding).padding(16.dp).background(TodoColors.Background),
+            modifier =
+                Modifier.padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(16.dp)
+                    .background(TodoColors.Background),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
               OutlinedTextField(
                   value = title,

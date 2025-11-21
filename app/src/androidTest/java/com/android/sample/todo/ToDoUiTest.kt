@@ -11,12 +11,13 @@ import androidx.compose.ui.test.performClick
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.repositories.ToDoRepositoryLocal
-import com.android.sample.repositories.ToDoRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories // ✅ NEW
+import com.android.sample.repositories.ToDoRepository // ✅ NEW
 import com.android.sample.ui.todo.EditToDoScreen
 import com.android.sample.ui.todo.OverviewScreen
 import com.android.sample.ui.todo.TestTags
 import java.time.LocalDate
+import kotlinx.coroutines.flow.first // ✅ NEW
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -29,18 +30,21 @@ class ToDoUiSingleTest {
 
   @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-  private val originalRepo by lazy { ToDoRepositoryProvider.repository }
-  private lateinit var repo: ToDoRepositoryLocal
+  private lateinit var repo: ToDoRepository
 
   @Before
   fun setUp() {
-    repo = ToDoRepositoryLocal()
-    ToDoRepositoryProvider.repository = repo
+    repo = AppRepositories.toDoRepository
+
+    runBlocking {
+      val existing = repo.todos.first()
+      existing.forEach { todo -> repo.remove(todo.id) }
+    }
   }
 
   @After
   fun tearDown() {
-    ToDoRepositoryProvider.repository = originalRepo
+    // nothing to restore; repo can stay empty
   }
 
   @Test
@@ -48,16 +52,15 @@ class ToDoUiSingleTest {
     var addClicked = false
     compose.setContent { OverviewScreen(onAddClicked = { addClicked = true }, onEditClicked = {}) }
 
-    // Empty state visible
     compose.onNodeWithText("No tasks yet. Tap + to add one.").assertIsDisplayed()
 
-    // Tap FAB (just validate the callback)
     compose.onNodeWithTag(TestTags.FabAdd).performClick()
     assertTrue(addClicked)
 
-    // Simulate another screen saving an item
     val t = ToDo(title = "X", dueDate = LocalDate.now(), priority = Priority.LOW)
     compose.runOnIdle { runBlocking { repo.add(t) } }
+
+    val saved = runBlocking { repo.todos.first().first { it.title == "X" } }
 
     // Wait for list to show it
     compose.waitUntil(timeoutMillis = 3_000) {
@@ -65,10 +68,8 @@ class ToDoUiSingleTest {
     }
     compose.onNodeWithText("X").assertIsDisplayed()
 
-    // Remove via delete icon
-    compose.onNodeWithTag(TestTags.delete(t.id)).performClick()
+    compose.onNodeWithTag(TestTags.delete(saved.id)).performClick()
 
-    // Back to empty
     compose.waitUntil(timeoutMillis = 3_000) {
       compose
           .onAllNodesWithText("No tasks yet. Tap + to add one.")
@@ -78,7 +79,6 @@ class ToDoUiSingleTest {
     compose.onNodeWithText("No tasks yet. Tap + to add one.").assertIsDisplayed()
   }
 
-  // Tiny helper for tag presence assertions
   private fun assertHas(tag: String, useUnmergedTree: Boolean = true) {
     val nodes = compose.onAllNodesWithTag(tag, useUnmergedTree).fetchSemanticsNodes()
     assertTrue(nodes.isNotEmpty())
@@ -86,8 +86,6 @@ class ToDoUiSingleTest {
 
   @Test
   fun editToDoScreen_renders_core_components() {
-    // Seed repo with a known item
-    val repo = ToDoRepositoryProvider.repository
     runBlocking {
       repo.add(
           ToDo(
