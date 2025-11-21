@@ -33,6 +33,8 @@ import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
+// Parts of this code were written with ChatGPT assistance
+
 /* ---------- Helpers testables ---------- */
 
 @VisibleForTesting
@@ -178,15 +180,122 @@ private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -
 }
 
 @Composable
+private fun CampusEntrySection(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+    vm: NotificationsUiModel,
+    ctx: android.content.Context,
+    requestBackgroundPermission: (String) -> Unit
+) {
+  var showBackgroundLocationDialog by remember { mutableStateOf(false) }
+  var pendingEnableRequest by remember { mutableStateOf(false) }
+
+  // Check if we need background location permission
+  val needsBackgroundLocation = remember(enabled) { vm.needsBackgroundLocationPermission(ctx) }
+
+  SectionCard(
+      title = stringResource(R.string.campus_entry_toggle_title),
+      subtitle = stringResource(R.string.campus_entry_toggle_subtitle),
+      enabled = enabled,
+      onToggle = { on ->
+        if (on && vm.needsBackgroundLocationPermission(ctx)) {
+          // Show educational dialog before requesting permission
+          pendingEnableRequest = true
+          showBackgroundLocationDialog = true
+        } else {
+          onToggle(on)
+        }
+      },
+      switchTag = "campus_entry_switch") {
+        if (enabled && needsBackgroundLocation) {
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+              text = stringResource(R.string.campus_background_location_needed),
+              color = MaterialTheme.colorScheme.error.copy(0.9f),
+              style = MaterialTheme.typography.bodySmall,
+              fontWeight = FontWeight.Bold)
+          TextButton(
+              onClick = {
+                showBackgroundLocationDialog = true
+                pendingEnableRequest = false
+              }) {
+                Text(stringResource(R.string.grant_permission))
+              }
+        }
+      }
+
+  // Educational dialog extracted
+  if (showBackgroundLocationDialog) {
+    BackgroundLocationEducationDialog(
+        pendingEnableRequest = pendingEnableRequest,
+        onConfirmGrant = {
+          showBackgroundLocationDialog = false
+          vm.requestBackgroundLocationIfNeeded(ctx) { permission ->
+            requestBackgroundPermission(permission)
+          }
+        },
+        onCancel = {
+          showBackgroundLocationDialog = false
+          if (pendingEnableRequest) {
+            pendingEnableRequest = false // user declined
+          }
+        })
+  }
+
+  // Handle permission result
+  LaunchedEffect(Unit) {}
+
+  // If we had a pending enable request and permission is now granted, enable the feature
+  LaunchedEffect(pendingEnableRequest) {
+    if (pendingEnableRequest && vm.hasBackgroundLocationPermission(ctx)) {
+      pendingEnableRequest = false
+      onToggle(true)
+    }
+  }
+}
+
+// Extracted dialog composable
+@Composable
+private fun BackgroundLocationEducationDialog(
+    pendingEnableRequest: Boolean,
+    onConfirmGrant: () -> Unit,
+    onCancel: () -> Unit
+) {
+  AlertDialog(
+      onDismissRequest = { onCancel() },
+      title = { Text(stringResource(R.string.background_location_dialog_title)) },
+      text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Text(stringResource(R.string.background_location_dialog_text))
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.background_location_dialog_instruction),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold)
+          }
+        }
+      },
+      confirmButton = {
+        TextButton(onClick = { onConfirmGrant() }) {
+          Text(stringResource(R.string.grant_permission))
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { onCancel() }) { Text(stringResource(R.string.cancel)) }
+      })
+}
+
+@Composable
 private fun TestNotificationButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
-    launcherTest: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+    requestPermission: (String) -> Unit
 ) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Button(
         modifier = Modifier.testTag("btn_test_1_min"),
-        onClick = { vm.requestOrSchedule(ctx) { permission -> launcherTest.launch(permission) } }) {
+        onClick = { vm.requestOrSchedule(ctx) { permission -> requestPermission(permission) } }) {
           Text(stringResource(R.string.send_notification_1_min))
         }
   }
@@ -196,7 +305,7 @@ private fun TestNotificationButton(
 private fun DeepLinkDemoButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
-    launcherDemo: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+    requestPermission: (String) -> Unit
 ) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     val needs = vm.needsNotificationPermission(ctx)
@@ -204,7 +313,7 @@ private fun DeepLinkDemoButton(
         modifier = Modifier.testTag("btn_demo_deep_link"),
         onClick = {
           if (needs && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            launcherDemo.launch(Manifest.permission.POST_NOTIFICATIONS)
+            requestPermission(Manifest.permission.POST_NOTIFICATIONS)
           } else {
             vm.sendDeepLinkDemoNotification(ctx)
           }
@@ -243,24 +352,52 @@ fun NotificationsScreen(
     vm: NotificationsUiModel = viewModel<NotificationsViewModel>(),
     onBack: () -> Unit = {},
     onGoHome: () -> Unit = {},
-    forceDialogForDay: Int? = null
+    forceDialogForDay: Int? = null,
+    // New: avoid creating ActivityResult launchers under Robolectric/unit tests
+    testMode: Boolean = false,
 ) {
   val ctx = LocalContext.current
 
-  val launcherTest =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.scheduleTestNotification(ctx)
-      }
-  val launcherDemo =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.sendDeepLinkDemoNotification(ctx)
-      }
+  // Build permission request lambdas; under tests we don't create ActivityResult launchers
+  var requestNotifPermissionForTest: (String) -> Unit = { _: String ->
+    vm.scheduleTestNotification(ctx)
+  }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted) vm.scheduleTestNotification(ctx)
+        }
+    requestNotifPermissionForTest = { permission: String -> launcher.launch(permission) }
+  }
+
+  var requestNotifPermissionForDemo: (String) -> Unit = { _: String ->
+    vm.sendDeepLinkDemoNotification(ctx)
+  }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted) vm.sendDeepLinkDemoNotification(ctx)
+        }
+    requestNotifPermissionForDemo = { permission: String -> launcher.launch(permission) }
+  }
+
+  var requestBackgroundLocation: (String) -> Unit = { _: String -> /* no-op in tests */ }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted && vm is NotificationsViewModel) {
+            vm.setCampusEntryEnabled(ctx, true)
+          }
+        }
+    requestBackgroundLocation = { permission: String -> launcher.launch(permission) }
+  }
 
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
   val kickoffDays by vm.kickoffDays.collectAsState()
   val kickoffTimes by vm.kickoffTimes.collectAsState()
   val taskNotificationsEnabled by vm.taskNotificationsEnabled.collectAsState()
   val streakEnabled by vm.streakEnabled.collectAsState()
+  val campusEntryEnabled by vm.campusEntryEnabled.collectAsState() // removed cast
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
   var startupError by remember { mutableStateOf<String?>(null) }
@@ -293,8 +430,15 @@ fun NotificationsScreen(
               taskEnabled = taskNotificationsEnabled,
               onToggle = { on -> vm.setTaskNotificationsEnabled(ctx, on) })
 
-          TestNotificationButton(vm, ctx, launcherTest)
-          DeepLinkDemoButton(vm, ctx, launcherDemo)
+          CampusEntrySection(
+              enabled = campusEntryEnabled,
+              onToggle = { on -> vm.setCampusEntryEnabled(ctx, on) },
+              vm = vm,
+              ctx = ctx,
+              requestBackgroundPermission = requestBackgroundLocation)
+
+          TestNotificationButton(vm, ctx, requestNotifPermissionForTest)
+          DeepLinkDemoButton(vm, ctx, requestNotifPermissionForDemo)
         }
   }
 
@@ -317,6 +461,7 @@ private fun SectionCard(
     subtitle: String,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
+    switchTag: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
   Card(
@@ -334,7 +479,10 @@ private fun SectionCard(
                       color = TextLight.copy(0.75f),
                       style = MaterialTheme.typography.bodySmall)
                 }
-                Switch(checked = enabled, onCheckedChange = onToggle)
+                Switch(
+                    modifier = if (switchTag != null) Modifier.testTag(switchTag) else Modifier,
+                    checked = enabled,
+                    onCheckedChange = onToggle)
               }
               content()
             }

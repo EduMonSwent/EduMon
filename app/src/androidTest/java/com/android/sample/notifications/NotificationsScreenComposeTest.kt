@@ -14,6 +14,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// Parts of this code were written with ChatGPT assistance
+
 // Instrumentation Compose test: verify that clicking the demo button calls the ViewModel
 // method that would post the deep-link notification. We avoid device NotificationManager
 // assertions here and instead assert the VM action, which is reliable in androidTest.
@@ -42,6 +44,10 @@ class NotificationsScreenComposeTest {
 
     private val _streakEnabled = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val streakEnabled: kotlinx.coroutines.flow.StateFlow<Boolean> = _streakEnabled
+
+    private val _campusEntryEnabled = kotlinx.coroutines.flow.MutableStateFlow(false)
+    override val campusEntryEnabled: kotlinx.coroutines.flow.StateFlow<Boolean> =
+        _campusEntryEnabled
 
     // spy flag
     var demoCalled = false
@@ -90,6 +96,22 @@ class NotificationsScreenComposeTest {
     }
 
     override fun startObservingSchedule(ctx: android.content.Context) {
+      // no-op for spy
+    }
+
+    override fun setCampusEntryEnabled(ctx: android.content.Context, on: Boolean) {
+      _campusEntryEnabled.value = on
+    }
+
+    // Background location helpers: keep simple behavior for tests
+    override fun needsBackgroundLocationPermission(ctx: android.content.Context): Boolean = false
+
+    override fun hasBackgroundLocationPermission(ctx: android.content.Context): Boolean = true
+
+    override fun requestBackgroundLocationIfNeeded(
+        ctx: android.content.Context,
+        launcher: (String) -> Unit
+    ) {
       // no-op for spy
     }
   }

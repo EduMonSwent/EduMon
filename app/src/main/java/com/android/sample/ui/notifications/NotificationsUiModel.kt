@@ -3,6 +3,8 @@ package com.android.sample.ui.notifications
 import android.content.Context
 import kotlinx.coroutines.flow.StateFlow
 
+// Parts of this code were written with ChatGPT assistance
+
 interface NotificationsUiModel {
   // State exposed to the UI
   val kickoffEnabled: StateFlow<Boolean>
@@ -10,6 +12,7 @@ interface NotificationsUiModel {
   val kickoffTimes: StateFlow<Map<Int, Pair<Int, Int>>>
   val taskNotificationsEnabled: StateFlow<Boolean>
   val streakEnabled: StateFlow<Boolean>
+  val campusEntryEnabled: StateFlow<Boolean> // new toggle for campus entry notifications
 
   // UI actions
   fun setKickoffEnabled(ctx: Context, on: Boolean)
@@ -32,5 +35,14 @@ interface NotificationsUiModel {
 
   fun setTaskNotificationsEnabled(ctx: Context, on: Boolean)
 
+  fun setCampusEntryEnabled(ctx: Context, on: Boolean) // enable/disable campus entry notifications
+
   fun startObservingSchedule(ctx: Context)
+
+  // Background location permission helpers for campus entry feature
+  fun needsBackgroundLocationPermission(ctx: Context): Boolean
+
+  fun hasBackgroundLocationPermission(ctx: Context): Boolean
+
+  fun requestBackgroundLocationIfNeeded(ctx: Context, launcher: (String) -> Unit)
 }

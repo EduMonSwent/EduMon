@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// Parts of this code were written with ChatGPT assistance
+
 class StudyTogetherViewModel(
     private val friendRepository: FriendRepository = AppRepositories.friendRepository,
     initialMode: FriendMode = FriendMode.STUDY,
@@ -51,6 +53,10 @@ class StudyTogetherViewModel(
   private var lastSentLatLng: LatLng? = null
   private val minSendIntervalMs = 10_000L // Update Firebase every 10 seconds (was 20s)
   private val minMoveMeters = 10f // Or when moved 10+ meters (was 25m)
+
+  // Foreground campus entry notification support (Option A)
+  // Campus-entry notifications are handled by CampusEntryPollWorker in the background.
+  // The ViewModel no longer posts notifications directly and doesn't need a Context.
 
   init {
     // Live friends (no changes needed in the screen)
@@ -101,6 +107,9 @@ class StudyTogetherViewModel(
         }
       }
     }
+
+    // Campus entry notification no longer handled here. Background polling via
+    // CampusEntryPollWorker posts notifications even when the app is closed.
   }
 
   /** Change user mode; if signed in we send presence with the chosen policy’s location. */
