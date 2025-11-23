@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
+import com.android.sample.ui.profile.EduMonAvatar
 import com.android.sample.ui.theme.*
 import kotlin.random.Random
 import kotlinx.coroutines.delay
@@ -162,18 +163,22 @@ fun FlappyEduMonScreen(
           }
         }
 
-        Image(
-            painter = painterResource(R.drawable.edumon),
-            contentDescription = "EduMon",
-            modifier =
-                Modifier.offset {
-                      IntOffset(
-                          (playerX - playerSizePx / 2f).toInt(),
-                          (playerY - playerSizePx / 2f).toInt())
-                    }
-                    .size(playerSizeDp))
+      Box(
+          modifier = Modifier
+              .offset {
+                  IntOffset(
+                      (playerX - playerSizePx / 2f).toInt(),
+                      (playerY - playerSizePx / 2f).toInt()
+                  )
+              }
+              .size(playerSizeDp)
+      ) {
+          EduMonAvatar(
+              showLevelLabel = false
+          )
+      }
 
-        Text(
+      Text(
             text = "Score: ${score.toInt()}",
             color = TextLight,
             fontSize = 22.sp,

@@ -38,6 +38,7 @@ import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.screens.CreatureStatsCard
+import com.android.sample.ui.profile.EduMonAvatar
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
@@ -180,11 +181,14 @@ fun EduMonHomeScreen(
                       .verticalScroll(rememberScrollState())
                       .padding(horizontal = 16.dp, vertical = 8.dp),
                   verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CreatureHouseCard(
-                        creatureResId = creatureResId,
-                        level = state.creatureStats.level,
-                        environmentResId = environmentResId)
-                    Row(
+                  CreatureHouseCard(
+                      creatureResId = creatureResId,
+                      level = state.creatureStats.level,
+                      environmentResId = environmentResId,
+                      overrideCreature = { EduMonAvatar(showLevelLabel = false) }
+                  )
+
+                  Row(
                         Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                           CreatureStatsCard(
