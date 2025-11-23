@@ -14,17 +14,12 @@ fun PetHeader(
     environmentResId: Int = R.drawable.epfl_amphi_background,
     creatureResId: Int = R.drawable.edumon
 ) {
-    Box(modifier = modifier.fillMaxWidth()) {
-        CreatureHouseCard(
-            creatureResId = creatureResId,
-            level = level,
-            environmentResId = environmentResId,
-            overrideCreature = {
-                EduMonAvatar(
-                    showLevelLabel = false
-                )
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
+  Box(modifier = modifier.fillMaxWidth()) {
+    CreatureHouseCard(
+        creatureResId = creatureResId,
+        level = level,
+        environmentResId = environmentResId,
+        overrideCreature = { EduMonAvatar(showLevelLabel = false) },
+        modifier = Modifier.fillMaxWidth())
+  }
 }

@@ -27,218 +27,213 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(
+open class ProfileViewModel(
     private val repository: ProfileRepository = ProfileRepositoryProvider.repository
 ) : ViewModel() {
 
-    companion object {
-        const val POINTS_PER_LEVEL: Int = 300
+  companion object {
+    const val POINTS_PER_LEVEL: Int = 300
+  }
+
+  private val _userProfile = MutableStateFlow(repository.profile.value.copy())
+  open val userProfile: StateFlow<UserProfile> = _userProfile
+
+  init {
+    viewModelScope.launch {
+      repository.profile.collect { newProfile -> _userProfile.value = newProfile.copy() }
+    }
+  }
+
+  val accentPalette = listOf(PurplePrimary, AccentBlue, AccentMint, GlowGold, VioletSoft)
+  private val rewardEngine = LevelRewardEngine()
+
+  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
+  val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
+
+  private fun fullCatalog(): List<AccessoryItem> =
+      listOf(
+          AccessoryItem("none", AccessorySlot.HEAD, "None"),
+          AccessoryItem("hat", AccessorySlot.HEAD, "Hat"),
+          AccessoryItem("glasses", AccessorySlot.HEAD, "Glasses"),
+          AccessoryItem("none", AccessorySlot.TORSO, "None"),
+          AccessoryItem("scarf", AccessorySlot.TORSO, "Scarf"),
+          AccessoryItem("cape", AccessorySlot.TORSO, "Cape"),
+          AccessoryItem("none", AccessorySlot.BACK, "None"),
+          AccessoryItem("wings", AccessorySlot.BACK, "Wings"),
+          AccessoryItem("aura", AccessorySlot.BACK, "Aura"))
+
+  val accessoryCatalog: List<AccessoryItem>
+    get() {
+      val owned = ownedIds()
+      return fullCatalog().filter { item -> item.id == "none" || owned.contains(item.id) }
     }
 
-    private val _userProfile = MutableStateFlow(repository.profile.value.copy())
-    val userProfile: StateFlow<UserProfile> = _userProfile
+  private val accentVariant = MutableStateFlow(AccentVariant.Base)
+  val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
-    init {
-        viewModelScope.launch {
-            repository.profile.collect { newProfile ->
-                _userProfile.value = newProfile.copy()
-            }
-        }
-    }
-
-    val accentPalette = listOf(PurplePrimary, AccentBlue, AccentMint, GlowGold, VioletSoft)
-    private val rewardEngine = LevelRewardEngine()
-
-    private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
-    val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
-
-    private fun fullCatalog(): List<AccessoryItem> =
-        listOf(
-            AccessoryItem("none", AccessorySlot.HEAD, "None"),
-            AccessoryItem("hat", AccessorySlot.HEAD, "Hat"),
-            AccessoryItem("glasses", AccessorySlot.HEAD, "Glasses"),
-            AccessoryItem("none", AccessorySlot.TORSO, "None"),
-            AccessoryItem("scarf", AccessorySlot.TORSO, "Scarf"),
-            AccessoryItem("cape", AccessorySlot.TORSO, "Cape"),
-            AccessoryItem("none", AccessorySlot.BACK, "None"),
-            AccessoryItem("wings", AccessorySlot.BACK, "Wings"),
-            AccessoryItem("aura", AccessorySlot.BACK, "Aura"))
-
-    val accessoryCatalog: List<AccessoryItem>
-        get() {
-            val owned = ownedIds()
-            return fullCatalog().filter { item -> item.id == "none" || owned.contains(item.id) }
-        }
-
-    private val accentVariant = MutableStateFlow(AccentVariant.Base)
-    val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
-
-    val accentEffective: StateFlow<Color> =
-        combine(userProfile, accentVariantFlow) { user, variant ->
+  open val accentEffective: StateFlow<Color> =
+      combine(userProfile, accentVariantFlow) { user, variant ->
             applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
-        }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
+          }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
 
-    fun accessoryResId(slot: AccessorySlot, id: String): Int {
-        return when (slot) {
-            AccessorySlot.HEAD ->
-                when (id) {
-                    "hat" -> R.drawable.cosmetic_hat
-                    "glasses" -> R.drawable.cosmetic_glasses
-                    else -> 0
-                }
-            AccessorySlot.TORSO ->
-                when (id) {
-                    "scarf" -> R.drawable.cosmetic_scarf
-                    "cape" -> R.drawable.cosmetic_cape
-                    else -> 0
-                }
-            AccessorySlot.BACK ->
-                when (id) {
-                    "wings" -> R.drawable.cosmetic_wings
-                    "aura" -> R.drawable.cosmetic_aura
-                    else -> 0
-                }
+  open fun accessoryResId(slot: AccessorySlot, id: String): Int {
+    return when (slot) {
+      AccessorySlot.HEAD ->
+          when (id) {
+            "hat" -> R.drawable.cosmetic_hat
+            "glasses" -> R.drawable.cosmetic_glasses
             else -> 0
-        }
+          }
+      AccessorySlot.TORSO ->
+          when (id) {
+            "scarf" -> R.drawable.cosmetic_scarf
+            "cape" -> R.drawable.cosmetic_cape
+            else -> 0
+          }
+      AccessorySlot.BACK ->
+          when (id) {
+            "wings" -> R.drawable.cosmetic_wings
+            "aura" -> R.drawable.cosmetic_aura
+            else -> 0
+          }
+      else -> 0
+    }
+  }
+
+  private fun ownedIds(): Set<String> {
+    return _userProfile.value.accessories
+        .filter { it.startsWith("owned:") }
+        .map { it.removePrefix("owned:") }
+        .toSet()
+  }
+
+  fun setAvatarAccent(color: Color) {
+    val argb = color.toArgb().toLong()
+    _userProfile.update { it.copy(avatarAccent = argb) }
+    pushProfile()
+  }
+
+  fun setAccentVariant(variant: AccentVariant) {
+    accentVariant.value = variant
+  }
+
+  fun toggleNotifications() = updateLocal {
+    it.copy(notificationsEnabled = !it.notificationsEnabled)
+  }
+
+  fun toggleLocation() = updateLocal { it.copy(locationEnabled = !it.locationEnabled) }
+
+  fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
+
+  fun equip(slot: AccessorySlot, id: String) {
+    val owned = ownedIds()
+    if (id != "none" && !owned.contains(id)) return
+
+    val cur = _userProfile.value
+    val prefix = slot.name.lowercase() + ":"
+    val cleaned = cur.accessories.filterNot { it.startsWith(prefix) }
+    val updatedAccessories = if (id == "none") cleaned else cleaned + (prefix + id)
+    val updated = cur.copy(accessories = updatedAccessories)
+
+    _userProfile.value = updated
+    pushProfile(updated)
+  }
+
+  fun unequip(slot: AccessorySlot) {
+    val cur = _userProfile.value
+    val prefix = slot.name.lowercase() + ":"
+    val updated = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
+    _userProfile.value = updated
+    pushProfile(updated)
+  }
+
+  fun equippedId(slot: AccessorySlot): String? {
+    val prefix = slot.name.lowercase() + ":"
+    val entry = _userProfile.value.accessories.firstOrNull { it.startsWith(prefix) } ?: return null
+    return entry.removePrefix(prefix)
+  }
+
+  private fun updateLocal(edit: (UserProfile) -> UserProfile) {
+    _userProfile.update(edit)
+    pushProfile()
+  }
+
+  private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
+      when (v) {
+        AccentVariant.Base -> base
+        AccentVariant.Light ->
+            Color(
+                (base.red + (1f - base.red) * 0.25f),
+                (base.green + (1f - base.green) * 0.25f),
+                (base.blue + (1f - base.blue) * 0.25f),
+                base.alpha)
+        AccentVariant.Dark ->
+            Color(base.red * 0.75f, base.green * 0.75f, base.blue * 0.75f, base.alpha)
+        AccentVariant.Vibrant ->
+            Color(
+                (base.red * 1.1f).coerceIn(0f, 1f),
+                (base.green * 1.1f).coerceIn(0f, 1f),
+                (base.blue * 1.1f).coerceIn(0f, 1f),
+                base.alpha)
+      }
+
+  fun addCoins(amount: Int) {
+    if (amount <= 0) return
+    val current = _userProfile.value
+    val updated = current.copy(coins = current.coins + amount)
+    _userProfile.value = updated
+    pushProfile(updated)
+  }
+
+  fun addPoints(amount: Int) {
+    if (amount <= 0) return
+
+    applyProfileWithPotentialRewards { current ->
+      val newPoints = (current.points + amount).coerceAtLeast(0)
+      val newLevel = computeLevelFromPoints(newPoints)
+      current.copy(points = newPoints, level = newLevel)
+    }
+  }
+
+  private fun pushProfile(updated: UserProfile = _userProfile.value) {
+    viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+  }
+
+  private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
+    val oldProfile = _userProfile.value
+    val candidate = edit(oldProfile)
+
+    if (candidate.level <= oldProfile.level) {
+      _userProfile.value = candidate
+      pushProfile(candidate)
+      return
     }
 
-    private fun ownedIds(): Set<String> {
-        return _userProfile.value.accessories
-            .filter { it.startsWith("owned:") }
-            .map { it.removePrefix("owned:") }
-            .toSet()
+    val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
+    val updated = result.updatedProfile
+
+    _userProfile.value = updated
+    pushProfile(updated)
+
+    if (!result.summary.isEmpty) {
+      viewModelScope.launch {
+        _rewardEvents.emit(
+            LevelUpRewardUiEvent.RewardsGranted(newLevel = updated.level, summary = result.summary))
+      }
     }
+  }
 
-    fun setAvatarAccent(color: Color) {
-        val argb = color.toArgb().toLong()
-        _userProfile.update { it.copy(avatarAccent = argb) }
-        pushProfile()
-    }
+  private fun computeLevelFromPoints(points: Int): Int {
+    if (points <= 0) return 1
+    return 1 + (points / POINTS_PER_LEVEL)
+  }
 
-    fun setAccentVariant(variant: AccentVariant) {
-        accentVariant.value = variant
-    }
+  fun debugLevelUpForTests() {
+    applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
+  }
 
-    fun toggleNotifications() = updateLocal {
-        it.copy(notificationsEnabled = !it.notificationsEnabled)
-    }
-
-    fun toggleLocation() = updateLocal { it.copy(locationEnabled = !it.locationEnabled) }
-
-    fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
-
-    fun equip(slot: AccessorySlot, id: String) {
-        val owned = ownedIds()
-        if (id != "none" && !owned.contains(id)) return
-
-        val cur = _userProfile.value
-        val prefix = slot.name.lowercase() + ":"
-        val cleaned = cur.accessories.filterNot { it.startsWith(prefix) }
-        val updatedAccessories = if (id == "none") cleaned else cleaned + (prefix + id)
-        val updated = cur.copy(accessories = updatedAccessories)
-
-        _userProfile.value = updated
-        pushProfile(updated)
-    }
-
-    fun unequip(slot: AccessorySlot) {
-        val cur = _userProfile.value
-        val prefix = slot.name.lowercase() + ":"
-        val updated = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
-        _userProfile.value = updated
-        pushProfile(updated)
-    }
-
-    fun equippedId(slot: AccessorySlot): String? {
-        val prefix = slot.name.lowercase() + ":"
-        val entry = _userProfile.value.accessories.firstOrNull { it.startsWith(prefix) } ?: return null
-        return entry.removePrefix(prefix)
-    }
-
-    private fun updateLocal(edit: (UserProfile) -> UserProfile) {
-        _userProfile.update(edit)
-        pushProfile()
-    }
-
-    private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
-        when (v) {
-            AccentVariant.Base -> base
-            AccentVariant.Light ->
-                Color(
-                    (base.red + (1f - base.red) * 0.25f),
-                    (base.green + (1f - base.green) * 0.25f),
-                    (base.blue + (1f - base.blue) * 0.25f),
-                    base.alpha)
-            AccentVariant.Dark ->
-                Color(base.red * 0.75f, base.green * 0.75f, base.blue * 0.75f, base.alpha)
-            AccentVariant.Vibrant ->
-                Color(
-                    (base.red * 1.1f).coerceIn(0f, 1f),
-                    (base.green * 1.1f).coerceIn(0f, 1f),
-                    (base.blue * 1.1f).coerceIn(0f, 1f),
-                    base.alpha)
-        }
-
-    fun addCoins(amount: Int) {
-        if (amount <= 0) return
-        val current = _userProfile.value
-        val updated = current.copy(coins = current.coins + amount)
-        _userProfile.value = updated
-        pushProfile(updated)
-    }
-
-    fun addPoints(amount: Int) {
-        if (amount <= 0) return
-
-        applyProfileWithPotentialRewards { current ->
-            val newPoints = (current.points + amount).coerceAtLeast(0)
-            val newLevel = computeLevelFromPoints(newPoints)
-            current.copy(points = newPoints, level = newLevel)
-        }
-    }
-
-    private fun pushProfile(updated: UserProfile = _userProfile.value) {
-        viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
-    }
-
-    private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
-        val oldProfile = _userProfile.value
-        val candidate = edit(oldProfile)
-
-        if (candidate.level <= oldProfile.level) {
-            _userProfile.value = candidate
-            pushProfile(candidate)
-            return
-        }
-
-        val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
-        val updated = result.updatedProfile
-
-        _userProfile.value = updated
-        pushProfile(updated)
-
-        if (!result.summary.isEmpty) {
-            viewModelScope.launch {
-                _rewardEvents.emit(
-                    LevelUpRewardUiEvent.RewardsGranted(
-                        newLevel = updated.level, summary = result.summary))
-            }
-        }
-    }
-
-    private fun computeLevelFromPoints(points: Int): Int {
-        if (points <= 0) return 1
-        return 1 + (points / POINTS_PER_LEVEL)
-    }
-
-    fun debugLevelUpForTests() {
-        applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
-    }
-
-    fun debugNoLevelChangeForTests() {
-        applyProfileWithPotentialRewards { current ->
-            current.copy(points = current.points + 10)
-        }
-    }
+  fun debugNoLevelChangeForTests() {
+    applyProfileWithPotentialRewards { current -> current.copy(points = current.points + 10) }
+  }
 }

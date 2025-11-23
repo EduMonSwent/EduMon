@@ -139,7 +139,6 @@ fun ScheduleScreen() {
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .testTag(ScheduleScreenTestTags.ROOT),
             horizontalAlignment = Alignment.CenterHorizontally) {
-
               PetHeader(level = 5)
 
               Spacer(Modifier.height(8.dp))

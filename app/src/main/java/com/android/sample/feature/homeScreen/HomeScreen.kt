@@ -181,14 +181,13 @@ fun EduMonHomeScreen(
                       .verticalScroll(rememberScrollState())
                       .padding(horizontal = 16.dp, vertical = 8.dp),
                   verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                  CreatureHouseCard(
-                      creatureResId = creatureResId,
-                      level = state.creatureStats.level,
-                      environmentResId = environmentResId,
-                      overrideCreature = { EduMonAvatar(showLevelLabel = false) }
-                  )
+                    CreatureHouseCard(
+                        creatureResId = creatureResId,
+                        level = state.creatureStats.level,
+                        environmentResId = environmentResId,
+                        overrideCreature = { EduMonAvatar(showLevelLabel = false) })
 
-                  Row(
+                    Row(
                         Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                           CreatureStatsCard(

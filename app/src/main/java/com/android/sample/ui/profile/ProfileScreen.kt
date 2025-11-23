@@ -70,7 +70,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.AccentVariant
@@ -133,10 +132,7 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             contentPadding = PaddingValues(vertical = SECTION_SPACING),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
-              item {
-                PetSection(
-                    viewModel = viewModel)
-              }
+              item { PetSection(viewModel = viewModel) }
               item {
                 GlowCard {
                   Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
@@ -178,47 +174,35 @@ fun ProfileScreen(
 }
 
 @Composable
-fun PetSection(
-    viewModel: ProfileViewModel,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0B0C24), Color(0xFF151737))
-                )
-            )
-            .padding(vertical = 20.dp, horizontal = 16.dp)
-            .testTag(ProfileScreenTestTags.PET_SECTION)
-    ) {
+fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
+  Box(
+      modifier =
+          modifier
+              .fillMaxWidth()
+              .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
+              .padding(vertical = 20.dp, horizontal = 16.dp)
+              .testTag(ProfileScreenTestTags.PET_SECTION)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            verticalAlignment = Alignment.CenterVertically) {
+              Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatBar("❤️", 0.9f, StatBarHeart)
                 StatBar("💡", 0.85f, StatBarLightbulb)
                 StatBar("⚡", 0.7f, StatBarLightning)
-            }
+              }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                EduMonAvatar(
-                    viewModel = viewModel,
-                    showLevelLabel = true,
-                    avatarSize = UiValues.AvatarSize
-                )
+              Column(
+                  horizontalAlignment = Alignment.CenterHorizontally,
+                  verticalArrangement = Arrangement.Center) {
+                    EduMonAvatar(
+                        viewModel = viewModel,
+                        showLevelLabel = true,
+                        avatarSize = UiValues.AvatarSize)
+                  }
             }
-        }
-    }
+      }
 }
-
 
 @Composable
 fun StatBar(icon: String, percent: Float, color: Color) {
