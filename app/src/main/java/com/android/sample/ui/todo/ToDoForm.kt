@@ -13,12 +13,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
+import com.android.sample.ui.location.Location
 import java.time.LocalDate
 
 /**
  * ToDoForm shared by AddToDo screen and EditToDoScreen. Some parts of this code have been generated
  * by AI.
  */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoForm(
@@ -34,8 +36,13 @@ fun TodoForm(
     status: Status,
     onStatusChange: (Status) -> Unit,
     showOptionalInitial: Boolean = false,
-    location: String?,
-    onLocationChange: (String?) -> Unit,
+    //location: String?,
+    //location: Location?,
+    locationQuery: String,
+    onLocationQueryChange: (String) -> Unit,
+    locationSuggestions: List<Location>,
+    onLocationSelected: (Location) -> Unit,
+    //onLocationChange: (String?) -> Unit,
     linksText: String,
     onLinksTextChange: (String) -> Unit,
     note: String?,
@@ -48,7 +55,13 @@ fun TodoForm(
   var showOptional by remember { mutableStateOf(showOptionalInitial) }
   val scrollState = rememberScrollState()
 
-  val fieldColors =
+    /*var locationQuery by remember(location?.name) {
+        mutableStateOf(location?.name ?: "")
+    }*/
+    var showLocationDropdown by remember { mutableStateOf(false) }
+
+
+    val fieldColors =
       OutlinedTextFieldDefaults.colors(
           focusedTextColor = TodoColors.OnCard,
           unfocusedTextColor = TodoColors.OnCard,
@@ -119,13 +132,53 @@ fun TodoForm(
                   }
 
               if (showOptional) {
-                OutlinedTextField(
+                /*OutlinedTextField(
                     value = location.orEmpty(),
                     onValueChange = onLocationChange,
                     label = { Text("Location") },
                     singleLine = true,
                     colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth().testTag(TestTags.LocationField))
+                    modifier = Modifier.fillMaxWidth().testTag(TestTags.LocationField))*/
+                  ExposedDropdownMenuBox(
+                      expanded = showLocationDropdown && locationSuggestions.isNotEmpty(),
+                      onExpandedChange = { expanded ->
+                          showLocationDropdown = expanded && locationSuggestions.isNotEmpty()
+                      }) {
+                      OutlinedTextField(
+                          value = locationQuery,
+                          onValueChange = { newValue ->
+                              onLocationQueryChange(newValue)
+                              // show dropdown when user types something non-blank
+                              showLocationDropdown = newValue.isNotBlank()
+                          },
+                          label = { Text("Location") },
+                          singleLine = true,
+                          colors = fieldColors,
+                          modifier =
+                              Modifier.menuAnchor()
+                                  .fillMaxWidth()
+                                  .testTag(TestTags.LocationField))
+
+                      ExposedDropdownMenu(
+                          expanded = showLocationDropdown && locationSuggestions.isNotEmpty(),
+                          onDismissRequest = { showLocationDropdown = false }) {
+                          locationSuggestions
+                              .take(5) // optional: limit shown suggestions
+                              .forEach { suggestion ->
+                                  DropdownMenuItem(
+                                      text = {
+                                          Text(
+                                              suggestion.name.take(30) +
+                                                      if (suggestion.name.length > 30) "..." else "")
+                                      },
+                                      onClick = {
+                                          onLocationSelected(suggestion)
+                                          onLocationQueryChange(suggestion.name)
+                                          showLocationDropdown = false
+                                      })
+                              }
+                      }
+                  }
 
                 OutlinedTextField(
                     value = linksText,
@@ -201,3 +254,4 @@ private fun <T : Enum<T>> EnumDropdown(
         }
       }
 }
+
