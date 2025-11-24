@@ -4,16 +4,26 @@ package com.android.sample.feature.weeks.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.repos_providors.FakeRepositories
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import java.time.DayOfWeek
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await // <- coroutines-play-services
+
+// Navigation targets when user taps "Start" on an objective.
+sealed class ObjectiveNavigation {
+    data class ToQuiz(val objective: Objective) : ObjectiveNavigation()
+    data class ToCourseExercises(val objective: Objective) : ObjectiveNavigation()
+    data class ToResume(val objective: Objective) : ObjectiveNavigation()
+}
 
 // Holds only objective-related UI state
 data class ObjectivesUiState(
@@ -31,6 +41,10 @@ class ObjectivesViewModel(
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
+
+  // One-shot navigation events the UI can observe.
+  private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
+  val navigationEvents = _navigationEvents.asSharedFlow()
 
   init {
     // Ensure we have a user (optionally), then load data
@@ -101,8 +115,28 @@ class ObjectivesViewModel(
     _uiState.update { it.copy(showWhy = show) }
   }
 
+  fun markObjectiveCompleted(objective: Objective) {
+    viewModelScope.launch {
+      val current = _uiState.value.objectives
+      val index = current.indexOf(objective)
+      if (index == -1) return@launch
+
+      val updated = current[index].copy(completed = true)
+      val list = repository.updateObjective(index, updated)
+      _uiState.update { it.copy(objectives = list) }
+    }
+  }
+
   @Suppress("UNUSED_PARAMETER")
   fun startObjective(index: Int = 0) {
-    // hook for analytics / navigation later
+    val obj = _uiState.value.objectives.getOrNull(index) ?: return
+    viewModelScope.launch {
+      when (obj.type) {
+        ObjectiveType.QUIZ -> _navigationEvents.emit(ObjectiveNavigation.ToQuiz(obj))
+        ObjectiveType.COURSE_OR_EXERCISES ->
+            _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(obj))
+        ObjectiveType.RESUME -> _navigationEvents.emit(ObjectiveNavigation.ToResume(obj))
+      }
+    }
   }
 }

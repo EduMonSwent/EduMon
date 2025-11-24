@@ -2,6 +2,7 @@ package com.android.sample.feature.weeks.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Today
@@ -28,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.PurplePrimary
@@ -36,10 +39,16 @@ import com.android.sample.ui.theme.PurplePrimary
 fun DailyObjectivesSection(
     modifier: Modifier = Modifier,
     viewModel: ObjectivesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onNavigate: (ObjectiveNavigation) -> Unit = {},
 ) {
   val ui by viewModel.uiState.collectAsState()
   val objectives = ui.objectives
   val showWhy = ui.showWhy
+
+  LaunchedEffect(viewModel) {
+    viewModel.navigationEvents.collect { event -> onNavigate(event) }
+  }
+
 
   val cs = MaterialTheme.colorScheme
   GlassSurface(modifier = modifier, testTag = WeekProgDailyObjTags.OBJECTIVES_SECTION) {
@@ -130,7 +139,7 @@ fun DailyObjectivesSection(
 }
 
 @Composable
-private fun ObjectiveRow(index: Int, objective: Objective, showWhy: Boolean, onStart: () -> Unit) {
+private fun ObjectiveRow(index: Int, objective: Objective,  showWhy: Boolean, onStart: () -> Unit) {
   val cs = MaterialTheme.colorScheme
   Column(Modifier.fillMaxWidth().testTag(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX + index)) {
     Text(
@@ -147,13 +156,26 @@ private fun ObjectiveRow(index: Int, objective: Objective, showWhy: Boolean, onS
           MetaChip(objective.course)
           if (objective.estimateMinutes > 0) MetaChip("${objective.estimateMinutes}m")
         }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(top = 14.dp)) {
-          StartButton(
-              onClick = onStart, tag = WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + index)
-        }
+      Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.padding(top = 14.dp)
+      ) {
+          AnimatedVisibility(visible = !objective.completed) {
+              StartButton(
+                  onClick = onStart,
+                  tag = WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + index
+              )
+          }
+
+          AnimatedVisibility(
+              visible = objective.completed,
+              enter = fadeIn() + expandHorizontally(),
+              exit = fadeOut()
+          ) {
+              CompletedPill()
+          }
+      }
   }
 }
 
@@ -174,7 +196,6 @@ private fun MetaChip(text: String) {
 
 @Composable
 private fun StartButton(onClick: () -> Unit, tag: String? = null) {
-  val cs = MaterialTheme.colorScheme
   val gradient = Brush.linearGradient(listOf(AccentViolet, PurplePrimary))
   Button(
       onClick = onClick,
@@ -189,4 +210,27 @@ private fun StartButton(onClick: () -> Unit, tag: String? = null) {
         Spacer(Modifier.width(6.dp))
         Text("Start", fontWeight = FontWeight.SemiBold)
       }
+}
+
+@Composable
+private fun CompletedPill() {
+    val cs = MaterialTheme.colorScheme
+    Surface(
+        color = cs.primary.copy(alpha = 0.12f),
+        contentColor = cs.primary,
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text("Completed", fontWeight = FontWeight.SemiBold)
+        }
+    }
 }

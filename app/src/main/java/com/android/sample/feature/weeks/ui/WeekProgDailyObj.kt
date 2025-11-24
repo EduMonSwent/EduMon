@@ -18,11 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 
 @Composable
 fun WeekProgDailyObj(
+    navController : NavHostController,
     weeksViewModel: WeeksViewModel,
     objectivesViewModel: ObjectivesViewModel,
     modifier: Modifier = Modifier,
@@ -47,7 +50,22 @@ fun WeekProgDailyObj(
 
           // Objectives Section
           DailyObjectivesSection(
-              viewModel = objectivesViewModel, modifier = Modifier.fillMaxWidth())
+              viewModel = objectivesViewModel,
+              modifier = Modifier.fillMaxWidth(),
+              onNavigate = { nav ->
+                  when (nav) {
+                      is ObjectiveNavigation.ToQuiz -> {
+                          // TODO: adjust route to your navigation graph
+                          navController.navigate("quizScreen")
+                      }
+                      is ObjectiveNavigation.ToCourseExercises -> {
+                          navController.navigate("weekCoursesScreen")
+                      }
+                      is ObjectiveNavigation.ToResume -> {
+                          navController.navigate("resumeScreen")
+                      }
+                  }
+          })
         }
 
         // Footer: weekly dots
