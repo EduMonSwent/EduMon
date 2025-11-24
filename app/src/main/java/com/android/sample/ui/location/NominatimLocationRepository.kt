@@ -24,6 +24,7 @@ class NominatimLocationRepository(private val client: OkHttpClient) : LocationRe
 
     override suspend fun search(query: String): List<Location> =
         withContext(Dispatchers.IO) {
+            // Build URL with proper params
             val url =
                 HttpUrl.Builder()
                     .scheme("https")
@@ -31,34 +32,43 @@ class NominatimLocationRepository(private val client: OkHttpClient) : LocationRe
                     .addPathSegment("search")
                     .addQueryParameter("q", query)
                     .addQueryParameter("format", "json")
+                    .addQueryParameter("limit", "5")
+                    // ⚠️ put a real email here (school email is fine)
+                    .addQueryParameter("email", "[email protected]")
                     .build()
 
             val request =
                 Request.Builder()
                     .url(url)
-                    // TODO: change this to your real app / contact
-                    .header("User-Agent", "EduMon/1.0 (your-email@example.com)")
-                    .header("Referer", "https://your-app-url.example.com")
+                    .header(
+                        "User-Agent",
+                        // ⚠️ CHANGE THIS to something that *really* identifies your app + a contact
+                        "EduMon/1.0 (contact: [email protected])"
+                    )
+                    // Referer is optional but fine to keep / adjust
+                    .header("Referer", "https://edumon.example.com")
                     .build()
 
             try {
                 val response = client.newCall(request).execute()
                 response.use {
                     if (!response.isSuccessful) {
-                        Log.d("NominatimLocationRepo", "Unexpected code $response")
+                        Log.d("NominatimLocationRepo", "HTTP ${response.code} for '$query'")
+                        // While debugging, don’t hide this – return empty but log clearly
                         return@withContext emptyList()
                     }
 
                     val body = response.body?.string()
                     if (body != null) {
+                        Log.d("NominatimLocationRepo", "OK for '$query'")
                         return@withContext parseBody(body)
                     } else {
-                        Log.d("NominatimLocationRepo", "Empty body")
+                        Log.d("NominatimLocationRepo", "Empty body for '$query'")
                         return@withContext emptyList()
                     }
                 }
             } catch (e: IOException) {
-                Log.e("NominatimLocationRepo", "Failed to execute request", e)
+                Log.e("NominatimLocationRepo", "Failed request for '$query'", e)
                 return@withContext emptyList()
             }
         }

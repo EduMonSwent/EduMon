@@ -142,45 +142,53 @@ fun TodoForm(
                   ExposedDropdownMenuBox(
                       expanded = showLocationDropdown && locationSuggestions.isNotEmpty(),
                       onExpandedChange = { expanded ->
-                          showLocationDropdown = expanded && locationSuggestions.isNotEmpty()
-                      }) {
+                          // Just follow the box's request; don't mix in our own logic here
+                          showLocationDropdown = expanded
+                      },
+                  ) {
                       OutlinedTextField(
                           value = locationQuery,
                           onValueChange = { newValue ->
                               onLocationQueryChange(newValue)
-                              // show dropdown when user types something non-blank
-                              showLocationDropdown = newValue.isNotBlank()
+                              // Keep the dropdown "intention" open while typing;
+                              // whether it actually shows depends on suggestions.
+                              showLocationDropdown = true
                           },
                           label = { Text("Location") },
                           singleLine = true,
                           colors = fieldColors,
                           modifier =
-                              Modifier.menuAnchor()
+                              Modifier
+                                  .menuAnchor()
                                   .fillMaxWidth()
-                                  .testTag(TestTags.LocationField))
+                                  .testTag(TestTags.LocationField)
+                      )
 
                       ExposedDropdownMenu(
                           expanded = showLocationDropdown && locationSuggestions.isNotEmpty(),
-                          onDismissRequest = { showLocationDropdown = false }) {
+                          onDismissRequest = { showLocationDropdown = false },
+                      ) {
                           locationSuggestions
-                              .take(5) // optional: limit shown suggestions
+                              .take(5)
                               .forEach { suggestion ->
                                   DropdownMenuItem(
                                       text = {
                                           Text(
                                               suggestion.name.take(30) +
-                                                      if (suggestion.name.length > 30) "..." else "")
+                                                      if (suggestion.name.length > 30) "..." else ""
+                                          )
                                       },
                                       onClick = {
                                           onLocationSelected(suggestion)
                                           onLocationQueryChange(suggestion.name)
                                           showLocationDropdown = false
-                                      })
+                                      },
+                                  )
                               }
                       }
                   }
 
-                OutlinedTextField(
+                  OutlinedTextField(
                     value = linksText,
                     onValueChange = onLinksTextChange,
                     label = { Text("Useful links (comma-separated)") },

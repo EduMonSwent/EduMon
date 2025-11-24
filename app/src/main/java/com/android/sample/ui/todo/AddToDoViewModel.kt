@@ -47,8 +47,6 @@ class AddToDoViewModel(
     // Also keep a plain string to save into ToDo (for backwards compatibility)
     private var locationString: String? = null
 
-    // Debounce job so we don’t spam Nominatim on each keystroke
-    private var locationSearchJob: Job? = null
   var linksText by mutableStateOf("") // comma-separated links
   var note by mutableStateOf<String?>(null) // optional note/description
   var notificationsEnabled by mutableStateOf(false) // switch for notifications
@@ -63,28 +61,24 @@ class AddToDoViewModel(
         selectedLocation = null
         locationString = query.ifBlank { null }
 
-        // Cancel any ongoing search
-        locationSearchJob?.cancel()
-
-        if (query.length < 3) {
+        if (query.length < 2) {
             // too short: clear suggestions
             locationSuggestions = emptyList()
             return
         }
 
-        locationSearchJob =
-            viewModelScope.launch {
-                // small debounce
-                delay(300)
-                val results =
-                    try {
-                        locationRepo.search(query)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                locationSuggestions = results
-            }
+        // Directly launch a search on every change (like in the bootcamp)
+        viewModelScope.launch {
+            val results =
+                try {
+                    locationRepo.search(query)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            locationSuggestions = results
+        }
     }
+
 
     // Called by the UI when the user picks a suggestion
     fun onLocationSelected(location: Location) {

@@ -146,6 +146,13 @@ private data class StudyTogetherActions(
     val onConfirmAddFriend: (String) -> Unit,
 )
 
+private data class TodoMarker(
+    val id: String,
+    val title: String,
+    val locationName: String,
+    val position: LatLng,
+)
+
 /* ---------- Main Screen Entry Point ---------- */
 
 @OptIn(
