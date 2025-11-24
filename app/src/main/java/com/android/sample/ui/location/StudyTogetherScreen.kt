@@ -90,6 +90,7 @@ private const val MARKER_ANCHOR_CENTER = 0.5f
 // Marker sizes (in dp)
 private const val USER_MARKER_SIZE_DP = 44f
 private const val FRIEND_MARKER_SIZE_DP = 40f
+private const val TODO_MARKER_SIZE_DP = 52f
 
 // Icon sizes (in dp)
 private const val ICON_SIZE_SMALL_DP = 6
@@ -154,6 +155,7 @@ private data class TodoMarker(
     val title: String,
     val locationName: String,
     val position: LatLng,
+    val deadlineText: String,
 )
 
 /* ---------- Main Screen Entry Point ---------- */
@@ -469,6 +471,7 @@ private fun StudyMap(
                         id = todo.id,
                         title = todo.title,
                         locationName = best.name,
+                        deadlineText = "Due: ${todo.dueDate}",
                         position = LatLng(best.latitude, best.longitude),
                     )
                 }
@@ -514,8 +517,8 @@ private fun StudyMap(
           BitmapDescriptorFactory.fromBitmap(
               loadDrawableAsBitmap(
                   context,
-                  R.drawable.marker,          // <- you can switch to edumon1 / edumon3 if you prefer
-                  sizeDp = FRIEND_MARKER_SIZE_DP
+                  R.drawable.marker,
+                  sizeDp = TODO_MARKER_SIZE_DP
               )
           )
       }
@@ -523,13 +526,14 @@ private fun StudyMap(
           Marker(
               state = MarkerState(position = marker.position),
               title = marker.title,
-              snippet = marker.locationName,
+              snippet = marker.deadlineText,   // <- was marker.locationName
               icon = todoIcon,
               anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
           )
       }
 
-        // --- Friend markers ---
+
+      // --- Friend markers ---
         val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }
 
         friendsDistinct.forEach { friend ->
