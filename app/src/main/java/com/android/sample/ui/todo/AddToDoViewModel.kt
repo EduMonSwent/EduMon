@@ -12,8 +12,6 @@ import com.android.sample.repositories.ToDoRepository
 import com.android.sample.ui.location.Location
 import com.android.sample.ui.location.LocationRepository
 import com.android.sample.ui.location.NominatimLocationRepository
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -34,18 +32,18 @@ class AddToDoViewModel(
   var status by mutableStateOf(Status.TODO) // default status
 
   // Optional fields
-  //var location by mutableStateOf<String?>(null) // optional location text
-    /** What the user typed in the location field. */
-    var locationQuery by mutableStateOf("")
+  // var location by mutableStateOf<String?>(null) // optional location text
+  /** What the user typed in the location field. */
+  var locationQuery by mutableStateOf("")
 
-    /** Suggestions coming from Nominatim. */
-    var locationSuggestions by mutableStateOf<List<Location>>(emptyList())
+  /** Suggestions coming from Nominatim. */
+  var locationSuggestions by mutableStateOf<List<Location>>(emptyList())
 
-    /** Currently selected location (if any). */
-    private var selectedLocation: Location? = null
+  /** Currently selected location (if any). */
+  private var selectedLocation: Location? = null
 
-    // Also keep a plain string to save into ToDo (for backwards compatibility)
-    private var locationString: String? = null
+  // Also keep a plain string to save into ToDo (for backwards compatibility)
+  private var locationString: String? = null
 
   var linksText by mutableStateOf("") // comma-separated links
   var note by mutableStateOf<String?>(null) // optional note/description
@@ -55,38 +53,37 @@ class AddToDoViewModel(
   val canSave
     get() = title.isNotBlank()
 
-    // Called by the UI when the location text changes
-    fun onLocationQueryChange(query: String) {
-        locationQuery = query
-        selectedLocation = null
-        locationString = query.ifBlank { null }
+  // Called by the UI when the location text changes
+  fun onLocationQueryChange(query: String) {
+    locationQuery = query
+    selectedLocation = null
+    locationString = query.ifBlank { null }
 
-        if (query.length < 2) {
-            // too short: clear suggestions
-            locationSuggestions = emptyList()
-            return
-        }
-
-        // Directly launch a search on every change (like in the bootcamp)
-        viewModelScope.launch {
-            val results =
-                try {
-                    locationRepo.search(query)
-                } catch (e: Exception) {
-                    emptyList()
-                }
-            locationSuggestions = results
-        }
+    if (query.length < 2) {
+      // too short: clear suggestions
+      locationSuggestions = emptyList()
+      return
     }
 
-
-    // Called by the UI when the user picks a suggestion
-    fun onLocationSelected(location: Location) {
-        selectedLocation = location
-        locationString = location.name
-        locationQuery = location.name
-        locationSuggestions = emptyList()
+    // Directly launch a search on every change (like in the bootcamp)
+    viewModelScope.launch {
+      val results =
+          try {
+            locationRepo.search(query)
+          } catch (e: Exception) {
+            emptyList()
+          }
+      locationSuggestions = results
     }
+  }
+
+  // Called by the UI when the user picks a suggestion
+  fun onLocationSelected(location: Location) {
+    selectedLocation = location
+    locationString = location.name
+    locationQuery = location.name
+    locationSuggestions = emptyList()
+  }
   /**
    * Called when the user presses "Save".
    * - Validates input
@@ -96,25 +93,23 @@ class AddToDoViewModel(
    */
   fun save(onDone: () -> Unit) =
       viewModelScope.launch {
-          if (!canSave) return@launch
+        if (!canSave) return@launch
 
-          val links = linksText.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        val links = linksText.split(",").map { it.trim() }.filter { it.isNotBlank() }
 
-          val finalLocation =
-              (selectedLocation?.name ?: locationString)?.takeIf { it.isNotBlank() }
+        val finalLocation = (selectedLocation?.name ?: locationString)?.takeIf { it.isNotBlank() }
 
-          repo.add(
-              ToDo(
-                  title = title.trim(),
-                  dueDate = dueDate,
-                  priority = priority,
-                  status = status,
-                  location = finalLocation,
-                  links = links,
-                  note = note?.takeIf { it.isNullOrBlank().not() },
-                  notificationsEnabled = notificationsEnabled))
+        repo.add(
+            ToDo(
+                title = title.trim(),
+                dueDate = dueDate,
+                priority = priority,
+                status = status,
+                location = finalLocation,
+                links = links,
+                note = note?.takeIf { it.isNullOrBlank().not() },
+                notificationsEnabled = notificationsEnabled))
 
-          onDone()
+        onDone()
       }
-
 }

@@ -71,9 +71,9 @@ import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlin.math.abs
 import kotlinx.coroutines.flow.collectLatest
 import okhttp3.OkHttpClient
-import kotlin.math.abs
 
 // Test tags
 private const val TAG_FAB_ADD = "fab_add_friend"
@@ -442,44 +442,45 @@ private fun StudyMap(
             modifier.background(MaterialTheme.colorScheme.surfaceVariant).testTag(TAG_MAP_STUB))
     return
   }
-    // --- ToDo markers state + loading from repository ---
-    val todoRepo = remember { AppRepositories.toDoRepository }
-    val okHttpClient = remember { OkHttpClient() }
-    val locationRepo = remember { NominatimLocationRepository(okHttpClient) }
+  // --- ToDo markers state + loading from repository ---
+  val todoRepo = remember { AppRepositories.toDoRepository }
+  val okHttpClient = remember { OkHttpClient() }
+  val locationRepo = remember { NominatimLocationRepository(okHttpClient) }
 
-    var todoMarkers by remember { mutableStateOf<List<TodoMarker>>(emptyList()) }
+  var todoMarkers by remember { mutableStateOf<List<TodoMarker>>(emptyList()) }
 
-    // Collect todos and geocode their locations on a background dispatcher (inside repo)
-    LaunchedEffect(todoRepo) {
-        todoRepo.todos.collectLatest { todos ->
-            val markers = mutableListOf<TodoMarker>()
+  // Collect todos and geocode their locations on a background dispatcher (inside repo)
+  LaunchedEffect(todoRepo) {
+    todoRepo.todos.collectLatest { todos ->
+      val markers = mutableListOf<TodoMarker>()
 
-            for (todo in todos) {
-                val locName = todo.location ?: continue
-                if (locName.isBlank()) continue
+      for (todo in todos) {
+        val locName = todo.location ?: continue
+        if (locName.isBlank()) continue
 
-                val best =
-                    try {
-                        locationRepo.search(locName).firstOrNull()
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Failed to geocode todo location: $locName", e)
-                        null
-                    }
-
-                if (best != null) {
-                    markers += TodoMarker(
-                        id = todo.id,
-                        title = todo.title,
-                        locationName = best.name,
-                        deadlineText = "Due: ${todo.dueDate}",
-                        position = LatLng(best.latitude, best.longitude),
-                    )
-                }
+        val best =
+            try {
+              locationRepo.search(locName).firstOrNull()
+            } catch (e: Exception) {
+              Log.w(TAG, "Failed to geocode todo location: $locName", e)
+              null
             }
 
-            todoMarkers = markers
+        if (best != null) {
+          markers +=
+              TodoMarker(
+                  id = todo.id,
+                  title = todo.title,
+                  locationName = best.name,
+                  deadlineText = "Due: ${todo.dueDate}",
+                  position = LatLng(best.latitude, best.longitude),
+              )
         }
+      }
+
+      todoMarkers = markers
     }
+  }
 
   // One MarkerState per friend id (prevents association crash)
   val markerStates = remember { mutableStateMapOf<String, MarkerState>() }
@@ -512,28 +513,22 @@ private fun StudyMap(
               true
             })
 
-      // --- To-Do markers ---
-      val todoIcon = remember {
+        // --- To-Do markers ---
+        val todoIcon = remember {
           BitmapDescriptorFactory.fromBitmap(
-              loadDrawableAsBitmap(
-                  context,
-                  R.drawable.marker,
-                  sizeDp = TODO_MARKER_SIZE_DP
-              )
-          )
-      }
-      todoMarkers.forEach { marker ->
+              loadDrawableAsBitmap(context, R.drawable.marker, sizeDp = TODO_MARKER_SIZE_DP))
+        }
+        todoMarkers.forEach { marker ->
           Marker(
               state = MarkerState(position = marker.position),
               title = marker.title,
-              snippet = marker.deadlineText,   // <- was marker.locationName
+              snippet = marker.deadlineText, // <- was marker.locationName
               icon = todoIcon,
               anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
           )
-      }
+        }
 
-
-      // --- Friend markers ---
+        // --- Friend markers ---
         val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }
 
         friendsDistinct.forEach { friend ->

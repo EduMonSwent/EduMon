@@ -25,108 +25,107 @@ class EditToDoViewModel(
     private val locationRepo: LocationRepository = NominatimLocationRepository(OkHttpClient()),
 ) : ViewModel() {
 
-    // Required
-    var title by mutableStateOf("") // title text
-    var dueDate by mutableStateOf(LocalDate.now()) // due date (default = today)
-    var priority by mutableStateOf(Priority.MEDIUM) // priority level
-    var status by mutableStateOf(Status.TODO) // progress status
+  // Required
+  var title by mutableStateOf("") // title text
+  var dueDate by mutableStateOf(LocalDate.now()) // due date (default = today)
+  var priority by mutableStateOf(Priority.MEDIUM) // priority level
+  var status by mutableStateOf(Status.TODO) // progress status
 
-    // Optional (non-location)
-    var linksText by mutableStateOf("")
-    var note by mutableStateOf<String?>(null)
-    var notificationsEnabled by mutableStateOf(false)
+  // Optional (non-location)
+  var linksText by mutableStateOf("")
+  var note by mutableStateOf<String?>(null)
+  var notificationsEnabled by mutableStateOf(false)
 
-    // ───── LOCATION STATE (same pattern as AddToDoViewModel) ─────
-    var locationQuery by mutableStateOf("")
-    var locationSuggestions by mutableStateOf<List<Location>>(emptyList())
-    private var selectedLocation: Location? = null
-    private var locationString: String? = null
-    private var locationSearchJob: Job? = null
-    // ─────────────────────────────────────────────────────────────
+  // ───── LOCATION STATE (same pattern as AddToDoViewModel) ─────
+  var locationQuery by mutableStateOf("")
+  var locationSuggestions by mutableStateOf<List<Location>>(emptyList())
+  private var selectedLocation: Location? = null
+  private var locationString: String? = null
+  private var locationSearchJob: Job? = null
+  // ─────────────────────────────────────────────────────────────
 
-    // Validation rule : only allow saving if there's a title
-    val canSave
-        get() = title.isNotBlank()
+  // Validation rule : only allow saving if there's a title
+  val canSave
+    get() = title.isNotBlank()
 
-    init {
-        // On creation, load the existing To-Do from repository
+  init {
+    // On creation, load the existing To-Do from repository
+    viewModelScope.launch {
+      repo.getById(id)?.let { t ->
+        // Pre-fill all fields with the To-Do's current data
+        title = t.title
+        dueDate = t.dueDate
+        priority = t.priority
+        status = t.status
+
+        // location: keep the original string as both query and stored value
+        locationQuery = t.location ?: ""
+        locationString = t.location
+
+        linksText = t.links.joinToString(", ")
+        note = t.note
+        notificationsEnabled = t.notificationsEnabled
+      }
+    }
+  }
+
+  fun onLocationQueryChange(query: String) {
+    locationQuery = query
+    selectedLocation = null
+    locationString = query.ifBlank { null }
+
+    locationSearchJob?.cancel()
+
+    if (query.length < 3) {
+      locationSuggestions = emptyList()
+      return
+    }
+
+    locationSearchJob =
         viewModelScope.launch {
-            repo.getById(id)?.let { t ->
-                // Pre-fill all fields with the To-Do's current data
-                title = t.title
-                dueDate = t.dueDate
-                priority = t.priority
-                status = t.status
-
-                // location: keep the original string as both query and stored value
-                locationQuery = t.location ?: ""
-                locationString = t.location
-
-                linksText = t.links.joinToString(", ")
-                note = t.note
-                notificationsEnabled = t.notificationsEnabled
-            }
+          // debounce to avoid hammering Nominatim
+          delay(300)
+          val results =
+              try {
+                locationRepo.search(query)
+              } catch (e: Exception) {
+                emptyList()
+              }
+          locationSuggestions = results
         }
-    }
+  }
 
-    fun onLocationQueryChange(query: String) {
-        locationQuery = query
-        selectedLocation = null
-        locationString = query.ifBlank { null }
+  fun onLocationSelected(location: Location) {
+    selectedLocation = location
+    locationString = location.name
+    locationQuery = location.name
+    locationSuggestions = emptyList()
+  }
 
-        locationSearchJob?.cancel()
+  fun save(onDone: () -> Unit) =
+      viewModelScope.launch {
+        // Get the current version of this To-Do
+        val current = repo.getById(id) ?: return@launch
 
-        if (query.length < 3) {
-            locationSuggestions = emptyList()
-            return
-        }
+        // Convert the links text into a clean list
+        val links = linksText.split(",").map { it.trim() }.filter { it.isNotBlank() }
 
-        locationSearchJob =
-            viewModelScope.launch {
-                // debounce to avoid hammering Nominatim
-                delay(300)
-                val results =
-                    try {
-                        locationRepo.search(query)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                locationSuggestions = results
-            }
-    }
+        // Use selected location name if present, otherwise the raw query string
+        val finalLocation = (selectedLocation?.name ?: locationString)?.takeIf { it.isNotBlank() }
 
-    fun onLocationSelected(location: Location) {
-        selectedLocation = location
-        locationString = location.name
-        locationQuery = location.name
-        locationSuggestions = emptyList()
-    }
+        // Copy the existing To-Do, replacing updated fields
+        repo.update(
+            current.copy(
+                title = title.trim(),
+                dueDate = dueDate,
+                priority = priority,
+                status = status,
+                location = finalLocation,
+                links = links,
+                note = note?.takeIf { it.isNullOrBlank().not() },
+                notificationsEnabled = notificationsEnabled))
 
-    fun save(onDone: () -> Unit) =
-        viewModelScope.launch {
-            // Get the current version of this To-Do
-            val current = repo.getById(id) ?: return@launch
-
-            // Convert the links text into a clean list
-            val links = linksText.split(",").map { it.trim() }.filter { it.isNotBlank() }
-
-            // Use selected location name if present, otherwise the raw query string
-            val finalLocation =
-                (selectedLocation?.name ?: locationString)?.takeIf { it.isNotBlank() }
-
-            // Copy the existing To-Do, replacing updated fields
-            repo.update(
-                current.copy(
-                    title = title.trim(),
-                    dueDate = dueDate,
-                    priority = priority,
-                    status = status,
-                    location = finalLocation,
-                    links = links,
-                    note = note?.takeIf { it.isNullOrBlank().not() },
-                    notificationsEnabled = notificationsEnabled))
-
-            // Call onDone() — usually navigates back to list screen
-            onDone()
-        }
+        // Call onDone() — usually navigates back to list screen
+        onDone()
+      }
 }

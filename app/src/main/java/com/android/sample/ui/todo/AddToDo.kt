@@ -11,9 +11,7 @@ import com.android.sample.repos_providors.AppRepositories
  * - Creates the AddToDoViewModel (wired to the shared repository)
  */
 @Composable
-fun AddToDoScreen(
-    onBack: () -> Unit
-) {
+fun AddToDoScreen(onBack: () -> Unit) {
 
   val vm: AddToDoViewModel =
       viewModel(
@@ -43,12 +41,12 @@ fun AddToDoScreen(
 
       // Optional fields
       showOptionalInitial = false,
-      //location = vm.location,
+      // location = vm.location,
       locationQuery = vm.locationQuery,
       onLocationQueryChange = vm::onLocationQueryChange,
       locationSuggestions = vm.locationSuggestions,
       onLocationSelected = vm::onLocationSelected,
-      //onLocationChange = { vm.location = it },
+      // onLocationChange = { vm.location = it },
       linksText = vm.linksText,
       onLinksTextChange = { vm.linksText = it },
       note = vm.note,
