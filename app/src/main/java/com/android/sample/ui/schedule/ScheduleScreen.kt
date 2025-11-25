@@ -212,7 +212,7 @@ fun ScheduleScreen() {
             }
       }
 
-  if (showAddModal && addDate != null && activeObjectiveForCourse != null) {
+  if (showAddModal && addDate != null) {
     AddStudyTaskModal(
         onDismiss = {
           showAddModal = false
