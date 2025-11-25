@@ -1,5 +1,5 @@
 name: Decode GitHub secrets
-description: Decode and setup google-services.json, local.properties, and ~/.android/release.keystore
+description: Decode and setup local.properties, and ~/.android/release.keystore
 
 inputs:
   local_properties:
