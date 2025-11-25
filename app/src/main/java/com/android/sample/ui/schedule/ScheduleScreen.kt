@@ -37,7 +37,7 @@ import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** This class was implemented with the help of ai (chatgbt) */
+/** This class was implemented with the help of ai (ChatGPT) */
 object ScheduleScreenTestTags {
   const val ROOT = "schedule_root"
   const val TAB_ROW = "schedule_tab_row"
@@ -139,7 +139,6 @@ fun ScheduleScreen() {
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .testTag(ScheduleScreenTestTags.ROOT),
             horizontalAlignment = Alignment.CenterHorizontally) {
-              // Header now matches Home (use the updated PetHeader you implemented)
               PetHeader(level = 5)
 
               Spacer(Modifier.height(8.dp))

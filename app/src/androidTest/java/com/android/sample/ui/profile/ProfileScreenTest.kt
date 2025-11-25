@@ -7,7 +7,6 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
@@ -77,34 +76,12 @@ class ProfileScreenTest {
   @Test
   fun petSectionDisplaysAllElements() {
     val vm = ProfileViewModel(FakeProfileRepository())
-    composeRule.setContent {
-      PetSection(
-          level = 5,
-          accent = Color.Magenta,
-          accessories = listOf("head:wizard_hat", "torso:cape", "back:wings"),
-          variant = AccentVariant.Base,
-          viewModel = vm)
-    }
+    composeRule.setContent { PetSection(viewModel = vm) }
 
     composeRule.onNodeWithText("Level 5").assertExists()
     composeRule.onNodeWithText("90%").assertExists()
     composeRule.onNodeWithText("85%").assertExists()
     composeRule.onNodeWithText("70%").assertExists()
-  }
-
-  @Test
-  fun petSectionWithEmptyAccessories() {
-    val vm = ProfileViewModel(FakeProfileRepository())
-    composeRule.setContent {
-      PetSection(
-          level = 1,
-          accent = Color.Blue,
-          accessories = emptyList(),
-          variant = AccentVariant.Light,
-          viewModel = vm)
-    }
-
-    composeRule.onNodeWithText("Level 1").assertExists()
   }
 
   @Test
@@ -446,48 +423,10 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun petSectionWithDifferentAccessorySlots() {
-    val vm = ProfileViewModel(FakeProfileRepository())
-
-    // Test head accessory
-    composeRule.setContent {
-      PetSection(
-          level = 3,
-          accent = Color.Cyan,
-          accessories = listOf("head:wizard_hat"),
-          variant = AccentVariant.Dark,
-          viewModel = vm)
-    }
-    composeRule.onNodeWithText("Level 3").assertExists()
-  }
-
-  @Test
-  fun petSectionWithTorsoAccessory() {
-    val vm = ProfileViewModel(FakeProfileRepository())
-
-    composeRule.setContent {
-      PetSection(
-          level = 4,
-          accent = Color.Green,
-          accessories = listOf("torso:cape"),
-          variant = AccentVariant.Vibrant,
-          viewModel = vm)
-    }
-    composeRule.onNodeWithText("Level 4").assertExists()
-  }
-
-  @Test
   fun petSectionWithBackAccessory() {
     val vm = ProfileViewModel(FakeProfileRepository())
 
-    composeRule.setContent {
-      PetSection(
-          level = 5,
-          accent = Color.Yellow,
-          accessories = listOf("back:wings"),
-          variant = AccentVariant.Base,
-          viewModel = vm)
-    }
+    composeRule.setContent { PetSection(viewModel = vm) }
     composeRule.onNodeWithText("Level 5").assertExists()
   }
 

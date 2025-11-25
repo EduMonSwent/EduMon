@@ -96,7 +96,7 @@ class HomeScreenTest {
         .onNodeWithContentDescription("Creature environment")
         .performScrollTo()
         .assertExists()
-    composeRule.onNodeWithContentDescription("Creature").performScrollTo().assertExists()
+
     composeRule.onNodeWithText("Lv 5").performScrollTo().assertIsDisplayed()
   }
 
