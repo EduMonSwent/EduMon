@@ -4,6 +4,7 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepositoryLocal
+import com.android.sample.ui.location.Location
 import java.time.LocalDate
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
@@ -52,7 +53,10 @@ class ViewModelsSingleTest {
     vm.dueDate = LocalDate.of(2025, 12, 31)
     vm.priority = Priority.HIGH
     vm.status = Status.IN_PROGRESS
-    vm.location = "Office"
+
+    // Set location via the new location API
+    vm.onLocationSelected(Location(latitude = 0.0, longitude = 0.0, name = "Office"))
+
     vm.linksText = "https://a , , https://b ,"
     vm.note = "note"
     vm.notificationsEnabled = true
@@ -79,7 +83,10 @@ class ViewModelsSingleTest {
     val vm = AddToDoViewModel(repo)
 
     vm.title = "X"
-    vm.location = "   "
+
+    // Simulate user typing only spaces in location → should be treated as null
+    vm.onLocationQueryChange(" ")
+
     vm.note = ""
     vm.linksText = " , "
     vm.save {}
@@ -116,11 +123,16 @@ class ViewModelsSingleTest {
     // Loaded into fields
     assertEquals("Old", vm.title)
     assertEquals("x", vm.linksText.trim())
+    // location is now represented as locationQuery
+    assertEquals("Place", vm.locationQuery)
 
     // Update
     vm.title = "  New  "
     vm.linksText = " a ,  , b "
-    vm.location = "   " // -> null
+
+    // Clear location using the new API (blank → null)
+    vm.onLocationQueryChange(" ")
+
     vm.note = "" // -> null
     vm.status = Status.DONE
     vm.priority = Priority.HIGH
