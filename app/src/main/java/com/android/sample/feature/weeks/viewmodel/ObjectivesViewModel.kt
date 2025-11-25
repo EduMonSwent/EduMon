@@ -4,7 +4,6 @@ package com.android.sample.feature.weeks.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.model.Objective
-import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.repos_providors.FakeRepositories
 import com.google.firebase.auth.ktx.auth
@@ -20,9 +19,11 @@ import kotlinx.coroutines.tasks.await // <- coroutines-play-services
 
 // Navigation targets when user taps "Start" on an objective.
 sealed class ObjectiveNavigation {
-    data class ToQuiz(val objective: Objective) : ObjectiveNavigation()
-    data class ToCourseExercises(val objective: Objective) : ObjectiveNavigation()
-    data class ToResume(val objective: Objective) : ObjectiveNavigation()
+  data class ToQuiz(val objective: Objective) : ObjectiveNavigation()
+
+  data class ToCourseExercises(val objective: Objective) : ObjectiveNavigation()
+
+  data class ToResume(val objective: Objective) : ObjectiveNavigation()
 }
 
 // Holds only objective-related UI state
@@ -121,22 +122,14 @@ class ObjectivesViewModel(
       val index = current.indexOf(objective)
       if (index == -1) return@launch
 
-      val updated = current[index].copy(completed = true)
-      val list = repository.updateObjective(index, updated)
-      _uiState.update { it.copy(objectives = list) }
+      // Reuse existing update logic; this takes care of repo + uiState.
+      updateObjective(index, current[index].copy(completed = true))
     }
   }
 
   @Suppress("UNUSED_PARAMETER")
   fun startObjective(index: Int = 0) {
     val obj = _uiState.value.objectives.getOrNull(index) ?: return
-    viewModelScope.launch {
-      when (obj.type) {
-        ObjectiveType.QUIZ -> _navigationEvents.emit(ObjectiveNavigation.ToQuiz(obj))
-        ObjectiveType.COURSE_OR_EXERCISES ->
-            _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(obj))
-        ObjectiveType.RESUME -> _navigationEvents.emit(ObjectiveNavigation.ToResume(obj))
-      }
-    }
+    viewModelScope.launch { _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(obj)) }
   }
 }

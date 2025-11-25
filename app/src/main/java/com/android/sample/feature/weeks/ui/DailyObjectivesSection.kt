@@ -45,10 +45,7 @@ fun DailyObjectivesSection(
   val objectives = ui.objectives
   val showWhy = ui.showWhy
 
-  LaunchedEffect(viewModel) {
-    viewModel.navigationEvents.collect { event -> onNavigate(event) }
-  }
-
+  LaunchedEffect(viewModel) { viewModel.navigationEvents.collect { event -> onNavigate(event) } }
 
   val cs = MaterialTheme.colorScheme
   GlassSurface(modifier = modifier, testTag = WeekProgDailyObjTags.OBJECTIVES_SECTION) {
@@ -139,7 +136,7 @@ fun DailyObjectivesSection(
 }
 
 @Composable
-private fun ObjectiveRow(index: Int, objective: Objective,  showWhy: Boolean, onStart: () -> Unit) {
+private fun ObjectiveRow(index: Int, objective: Objective, showWhy: Boolean, onStart: () -> Unit) {
   val cs = MaterialTheme.colorScheme
   Column(Modifier.fillMaxWidth().testTag(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX + index)) {
     Text(
@@ -156,26 +153,22 @@ private fun ObjectiveRow(index: Int, objective: Objective,  showWhy: Boolean, on
           MetaChip(objective.course)
           if (objective.estimateMinutes > 0) MetaChip("${objective.estimateMinutes}m")
         }
-      Row(
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(top = 14.dp)
-      ) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(top = 14.dp)) {
           AnimatedVisibility(visible = !objective.completed) {
-              StartButton(
-                  onClick = onStart,
-                  tag = WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + index
-              )
+            StartButton(
+                onClick = onStart, tag = WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + index)
           }
 
           AnimatedVisibility(
               visible = objective.completed,
               enter = fadeIn() + expandHorizontally(),
-              exit = fadeOut()
-          ) {
-              CompletedPill()
-          }
-      }
+              exit = fadeOut()) {
+                CompletedPill()
+              }
+        }
   }
 }
 
@@ -214,23 +207,20 @@ private fun StartButton(onClick: () -> Unit, tag: String? = null) {
 
 @Composable
 private fun CompletedPill() {
-    val cs = MaterialTheme.colorScheme
-    Surface(
-        color = cs.primary.copy(alpha = 0.12f),
-        contentColor = cs.primary,
-        shape = RoundedCornerShape(14.dp)
-    ) {
+  val cs = MaterialTheme.colorScheme
+  Surface(
+      color = cs.primary.copy(alpha = 0.12f),
+      contentColor = cs.primary,
+      shape = RoundedCornerShape(14.dp)) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text("Completed", fontWeight = FontWeight.SemiBold)
-        }
-    }
+            verticalAlignment = Alignment.CenterVertically) {
+              Icon(
+                  imageVector = Icons.Default.Check,
+                  contentDescription = null,
+                  modifier = Modifier.size(18.dp))
+              Spacer(Modifier.width(6.dp))
+              Text("Completed", fontWeight = FontWeight.SemiBold)
+            }
+      }
 }
