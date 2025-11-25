@@ -19,13 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
 import com.android.sample.ui.theme.EduMonTheme
-import java.time.DayOfWeek
 
 /**
  * Route-level composable that wraps the screen in EdumonTheme. You can call this from your nav
@@ -276,25 +274,4 @@ private fun PdfCard(
               }
         }
       }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun CourseExercisesRoutePreview() {
-  val previewObjective =
-      Objective(
-          title = "Finish Quiz 3",
-          course = "CS101 - Intro to Computer Science",
-          estimateMinutes = 45,
-          completed = false,
-          day = DayOfWeek.MONDAY)
-
-  CourseExercisesRoute(
-      objective = previewObjective,
-      coursePdfLabel = "Chapter 5: Data Structures and Algorithms",
-      exercisesPdfLabel = "Week 5 Practice Problems (15 exercises)",
-      onBack = {},
-      onOpenCoursePdf = {},
-      onOpenExercisesPdf = {},
-      onCompleted = {})
 }
