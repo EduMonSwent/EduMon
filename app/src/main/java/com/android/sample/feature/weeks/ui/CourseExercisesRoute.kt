@@ -68,7 +68,7 @@ private fun CourseExercisesScreen(
     onCompleted: () -> Unit,
 ) {
   val cs = MaterialTheme.colorScheme
-  var selectedTab by remember { mutableStateOf(0) } // 0 = Course, 1 = Exercises
+  var selectedTab by remember { mutableIntStateOf(0) } // 0 = Course, 1 = Exercises
 
   Scaffold(
       topBar = {
