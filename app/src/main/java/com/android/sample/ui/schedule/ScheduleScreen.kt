@@ -179,7 +179,7 @@ fun ScheduleScreen() {
                                   }
                                   else ->
                                       Unit // we ignore ToQuiz/ToResume, since you don't use them
-                                           // now
+                                // now
                                 }
                               })
                         }
