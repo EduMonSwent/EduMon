@@ -4,9 +4,9 @@ import java.time.DayOfWeek
 
 // Describes what kind of flow should be started when the user taps "Start".
 enum class ObjectiveType {
-    QUIZ,
-    COURSE_OR_EXERCISES,
-    RESUME,
+  QUIZ,
+  COURSE_OR_EXERCISES,
+  RESUME,
 }
 
 data class Objective(
