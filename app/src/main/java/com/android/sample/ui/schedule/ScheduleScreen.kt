@@ -26,8 +26,10 @@ import com.android.sample.feature.schedule.data.schedule.ScheduleTab
 import com.android.sample.feature.schedule.data.schedule.SourceTag
 import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
+import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.ui.CourseExercisesRoute
+import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
-import com.android.sample.feature.weeks.viewmodel.WeeksViewModel
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.planner.AddStudyTaskModal
 import com.android.sample.ui.planner.PetHeader
@@ -52,7 +54,6 @@ object ScheduleScreenTestTags {
 @Composable
 fun ScheduleScreen() {
   // Repos
-  val context = LocalContext.current
   val resources = LocalContext.current.resources
 
   val repositories = remember { AppRepositories }
@@ -75,7 +76,6 @@ fun ScheduleScreen() {
               })
 
   val objectivesVm: ObjectivesViewModel = viewModel()
-  val weeksVm: WeeksViewModel = viewModel()
 
   val state by vm.uiState.collectAsState()
   val allTasks: List<StudyItem> =
@@ -86,6 +86,7 @@ fun ScheduleScreen() {
   var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
   var showAddModal by remember { mutableStateOf(false) }
   var addDate by remember { mutableStateOf<LocalDate?>(null) }
+  var activeObjectiveForCourse by remember { mutableStateOf<Objective?>(null) }
 
   // Snackbar for VM events
   val snackbarHostState = remember { SnackbarHostState() }
@@ -166,7 +167,20 @@ fun ScheduleScreen() {
                     Box(
                         modifier =
                             Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_DAY)) {
-                          DayTabContent(vm = vm, state = state, objectivesVm = objectivesVm)
+                          DayTabContent(
+                              vm = vm,
+                              state = state,
+                              objectivesVm = objectivesVm,
+                              onObjectiveNavigation = { nav ->
+                                when (nav) {
+                                  is ObjectiveNavigation.ToCourseExercises -> {
+                                    activeObjectiveForCourse = nav.objective
+                                  }
+                                  else ->
+                                      Unit // we ignore ToQuiz/ToResume, since you don't use them
+                                // now
+                                }
+                              })
                         }
                 ScheduleTab.WEEK -> {
                   Box(
@@ -221,6 +235,29 @@ fun ScheduleScreen() {
           vm.save(event)
           showAddModal = false
           addDate = null
+        })
+  }
+  val activeObjective = activeObjectiveForCourse
+  if (activeObjective != null) {
+    CourseExercisesRoute(
+        objective = activeObjective,
+        coursePdfLabel = "Course material for ${activeObjective.course}",
+        exercisesPdfLabel = "Exercises for ${activeObjective.course}",
+        onBack = {
+          // Just close the screen without changing completion
+          activeObjectiveForCourse = null
+        },
+        onOpenCoursePdf = {
+          // TODO: open the course PDF for this objective
+        },
+        onOpenExercisesPdf = {
+          // TODO: open the exercises PDF for this objective
+        },
+        onCompleted = {
+          // 1) Mark objective as completed in the VM
+          objectivesVm.markObjectiveCompleted(activeObjective)
+          // 2) Close the Course/Exercises screen
+          activeObjectiveForCourse = null
         })
   }
 }

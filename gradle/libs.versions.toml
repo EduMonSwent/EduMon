@@ -42,6 +42,7 @@ mockkAgent = "1.13.7"
 mockkAndroid = "1.13.7"
 kaspresso = "1.5.5"
 robolectric = "4.11.1"
+turbine = "1.0.0"
 
 # Sonar plugin
 sonar = "4.4.1.3373"
@@ -146,6 +147,7 @@ mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockkAndroid
 kaspresso = { group = "com.kaspersky.android-components", name = "kaspresso", version.ref = "kaspresso" }
 kaspresso-compose = { group = "com.kaspersky.android-components", name = "kaspresso-compose-support", version.ref = "kaspresso" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "workTesting" }
 androidx-junit-ktx = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "junitKtx" }
