@@ -21,15 +21,3 @@ runs:
           echo "::warning::LOCAL_PROPERTIES secret is not set. local.properties will not be created."
         fi
 
-    - name: Decode release keystore from secrets
-      env:
-        ANDROID_KEYSTORE_BASE64: ${{ inputs.android_keystore_base64 }}
-      shell: bash
-      run: |
-        if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-          mkdir -p ~/.android
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > ~/.android/release.keystore
-        else
-          echo "::warning::ANDROID_KEYSTORE_BASE64 secret is not set. ~/.android/release.keystore will not be created."
-        fi
-
