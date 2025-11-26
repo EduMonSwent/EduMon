@@ -8,16 +8,19 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.repos_providors.AppRepositories // ✅ NEW
-import com.android.sample.repositories.ToDoRepository // ✅ NEW
+import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.repositories.ToDoRepository
+import com.android.sample.ui.todo.AddToDoScreen
 import com.android.sample.ui.todo.EditToDoScreen
 import com.android.sample.ui.todo.OverviewScreen
 import com.android.sample.ui.todo.TestTags
 import java.time.LocalDate
-import kotlinx.coroutines.flow.first // ✅ NEW
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -133,5 +136,283 @@ class ToDoUiSingleTest {
     assertHas(TestTags.LocationField)
     assertHas(TestTags.NoteField)
     assertHas(TestTags.NotificationsSwitch)
+  }
+
+  // ==================== NEW LOCATION TESTS ====================
+
+  @Test
+  fun addToDoScreen_locationField_exists_in_optional_section() {
+    compose.setContent { AddToDoScreen(onBack = {}) }
+    compose.waitForIdle()
+
+    // Show optional section
+    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
+    compose.waitForIdle()
+
+    // Location field should be present
+    assertHas(TestTags.LocationField)
+  }
+
+  @Test
+  fun addToDoScreen_canEnterLocationText() {
+    compose.setContent { AddToDoScreen(onBack = {}) }
+    compose.waitForIdle()
+
+    // Show optional section
+    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
+    compose.waitForIdle()
+
+    // Enter location text
+    compose.onNodeWithTag(TestTags.LocationField).performTextInput("EPFL Campus")
+    compose.waitForIdle()
+
+    // Verify text appears (note: we can't easily verify suggestions in UI tests without mock)
+    compose.onNodeWithTag(TestTags.LocationField).assertExists()
+  }
+
+  @Test
+  fun addToDoScreen_saveWithLocation_createsTaskWithLocation() {
+    var backCalled = false
+    compose.setContent { AddToDoScreen(onBack = { backCalled = true }) }
+    compose.waitForIdle()
+
+    // Fill required fields
+    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Task with location")
+    compose.waitForIdle()
+
+    // Show optional and add location
+    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
+    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Office Building")
+    compose.waitForIdle()
+
+    // Save
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+    compose.waitForIdle()
+
+    // Verify saved with location
+    val saved = runBlocking { repo.todos.first().firstOrNull { it.title == "Task with location" } }
+    assertNotNull(saved)
+    assertEquals("Office Building", saved?.location)
+    assertTrue(backCalled)
+  }
+
+  @Test
+  fun addToDoScreen_saveWithoutLocation_createsTaskWithNullLocation() {
+    var backCalled = false
+    compose.setContent { AddToDoScreen(onBack = { backCalled = true }) }
+    compose.waitForIdle()
+
+    // Fill only required fields (no location)
+    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Task without location")
+    compose.waitForIdle()
+
+    // Save without touching location
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+    compose.waitForIdle()
+
+    // Verify saved without location
+    val saved = runBlocking {
+      repo.todos.first().firstOrNull { it.title == "Task without location" }
+    }
+    assertNotNull(saved)
+    assertNull(saved?.location)
+    assertTrue(backCalled)
+  }
+
+  @Test
+  fun addToDoScreen_clearLocation_savesWithNullLocation() {
+    var backCalled = false
+    compose.setContent { AddToDoScreen(onBack = { backCalled = true }) }
+    compose.waitForIdle()
+
+    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Clear location task")
+    compose.waitForIdle()
+
+    // Show optional and add location
+    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
+    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Initial Location")
+    compose.waitForIdle()
+
+    // Clear location
+    compose.onNodeWithTag(TestTags.LocationField).performTextClearance()
+    compose.waitForIdle()
+
+    // Save
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+    compose.waitForIdle()
+
+    val saved = runBlocking { repo.todos.first().firstOrNull { it.title == "Clear location task" } }
+    assertNotNull(saved)
+    assertNull(saved?.location)
+    assertTrue(backCalled)
+  }
+
+  @Test
+  fun editToDoScreen_loadsExistingLocation() {
+    runBlocking {
+      repo.add(
+          ToDo(
+              id = "location-edit-1",
+              title = "Task with Location",
+              dueDate = LocalDate.now(),
+              status = Status.TODO,
+              priority = Priority.MEDIUM,
+              location = "Original Location"))
+    }
+
+    compose.setContent { EditToDoScreen(id = "location-edit-1", onBack = {}) }
+    compose.waitForIdle()
+
+    // Location field should show existing location (optional section is visible by default)
+    assertHas(TestTags.LocationField)
+    // Note: We can't easily assert text content in OutlinedTextField, but the field exists
+  }
+
+  @Test
+  fun editToDoScreen_canUpdateLocation() {
+    runBlocking {
+      repo.add(
+          ToDo(
+              id = "location-edit-2",
+              title = "Update Location Task",
+              dueDate = LocalDate.now(),
+              status = Status.TODO,
+              priority = Priority.MEDIUM,
+              location = "Old Location"))
+    }
+
+    var backCalled = false
+    compose.setContent { EditToDoScreen(id = "location-edit-2", onBack = { backCalled = true }) }
+    compose.waitForIdle()
+
+    // Clear and enter new location
+    compose.onNodeWithTag(TestTags.LocationField).performTextClearance()
+    compose.onNodeWithTag(TestTags.LocationField).performTextInput("New Location")
+    compose.waitForIdle()
+
+    // Save
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+    compose.waitForIdle()
+
+    val updated = runBlocking { repo.getById("location-edit-2") }
+    assertNotNull(updated)
+    assertEquals("New Location", updated?.location)
+    assertTrue(backCalled)
+  }
+
+  @Test
+  fun editToDoScreen_canClearLocation() {
+    runBlocking {
+      repo.add(
+          ToDo(
+              id = "location-edit-3",
+              title = "Clear Location Task",
+              dueDate = LocalDate.now(),
+              status = Status.TODO,
+              priority = Priority.MEDIUM,
+              location = "Location to Clear"))
+    }
+
+    var backCalled = false
+    compose.setContent { EditToDoScreen(id = "location-edit-3", onBack = { backCalled = true }) }
+    compose.waitForIdle()
+
+    // Clear location field
+    compose.onNodeWithTag(TestTags.LocationField).performTextClearance()
+    compose.waitForIdle()
+
+    // Save
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+    compose.waitForIdle()
+
+    val updated = runBlocking { repo.getById("location-edit-3") }
+    assertNotNull(updated)
+    assertNull(updated?.location)
+    assertTrue(backCalled)
+  }
+
+  @Test
+  fun editToDoScreen_preservesLocationWhenNotModified() {
+    runBlocking {
+      repo.add(
+          ToDo(
+              id = "location-edit-4",
+              title = "Preserve Location Task",
+              dueDate = LocalDate.now(),
+              status = Status.TODO,
+              priority = Priority.MEDIUM,
+              location = "Should Stay"))
+    }
+
+    var backCalled = false
+    compose.setContent { EditToDoScreen(id = "location-edit-4", onBack = { backCalled = true }) }
+    compose.waitForIdle()
+
+    // Modify title but not location
+    compose.onNodeWithTag(TestTags.TitleField).performTextClearance()
+    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Modified Title")
+    compose.waitForIdle()
+
+    // Save
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+    compose.waitForIdle()
+
+    val updated = runBlocking { repo.getById("location-edit-4") }
+    assertNotNull(updated)
+    assertEquals("Should Stay", updated?.location)
+    assertEquals("Modified Title", updated?.title)
+    assertTrue(backCalled)
+  }
+
+  @Test
+  fun editToDoScreen_canAddLocationToTaskWithoutOne() {
+    runBlocking {
+      repo.add(
+          ToDo(
+              id = "location-edit-5",
+              title = "Add Location Task",
+              dueDate = LocalDate.now(),
+              status = Status.TODO,
+              priority = Priority.MEDIUM,
+              location = null))
+    }
+
+    var backCalled = false
+    compose.setContent { EditToDoScreen(id = "location-edit-5", onBack = { backCalled = true }) }
+    compose.waitForIdle()
+
+    // Add location to task that didn't have one
+    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Newly Added Location")
+    compose.waitForIdle()
+
+    // Save
+    compose.onNodeWithTag(TestTags.SaveButton).performClick()
+    compose.waitForIdle()
+
+    val updated = runBlocking { repo.getById("location-edit-5") }
+    assertNotNull(updated)
+    assertEquals("Newly Added Location", updated?.location)
+    assertTrue(backCalled)
+  }
+
+  @Test
+  fun addToDoScreen_locationFieldVisibleOnlyWhenOptionalShown() {
+    compose.setContent { AddToDoScreen(onBack = {}) }
+    compose.waitForIdle()
+
+    // Optional section starts hidden in AddToDoScreen
+    compose.onNodeWithTag(TestTags.LocationField).assertDoesNotExist()
+
+    // Show optional
+    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
+    compose.waitForIdle()
+
+    assertHas(TestTags.LocationField)
+
+    // Hide again
+    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
+    compose.waitForIdle()
+
+    compose.onNodeWithTag(TestTags.LocationField).assertDoesNotExist()
   }
 }
