@@ -4,7 +4,7 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.profile.FakeProfileRepository
-import com.android.sample.repositories.ToDoRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
 import com.android.sample.ui.pomodoro.PomodoroViewModelContract
@@ -30,7 +30,7 @@ class StudySessionViewModelTest {
   private lateinit var fakeProfileRepo: FakeProfileRepository
   private lateinit var viewModel: StudySessionViewModel
   private val testDispatcher = StandardTestDispatcher()
-  private val toDoRepo = ToDoRepositoryProvider.repository
+  private val toDoRepo = AppRepositories.toDoRepository
 
   @OptIn(ExperimentalCoroutinesApi::class)
   @Before
@@ -257,5 +257,5 @@ private class DelegatingRepoToTodos : StudySessionRepository {
   }
 
   override suspend fun getSuggestedTasks(): List<ToDo> =
-      ToDoRepositoryProvider.repository.todos.first()
+      AppRepositories.toDoRepository.todos.first()
 }

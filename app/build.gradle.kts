@@ -163,6 +163,7 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.mockito.inline)
     testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
 
     // WorkManager test utilities
     testImplementation(libs.androidx.work.testing)
@@ -181,6 +182,7 @@ dependencies {
     androidTestImplementation(libs.compose.test.junit)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 
 
     // Navigation testing in both test types

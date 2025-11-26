@@ -38,6 +38,7 @@ import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.screens.CreatureStatsCard
+import com.android.sample.ui.profile.EduMonAvatar
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
 import kotlinx.coroutines.launch
@@ -67,8 +68,7 @@ object HomeTestTags {
 enum class AppDestination(val route: String, val label: String, val icon: ImageVector) {
   Home("home", "Home", Icons.Outlined.Home),
   Profile("profile", "Profile", Icons.Outlined.Person),
-  Calendar("calendar", "Calendar", Icons.Outlined.CalendarMonth),
-  Planner("planner", "Planner", Icons.Outlined.EventNote),
+  Schedule("schedule", "Schedule", Icons.Outlined.CalendarMonth),
   Study("study", "Study", Icons.Outlined.Timer),
   Games("games", "Games", Icons.Outlined.Extension),
   Stats("stats", "Stats", Icons.Outlined.ShowChart),
@@ -77,7 +77,7 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   // NEW: Daily Reflection / Mood
   Mood("mood", "Daily Reflection", Icons.Outlined.Mood),
   StudyTogether("study_together", "Study Together", Icons.Outlined.Group),
-  Shop("shop", "Shop", Icons.Outlined.ShoppingCart)
+  Shop("shop", "Shop", Icons.Outlined.ShoppingCart),
 }
 
 // ---------- Route (hooks up VM to UI) ----------
@@ -121,6 +121,7 @@ fun EduMonHomeScreen(
       drawerState = drawerState,
       drawerContent = {
         ModalDrawerSheet(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
             drawerContainerColor = MaterialTheme.colorScheme.surface,
             drawerContentColor = MaterialTheme.colorScheme.onSurface) {
               Spacer(Modifier.height(16.dp))
@@ -183,7 +184,9 @@ fun EduMonHomeScreen(
                     CreatureHouseCard(
                         creatureResId = creatureResId,
                         level = state.creatureStats.level,
-                        environmentResId = environmentResId)
+                        environmentResId = environmentResId,
+                        overrideCreature = { EduMonAvatar(showLevelLabel = false) })
+
                     Row(
                         Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -196,14 +199,14 @@ fun EduMonHomeScreen(
                         }
                     AffirmationsAndRemindersCard(
                         quote = state.quote,
-                        onOpenPlanner = { onNavigate(AppDestination.Planner.route) },
+                        onOpenPlanner = { onNavigate(AppDestination.Schedule.route) },
                         // NEW: quick entry point to Mood screen
                         onOpenMood = { onNavigate(AppDestination.Mood.route) },
                     )
 
                     TodayTodosCard(
                         todos = state.todos,
-                        onSeeAll = { onNavigate(AppDestination.Planner.route) })
+                        onSeeAll = { onNavigate(AppDestination.Schedule.route) })
 
                     QuickActionsCard(
                         onStudy = { onNavigate(AppDestination.Study.route) },
@@ -223,7 +226,7 @@ private fun BottomNavBar(onNavigate: (String) -> Unit) {
   val items =
       listOf(
           AppDestination.Home,
-          AppDestination.Calendar,
+          AppDestination.Schedule,
           AppDestination.Study,
           AppDestination.Profile,
           AppDestination.Games,
@@ -397,7 +400,7 @@ fun AffirmationsAndRemindersCard(
           Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             AssistChip(
                 onClick = onOpenPlanner,
-                label = { Text("Open Planner") },
+                label = { Text("Open Schedule") },
                 leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
                 modifier = Modifier.testTag(HomeTestTags.CHIP_OPEN_PLANNER))
             AssistChip(
