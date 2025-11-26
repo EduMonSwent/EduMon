@@ -106,7 +106,7 @@ private fun HeaderBar(onBack: () -> Unit, onGoHome: () -> Unit) {
 }
 
 @Composable
-private fun StartupErrorBanner(startupError: String?) {
+internal fun StartupErrorBanner(startupError: String?) {
   startupError?.let { msg ->
     Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
       Text(stringResource(R.string.notification_setup_error_fmt, msg), color = Color.Red)
@@ -115,7 +115,7 @@ private fun StartupErrorBanner(startupError: String?) {
 }
 
 @Composable
-private fun KickoffSection(
+internal fun KickoffSection(
     kickoffEnabled: Boolean,
     kickoffDays: Set<Int>,
     kickoffTimes: Map<Int, Pair<Int, Int>>,
@@ -134,7 +134,8 @@ private fun KickoffSection(
           Text(
               if (kickoffEnabled) stringResource(R.string.select_days_set_times)
               else stringResource(R.string.enable_to_configure_schedule),
-              color = TextLight.copy(0.7f))
+              color = TextLight.copy(0.7f),
+              modifier = Modifier.testTag("kickoff_empty_hint"))
         }
         if (kickoffDays.isNotEmpty()) {
           TimeChipsRow(
@@ -142,11 +143,16 @@ private fun KickoffSection(
               times = kickoffTimes,
               enabled = kickoffEnabled,
               onPickRequest = onPickRequest)
-          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            OutlinedButton(enabled = kickoffEnabled, onClick = onApply) {
-              Text(stringResource(R.string.apply_kickoff_schedule))
-            }
-          }
+          Row(
+              Modifier.fillMaxWidth().testTag("kickoff_apply_row"),
+              horizontalArrangement = Arrangement.End) {
+                OutlinedButton(
+                    enabled = kickoffEnabled,
+                    onClick = onApply,
+                    modifier = Modifier.testTag("btn_apply_kickoff")) {
+                      Text(stringResource(R.string.apply_kickoff_schedule))
+                    }
+              }
         }
       }
 }
@@ -180,7 +186,7 @@ private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -
 }
 
 @Composable
-private fun CampusEntrySection(
+internal fun CampusEntrySection(
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
     vm: NotificationsUiModel,
@@ -302,7 +308,7 @@ private fun TestNotificationButton(
 }
 
 @Composable
-private fun DeepLinkDemoButton(
+internal fun DeepLinkDemoButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
     requestPermission: (String) -> Unit
@@ -324,7 +330,7 @@ private fun DeepLinkDemoButton(
 }
 
 @Composable
-private fun StartScheduleObserver(
+internal fun StartScheduleObserver(
     taskNotificationsEnabled: Boolean,
     vm: NotificationsUiModel,
     ctx: android.content.Context,

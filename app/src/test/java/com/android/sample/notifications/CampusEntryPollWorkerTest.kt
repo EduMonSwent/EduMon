@@ -492,4 +492,45 @@ class CampusEntryPollWorkerTest {
         assertTrue(
             "No notification expected for leaving campus", shadowOf(nm).allNotifications.isEmpty())
       }
+
+  @Test
+  fun `worker schedules next poll when chain not disabled`() = runTest {
+    // Given: build worker with chain enabled (no KEY_DISABLE_CHAIN)
+    val testWorker =
+        TestListenableWorkerBuilder<com.android.sample.data.notifications.CampusEntryPollWorker>(
+                context)
+            .setInputData(androidx.work.Data.EMPTY)
+            .build()
+
+    // When
+    val result = testWorker.startWork().get()
+
+    // Then
+    assertEquals(ListenableWorker.Result.success(), result)
+
+    // Verify that a unique work with the expected tag/name exists in WorkManager
+    val wm = androidx.work.WorkManager.getInstance(context)
+    val infos = wm.getWorkInfosByTag("campus_entry_poll").get()
+    assertTrue("Expected next poll to be scheduled", infos.isNotEmpty())
+  }
+
+  @Test
+  fun `cancel stops the scheduled unique work`() = runTest {
+    // Given: schedule a chain
+    com.android.sample.data.notifications.CampusEntryPollWorker.startChain(context)
+
+    // Sanity: work exists
+    val wm = androidx.work.WorkManager.getInstance(context)
+    val before = wm.getWorkInfosByTag("campus_entry_poll").get()
+    assertTrue(before.isNotEmpty())
+
+    // When: cancel
+    com.android.sample.data.notifications.CampusEntryPollWorker.cancel(context)
+
+    // Then: all works should be CANCELLED (WorkManager keeps history in test env)
+    val after = wm.getWorkInfosByTag("campus_entry_poll").get()
+    assertTrue(
+        "Expected all scheduled work to be cancelled",
+        after.isNotEmpty() && after.all { it.state == androidx.work.WorkInfo.State.CANCELLED })
+  }
 }
