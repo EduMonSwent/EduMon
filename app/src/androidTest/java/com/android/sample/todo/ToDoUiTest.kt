@@ -50,6 +50,16 @@ class ToDoUiSingleTest {
     // nothing to restore; repo can stay empty
   }
 
+  private fun assertHas(tag: String, useUnmergedTree: Boolean = true) {
+    val nodes = compose.onAllNodesWithTag(tag, useUnmergedTree).fetchSemanticsNodes()
+    assertTrue(nodes.isNotEmpty())
+  }
+
+  /** Helper to wait until the repository reflects a given condition. */
+  private fun waitForRepoCondition(timeoutMillis: Long = 5_000, predicate: suspend () -> Boolean) {
+    compose.waitUntil(timeoutMillis) { runBlocking { predicate() } }
+  }
+
   @Test
   fun overview_empty_state_then_delete_item_from_list() {
     var addClicked = false
@@ -80,11 +90,6 @@ class ToDoUiSingleTest {
           .isNotEmpty()
     }
     compose.onNodeWithText("No tasks yet. Tap + to add one.").assertIsDisplayed()
-  }
-
-  private fun assertHas(tag: String, useUnmergedTree: Boolean = true) {
-    val nodes = compose.onAllNodesWithTag(tag, useUnmergedTree).fetchSemanticsNodes()
-    assertTrue(nodes.isNotEmpty())
   }
 
   @Test
@@ -166,7 +171,7 @@ class ToDoUiSingleTest {
     compose.onNodeWithTag(TestTags.LocationField).performTextInput("EPFL Campus")
     compose.waitForIdle()
 
-    // Verify text appears (note: we can't easily verify suggestions in UI tests without mock)
+    // Verify text appears (field exists)
     compose.onNodeWithTag(TestTags.LocationField).assertExists()
   }
 
@@ -187,9 +192,14 @@ class ToDoUiSingleTest {
 
     // Save
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
 
-    // Verify saved with location
+    // Wait until the repo reflects the saved task
+    waitForRepoCondition {
+      repo.todos.first().any {
+        it.title == "Task with location" && it.location == "Office Building"
+      }
+    }
+
     val saved = runBlocking { repo.todos.first().firstOrNull { it.title == "Task with location" } }
     assertNotNull(saved)
     assertEquals("Office Building", saved?.location)
@@ -208,9 +218,12 @@ class ToDoUiSingleTest {
 
     // Save without touching location
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
 
-    // Verify saved without location
+    // Wait for repo to contain the task with null location
+    waitForRepoCondition {
+      repo.todos.first().any { it.title == "Task without location" && it.location == null }
+    }
+
     val saved = runBlocking {
       repo.todos.first().firstOrNull { it.title == "Task without location" }
     }
@@ -239,7 +252,11 @@ class ToDoUiSingleTest {
 
     // Save
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
+
+    // Wait until repo shows null location
+    waitForRepoCondition {
+      repo.todos.first().any { it.title == "Clear location task" && it.location == null }
+    }
 
     val saved = runBlocking { repo.todos.first().firstOrNull { it.title == "Clear location task" } }
     assertNotNull(saved)
@@ -265,7 +282,6 @@ class ToDoUiSingleTest {
 
     // Location field should show existing location (optional section is visible by default)
     assertHas(TestTags.LocationField)
-    // Note: We can't easily assert text content in OutlinedTextField, but the field exists
   }
 
   @Test
@@ -292,7 +308,9 @@ class ToDoUiSingleTest {
 
     // Save
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
+
+    // Wait until repo reports the new location
+    waitForRepoCondition { repo.getById("location-edit-2")?.location == "New Location" }
 
     val updated = runBlocking { repo.getById("location-edit-2") }
     assertNotNull(updated)
@@ -323,7 +341,9 @@ class ToDoUiSingleTest {
 
     // Save
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
+
+    // Wait until repo shows null location
+    waitForRepoCondition { repo.getById("location-edit-3")?.location == null }
 
     val updated = runBlocking { repo.getById("location-edit-3") }
     assertNotNull(updated)
@@ -355,7 +375,12 @@ class ToDoUiSingleTest {
 
     // Save
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
+
+    // Wait until repo shows updated title but same location
+    waitForRepoCondition {
+      val t = repo.getById("location-edit-4")
+      t?.title == "Modified Title" && t.location == "Should Stay"
+    }
 
     val updated = runBlocking { repo.getById("location-edit-4") }
     assertNotNull(updated)
@@ -387,7 +412,9 @@ class ToDoUiSingleTest {
 
     // Save
     compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
+
+    // Wait until repo shows the new location
+    waitForRepoCondition { repo.getById("location-edit-5")?.location == "Newly Added Location" }
 
     val updated = runBlocking { repo.getById("location-edit-5") }
     assertNotNull(updated)
