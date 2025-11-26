@@ -1,15 +1,18 @@
 package com.android.sample.ui.flashcards.data
 
 import com.android.sample.ui.flashcards.model.*
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
 /** In-memory repository for managing flashcard decks. */
 object InMemoryFlashcardsRepository : FlashcardsRepository {
 
-  private val _decks = MutableStateFlow<List<Deck>>(emptyList())
+  private var _decks = MutableStateFlow<List<Deck>>(emptyList())
+  val decks: StateFlow<List<Deck>> = _decks
+
+  fun deck(deckId: String): Deck? = _decks.value.find { it.id == deckId }
 
   override fun observeDecks(): Flow<List<Deck>> = _decks
 
@@ -21,20 +24,15 @@ object InMemoryFlashcardsRepository : FlashcardsRepository {
       description: String,
       cards: List<Flashcard>
   ): String {
-    val deck =
-        Deck(
-            id = UUID.randomUUID().toString(),
-            title = title.ifBlank { "New deck" },
-            description = description,
-            cards = cards.toMutableList())
+    val deck = Deck(title = title, description = description, cards = cards.toMutableList())
     _decks.value = _decks.value + deck
     return deck.id
   }
 
   override suspend fun addCard(deckId: String, card: Flashcard) {
     _decks.value =
-        _decks.value.map { d ->
-          if (d.id == deckId) d.copy(cards = (d.cards + card).toMutableList()) else d
+        _decks.value.map {
+          if (it.id == deckId) it.copy(cards = (it.cards + card).toMutableList()) else it
         }
   }
 
@@ -46,10 +44,5 @@ object InMemoryFlashcardsRepository : FlashcardsRepository {
     // In-memory repo cannot import shared decks.
     // Returning "" tells the VM the token is invalid.
     return ""
-  }
-
-  /** Utility for tests & previews */
-  fun clear() {
-    _decks.value = emptyList()
   }
 }
