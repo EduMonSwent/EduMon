@@ -307,6 +307,10 @@
     <!-- StudyTogether UI -->
     <string name="study_together_no_friends_yet">No friends yet</string>
 
+    <string name="edumon_content_description">EduMon character</string>
+    <string name="level_label">Level %1$d</string>
+
+
 
 
 

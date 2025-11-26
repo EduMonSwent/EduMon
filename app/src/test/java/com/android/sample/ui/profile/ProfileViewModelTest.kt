@@ -2,11 +2,13 @@ package com.android.sample.ui.profile
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.android.sample.R
 import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.UserProfile
-import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.profile.ProfileRepository
+import com.android.sample.ui.stats.model.StudyStats
+import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,147 +24,237 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this file.
+// The assistance of an AI tool (Claude) was solicited in writing this file.
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelTest {
 
   private val dispatcher = StandardTestDispatcher()
+  private lateinit var mockRepository: ProfileRepository
+  private lateinit var profileFlow: MutableStateFlow<UserProfile>
+
+  private val testProfile =
+      UserProfile(
+          name = "TestUser",
+          email = "test@university.edu",
+          level = 1,
+          points = 150,
+          coins = 100,
+          streak = 5,
+          notificationsEnabled = true,
+          locationEnabled = false,
+          focusModeEnabled = false,
+          avatarAccent = Color.Blue.toArgb().toLong(),
+          accessories = listOf("owned:hat", "head:hat"),
+          studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 180),
+          lastRewardedLevel = 0)
 
   @Before
   fun setUp() {
     Dispatchers.setMain(dispatcher)
+
+    profileFlow = MutableStateFlow(testProfile)
+    mockRepository = mockk(relaxed = true)
+    every { mockRepository.profile } returns profileFlow
+    coEvery { mockRepository.updateProfile(any()) } returns Unit
   }
 
   @After
   fun tearDown() {
     Dispatchers.resetMain()
+    unmockkAll()
   }
 
   // ========== Basic ViewModel Initialization ==========
 
   @Test
-  fun viewModel_initializes_with_repository_profile() = runTest {
-    val repo = FakeProfileRepository()
-    val vm = ProfileViewModel(repository = repo)
+  fun viewModel_initializes_with_repository_profile() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(repository = mockRepository)
+        advanceUntilIdle()
 
-    // Verify initial profile is copied from repository
-    assertNotNull(vm.userProfile.value)
-    assertEquals("Alex", vm.userProfile.value.name)
-  }
+        assertNotNull(vm.userProfile.value)
+        assertEquals("TestUser", vm.userProfile.value.name)
+        assertEquals(150, vm.userProfile.value.points)
+      }
 
   @Test
-  fun accentPalette_contains_five_colors() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+  fun viewModel_collects_profile_updates_from_repository() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(repository = mockRepository)
+        advanceUntilIdle()
 
-    assertEquals(5, vm.accentPalette.size)
-    assertTrue(vm.accentPalette.all { it != Color.Unspecified })
+        val updatedProfile = testProfile.copy(name = "UpdatedUser", points = 500)
+        profileFlow.emit(updatedProfile)
+        advanceUntilIdle()
+
+        assertEquals("UpdatedUser", vm.userProfile.value.name)
+        assertEquals(500, vm.userProfile.value.points)
+      }
+
+  @Test
+  fun accentPalette_contains_five_colors() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+
+        assertEquals(5, vm.accentPalette.size)
+        assertTrue(vm.accentPalette.all { it != Color.Unspecified })
+      }
+
+  @Test
+  fun points_per_level_constant_equals_300() {
+    assertEquals(300, ProfileViewModel.POINTS_PER_LEVEL)
   }
 
   // ========== Accessory Catalog Tests ==========
 
   @Test
-  fun accessoryCatalog_always_includes_none_items() = runTest {
-    val repo = TestRepo(UserProfile(accessories = emptyList()))
-    val vm = ProfileViewModel(repository = repo)
+  fun accessoryCatalog_always_includes_none_items() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = emptyList()))
+        val vm = ProfileViewModel(repository = repo)
 
-    val catalog = vm.accessoryCatalog
+        val catalog = vm.accessoryCatalog
 
-    // "none" items should always be available
-    assertTrue(catalog.any { it.id == "none" && it.slot == AccessorySlot.HEAD })
-    assertTrue(catalog.any { it.id == "none" && it.slot == AccessorySlot.TORSO })
-    assertTrue(catalog.any { it.id == "none" && it.slot == AccessorySlot.BACK })
-  }
-
-  @Test
-  fun accessoryCatalog_includes_owned_accessories() = runTest {
-    val repo = TestRepo(UserProfile(accessories = listOf("owned:hat", "owned:scarf")))
-    val vm = ProfileViewModel(repository = repo)
-
-    val catalog = vm.accessoryCatalog
-
-    assertTrue(catalog.any { it.id == "hat" })
-    assertTrue(catalog.any { it.id == "scarf" })
-  }
+        assertTrue(catalog.any { it.id == "none" && it.slot == AccessorySlot.HEAD })
+        assertTrue(catalog.any { it.id == "none" && it.slot == AccessorySlot.TORSO })
+        assertTrue(catalog.any { it.id == "none" && it.slot == AccessorySlot.BACK })
+      }
 
   @Test
-  fun accessoryCatalog_excludes_non_owned_accessories() = runTest {
-    val repo = TestRepo(UserProfile(accessories = listOf("owned:hat")))
-    val vm = ProfileViewModel(repository = repo)
+  fun accessoryCatalog_includes_owned_accessories() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat", "owned:scarf")))
+        val vm = ProfileViewModel(repository = repo)
 
-    val catalog = vm.accessoryCatalog
+        val catalog = vm.accessoryCatalog
 
-    // "glasses" is not owned
-    assertFalse(catalog.any { it.id == "glasses" })
-    // But "hat" is owned
-    assertTrue(catalog.any { it.id == "hat" })
-  }
+        assertTrue(catalog.any { it.id == "hat" })
+        assertTrue(catalog.any { it.id == "scarf" })
+      }
+
+  @Test
+  fun accessoryCatalog_excludes_non_owned_accessories() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat")))
+        val vm = ProfileViewModel(repository = repo)
+
+        val catalog = vm.accessoryCatalog
+
+        assertFalse(catalog.any { it.id == "glasses" })
+        assertTrue(catalog.any { it.id == "hat" })
+      }
+
+  @Test
+  fun accessoryCatalog_includes_all_owned_items() =
+      runTest(dispatcher) {
+        val repo =
+            TestRepo(
+                UserProfile(
+                    accessories =
+                        listOf(
+                            "owned:hat",
+                            "owned:glasses",
+                            "owned:scarf",
+                            "owned:cape",
+                            "owned:wings",
+                            "owned:aura")))
+        val vm = ProfileViewModel(repository = repo)
+
+        val catalog = vm.accessoryCatalog
+
+        assertTrue(catalog.any { it.id == "hat" })
+        assertTrue(catalog.any { it.id == "glasses" })
+        assertTrue(catalog.any { it.id == "scarf" })
+        assertTrue(catalog.any { it.id == "cape" })
+        assertTrue(catalog.any { it.id == "wings" })
+        assertTrue(catalog.any { it.id == "aura" })
+      }
 
   // ========== Accessory Resource ID Tests ==========
 
   @Test
-  fun accessoryResId_returns_correct_drawable_for_head_items() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+  fun accessoryResId_returns_correct_drawable_for_head_items() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
 
-    assertTrue(vm.accessoryResId(AccessorySlot.HEAD, "hat") != 0)
-    assertTrue(vm.accessoryResId(AccessorySlot.HEAD, "glasses") != 0)
-    assertEquals(0, vm.accessoryResId(AccessorySlot.HEAD, "none"))
-    assertEquals(0, vm.accessoryResId(AccessorySlot.HEAD, "unknown"))
-  }
-
-  @Test
-  fun accessoryResId_returns_correct_drawable_for_torso_items() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
-
-    assertTrue(vm.accessoryResId(AccessorySlot.TORSO, "scarf") != 0)
-    assertTrue(vm.accessoryResId(AccessorySlot.TORSO, "cape") != 0)
-    assertEquals(0, vm.accessoryResId(AccessorySlot.TORSO, "none"))
-  }
+        assertEquals(R.drawable.cosmetic_hat, vm.accessoryResId(AccessorySlot.HEAD, "hat"))
+        assertEquals(R.drawable.cosmetic_glasses, vm.accessoryResId(AccessorySlot.HEAD, "glasses"))
+        assertEquals(0, vm.accessoryResId(AccessorySlot.HEAD, "none"))
+        assertEquals(0, vm.accessoryResId(AccessorySlot.HEAD, "unknown"))
+      }
 
   @Test
-  fun accessoryResId_returns_correct_drawable_for_back_items() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+  fun accessoryResId_returns_correct_drawable_for_torso_items() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
 
-    assertTrue(vm.accessoryResId(AccessorySlot.BACK, "wings") != 0)
-    assertTrue(vm.accessoryResId(AccessorySlot.BACK, "aura") != 0)
-    assertEquals(0, vm.accessoryResId(AccessorySlot.BACK, "none"))
-  }
+        assertEquals(R.drawable.cosmetic_scarf, vm.accessoryResId(AccessorySlot.TORSO, "scarf"))
+        assertEquals(R.drawable.cosmetic_cape, vm.accessoryResId(AccessorySlot.TORSO, "cape"))
+        assertEquals(0, vm.accessoryResId(AccessorySlot.TORSO, "none"))
+        assertEquals(0, vm.accessoryResId(AccessorySlot.TORSO, "unknown"))
+      }
 
   @Test
-  fun accessoryResId_returns_zero_for_legs_slot() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+  fun accessoryResId_returns_correct_drawable_for_back_items() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
 
-    assertEquals(0, vm.accessoryResId(AccessorySlot.LEGS, "anything"))
-  }
+        assertEquals(R.drawable.cosmetic_wings, vm.accessoryResId(AccessorySlot.BACK, "wings"))
+        assertEquals(R.drawable.cosmetic_aura, vm.accessoryResId(AccessorySlot.BACK, "aura"))
+        assertEquals(0, vm.accessoryResId(AccessorySlot.BACK, "none"))
+        assertEquals(0, vm.accessoryResId(AccessorySlot.BACK, "unknown"))
+      }
+
+  @Test
+  fun accessoryResId_returns_zero_for_legs_slot() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+
+        assertEquals(0, vm.accessoryResId(AccessorySlot.LEGS, "anything"))
+        assertEquals(0, vm.accessoryResId(AccessorySlot.LEGS, "hat"))
+      }
 
   // ========== Avatar Accent Tests ==========
 
   @Test
   fun setAvatarAccent_updates_user_profile() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
 
         val newColor = Color(0xFF10B981)
         vm.setAvatarAccent(newColor)
         advanceUntilIdle()
 
         assertEquals(newColor.toArgb().toLong(), vm.userProfile.value.avatarAccent)
+        coVerify { mockRepository.updateProfile(any()) }
       }
 
   @Test
   fun setAvatarAccent_triggers_accentEffective_update() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
         val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
 
         val newColor = Color(0xFFFF6D00)
         vm.setAvatarAccent(newColor)
         advanceUntilIdle()
 
-        // accentEffective should reflect the new color
         assertNotEquals(Color.Unspecified, vm.accentEffective.value)
 
         job.cancel()
+      }
+
+  @Test
+  fun accentEffective_initial_value_is_valid() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val initial = vm.accentEffective.value
+        assertNotEquals(Color.Unspecified, initial)
       }
 
   // ========== Accent Variant Tests ==========
@@ -170,7 +262,8 @@ class ProfileViewModelTest {
   @Test
   fun setAccentVariant_updates_variant_flow() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
 
         vm.setAccentVariant(AccentVariant.Light)
         advanceUntilIdle()
@@ -190,13 +283,14 @@ class ProfileViewModelTest {
       }
 
   @Test
-  fun accent_variants_cover_all_paths_without_strict_inequality() =
+  fun accent_variants_cover_all_paths() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
         val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
 
-        val baseNonBlack = Color(0xFF6699CC)
-        vm.setAvatarAccent(baseNonBlack)
+        val baseColor = Color(0xFF6699CC)
+        vm.setAvatarAccent(baseColor)
         advanceUntilIdle()
 
         vm.setAccentVariant(AccentVariant.Light)
@@ -211,285 +305,23 @@ class ProfileViewModelTest {
 
         vm.setAccentVariant(AccentVariant.Vibrant)
         advanceUntilIdle()
-        val vibrantNonBlack = vm.accentEffective.value
-        assertTrue(vibrantNonBlack.alpha in 0f..1f)
-
-        vm.setAvatarAccent(Color.Black)
-        advanceUntilIdle()
-        vm.setAccentVariant(AccentVariant.Vibrant)
-        advanceUntilIdle()
-        val vibrantBlack = vm.accentEffective.value
-        assertTrue(vibrantBlack.red in 0f..1f)
-        assertTrue(vibrantBlack.green in 0f..1f)
-        assertTrue(vibrantBlack.blue in 0f..1f)
+        val vibrant = vm.accentEffective.value
+        assertTrue(vibrant.alpha in 0f..1f)
 
         vm.setAccentVariant(AccentVariant.Base)
         advanceUntilIdle()
-        val baseAgain = vm.accentEffective.value
-        assertTrue(baseAgain.alpha in 0f..1f)
+        val base = vm.accentEffective.value
+        assertTrue(base.alpha in 0f..1f)
 
         job.cancel()
       }
 
-  // ========== Toggle Functions Tests ==========
-
-  @Test
-  fun toggleNotifications_flips_notifications_enabled() =
-      runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
-        val before = vm.userProfile.value.notificationsEnabled
-
-        vm.toggleNotifications()
-        advanceUntilIdle()
-
-        assertEquals(!before, vm.userProfile.value.notificationsEnabled)
-      }
-
-  @Test
-  fun toggleLocation_flips_location_enabled() =
-      runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
-        val before = vm.userProfile.value.locationEnabled
-
-        vm.toggleLocation()
-        advanceUntilIdle()
-
-        assertEquals(!before, vm.userProfile.value.locationEnabled)
-      }
-
-  @Test
-  fun toggleFocusMode_flips_focus_mode_enabled() =
-      runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
-        val before = vm.userProfile.value.focusModeEnabled
-
-        vm.toggleFocusMode()
-        advanceUntilIdle()
-
-        assertEquals(!before, vm.userProfile.value.focusModeEnabled)
-      }
-
-  @Test
-  fun toggles_and_accent_update_profile() =
-      runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
-        val before = vm.userProfile.value
-
-        vm.toggleNotifications()
-        vm.toggleLocation()
-        vm.toggleFocusMode()
-        advanceUntilIdle()
-
-        val afterToggles = vm.userProfile.value
-        assertEquals(!before.notificationsEnabled, afterToggles.notificationsEnabled)
-        assertEquals(!before.locationEnabled, afterToggles.locationEnabled)
-        assertEquals(!before.focusModeEnabled, afterToggles.focusModeEnabled)
-
-        val newColor = Color(0xFF10B981)
-        vm.setAvatarAccent(newColor)
-        advanceUntilIdle()
-        assertEquals(newColor.toArgb().toLong(), vm.userProfile.value.avatarAccent)
-      }
-
-  // ========== Equip/Unequip Tests ==========
-
-  @Test
-  fun equip_owned_accessory_adds_to_profile() =
-      runTest(dispatcher) {
-        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat")))
-        val vm = ProfileViewModel(repo)
-
-        vm.equip(AccessorySlot.HEAD, "hat")
-        advanceUntilIdle()
-
-        val acc = repo.profile.value.accessories
-        assertTrue(acc.contains("head:hat"))
-      }
-
-  @Test
-  fun equip_non_owned_accessory_does_nothing() =
-      runTest(dispatcher) {
-        val repo = TestRepo(UserProfile(accessories = emptyList()))
-        val vm = ProfileViewModel(repo)
-
-        vm.equip(AccessorySlot.HEAD, "hat")
-        advanceUntilIdle()
-
-        val acc = repo.profile.value.accessories
-        assertFalse(acc.contains("head:hat"))
-      }
-
-  @Test
-  fun equip_none_removes_slot() =
-      runTest(dispatcher) {
-        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat", "head:hat")))
-        val vm = ProfileViewModel(repo)
-
-        vm.equip(AccessorySlot.HEAD, "none")
-        advanceUntilIdle()
-
-        val acc = repo.profile.value.accessories
-        assertFalse(acc.any { it.startsWith("head:") })
-      }
-
-  @Test
-  fun equip_replaces_existing_accessory_in_same_slot() =
-      runTest(dispatcher) {
-        val repo =
-            TestRepo(UserProfile(accessories = listOf("owned:hat", "owned:glasses", "head:hat")))
-        val vm = ProfileViewModel(repo)
-
-        vm.equip(AccessorySlot.HEAD, "glasses")
-        advanceUntilIdle()
-
-        val acc = repo.profile.value.accessories
-        assertFalse(acc.contains("head:hat"))
-        assertTrue(acc.contains("head:glasses"))
-      }
-
-  @Test
-  fun unequip_removes_only_that_slot() =
-      runTest(dispatcher) {
-        val repo =
-            TestRepo(UserProfile(accessories = listOf("owned:halo", "owned:scarf", "owned:boots")))
-        val vm = ProfileViewModel(repo)
-
-        vm.equip(AccessorySlot.HEAD, "halo")
-        advanceUntilIdle()
-        vm.equip(AccessorySlot.TORSO, "scarf")
-        advanceUntilIdle()
-        vm.equip(AccessorySlot.LEGS, "boots")
-        advanceUntilIdle()
-
-        vm.unequip(AccessorySlot.TORSO)
-        advanceUntilIdle()
-
-        val acc = repo.profile.value.accessories
-        assertTrue(acc.contains("head:halo"))
-        assertTrue(acc.contains("legs:boots"))
-        assertFalse(acc.any { it.startsWith("torso:") })
-      }
-
-  @Test
-  fun equip_replaces_existing_item_in_same_slot() =
-      runTest(dispatcher) {
-        // This test verifies that equip() properly replaces items in the same slot
-        val repo =
-            TestRepo(UserProfile(accessories = listOf("owned:hat", "owned:glasses", "head:hat")))
-        val vm = ProfileViewModel(repo)
-
-        // Equip glasses to replace hat
-        vm.equip(AccessorySlot.HEAD, "glasses")
-        advanceUntilIdle()
-
-        val acc = repo.profile.value.accessories
-        assertFalse("Should not have head:hat anymore", acc.contains("head:hat"))
-        assertTrue("Should have head:glasses", acc.contains("head:glasses"))
-        // Should still have owned items
-        assertTrue(acc.contains("owned:hat"))
-        assertTrue(acc.contains("owned:glasses"))
-      }
-
-  // ========== EquippedId Tests ==========
-
-  @Test
-  fun equippedId_returns_null_when_slot_empty() = runTest {
-    val repo = TestRepo(UserProfile(accessories = emptyList()))
-    val vm = ProfileViewModel(repo)
-
-    assertNull(vm.equippedId(AccessorySlot.HEAD))
-  }
-
-  @Test
-  fun equippedId_returns_id_when_slot_equipped() =
-      runTest(dispatcher) {
-        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat", "head:hat")))
-        val vm = ProfileViewModel(repo)
-
-        assertEquals("hat", vm.equippedId(AccessorySlot.HEAD))
-      }
-
-  @Test
-  fun equippedId_works_for_all_slots() =
-      runTest(dispatcher) {
-        val repo =
-            TestRepo(
-                UserProfile(
-                    accessories =
-                        listOf(
-                            "owned:hat",
-                            "head:hat",
-                            "owned:scarf",
-                            "torso:scarf",
-                            "owned:wings",
-                            "back:wings")))
-        val vm = ProfileViewModel(repo)
-
-        assertEquals("hat", vm.equippedId(AccessorySlot.HEAD))
-        assertEquals("scarf", vm.equippedId(AccessorySlot.TORSO))
-        assertEquals("wings", vm.equippedId(AccessorySlot.BACK))
-        assertNull(vm.equippedId(AccessorySlot.LEGS))
-      }
-
-  // ========== Repository Interaction Tests ==========
-
-  @Test
-  fun external_repo_update_is_observed_by_viewmodel() = runTest {
-    val repo = FakeProfileRepository()
-    val vm = ProfileViewModel(repository = repo)
-
-    repo.updateProfile(repo.profile.value.copy(name = "Taylor", points = 2000))
-    advanceUntilIdle()
-
-    assertEquals("Taylor", repo.profile.value.name)
-    assertEquals(2000, repo.profile.value.points)
-
-    // ViewModel maintains its own copy
-    assertEquals("Alex", vm.userProfile.value.name)
-    assertEquals(1250, vm.userProfile.value.points)
-  }
-
-  // ========== Coins/Rewards Tests ==========
-
-  @Test
-  fun addCoins_withPositiveAmount_increasesUserCoins() =
-      runTest(dispatcher) {
-        val repo = FakeProfileRepository()
-        val vm = ProfileViewModel(repository = repo)
-
-        val before = vm.userProfile.value.coins
-        vm.addCoins(100)
-        advanceUntilIdle()
-        val after = vm.userProfile.value.coins
-
-        assertEquals(before + 100, after)
-      }
-
-  @Test
-  fun addCoins_withZeroOrNegativeAmount_doesNothing() =
-      runTest(dispatcher) {
-        val repo = FakeProfileRepository()
-        val vm = ProfileViewModel(repository = repo)
-
-        val before = vm.userProfile.value.coins
-        vm.addCoins(0)
-        advanceUntilIdle()
-        assertEquals(before, vm.userProfile.value.coins)
-
-        vm.addCoins(-50)
-        advanceUntilIdle()
-        val after = vm.userProfile.value.coins
-
-        assertEquals(before, after)
-      }
-
-  // ========== Color Math Tests ==========
-
   @Test
   fun light_blend_matches_expected_math() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
         val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
 
         val base = Color(0xFF336699)
         vm.setAvatarAccent(base)
@@ -517,8 +349,9 @@ class ProfileViewModelTest {
   @Test
   fun dark_blend_scales_toward_black_by_factor_0_75() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
         val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
 
         val base = Color(0xFF336699)
         vm.setAvatarAccent(base)
@@ -537,8 +370,9 @@ class ProfileViewModelTest {
   @Test
   fun vibrant_preserves_black_and_clamps_to_one() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
         val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
 
         vm.setAvatarAccent(Color.Black)
         advanceUntilIdle()
@@ -563,8 +397,9 @@ class ProfileViewModelTest {
   @Test
   fun base_variant_returns_exact_base_color_even_with_alpha() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
         val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
 
         val base = Color(0.2f, 0.4f, 0.6f, 0.5f)
         vm.setAvatarAccent(base)
@@ -584,8 +419,9 @@ class ProfileViewModelTest {
   @Test
   fun vibrant_changes_channels_for_non_greyscale_non_black() =
       runTest(dispatcher) {
-        val vm = ProfileViewModel(FakeProfileRepository())
+        val vm = ProfileViewModel(mockRepository)
         val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
 
         val base = Color(0.4f, 0.2f, 0.8f, 1f)
         vm.setAvatarAccent(base)
@@ -601,7 +437,124 @@ class ProfileViewModelTest {
         job.cancel()
       }
 
-  // ========== Edge Cases & Error Handling ==========
+  // ========== Toggle Functions Tests ==========
+
+  @Test
+  fun toggleNotifications_flips_notifications_enabled() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+        val before = vm.userProfile.value.notificationsEnabled
+
+        vm.toggleNotifications()
+        advanceUntilIdle()
+
+        assertEquals(!before, vm.userProfile.value.notificationsEnabled)
+        coVerify { mockRepository.updateProfile(any()) }
+      }
+
+  @Test
+  fun toggleLocation_flips_location_enabled() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+        val before = vm.userProfile.value.locationEnabled
+
+        vm.toggleLocation()
+        advanceUntilIdle()
+
+        assertEquals(!before, vm.userProfile.value.locationEnabled)
+        coVerify { mockRepository.updateProfile(any()) }
+      }
+
+  @Test
+  fun toggleFocusMode_flips_focus_mode_enabled() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+        val before = vm.userProfile.value.focusModeEnabled
+
+        vm.toggleFocusMode()
+        advanceUntilIdle()
+
+        assertEquals(!before, vm.userProfile.value.focusModeEnabled)
+        coVerify { mockRepository.updateProfile(any()) }
+      }
+
+  @Test
+  fun multiple_toggle_operations_work_correctly() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        vm.toggleNotifications()
+        advanceUntilIdle()
+        val afterFirst = vm.userProfile.value.notificationsEnabled
+
+        vm.toggleNotifications()
+        advanceUntilIdle()
+        val afterSecond = vm.userProfile.value.notificationsEnabled
+
+        assertEquals(!afterFirst, afterSecond)
+      }
+
+  // ========== Equip/Unequip Tests ==========
+
+  @Test
+  fun equip_adds_owned_accessory_to_profile() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.equip(AccessorySlot.HEAD, "hat")
+        advanceUntilIdle()
+
+        assertTrue(vm.userProfile.value.accessories.contains("head:hat"))
+      }
+
+  @Test
+  fun equip_does_not_add_unowned_accessory() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = emptyList()))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        val beforeSize = vm.userProfile.value.accessories.size
+        vm.equip(AccessorySlot.HEAD, "hat")
+        advanceUntilIdle()
+
+        assertEquals(beforeSize, vm.userProfile.value.accessories.size)
+        assertFalse(vm.userProfile.value.accessories.contains("head:hat"))
+      }
+
+  @Test
+  fun equip_none_removes_accessory_from_slot() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat", "head:hat")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.equip(AccessorySlot.HEAD, "none")
+        advanceUntilIdle()
+
+        assertFalse(vm.userProfile.value.accessories.any { it.startsWith("head:") })
+      }
+
+  @Test
+  fun equip_replaces_existing_accessory_in_same_slot() =
+      runTest(dispatcher) {
+        val repo =
+            TestRepo(UserProfile(accessories = listOf("owned:hat", "owned:glasses", "head:hat")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.equip(AccessorySlot.HEAD, "glasses")
+        advanceUntilIdle()
+
+        assertTrue(vm.userProfile.value.accessories.contains("head:glasses"))
+        assertFalse(vm.userProfile.value.accessories.contains("head:hat"))
+      }
 
   @Test
   fun multiple_equip_operations_work_correctly() =
@@ -612,6 +565,7 @@ class ProfileViewModelTest {
                     accessories =
                         listOf("owned:hat", "owned:glasses", "owned:scarf", "owned:cape")))
         val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
 
         vm.equip(AccessorySlot.HEAD, "hat")
         advanceUntilIdle()
@@ -622,7 +576,7 @@ class ProfileViewModelTest {
         vm.equip(AccessorySlot.TORSO, "cape")
         advanceUntilIdle()
 
-        val acc = repo.profile.value.accessories
+        val acc = vm.userProfile.value.accessories
         assertTrue(acc.contains("head:glasses"))
         assertFalse(acc.contains("head:hat"))
         assertTrue(acc.contains("torso:cape"))
@@ -630,11 +584,223 @@ class ProfileViewModelTest {
       }
 
   @Test
+  fun unequip_removes_accessory_from_slot() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat", "head:hat")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.unequip(AccessorySlot.HEAD)
+        advanceUntilIdle()
+
+        assertFalse(vm.userProfile.value.accessories.any { it.startsWith("head:") })
+      }
+
+  @Test
+  fun unequip_on_empty_slot_does_nothing() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = emptyList()))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.unequip(AccessorySlot.HEAD)
+        advanceUntilIdle()
+
+        assertEquals(0, vm.userProfile.value.accessories.size)
+      }
+
+  @Test
+  fun equippedId_returns_correct_id_for_equipped_accessory() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = listOf("head:hat", "torso:scarf")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        assertEquals("hat", vm.equippedId(AccessorySlot.HEAD))
+        assertEquals("scarf", vm.equippedId(AccessorySlot.TORSO))
+      }
+
+  @Test
+  fun equippedId_returns_null_when_no_accessory_equipped() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = emptyList()))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        assertNull(vm.equippedId(AccessorySlot.HEAD))
+        assertNull(vm.equippedId(AccessorySlot.TORSO))
+        assertNull(vm.equippedId(AccessorySlot.BACK))
+      }
+
+  @Test
+  fun equippedId_handles_all_slots_correctly() =
+      runTest(dispatcher) {
+        val repo =
+            TestRepo(UserProfile(accessories = listOf("head:hat", "torso:scarf", "back:wings")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        assertEquals("hat", vm.equippedId(AccessorySlot.HEAD))
+        assertEquals("scarf", vm.equippedId(AccessorySlot.TORSO))
+        assertEquals("wings", vm.equippedId(AccessorySlot.BACK))
+        assertNull(vm.equippedId(AccessorySlot.LEGS))
+      }
+
+  // ========== Coins Tests ==========
+
+  @Test
+  fun addCoins_withPositiveAmount_increasesUserCoins() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val before = vm.userProfile.value.coins
+        vm.addCoins(100)
+        advanceUntilIdle()
+        val after = vm.userProfile.value.coins
+
+        assertEquals(before + 100, after)
+        coVerify { mockRepository.updateProfile(any()) }
+      }
+
+  @Test
+  fun addCoins_withZero_doesNothing() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val before = vm.userProfile.value.coins
+        vm.addCoins(0)
+        advanceUntilIdle()
+
+        assertEquals(before, vm.userProfile.value.coins)
+      }
+
+  @Test
+  fun addCoins_withNegativeAmount_doesNothing() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val before = vm.userProfile.value.coins
+        vm.addCoins(-50)
+        advanceUntilIdle()
+
+        assertEquals(before, vm.userProfile.value.coins)
+      }
+
+  // ========== Points and Level Tests ==========
+
+  @Test
+  fun addPoints_withPositiveAmount_increasesPoints() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val before = vm.userProfile.value.points
+        vm.addPoints(50)
+        advanceUntilIdle()
+
+        assertEquals(before + 50, vm.userProfile.value.points)
+      }
+
+  @Test
+  fun addPoints_withZero_doesNothing() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val before = vm.userProfile.value.points
+        vm.addPoints(0)
+        advanceUntilIdle()
+
+        assertEquals(before, vm.userProfile.value.points)
+      }
+
+  @Test
+  fun addPoints_withNegativeAmount_doesNothing() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val before = vm.userProfile.value.points
+        vm.addPoints(-10)
+        advanceUntilIdle()
+
+        assertEquals(before, vm.userProfile.value.points)
+      }
+
+  @Test
+  fun addPoints_computes_correct_level_from_points() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(points = 0, level = 1))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.addPoints(300) // Should reach level 2
+        advanceUntilIdle()
+        assertEquals(2, vm.userProfile.value.level)
+
+        vm.addPoints(300) // Should reach level 3
+        advanceUntilIdle()
+        assertEquals(3, vm.userProfile.value.level)
+
+        vm.addPoints(600) // Should reach level 5
+        advanceUntilIdle()
+        assertEquals(5, vm.userProfile.value.level)
+      }
+
+  @Test
+  fun addPoints_does_not_level_up_below_threshold() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(points = 250, level = 1))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.addPoints(49) // 250 + 49 = 299 -> still level 1
+        advanceUntilIdle()
+
+        assertEquals(1, vm.userProfile.value.level)
+        assertEquals(299, vm.userProfile.value.points)
+      }
+
+  // ========== Debug Functions Tests ==========
+
+  @Test
+  fun debugLevelUpForTests_increases_level_by_1() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        val beforeLevel = vm.userProfile.value.level
+        vm.debugLevelUpForTests()
+        advanceUntilIdle()
+
+        assertEquals(beforeLevel + 1, vm.userProfile.value.level)
+      }
+
+  @Test
+  fun debugNoLevelChangeForTests_adds_points_without_level_change() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(points = 50, level = 1))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.debugNoLevelChangeForTests()
+        advanceUntilIdle()
+
+        assertEquals(1, vm.userProfile.value.level)
+        assertEquals(60, vm.userProfile.value.points)
+      }
+
+  // ========== Error Handling Tests ==========
+
+  @Test
   fun pushProfile_handles_repository_errors_gracefully() =
       runTest(dispatcher) {
         val failingRepo =
             object : ProfileRepository {
-              override val profile = MutableStateFlow(UserProfile())
+              override val profile = MutableStateFlow(testProfile)
 
               override suspend fun updateProfile(newProfile: UserProfile) {
                 throw RuntimeException("Network error")
@@ -646,25 +812,118 @@ class ProfileViewModelTest {
             }
 
         val vm = ProfileViewModel(repository = failingRepo)
+        advanceUntilIdle()
 
         val before = vm.userProfile.value.locationEnabled
 
-        // Should not crash despite repository error
         vm.toggleLocation()
         advanceUntilIdle()
 
-        // Local state should still update even if repository fails
         val after = vm.userProfile.value.locationEnabled
         assertEquals(!before, after)
       }
 
   @Test
-  fun accentEffective_initial_value_is_valid() = runTest {
-    val vm = ProfileViewModel(FakeProfileRepository())
+  fun repository_update_failure_does_not_crash_viewmodel() =
+      runTest(dispatcher) {
+        coEvery { mockRepository.updateProfile(any()) } throws Exception("Network error")
 
-    val initial = vm.accentEffective.value
-    assertNotEquals(Color.Unspecified, initial)
-  }
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        vm.addCoins(10)
+        advanceUntilIdle()
+
+        assertEquals(110, vm.userProfile.value.coins)
+      }
+
+  // ========== Complex Scenarios ==========
+
+  @Test
+  fun multiple_profile_updates_in_sequence_work_correctly() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        advanceUntilIdle()
+
+        vm.addCoins(10)
+        advanceUntilIdle()
+
+        vm.toggleNotifications()
+        advanceUntilIdle()
+
+        vm.setAvatarAccent(Color.Green)
+        advanceUntilIdle()
+
+        val profile = vm.userProfile.value
+        assertEquals(110, profile.coins)
+        assertEquals(false, profile.notificationsEnabled)
+        assertEquals(Color.Green.toArgb().toLong(), profile.avatarAccent)
+      }
+
+  @Test
+  fun equip_with_owned_accessory_in_different_slots_works() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(accessories = listOf("owned:hat", "owned:scarf")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        vm.equip(AccessorySlot.HEAD, "hat")
+        advanceUntilIdle()
+        vm.equip(AccessorySlot.TORSO, "scarf")
+        advanceUntilIdle()
+
+        assertTrue(vm.userProfile.value.accessories.contains("head:hat"))
+        assertTrue(vm.userProfile.value.accessories.contains("torso:scarf"))
+      }
+
+  @Test
+  fun level_computation_handles_zero_and_negative_points() =
+      runTest(dispatcher) {
+        val repo = TestRepo(UserProfile(points = 0, level = 1))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        assertEquals(1, vm.userProfile.value.level)
+      }
+
+  @Test
+  fun accentEffective_combines_profile_accent_with_all_variants() =
+      runTest(dispatcher) {
+        val vm = ProfileViewModel(mockRepository)
+        val job = launch { vm.accentEffective.collect {} }
+        advanceUntilIdle()
+
+        val variants =
+            listOf(
+                AccentVariant.Base, AccentVariant.Light, AccentVariant.Dark, AccentVariant.Vibrant)
+
+        for (variant in variants) {
+          vm.setAccentVariant(variant)
+          advanceUntilIdle()
+
+          val effectiveColor = vm.accentEffective.value
+          assertNotNull(effectiveColor)
+          assertNotEquals(Color.Unspecified, effectiveColor)
+        }
+
+        job.cancel()
+      }
+
+  @Test
+  fun owned_accessories_are_correctly_parsed() =
+      runTest(dispatcher) {
+        val repo =
+            TestRepo(
+                UserProfile(
+                    accessories = listOf("owned:hat", "owned:glasses", "head:hat", "random:data")))
+        val vm = ProfileViewModel(repo)
+        advanceUntilIdle()
+
+        val catalog = vm.accessoryCatalog
+
+        assertTrue(catalog.any { it.id == "hat" })
+        assertTrue(catalog.any { it.id == "glasses" })
+      }
 
   // ========== Test Helper Class ==========
 

@@ -70,7 +70,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.AccentVariant
@@ -133,14 +132,7 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             contentPadding = PaddingValues(vertical = SECTION_SPACING),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
-              item {
-                PetSection(
-                    level = user.level,
-                    accent = accent,
-                    accessories = user.accessories,
-                    viewModel = viewModel,
-                    variant = variant)
-              }
+              item { PetSection(viewModel = viewModel) }
               item {
                 GlowCard {
                   Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
@@ -182,14 +174,7 @@ fun ProfileScreen(
 }
 
 @Composable
-fun PetSection(
-    level: Int,
-    accent: Color,
-    accessories: List<String>,
-    variant: AccentVariant,
-    viewModel: ProfileViewModel,
-    modifier: Modifier = Modifier
-) {
+fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
   Box(
       modifier =
           modifier
@@ -201,84 +186,19 @@ fun PetSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
-
-              // === Left stat bars ===
               Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatBar("❤️", 0.9f, StatBarHeart)
                 StatBar("💡", 0.85f, StatBarLightbulb)
                 StatBar("⚡", 0.7f, StatBarLightning)
               }
 
-              // === Center avatar & accessories ===
               Column(
                   horizontalAlignment = Alignment.CenterHorizontally,
                   verticalArrangement = Arrangement.Center) {
-                    Box(
-                        modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
-                        contentAlignment = Alignment.Center) {
-                          // aura glow
-                          Box(
-                              Modifier.fillMaxSize()
-                                  .background(
-                                      Brush.radialGradient(
-                                          colors =
-                                              listOf(
-                                                  accent.copy(alpha = 0.55f), Color.Transparent))))
-
-                          // === SAFE ACCESSORY PARSING ===
-                          val equipped =
-                              remember(accessories) {
-                                accessories
-                                    .mapNotNull { raw ->
-                                      val parts = raw.split(":")
-                                      if (parts.size == 2) parts[0] to parts[1]
-                                      else null // ignore malformed entries like "none"
-                                    }
-                                    .toMap()
-                              }
-
-                          // Base avatar
-                          Image(
-                              painter = painterResource(id = R.drawable.edumon),
-                              contentDescription = "EduMon",
-                              modifier = Modifier.size(100.dp).zIndex(1f))
-
-                          // BACK ACCESSORIES (zIndex < avatar)
-                          equipped["back"]?.let { id ->
-                            val res = viewModel.accessoryResId(AccessorySlot.BACK, id)
-                            if (res != 0) {
-                              Image(
-                                  painter = painterResource(res),
-                                  contentDescription = null,
-                                  modifier = Modifier.size(100.dp).zIndex(0.5f))
-                            }
-                          }
-
-                          // TORSO ACCESSORIES
-                          equipped["torso"]?.let { id ->
-                            val res = viewModel.accessoryResId(AccessorySlot.TORSO, id)
-                            if (res != 0) {
-                              Image(
-                                  painter = painterResource(res),
-                                  contentDescription = null,
-                                  modifier = Modifier.size(100.dp).zIndex(2f))
-                            }
-                          }
-
-                          // HEAD ACCESSORIES
-                          equipped["head"]?.let { id ->
-                            val res = viewModel.accessoryResId(AccessorySlot.HEAD, id)
-                            if (res != 0) {
-                              Image(
-                                  painter = painterResource(res),
-                                  contentDescription = null,
-                                  modifier = Modifier.size(100.dp).zIndex(3f))
-                            }
-                          }
-                        }
-
-                    Spacer(Modifier.height(6.dp))
-                    Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
+                    EduMonAvatar(
+                        viewModel = viewModel,
+                        showLevelLabel = true,
+                        avatarSize = UiValues.AvatarSize)
                   }
             }
       }
@@ -579,7 +499,7 @@ fun SettingsCard(
         onToggle = {
           onToggleFocusMode()
           if (!user.focusModeEnabled) {
-            // Si on vient d’activer le focus mode → on lance l’écran
+
             onEnterFocusMode()
           }
         },
