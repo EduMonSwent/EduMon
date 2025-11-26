@@ -431,7 +431,35 @@ jobs:
           name: jacoco-test-report
           path: app/build/reports/jacoco/jacocoTestReport
 
+      - name: Verify Sonar report paths exist
+        run: |
+          echo "Checking JUnit report directory..."
+          if [ ! -d "app/build/test-results/testDebugUnitTest" ]; then
+            echo "::error::JUnit report directory missing: app/build/test-results/testDebugUnitTest/"
+            exit 1
+          fi
+          if [ -z "$(ls -A app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null)" ]; then
+            echo "::error::No JUnit XML files found in app/build/test-results/testDebugUnitTest/"
+            exit 1
+          fi
+
+          echo "Checking Android Lint report..."
+          if [ ! -f "app/build/reports/lint-results-debug.xml" ]; then
+            echo "::error::Lint report missing: app/build/reports/lint-results-debug.xml"
+            exit 1
+          fi
+
+          echo "Checking Jacoco XML coverage report..."
+          if [ ! -f "app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml" ]; then
+            echo "::error::Jacoco XML coverage report missing: app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml"
+            exit 1
+          fi
+
+          echo "All Sonar report files exist"
+
       - name: Upload reports to SonarCloud
+        # Only upload if not in a PR from a fork
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
