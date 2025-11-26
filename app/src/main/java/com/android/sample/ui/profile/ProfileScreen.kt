@@ -3,6 +3,7 @@ package com.android.sample.ui.profile
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,11 +42,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -64,7 +70,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.AccentVariant
@@ -72,6 +77,7 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.ui.profile.ProfileViewModel.Companion.POINTS_PER_LEVEL
 import com.android.sample.ui.theme.*
 
 object ProfileScreenTestTags {
@@ -91,6 +97,13 @@ private val CARD_CORNER_RADIUS = 16.dp
 private val SECTION_SPACING = 16.dp
 private val SCREEN_PADDING = 60.dp
 private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
+private const val LEVEL_PROGRESS_ANIM_DURATION_MS = 600
+private const val LABEL_FONT_SIZE_SP = 12
+private const val VALUE_FONT_SIZE_SP = 11
+private val LEVEL_BAR_HEIGHT = 8.dp
+private val LEVEL_BAR_CORNER_RADIUS = 12.dp
+private val LABEL_ALPHA = 0.7f
+private val SPACING_SMALL = 4.dp
 
 @Composable
 fun ProfileScreen(
@@ -102,69 +115,66 @@ fun ProfileScreen(
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
 
-  LazyColumn(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(Brush.verticalGradient(GRADIENT_COLORS))
-              .padding(bottom = SCREEN_PADDING)
-              .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      contentPadding = PaddingValues(vertical = SECTION_SPACING),
-      verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
-        item {
-          PetSection(
-              level = user.level,
-              accent = accent,
-              accessories = user.accessories,
-              viewModel = viewModel,
-              variant = variant)
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
-          }
-        }
-        item {
-          GlowCard { Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) } }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
-              CustomizePetSection(viewModel)
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
+
+  Scaffold(
+      snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
+          innerPadding ->
+        LazyColumn(
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(Brush.verticalGradient(GRADIENT_COLORS))
+                    .padding(bottom = SCREEN_PADDING)
+                    .padding(innerPadding)
+                    .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(vertical = SECTION_SPACING),
+            verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
+              item { PetSection(viewModel = viewModel) }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
+                    CustomizePetSection(viewModel)
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
+                    SettingsCard(
+                        user = user,
+                        onToggleLocation = viewModel::toggleLocation,
+                        onToggleFocusMode = viewModel::toggleFocusMode,
+                        onOpenNotifications = onOpenNotifications,
+                        onEnterFocusMode = onOpenFocusMode)
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
+                    AccountActionsSection()
+                  }
+                }
+              }
             }
-          }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
-              SettingsCard(
-                  user = user,
-                  onToggleLocation = viewModel::toggleLocation,
-                  onToggleFocusMode = viewModel::toggleFocusMode,
-                  onOpenNotifications = onOpenNotifications,
-                  onEnterFocusMode = onOpenFocusMode)
-            }
-          }
-        }
-        item {
-          GlowCard {
-            Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
-              AccountActionsSection()
-            }
-          }
-        }
       }
 }
 
 @Composable
-fun PetSection(
-    level: Int,
-    accent: Color,
-    accessories: List<String>,
-    variant: AccentVariant,
-    viewModel: ProfileViewModel,
-    modifier: Modifier = Modifier
-) {
+fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
   Box(
       modifier =
           modifier
@@ -185,63 +195,10 @@ fun PetSection(
               Column(
                   horizontalAlignment = Alignment.CenterHorizontally,
                   verticalArrangement = Arrangement.Center) {
-                    Box(
-                        modifier = Modifier.size(130.dp).clip(RoundedCornerShape(100.dp)),
-                        contentAlignment = Alignment.Center) {
-                          Box(
-                              Modifier.fillMaxSize()
-                                  .background(
-                                      Brush.radialGradient(
-                                          colors =
-                                              listOf(
-                                                  accent.copy(alpha = 0.55f), Color.Transparent))))
-
-                          val equipped =
-                              remember(accessories) {
-                                accessories.associate {
-                                  val parts = it.split(":")
-                                  parts[0] to parts[1]
-                                }
-                              }
-
-                          Image(
-                              painter = painterResource(id = R.drawable.edumon),
-                              contentDescription = "EduMon",
-                              modifier = Modifier.size(100.dp).zIndex(1f))
-
-                          equipped["back"]?.let {
-                            val res = viewModel.accessoryResId(AccessorySlot.BACK, it)
-                            if (res != 0) {
-                              Image(
-                                  painter = painterResource(res),
-                                  contentDescription = null,
-                                  modifier = Modifier.size(100.dp).zIndex(0.5f))
-                            }
-                          }
-
-                          equipped["torso"]?.let {
-                            val res = viewModel.accessoryResId(AccessorySlot.TORSO, it)
-                            if (res != 0) {
-                              Image(
-                                  painter = painterResource(res),
-                                  contentDescription = null,
-                                  modifier = Modifier.size(100.dp).zIndex(2f))
-                            }
-                          }
-
-                          equipped["head"]?.let {
-                            val res = viewModel.accessoryResId(AccessorySlot.HEAD, it)
-                            if (res != 0) {
-                              Image(
-                                  painter = painterResource(res),
-                                  contentDescription = null,
-                                  modifier = Modifier.size(100.dp).zIndex(3f))
-                            }
-                          }
-                        }
-
-                    Spacer(Modifier.height(6.dp))
-                    Text("Level $level", color = TextLight, fontWeight = FontWeight.SemiBold)
+                    EduMonAvatar(
+                        viewModel = viewModel,
+                        showLevelLabel = true,
+                        avatarSize = UiValues.AvatarSize)
                   }
             }
       }
@@ -318,6 +275,8 @@ fun ProfileCard(user: UserProfile) {
       Badge(text = "Level ${user.level}", bg = AccentViolet)
       Badge(text = "${user.points} pts", bg = Color.White, textColor = AccentViolet)
     }
+    Spacer(Modifier.height(8.dp))
+    LevelProgressBar(level = user.level, points = user.points)
   }
 }
 
@@ -540,7 +499,7 @@ fun SettingsCard(
         onToggle = {
           onToggleFocusMode()
           if (!user.focusModeEnabled) {
-            // Si on vient d’activer le focus mode → on lance l’écran
+
             onEnterFocusMode()
           }
         },
@@ -590,4 +549,83 @@ fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit
       onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(text, color = textColor, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
       }
+}
+
+@Composable
+fun LevelProgressBar(level: Int, points: Int, pointsPerLevel: Int = POINTS_PER_LEVEL) {
+  // Base points for this level
+  val levelBase = ((level - 1).coerceAtLeast(0)) * pointsPerLevel
+
+  // Progress within the current level
+  val rawProgressPoints = (points - levelBase).coerceIn(0, pointsPerLevel)
+  val targetFraction = if (pointsPerLevel == 0) 0f else rawProgressPoints / pointsPerLevel.toFloat()
+
+  // Animated fraction
+  val animatedFraction by
+      animateFloatAsState(
+          targetValue = targetFraction,
+          animationSpec = tween(durationMillis = LEVEL_PROGRESS_ANIM_DURATION_MS),
+          label = "levelProgressAnim")
+
+  Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+    Text(
+        text = "Progress to next level",
+        color = TextLight.copy(alpha = LABEL_ALPHA),
+        fontSize = LABEL_FONT_SIZE_SP.sp)
+
+    Spacer(Modifier.height(SPACING_SMALL))
+
+    Box(
+        modifier =
+            Modifier.fillMaxWidth()
+                .height(LEVEL_BAR_HEIGHT)
+                .clip(RoundedCornerShape(LEVEL_BAR_CORNER_RADIUS))
+                .background(DarkCardItem)) {
+          Box(
+              modifier =
+                  Modifier.fillMaxWidth(animatedFraction.coerceIn(0f, 1f))
+                      .fillMaxHeight()
+                      .background(AccentViolet))
+        }
+
+    Spacer(Modifier.height(SPACING_SMALL))
+
+    val remaining = pointsPerLevel - rawProgressPoints
+
+    Text(
+        text = "$rawProgressPoints / $pointsPerLevel pts  •  $remaining pts to next level",
+        color = TextLight.copy(alpha = LABEL_ALPHA),
+        fontSize = VALUE_FONT_SIZE_SP.sp)
+  }
+}
+
+/** Collects level-up reward events from the ViewModel and shows a snackbar for each. */
+@Composable
+private fun LevelUpRewardSnackbarHandler(
+    viewModel: ProfileViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+  LaunchedEffect(Unit) {
+    viewModel.rewardEvents.collect { event ->
+      when (event) {
+        is LevelUpRewardUiEvent.RewardsGranted -> {
+          val msg = buildRewardMessage(event)
+          snackbarHostState.showSnackbar(msg)
+        }
+      }
+    }
+  }
+}
+/** Builds a human-readable message summarizing the granted rewards. */
+private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): String {
+  val s = event.summary
+  return buildString {
+    append("🎉 Level ${event.newLevel} reached!")
+    if (s.coinsGranted > 0) append(" +${s.coinsGranted} coins")
+    if (s.accessoryIdsGranted.isNotEmpty()) {
+      append(" 🎁 ${s.accessoryIdsGranted.size} new item")
+      if (s.accessoryIdsGranted.size > 1) append("s")
+    }
+    if (s.extraPointsGranted > 0) append(" +${s.extraPointsGranted} pts")
+  }
 }

@@ -21,8 +21,8 @@ import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repos_providors.FakeRepositoriesProvider
-import com.android.sample.ui.calendar.CalendarScreenTestTags
 import com.android.sample.ui.login.LoginScreen
+import com.android.sample.ui.schedule.ScheduleScreenTestTags
 import com.android.sample.ui.session.StudySessionTestTags
 import com.android.sample.ui.theme.EduMonTheme
 import org.junit.After
@@ -93,24 +93,25 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // 3) HOME -> CALENDAR VIA BOTTOM NAV
     composeRule
         .onNodeWithTag(
-            HomeTestTags.bottomTag(AppDestination.Calendar.route), useUnmergedTree = true)
+            HomeTestTags.bottomTag(AppDestination.Schedule.route), useUnmergedTree = true)
         .assertExists()
         .performClick()
 
     composeRule.waitUntilExactlyOneExists(
-        hasTestTag(CalendarScreenTestTags.CALENDAR_CARD),
+        hasTestTag(ScheduleScreenTestTags.ROOT),
         timeoutMillis = 20_000,
     )
 
-    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_HEADER).assertExists()
-    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertExists()
+    composeRule.onNodeWithTag(ScheduleScreenTestTags.ROOT).assertExists()
+    composeRule.onNodeWithTag(ScheduleScreenTestTags.TAB_ROW).assertExists()
+    composeRule.onNodeWithTag(ScheduleScreenTestTags.FAB_ADD).assertExists()
 
-    // Optional: toggle view, Calendar must still exist
-    composeRule
-        .onNodeWithTag(CalendarScreenTestTags.VIEW_TOGGLE_BUTTON)
-        .assertExists()
-        .performClick()
-    composeRule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD).assertExists()
+    // Optional: toggle view, Schedule must still exist
+    composeRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_DAY).assertExists()
+    composeRule.onNodeWithText("Week").assertExists().performClick()
+    composeRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_WEEK).assertExists()
+    composeRule.onNodeWithText("Month").assertExists().performClick()
+    composeRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_MONTH).assertExists()
 
     // Back to Home
     goBackToHome()

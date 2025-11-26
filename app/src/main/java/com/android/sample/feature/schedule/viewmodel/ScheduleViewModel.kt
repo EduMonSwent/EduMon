@@ -200,9 +200,26 @@ class ScheduleViewModel(
   }
 
   // Schedule methods
-  fun save(event: ScheduleEvent) = viewModelScope.launch { scheduleRepository.save(event) }
+  fun save(event: ScheduleEvent) =
+      viewModelScope.launch {
+        try {
+          scheduleRepository.save(event)
+          _eventFlow.emit(UiEvent.ShowSnackbar(resources.getString(R.string.task_saved)))
+          _uiState.update { it.copy(showAddTaskModal = false) } // if coming from modal
+        } catch (e: Exception) {
+          _eventFlow.emit(UiEvent.ShowSnackbar(resources.getString(R.string.task_save_error)))
+        }
+      }
 
-  fun delete(eventId: String) = viewModelScope.launch { scheduleRepository.delete(eventId) }
+  fun delete(eventId: String) =
+      viewModelScope.launch {
+        try {
+          scheduleRepository.delete(eventId)
+          _eventFlow.emit(UiEvent.ShowSnackbar(resources.getString(R.string.task_deleted)))
+        } catch (e: Exception) {
+          _eventFlow.emit(UiEvent.ShowSnackbar(resources.getString(R.string.task_delete_error)))
+        }
+      }
 
   fun adjustWeeklyPlan(today: LocalDate = LocalDate.now()) {
     _uiState.update { it.copy(isAdjustingPlan = true) }

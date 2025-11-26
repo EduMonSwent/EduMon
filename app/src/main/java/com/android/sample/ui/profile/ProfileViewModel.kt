@@ -9,6 +9,7 @@ import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.UserProfile
+import com.android.sample.feature.rewards.LevelRewardEngine
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.ui.theme.AccentBlue
@@ -16,7 +17,9 @@ import com.android.sample.ui.theme.AccentMint
 import com.android.sample.ui.theme.GlowGold
 import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletSoft
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -24,14 +27,28 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(
+open class ProfileViewModel(
     private val repository: ProfileRepository = ProfileRepositoryProvider.repository
 ) : ViewModel() {
 
+  companion object {
+    const val POINTS_PER_LEVEL: Int = 300
+  }
+
   private val _userProfile = MutableStateFlow(repository.profile.value.copy())
-  val userProfile: StateFlow<UserProfile> = _userProfile
+  open val userProfile: StateFlow<UserProfile> = _userProfile
+
+  init {
+    viewModelScope.launch {
+      repository.profile.collect { newProfile -> _userProfile.value = newProfile.copy() }
+    }
+  }
 
   val accentPalette = listOf(PurplePrimary, AccentBlue, AccentMint, GlowGold, VioletSoft)
+  private val rewardEngine = LevelRewardEngine()
+
+  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
+  val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
@@ -54,13 +71,13 @@ class ProfileViewModel(
   private val accentVariant = MutableStateFlow(AccentVariant.Base)
   val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
-  val accentEffective: StateFlow<Color> =
+  open val accentEffective: StateFlow<Color> =
       combine(userProfile, accentVariantFlow) { user, variant ->
             applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
 
-  fun accessoryResId(slot: AccessorySlot, id: String): Int {
+  open fun accessoryResId(slot: AccessorySlot, id: String): Int {
     return when (slot) {
       AccessorySlot.HEAD ->
           when (id) {
@@ -110,17 +127,15 @@ class ProfileViewModel(
   fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
 
   fun equip(slot: AccessorySlot, id: String) {
-
     val owned = ownedIds()
     if (id != "none" && !owned.contains(id)) return
 
     val cur = _userProfile.value
     val prefix = slot.name.lowercase() + ":"
     val cleaned = cur.accessories.filterNot { it.startsWith(prefix) }
-
     val updatedAccessories = if (id == "none") cleaned else cleaned + (prefix + id)
-
     val updated = cur.copy(accessories = updatedAccessories)
+
     _userProfile.value = updated
     pushProfile(updated)
   }
@@ -171,7 +186,54 @@ class ProfileViewModel(
     pushProfile(updated)
   }
 
+  fun addPoints(amount: Int) {
+    if (amount <= 0) return
+
+    applyProfileWithPotentialRewards { current ->
+      val newPoints = (current.points + amount).coerceAtLeast(0)
+      val newLevel = computeLevelFromPoints(newPoints)
+      current.copy(points = newPoints, level = newLevel)
+    }
+  }
+
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
     viewModelScope.launch { runCatching { repository.updateProfile(updated) } }
+  }
+
+  private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
+    val oldProfile = _userProfile.value
+    val candidate = edit(oldProfile)
+
+    if (candidate.level <= oldProfile.level) {
+      _userProfile.value = candidate
+      pushProfile(candidate)
+      return
+    }
+
+    val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
+    val updated = result.updatedProfile
+
+    _userProfile.value = updated
+    pushProfile(updated)
+
+    if (!result.summary.isEmpty) {
+      viewModelScope.launch {
+        _rewardEvents.emit(
+            LevelUpRewardUiEvent.RewardsGranted(newLevel = updated.level, summary = result.summary))
+      }
+    }
+  }
+
+  private fun computeLevelFromPoints(points: Int): Int {
+    if (points <= 0) return 1
+    return 1 + (points / POINTS_PER_LEVEL)
+  }
+
+  fun debugLevelUpForTests() {
+    applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
+  }
+
+  fun debugNoLevelChangeForTests() {
+    applyProfileWithPotentialRewards { current -> current.copy(points = current.points + 10) }
   }
 }
