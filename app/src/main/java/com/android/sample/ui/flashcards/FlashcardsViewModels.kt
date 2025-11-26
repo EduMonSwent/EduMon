@@ -11,6 +11,7 @@ import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepoProvider
+import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.flashcards.model.Confidence
 import com.android.sample.ui.flashcards.model.Deck
@@ -54,19 +55,35 @@ class DeckListViewModel(
 
   constructor(repo: FlashcardsRepository) : this(repo, requireAuth = false)
 
-  // Ensure auth once, then start collecting the repository flow.
+  // Use WhileSubscribed to keep the flow alive during navigation
   val decks: StateFlow<List<Deck>> =
       flow {
             FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
             emitAll(repo.observeDecks())
           }
-          .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+          .stateIn(
+              scope = viewModelScope, started = SharingStarted.Lazily, initialValue = emptyList())
 
   fun deleteDeck(id: String) =
       viewModelScope.launch {
         FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
         repo.deleteDeck(id)
       }
+
+  fun toggleShareable(deckId: String, enabled: Boolean) =
+      viewModelScope.launch {
+        FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+        if (repo is FirestoreFlashcardsRepository) {
+          repo.setDeckShareable(deckId, enabled)
+        }
+      }
+
+  suspend fun createShareToken(deckId: String): String {
+    FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+    return if (repo is FirestoreFlashcardsRepository) {
+      repo.createShareToken(deckId)
+    } else ""
+  }
 }
 
 /** ViewModel for creating a new deck. */

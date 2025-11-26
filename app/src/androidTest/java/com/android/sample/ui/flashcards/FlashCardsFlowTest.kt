@@ -2,13 +2,14 @@ package com.android.sample.ui.flashcards
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepoProvider
 import com.android.sample.ui.flashcards.model.Deck
 import com.android.sample.ui.flashcards.model.Flashcard
@@ -75,47 +76,48 @@ class FlashcardsFlowTest {
 
   @Test
   fun deleteDialog_shows_onTrashClick_andCallsCallback_onConfirm() {
-    // Arrange a sample deck and a capture var for the callback
     val deck =
         Deck(
             id = "deck-1",
             title = "Algebra",
             description = "Basics",
             cards = mutableListOf(Flashcard(question = "Q1", answer = "A1")))
+
     var deletedId: String? = null
 
     composeRule.setContent {
       EduMonTheme {
-        // Render only the row to keep the test tight
-        com.android.sample.ui.flashcards.DeckRow(
+        DeckRow(
             deck = deck,
-            onStudyDeck = { /* no-op */},
-            onDeleteDeck = { id -> deletedId = id } // <- we assert this fires
-            )
+            onStudyDeck = {},
+            onDeleteDeck = { id -> deletedId = id },
+            vm = DeckListViewModel(FakeRepositories.flashcardsRepository))
       }
     }
 
-    // The dialog is not visible initially
+    // Dialog not shown initially
     composeRule.onNodeWithText("Delete deck?").assertDoesNotExist()
 
-    // Click the trash icon -> dialog appears
-    composeRule.onNode(hasContentDescription("Delete deck")).performClick()
-    composeRule.onNodeWithText("Delete deck?").assertIsDisplayed()
-    composeRule
-        .onNodeWithText("This will permanently remove “${deck.title}” and its cards.")
-        .assertIsDisplayed()
+    // Click trash icon
+    composeRule.onNodeWithContentDescription("Delete deck").performClick()
 
-    // Cancel first -> no callback, dialog closes
+    // Dialog appears
+    composeRule.onNodeWithText("Delete deck?").assertIsDisplayed()
+    composeRule.onNodeWithText("This will permanently remove “${deck.title}”.").assertIsDisplayed()
+
+    // Cancel -> dialog closes, callback not called
     composeRule.onNodeWithText("Cancel").performClick()
     composeRule.onNodeWithText("Delete deck?").assertDoesNotExist()
     assert(deletedId == null)
 
-    // Open again and confirm
-    composeRule.onNode(hasContentDescription("Delete deck")).performClick()
+    // Open again
+    composeRule.onNodeWithContentDescription("Delete deck").performClick()
+
+    // Confirm delete
     composeRule.onNodeWithText("Delete").performClick()
 
-    // Assert callback fired with the right id and dialog dismissed
     assert(deletedId == deck.id)
+
     composeRule.onNodeWithText("Delete deck?").assertDoesNotExist()
   }
 }

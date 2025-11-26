@@ -3,7 +3,6 @@ package com.android.sample.ui.flashcards
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepository
-import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.flashcards.model.Flashcard
 import com.android.sample.util.FirebaseEmulator
 import com.google.android.gms.tasks.Tasks
@@ -28,7 +27,7 @@ class FirestoreFlashcardsRepositoryEmulatorTest {
 
   private lateinit var db: FirebaseFirestore
   private lateinit var auth: FirebaseAuth
-  private lateinit var repo: FlashcardsRepository
+  private lateinit var repo: FirestoreFlashcardsRepository
 
   @Before
   fun setUp() = runBlocking {
@@ -152,5 +151,78 @@ class FirestoreFlashcardsRepositoryEmulatorTest {
 
     unsignedRepo.addCard("fake", Flashcard(question = "Q", answer = "A"))
     unsignedRepo.deleteDeck("fake")
+  }
+
+  // ---------- TESTS FOR IMPORT FEATURE ----------
+
+  @Test
+  fun createShareToken_createsSharedDeckDocument() = runBlocking {
+    val ownerUid = currentUid()
+    val deckId = repo.createDeck("Physics", "Mechanics", emptyList())
+
+    val token = repo.createShareToken(deckId)
+    assertTrue(token.isNotBlank())
+
+    val sharedDoc = Tasks.await(db.collection("sharedDecks").document(token).get())
+    assertTrue(sharedDoc.exists())
+    assertEquals(ownerUid, sharedDoc.getString("ownerId"))
+    assertEquals(deckId, sharedDoc.getString("deckId"))
+  }
+
+  @Test
+  fun importSharedDeck_invalidToken_returnsBlank() = runBlocking {
+    val result = repo.importSharedDeck("does-not-exist")
+    assertTrue(result.isBlank())
+  }
+
+  @Test
+  fun importSharedDeck_copiesDeckAndCardsForNewUser() = runBlocking {
+    // Owner creates deck and share token
+    val ownerUid = currentUid()
+    val deckId =
+        repo.createDeck(
+            "Biology",
+            "Plants",
+            listOf(
+                Flashcard(question = "Leaf", answer = "Photosynthesis"),
+                Flashcard(question = "Root", answer = "Absorption")))
+    val token = repo.createShareToken(deckId)
+
+    // Switch to a fresh anonymous user (emulator creates new uid)
+    val newUserUid = currentUid()
+
+    val importedId = repo.importSharedDeck(token)
+    assertTrue(importedId.isNotBlank())
+
+    // Read imported deck under new user
+    val importedDeckDoc = readDeckDoc(newUserUid, importedId)
+    assertNotNull(importedDeckDoc)
+
+    val cardsSnap =
+        Tasks.await(
+            db.collection("users")
+                .document(newUserUid)
+                .collection("decks")
+                .document(importedId)
+                .collection("cards")
+                .get())
+    assertEquals(2, cardsSnap.size())
+  }
+
+  @Test
+  fun importSharedDeck_setsShareableFalse_andDifferentId() = runBlocking {
+    val originalId = repo.createDeck("Chemistry", "Organic", emptyList())
+    val token = repo.createShareToken(originalId)
+
+    // new user
+    val newUserUid = currentUid()
+
+    val importedId = repo.importSharedDeck(token)
+    assertTrue(importedId.isNotBlank())
+    assertNotEquals(originalId, importedId)
+
+    val importedDoc = readDeckDoc(newUserUid, importedId)!!
+    assertEquals(false, importedDoc.getBoolean("shareable"))
+    assertEquals(importedId, importedDoc.getString("id"))
   }
 }

@@ -90,6 +90,7 @@ fun CreateDeckScreen(
 
     Button(
         onClick = { vm.save(onSaved) },
+        enabled = cards.any { it.question.isNotBlank() && it.answer.isNotBlank() },
         modifier = Modifier.fillMaxWidth(),
         colors =
             ButtonDefaults.buttonColors(containerColor = AccentMint, contentColor = TextLight)) {

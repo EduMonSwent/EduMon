@@ -40,6 +40,22 @@ class DataStoreFlashcardsRepository(private val storage: FlashcardsStorage) : Fl
   override suspend fun deleteDeck(deckId: String) {
     storage.deleteDeck(deckId)
   }
+
+  override suspend fun importSharedDeck(token: String): String {
+    // Fake rule: token must start with "share-"
+    if (!token.startsWith("share-")) return ""
+
+    val newId = token.removePrefix("share-")
+
+    val dto =
+        DeckDTO(
+            id = newId,
+            title = "Imported Deck",
+            description = "Imported from token $token",
+            cards = listOf(CardDTO(q = "Imported question", a = "Imported answer")))
+
+    return storage.upsertDeck(dto)
+  }
 }
 
 /* ---------- mappers ---------- */
