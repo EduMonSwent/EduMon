@@ -1,11 +1,11 @@
+// This code has been written partially using A.I (LLM).
 package com.android.sample.util
 
 import android.content.Context
 import android.util.Log
-import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,19 +17,36 @@ import org.json.JSONObject
 /**
  * Manages connection to Firebase Emulators for Android tests. Robust to different UI ports, avoids
  * main-thread network, and exposes helpers for setup/cleanup.
+ *
+ * Important: this object now uses a dedicated FirebaseApp for the emulators to avoid
+ * IllegalStateException("Cannot call useEmulator() after instance has already been initialized").
  */
 object FirebaseEmulator {
-  val auth
-    get() = Firebase.auth
 
-  val firestore
-    get() = Firebase.firestore
+  private const val HOST = "10.0.2.2"
+  private const val FIRESTORE_PORT = 8080
+  private const val AUTH_PORT = 9099
+  private const val EMULATOR_APP_NAME = "emulatorApp"
 
-  const val HOST = "10.0.2.2"
   // We’ll probe both, 4000 is the canonical UI port, 4400 was used historically in some setups.
   private val UI_PORTS = listOf(4000, 4400)
-  const val FIRESTORE_PORT = 8080
-  const val AUTH_PORT = 9099
+
+  private val httpClient = OkHttpClient()
+
+  @Volatile private var emulatorApp: FirebaseApp? = null
+  @Volatile private var emulatorAuth: FirebaseAuth? = null
+  @Volatile private var emulatorFirestore: FirebaseFirestore? = null
+
+  val auth: FirebaseAuth
+    get() =
+        emulatorAuth
+            ?: error("FirebaseEmulator.connectIfRunning() must be called before accessing auth")
+
+  val firestore: FirebaseFirestore
+    get() =
+        emulatorFirestore
+            ?: error(
+                "FirebaseEmulator.connectIfRunning() must be called before accessing firestore")
 
   // Keep this lazy (and null-safe) — if default app isn’t ready yet, initIfNeeded() takes care of
   // it.
@@ -38,8 +55,6 @@ object FirebaseEmulator {
         ?: error(
             "Firebase projectId is null. Is google-services.json present and FirebaseApp initialized?")
   }
-
-  private val httpClient = OkHttpClient()
 
   private val firestoreEndpoint by lazy {
     "http://$HOST:$FIRESTORE_PORT/emulator/v1/projects/$projectID/databases/(default)/documents"
@@ -50,6 +65,7 @@ object FirebaseEmulator {
   }
 
   // Probe UI (4000 or 4400). If UI is up, emulators are very likely up.
+  @Suppress("unused")
   private fun areEmulatorsRunning(): Boolean {
     return UI_PORTS.any { port ->
       runCatching {
@@ -73,9 +89,6 @@ object FirebaseEmulator {
   val isRunning: Boolean
     get() = probe("http://$HOST:$FIRESTORE_PORT") && probe("http://$HOST:$AUTH_PORT")
 
-  // Idempotent connector flag (avoid re-calling useEmulator a bunch of times)
-  @Volatile private var connected = false
-
   /**
    * Ensure FirebaseApp exists (use when running instrumentation in projects without automatic
    * init).
@@ -88,21 +101,42 @@ object FirebaseEmulator {
         }
   }
 
-  /** Connects Auth/Firestore to emulators if they’re running. Safe to call multiple times. */
+  /**
+   * Connects Auth/Firestore to emulators if they’re running.
+   *
+   * This is now idempotent and uses a dedicated FirebaseApp to guarantee that useEmulator() is
+   * called on a fresh instance (no IllegalStateException).
+   */
   fun connectIfRunning() {
     if (!isRunning) return
-    if (connected) return
+
+    if (emulatorApp != null && emulatorAuth != null && emulatorFirestore != null) {
+      return
+    }
 
     synchronized(this) {
-      if (connected) return
-      auth.useEmulator(HOST, AUTH_PORT)
-      firestore.useEmulator(HOST, FIRESTORE_PORT)
+      if (emulatorApp != null && emulatorAuth != null && emulatorFirestore != null) {
+        return
+      }
 
-      // Sanity check: ensure we’re actually pointed at the emulator host.
-      val host = firestore.firestoreSettings.host
-      require(host.contains(HOST)) { "Failed to connect to Firestore Emulator; host=$host" }
+      val defaultApp = FirebaseApp.getInstance()
 
-      connected = true
+      val app =
+          runCatching { FirebaseApp.getInstance(EMULATOR_APP_NAME) }
+              .getOrElse {
+                FirebaseApp.initializeApp(
+                    defaultApp.applicationContext, defaultApp.options, EMULATOR_APP_NAME)
+              }
+
+      val authInstance = FirebaseAuth.getInstance(app)
+      val firestoreInstance = FirebaseFirestore.getInstance(app)
+
+      authInstance.useEmulator(HOST, AUTH_PORT)
+      firestoreInstance.useEmulator(HOST, FIRESTORE_PORT)
+
+      emulatorApp = app
+      emulatorAuth = authInstance
+      emulatorFirestore = firestoreInstance
     }
   }
 

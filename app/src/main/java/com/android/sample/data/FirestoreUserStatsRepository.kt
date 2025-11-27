@@ -1,234 +1,188 @@
 package com.android.sample.data
 
-// This code has been written partially using A.I (LLM).
-
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
-import java.util.Calendar
-import java.util.TimeZone
-import kotlinx.coroutines.CoroutineScope
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Firestore-backed implementation of UserStatsRepository.
  *
- * Single canonical document: /users/{uid}/stats/stats
+ * Document path: /users/{uid}/stats/stats Fields (Long):
+ * - totalStudyMinutes
+ * - todayStudyMinutes
+ * - streak
+ * - weeklyGoal
+ * - points
+ * - coins
+ * - lastStudyDateEpochDay (epochDay of LocalDate, may be missing)
  */
 class FirestoreUserStatsRepository(
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val db: FirebaseFirestore,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : UserStatsRepository {
-
-  private companion object {
-    private const val USERS_COLLECTION = "users"
-    private const val STATS_COLLECTION = "stats"
-    private const val STATS_DOCUMENT_ID = "stats"
-
-    private const val FIELD_TOTAL_STUDY_MINUTES = "totalStudyMinutes"
-    private const val FIELD_TODAY_STUDY_MINUTES = "todayStudyMinutes"
-    private const val FIELD_STREAK = "streak"
-    private const val FIELD_WEEKLY_GOAL = "weeklyGoal"
-    private const val FIELD_COINS = "coins"
-    private const val FIELD_POINTS = "points"
-    private const val FIELD_LAST_UPDATED = "lastUpdated"
-
-    private const val DEFAULT_INT_VALUE = 0
-    private const val DEFAULT_LONG_VALUE = 0L
-  }
-
-  private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   private val _stats = MutableStateFlow(UserStats())
   override val stats: StateFlow<UserStats> = _stats
 
-  private var hasStarted = false
+  private var listener: ListenerRegistration? = null
 
-  override fun start() {
-    if (hasStarted) {
-      return
+  private val uid: String
+    get() =
+        auth.currentUser?.uid
+            ?: throw IllegalStateException(
+                "User must be logged in before using UserStatsRepository.")
+
+  private val doc: DocumentReference
+    get() = db.collection("users").document(uid).collection("stats").document("stats")
+
+  override suspend fun start() =
+      withContext(ioDispatcher) {
+        if (listener != null) return@withContext
+
+        ensureDocExists()
+        addSnapshotListener()
+      }
+
+  private fun ensureDocExists() {
+    doc.get().addOnSuccessListener { snap ->
+      if (!snap.exists()) {
+        doc.set(UserStats().toMap(), SetOptions.merge())
+      }
     }
+  }
 
-    val currentUser = auth.currentUser ?: return
-    hasStarted = true
+  private fun addSnapshotListener() {
+    listener =
+        doc.addSnapshotListener { snap, error ->
+          if (error != null) return@addSnapshotListener
+          val raw = getRawStats(snap)
+          val rolled = applyDailyRollover(raw, LocalDate.now())
+          _stats.value = rolled
+          persistRollOverIfNeeded(raw, rolled)
+        }
+  }
 
-    val docRef =
-        firestore
-            .collection(USERS_COLLECTION)
-            .document(currentUser.uid)
-            .collection(STATS_COLLECTION)
-            .document(STATS_DOCUMENT_ID)
+  private fun getRawStats(snap: DocumentSnapshot?): UserStats {
+    return if (snap != null && snap.exists()) {
+      snap.data?.toUserStats() ?: UserStats()
+    } else {
+      UserStats()
+    }
+  }
 
-    docRef.addSnapshotListener { snapshot, error ->
-      if (error != null) {
-        // You can log this error if needed.
-        return@addSnapshotListener
-      }
-
-      if (snapshot == null || !snapshot.exists()) {
-        scope.launch { ensureDefaultDocument(currentUser.uid) }
-        return@addSnapshotListener
-      }
-
-      val data = snapshot.data ?: emptyMap<String, Any>()
-      val rawStats = data.toUserStats()
-      val now = System.currentTimeMillis()
-
-      val sameDay =
-          if (rawStats.lastUpdated == DEFAULT_LONG_VALUE) {
-            true
-          } else {
-            isSameDay(rawStats.lastUpdated, now)
-          }
-
-      val adjusted =
-          if (sameDay) {
-            rawStats
-          } else {
-            rawStats.copy(todayStudyMinutes = DEFAULT_INT_VALUE, lastUpdated = now)
-          }
-
-      _stats.value = adjusted
-
-      if (!sameDay) {
-        scope.launch { persistStats(adjusted, currentUser.uid) }
-      }
+  private fun persistRollOverIfNeeded(raw: UserStats, rolled: UserStats) {
+    if (rolled != raw) {
+      doc.set(rolled.toMap(), SetOptions.merge())
     }
   }
 
   override suspend fun addStudyMinutes(extraMinutes: Int) {
-    if (extraMinutes <= 0) {
-      return
+    withContext(ioDispatcher) {
+      if (extraMinutes <= 0) return@withContext
+
+      val today = LocalDate.now()
+      val currentRolled = applyDailyRollover(_stats.value, today)
+
+      val firstToday = currentRolled.todayStudyMinutes == 0
+      val updated =
+          currentRolled.copy(
+              totalStudyMinutes = currentRolled.totalStudyMinutes + extraMinutes,
+              todayStudyMinutes = currentRolled.todayStudyMinutes + extraMinutes,
+              streak = currentRolled.streak + if (firstToday) 1 else 0,
+              lastStudyDateEpochDay = today.toEpochDay())
+
+      _stats.value = updated
+      doc.set(updated.toMap(), SetOptions.merge())
+      // last expression now effectively Unit
     }
-
-    val currentUser = auth.currentUser ?: return
-    val now = System.currentTimeMillis()
-    val current = _stats.value
-
-    val sameDay =
-        if (current.lastUpdated == DEFAULT_LONG_VALUE) {
-          true
-        } else {
-          isSameDay(current.lastUpdated, now)
-        }
-
-    val baseToday =
-        if (sameDay) {
-          current.todayStudyMinutes
-        } else {
-          DEFAULT_INT_VALUE
-        }
-
-    val updated =
-        current.copy(
-            totalStudyMinutes = current.totalStudyMinutes + extraMinutes,
-            todayStudyMinutes = baseToday + extraMinutes,
-            lastUpdated = now)
-
-    _stats.value = updated
-    persistStats(updated, currentUser.uid)
   }
 
   override suspend fun updateCoins(delta: Int) {
-    if (delta == 0) {
-      return
+    withContext(ioDispatcher) {
+      if (delta == 0) return@withContext
+      val c = _stats.value
+      val updated = c.copy(coins = (c.coins + delta).coerceAtLeast(0))
+      _stats.value = updated
+      doc.set(updated.toMap(), SetOptions.merge())
     }
-
-    val currentUser = auth.currentUser ?: return
-    val now = System.currentTimeMillis()
-    val current = _stats.value
-
-    val updated = current.copy(coins = current.coins + delta, lastUpdated = now)
-
-    _stats.value = updated
-    persistStats(updated, currentUser.uid)
   }
 
   override suspend fun setWeeklyGoal(goalMinutes: Int) {
-    val currentUser = auth.currentUser ?: return
-    val now = System.currentTimeMillis()
-    val current = _stats.value
-
-    val updated = current.copy(weeklyGoal = goalMinutes, lastUpdated = now)
-
-    _stats.value = updated
-    persistStats(updated, currentUser.uid)
+    withContext(ioDispatcher) {
+      val c = _stats.value
+      val updated = c.copy(weeklyGoal = goalMinutes.coerceAtLeast(0))
+      _stats.value = updated
+      doc.set(updated.toMap(), SetOptions.merge())
+    }
   }
 
   override suspend fun addPoints(delta: Int) {
-    if (delta == 0) {
-      return
+    withContext(ioDispatcher) {
+      if (delta == 0) return@withContext
+      val c = _stats.value
+      val updated = c.copy(points = (c.points + delta).coerceAtLeast(0))
+      _stats.value = updated
+      doc.set(updated.toMap(), SetOptions.merge())
     }
-
-    val currentUser = auth.currentUser ?: return
-    val now = System.currentTimeMillis()
-    val current = _stats.value
-
-    val updated = current.copy(points = current.points + delta, lastUpdated = now)
-
-    _stats.value = updated
-    persistStats(updated, currentUser.uid)
   }
 
-  private suspend fun ensureDefaultDocument(uid: String) {
-    val now = System.currentTimeMillis()
-    val defaults = UserStats(lastUpdated = now)
-    persistStats(defaults, uid)
-    _stats.value = defaults
+  // ---------- Helpers ----------
+
+  private fun applyDailyRollover(stats: UserStats, today: LocalDate): UserStats {
+    val lastEpoch =
+        stats.lastStudyDateEpochDay ?: return stats.copy(lastStudyDateEpochDay = today.toEpochDay())
+    val last = LocalDate.ofEpochDay(lastEpoch)
+
+    if (last.isEqual(today)) return stats
+
+    val gap = ChronoUnit.DAYS.between(last, today)
+    val hadStudyThatDay = stats.todayStudyMinutes > 0
+
+    val newStreak =
+        if (!hadStudyThatDay || gap > 1L) {
+          // did not study on last recorded day OR we skipped >= 1 full day
+          0
+        } else {
+          // studied yesterday and today is consecutive → keep current streak value
+          stats.streak
+        }
+
+    return stats.copy(
+        todayStudyMinutes = 0, streak = newStreak, lastStudyDateEpochDay = today.toEpochDay())
   }
 
   private fun Map<String, Any>.toUserStats(): UserStats {
+    fun int(name: String) = (this[name] as? Number)?.toInt() ?: 0
+    val lastEpoch = (this["lastStudyDateEpochDay"] as? Number)?.toLong()
+
     return UserStats(
-        totalStudyMinutes =
-            (this[FIELD_TOTAL_STUDY_MINUTES] as? Number)?.toInt() ?: DEFAULT_INT_VALUE,
-        todayStudyMinutes =
-            (this[FIELD_TODAY_STUDY_MINUTES] as? Number)?.toInt() ?: DEFAULT_INT_VALUE,
-        streak = (this[FIELD_STREAK] as? Number)?.toInt() ?: DEFAULT_INT_VALUE,
-        weeklyGoal = (this[FIELD_WEEKLY_GOAL] as? Number)?.toInt() ?: DEFAULT_INT_VALUE,
-        coins = (this[FIELD_COINS] as? Number)?.toInt() ?: DEFAULT_INT_VALUE,
-        points = (this[FIELD_POINTS] as? Number)?.toInt() ?: DEFAULT_INT_VALUE,
-        lastUpdated = (this[FIELD_LAST_UPDATED] as? Number)?.toLong() ?: DEFAULT_LONG_VALUE)
+        totalStudyMinutes = int("totalStudyMinutes"),
+        todayStudyMinutes = int("todayStudyMinutes"),
+        streak = int("streak"),
+        weeklyGoal = int("weeklyGoal"),
+        points = int("points"),
+        coins = int("coins"),
+        lastStudyDateEpochDay = lastEpoch)
   }
 
-  private fun userStatsToMap(stats: UserStats): Map<String, Any> {
-    return mapOf(
-        FIELD_TOTAL_STUDY_MINUTES to stats.totalStudyMinutes,
-        FIELD_TODAY_STUDY_MINUTES to stats.todayStudyMinutes,
-        FIELD_STREAK to stats.streak,
-        FIELD_WEEKLY_GOAL to stats.weeklyGoal,
-        FIELD_COINS to stats.coins,
-        FIELD_POINTS to stats.points,
-        FIELD_LAST_UPDATED to stats.lastUpdated)
-  }
-
-  private fun isSameDay(firstMillis: Long, secondMillis: Long): Boolean {
-    val cal1 = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = firstMillis }
-    val cal2 = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = secondMillis }
-
-    val year1 = cal1.get(Calendar.YEAR)
-    val year2 = cal2.get(Calendar.YEAR)
-    if (year1 != year2) {
-      return false
-    }
-
-    val day1 = cal1.get(Calendar.DAY_OF_YEAR)
-    val day2 = cal2.get(Calendar.DAY_OF_YEAR)
-    return day1 == day2
-  }
-
-  private fun persistStats(stats: UserStats, uid: String) {
-    val docRef =
-        firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(STATS_COLLECTION)
-            .document(STATS_DOCUMENT_ID)
-
-    val payload = userStatsToMap(stats)
-    docRef.set(payload, SetOptions.merge())
-  }
+  private fun UserStats.toMap(): Map<String, Any> =
+      mapOf(
+          "totalStudyMinutes" to totalStudyMinutes,
+          "todayStudyMinutes" to todayStudyMinutes,
+          "streak" to streak,
+          "weeklyGoal" to weeklyGoal,
+          "points" to points,
+          "coins" to coins,
+          "lastStudyDateEpochDay" to (lastStudyDateEpochDay ?: LocalDate.now().toEpochDay()))
 }
