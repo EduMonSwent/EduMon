@@ -3,7 +3,6 @@ package com.android.sample.notifications
 
 import android.Manifest
 import android.app.Application
-import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Data
@@ -60,7 +59,7 @@ class CampusEntryPollWorkerCoverageTest {
   }
 
   @Test
-  fun `returns success and no notification when location permission denied`() {
+  fun `returns success when location permission denied`() {
     // Deny location permissions
     shadowApp.denyPermissions(
         Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -68,42 +67,13 @@ class CampusEntryPollWorkerCoverageTest {
     val worker = buildWorkerWithInputs(CampusEntryPollWorker.Companion.KEY_DISABLE_CHAIN to true)
     val result = runBlocking { worker.doWork() }
     assertEquals(ListenableWorker.Result.success(), result)
-
-    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    assertTrue("No notifications expected", shadowOf(nm).allNotifications.isEmpty())
-  }
-
-  @Test
-  fun `returns success and no notification when notification permission denied`() {
-    // Grant location but deny notifications
-    shadowApp.grantPermissions(
-        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-    shadowApp.denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
-
-    // Put a stored location so the worker would otherwise continue
-    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
-        .edit()
-        .putFloat("lat", 46.5202f)
-        .putFloat("lon", 6.5652f)
-        .commit()
-
-    val worker = buildWorkerWithInputs(CampusEntryPollWorker.Companion.KEY_DISABLE_CHAIN to true)
-    val result = runBlocking { worker.doWork() }
-    assertEquals(ListenableWorker.Result.success(), result)
-
-    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    assertTrue(
-        "No notifications expected when POST_NOTIFICATIONS denied",
-        shadowOf(nm).allNotifications.isEmpty())
   }
 
   @Test
   fun `skipFetch without stored_location skips and returns success`() {
     // Grant permissions
     shadowApp.grantPermissions(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-        Manifest.permission.POST_NOTIFICATIONS)
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     // skipFetch true, but no stored last_location present
     val worker =
@@ -112,19 +82,13 @@ class CampusEntryPollWorkerCoverageTest {
             CampusEntryPollWorker.Companion.KEY_TEST_SKIP_FETCH to true)
     val result = runBlocking { worker.doWork() }
     assertEquals(ListenableWorker.Result.success(), result)
-
-    // no notification posted
-    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    assertTrue(shadowOf(nm).allNotifications.isEmpty())
   }
 
   @Test
-  fun `skipFetch with stored on-campus location posts notification and updates flag`() {
+  fun `skipFetch with stored on-campus location updates flag`() {
     // Grant permissions
     shadowApp.grantPermissions(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-        Manifest.permission.POST_NOTIFICATIONS)
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     // store on-campus coords (within campus bounding box)
     ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
@@ -146,11 +110,7 @@ class CampusEntryPollWorkerCoverageTest {
     val result = runBlocking { worker.doWork() }
     assertEquals(ListenableWorker.Result.success(), result)
 
-    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val all = shadowOf(nm).allNotifications
-    assertTrue("Notification expected for campus entry", all.isNotEmpty())
-
-    // flag updated to true
+    // flag updated to true (notifications are no longer posted)
     val was =
         ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
             .getBoolean("was_on_campus", false)
@@ -161,9 +121,7 @@ class CampusEntryPollWorkerCoverageTest {
   fun `skipFetch with stored off-campus updates state without notification`() {
     // Grant permissions
     shadowApp.grantPermissions(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-        Manifest.permission.POST_NOTIFICATIONS)
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     // store OFF-campus coords
     ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
@@ -185,10 +143,6 @@ class CampusEntryPollWorkerCoverageTest {
     val result = runBlocking { worker.doWork() }
     assertEquals(ListenableWorker.Result.success(), result)
 
-    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    assertTrue(
-        "No notification expected for leaving campus", shadowOf(nm).allNotifications.isEmpty())
-
     // flag should be set to false
     val was =
         ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
@@ -197,12 +151,10 @@ class CampusEntryPollWorkerCoverageTest {
   }
 
   @Test
-  fun `test coordinates shortcut marks on-campus and posts notification`() {
+  fun `test coordinates shortcut marks on-campus and updates flag`() {
     // Grant permissions
     shadowApp.grantPermissions(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-        Manifest.permission.POST_NOTIFICATIONS)
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
         .edit()
@@ -220,19 +172,13 @@ class CampusEntryPollWorkerCoverageTest {
 
     val prefs = ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
     assertTrue(prefs.getBoolean("was_on_campus", false))
-
-    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    assertTrue(
-        "Notification expected for test coordinates", shadowOf(nm).allNotifications.isNotEmpty())
   }
 
   @Test
-  fun `posts notification only on first campus entry and not on second`() {
+  fun `updates flag only on first campus entry and not on second`() {
     // Grant permissions
     shadowApp.grantPermissions(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-        Manifest.permission.POST_NOTIFICATIONS)
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     // store on-campus coords and ensure was_on_campus false
     ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
@@ -246,21 +192,27 @@ class CampusEntryPollWorkerCoverageTest {
         .putBoolean("was_on_campus", false)
         .commit()
 
-    val worker = buildWorkerWithInputs(CampusEntryPollWorker.Companion.KEY_DISABLE_CHAIN to true)
+    val worker =
+        buildWorkerWithInputs(
+            CampusEntryPollWorker.Companion.KEY_DISABLE_CHAIN to true,
+            CampusEntryPollWorker.Companion.KEY_TEST_SKIP_FETCH to true)
     val first = runBlocking { worker.doWork() }
     assertEquals(ListenableWorker.Result.success(), first)
 
-    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val firstCount = shadowOf(nm).allNotifications.size
-    assertTrue(firstCount > 0)
+    // Flag should be set to true
+    val prefs = ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
+    assertTrue(prefs.getBoolean("was_on_campus", false))
 
-    // Running a second worker instance should not add more notifications
-    val worker2 = buildWorkerWithInputs(CampusEntryPollWorker.Companion.KEY_DISABLE_CHAIN to true)
+    // Running a second worker instance should keep flag as true
+    val worker2 =
+        buildWorkerWithInputs(
+            CampusEntryPollWorker.Companion.KEY_DISABLE_CHAIN to true,
+            CampusEntryPollWorker.Companion.KEY_TEST_SKIP_FETCH to true)
     val second = runBlocking { worker2.doWork() }
     assertEquals(ListenableWorker.Result.success(), second)
 
-    val secondCount = shadowOf(nm).allNotifications.size
-    assertEquals("No new notification on repeated entry", firstCount, secondCount)
+    // Flag should still be true
+    assertTrue(prefs.getBoolean("was_on_campus", false))
   }
 
   @Test
