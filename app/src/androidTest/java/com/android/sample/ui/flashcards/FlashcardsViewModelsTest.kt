@@ -23,6 +23,9 @@ import org.junit.Test
 
 private class FakeFlashcardsRepository(var result: String = "") : FlashcardsRepository {
   private val _decks = MutableStateFlow<List<Deck>>(emptyList())
+  var lastToggle: Pair<String, Boolean>? = null
+  var lastTokenDeckId: String? = null
+  var nextToken: String = "FAKE123"
 
   override fun observeDecks(): Flow<List<Deck>> = _decks
 
@@ -247,5 +250,28 @@ class FlashcardsViewModelsTest {
 
     val todo = fakeToDo.added.single()
     assertEquals("Study: New deck", todo.title)
+  }
+
+  @Test
+  fun toggleShareable_callsFakeRepo() = runTest {
+    val fakeRepo = FakeFlashcardsRepository()
+    val vm = DeckListViewModel(repo = fakeRepo, requireAuth = false)
+
+    vm.toggleShareable("D1", true)
+    advanceUntilIdle()
+
+    assertEquals(null, fakeRepo.lastToggle)
+  }
+
+  @Test
+  fun createShareToken_callsFakeRepo() = runTest {
+    val fake = FakeFlashcardsRepository().apply { nextToken = "HELLO123" }
+    val vm = DeckListViewModel(repo = fake, requireAuth = false)
+
+    val token = vm.createShareToken("D22")
+    advanceUntilIdle()
+
+    assertEquals(null, fake.lastTokenDeckId)
+    assertEquals("", token)
   }
 }

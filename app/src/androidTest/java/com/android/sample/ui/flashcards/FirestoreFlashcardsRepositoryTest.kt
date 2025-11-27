@@ -225,4 +225,36 @@ class FirestoreFlashcardsRepositoryEmulatorTest {
     assertEquals(false, importedDoc.getBoolean("shareable"))
     assertEquals(importedId, importedDoc.getString("id"))
   }
+
+  @Test
+  fun setDeckShareable_updatesShareableFieldInFirestore() = runBlocking {
+    val uid = currentUid()
+
+    // 1) Create deck (shareable is false by default)
+    val deckId =
+        repo.createDeck(
+            "Physics", "Quantum", listOf(Flashcard(question = "Photon", answer = "Light particle")))
+    delay(200)
+
+    // Read initial state
+    val before = readDeckDoc(uid, deckId)
+    assertNotNull(before)
+    assertEquals(false, before!!.getBoolean("shareable"))
+
+    // 2) Set shareable = true
+    repo.setDeckShareable(deckId, true)
+    delay(200)
+
+    val afterTrue = readDeckDoc(uid, deckId)
+    assertNotNull(afterTrue)
+    assertEquals(true, afterTrue!!.getBoolean("shareable"))
+
+    // 3) Set shareable = false
+    repo.setDeckShareable(deckId, false)
+    delay(200)
+
+    val afterFalse = readDeckDoc(uid, deckId)
+    assertNotNull(afterFalse)
+    assertEquals(false, afterFalse!!.getBoolean("shareable"))
+  }
 }

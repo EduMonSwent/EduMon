@@ -237,14 +237,14 @@ class FirestoreFlashcardsRepository(
       }
 
   // Toggle shareable flag
-  suspend fun setDeckShareable(deckId: String, shareable: Boolean) =
+  override suspend fun setDeckShareable(deckId: String, shareable: Boolean) =
       withContext(dispatchers.io) {
         if (!isSignedIn()) return@withContext
         Tasks.await(deckDoc(deckId).update("shareable", shareable))
       }
 
   // Create a share token (like "SHR_89smfw32")
-  suspend fun createShareToken(deckId: String): String =
+  override suspend fun createShareToken(deckId: String): String =
       withContext(dispatchers.io) {
         if (!isSignedIn()) return@withContext ""
 

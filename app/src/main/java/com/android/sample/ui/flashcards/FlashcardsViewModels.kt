@@ -11,7 +11,6 @@ import com.android.sample.data.ToDo
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepoProvider
-import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.flashcards.model.Confidence
 import com.android.sample.ui.flashcards.model.Deck
@@ -73,16 +72,12 @@ class DeckListViewModel(
   fun toggleShareable(deckId: String, enabled: Boolean) =
       viewModelScope.launch {
         FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
-        if (repo is FirestoreFlashcardsRepository) {
-          repo.setDeckShareable(deckId, enabled)
-        }
+        repo.setDeckShareable(deckId, enabled)
       }
 
   suspend fun createShareToken(deckId: String): String {
     FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
-    return if (repo is FirestoreFlashcardsRepository) {
-      repo.createShareToken(deckId)
-    } else ""
+    return repo.createShareToken(deckId)
   }
 }
 

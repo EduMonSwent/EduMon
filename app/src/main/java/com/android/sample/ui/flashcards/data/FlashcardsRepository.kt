@@ -15,5 +15,9 @@ interface FlashcardsRepository {
 
   suspend fun deleteDeck(deckId: String)
 
-  suspend fun importSharedDeck(token: String): String
+  suspend fun importSharedDeck(token: String): String = ""
+
+  suspend fun setDeckShareable(deckId: String, enabled: Boolean) {}
+
+  suspend fun createShareToken(deckId: String): String = ""
 }
