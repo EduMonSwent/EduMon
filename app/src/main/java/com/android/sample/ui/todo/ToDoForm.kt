@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
+import com.android.sample.ui.location.Location
 import java.time.LocalDate
 
 /**
@@ -34,8 +35,10 @@ fun TodoForm(
     status: Status,
     onStatusChange: (Status) -> Unit,
     showOptionalInitial: Boolean = false,
-    location: String?,
-    onLocationChange: (String?) -> Unit,
+    locationQuery: String,
+    onLocationQueryChange: (String) -> Unit,
+    locationSuggestions: List<Location>,
+    onLocationSelected: (Location) -> Unit,
     linksText: String,
     onLinksTextChange: (String) -> Unit,
     note: String?,
@@ -118,39 +121,21 @@ fun TodoForm(
                     Text(if (showOptional) "Hide optional" else "Show optional")
                   }
 
-              if (showOptional) {
-                OutlinedTextField(
-                    value = location.orEmpty(),
-                    onValueChange = onLocationChange,
-                    label = { Text("Location") },
-                    singleLine = true,
-                    colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth().testTag(TestTags.LocationField))
-
-                OutlinedTextField(
-                    value = linksText,
-                    onValueChange = onLinksTextChange,
-                    label = { Text("Useful links (comma-separated)") },
-                    colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth().testTag(TestTags.LinksField))
-
-                OutlinedTextField(
-                    value = note.orEmpty(),
-                    onValueChange = onNoteChange,
-                    label = { Text("Note / Description") },
-                    colors = fieldColors,
-                    modifier =
-                        Modifier.fillMaxWidth().heightIn(min = 120.dp).testTag(TestTags.NoteField))
-
-                Row {
-                  Text("Notifications", color = TodoColors.OnBackground)
-                  Spacer(Modifier.height(0.dp))
-                  Switch(
-                      checked = notificationsEnabled,
-                      onCheckedChange = onNotificationsChange,
-                      modifier = Modifier.testTag(TestTags.NotificationsSwitch))
-                }
-              }
+              // Optional section extracted to its own composable to reduce cognitive complexity.
+              TodoOptionalSection(
+                  visible = showOptional,
+                  fieldColors = fieldColors,
+                  locationQuery = locationQuery,
+                  onLocationQueryChange = onLocationQueryChange,
+                  locationSuggestions = locationSuggestions,
+                  onLocationSelected = onLocationSelected,
+                  linksText = linksText,
+                  onLinksTextChange = onLinksTextChange,
+                  note = note,
+                  onNoteChange = onNoteChange,
+                  notificationsEnabled = notificationsEnabled,
+                  onNotificationsChange = onNotificationsChange,
+              )
 
               Spacer(Modifier.height(8.dp))
 
@@ -166,6 +151,89 @@ fun TodoForm(
                   }
             }
       }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TodoOptionalSection(
+    visible: Boolean,
+    fieldColors: TextFieldColors,
+    locationQuery: String,
+    onLocationQueryChange: (String) -> Unit,
+    locationSuggestions: List<Location>,
+    onLocationSelected: (Location) -> Unit,
+    linksText: String,
+    onLinksTextChange: (String) -> Unit,
+    note: String?,
+    onNoteChange: (String?) -> Unit,
+    notificationsEnabled: Boolean,
+    onNotificationsChange: (Boolean) -> Unit,
+) {
+  if (!visible) return
+
+  var showLocationDropdown by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(
+      expanded = showLocationDropdown && locationSuggestions.isNotEmpty(),
+      onExpandedChange = { expanded ->
+        // Just follow the box's request; don't mix in our own logic here
+        showLocationDropdown = expanded
+      },
+  ) {
+    OutlinedTextField(
+        value = locationQuery,
+        onValueChange = { newValue ->
+          onLocationQueryChange(newValue)
+          // Keep the dropdown "intention" open while typing;
+          // whether it actually shows depends on suggestions.
+          showLocationDropdown = true
+        },
+        label = { Text("Location") },
+        singleLine = true,
+        colors = fieldColors,
+        modifier = Modifier.menuAnchor().fillMaxWidth().testTag(TestTags.LocationField))
+
+    ExposedDropdownMenu(
+        expanded = showLocationDropdown && locationSuggestions.isNotEmpty(),
+        onDismissRequest = { showLocationDropdown = false },
+    ) {
+      locationSuggestions.take(5).forEach { suggestion ->
+        DropdownMenuItem(
+            text = {
+              Text(suggestion.name.take(30) + if (suggestion.name.length > 30) "..." else "")
+            },
+            onClick = {
+              onLocationSelected(suggestion)
+              onLocationQueryChange(suggestion.name)
+              showLocationDropdown = false
+            },
+        )
+      }
+    }
+  }
+
+  OutlinedTextField(
+      value = linksText,
+      onValueChange = onLinksTextChange,
+      label = { Text("Useful links (comma-separated)") },
+      colors = fieldColors,
+      modifier = Modifier.fillMaxWidth().testTag(TestTags.LinksField))
+
+  OutlinedTextField(
+      value = note.orEmpty(),
+      onValueChange = onNoteChange,
+      label = { Text("Note / Description") },
+      colors = fieldColors,
+      modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp).testTag(TestTags.NoteField))
+
+  Row {
+    Text("Notifications", color = TodoColors.OnBackground)
+    Spacer(Modifier.height(0.dp))
+    Switch(
+        checked = notificationsEnabled,
+        onCheckedChange = onNotificationsChange,
+        modifier = Modifier.testTag(TestTags.NotificationsSwitch))
+  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

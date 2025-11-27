@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.theme.BreakYellow
 import com.android.sample.ui.theme.IdleBlue
 import com.android.sample.ui.theme.IndicatorRed
@@ -71,6 +72,8 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlin.math.abs
+import kotlinx.coroutines.flow.collectLatest
+import okhttp3.OkHttpClient
 
 // Test tags
 private const val TAG_FAB_ADD = "fab_add_friend"
@@ -87,6 +90,7 @@ private const val MARKER_ANCHOR_CENTER = 0.5f
 // Marker sizes (in dp)
 private const val USER_MARKER_SIZE_DP = 44f
 private const val FRIEND_MARKER_SIZE_DP = 40f
+private const val TODO_MARKER_SIZE_DP = 52f
 
 // Icon sizes (in dp)
 private const val ICON_SIZE_SMALL_DP = 6
@@ -144,6 +148,14 @@ private data class StudyTogetherActions(
     val onAddFriendFabClick: () -> Unit,
     val onDismissAddFriendDialog: () -> Unit,
     val onConfirmAddFriend: (String) -> Unit,
+)
+
+private data class TodoMarker(
+    val id: String,
+    val title: String,
+    val locationName: String,
+    val position: LatLng,
+    val deadlineText: String,
 )
 
 /* ---------- Main Screen Entry Point ---------- */
@@ -356,14 +368,22 @@ private fun StudyTogetherContent(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-          StudyMap(
-              showMap = showMap,
-              cameraPositionState = cameraPositionState,
-              permissionsGranted = permissionsGranted,
-              uiState = uiState,
-              onUserSelected = actions.onUserSelected,
-              onFriendSelected = actions.onFriendSelected,
-              modifier = Modifier.matchParentSize())
+          if (showMap) {
+            StudyMap(
+                cameraPositionState = cameraPositionState,
+                permissionsGranted = permissionsGranted,
+                uiState = uiState,
+                onUserSelected = actions.onUserSelected,
+                onFriendSelected = actions.onFriendSelected,
+                modifier = Modifier.matchParentSize())
+          } else {
+            // Simple stub so layout stays similar in tests
+            Box(
+                modifier =
+                    Modifier.matchParentSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .testTag(TAG_MAP_STUB))
+          }
 
           // On-campus indicator (only show after location is initialized)
           if (uiState.isLocationInitialized) {
@@ -411,7 +431,6 @@ private fun StudyTogetherContent(
 
 @Composable
 private fun StudyMap(
-    showMap: Boolean,
     cameraPositionState: CameraPositionState,
     permissionsGranted: Boolean,
     uiState: StudyTogetherUiState,
@@ -423,12 +442,44 @@ private fun StudyMap(
   val friends = uiState.friends
   val context = LocalContext.current
 
-  if (!showMap) {
-    // Simple stub so layout stays similar in tests
-    Box(
-        modifier =
-            modifier.background(MaterialTheme.colorScheme.surfaceVariant).testTag(TAG_MAP_STUB))
-    return
+  // --- ToDo markers state + loading from repository ---
+  val todoRepo = remember { AppRepositories.toDoRepository }
+  val okHttpClient = remember { OkHttpClient() }
+  val locationRepo = remember { NominatimLocationRepository(okHttpClient) }
+
+  var todoMarkers by remember { mutableStateOf<List<TodoMarker>>(emptyList()) }
+
+  // Collect todos and geocode their locations on a background dispatcher (inside repo)
+  LaunchedEffect(todoRepo) {
+    todoRepo.todos.collectLatest { todos ->
+      val markers = mutableListOf<TodoMarker>()
+
+      for (todo in todos) {
+        val locName = todo.location ?: continue
+        if (locName.isBlank()) continue
+
+        val best =
+            try {
+              locationRepo.search(locName).firstOrNull()
+            } catch (e: Exception) {
+              Log.w(TAG, "Failed to geocode todo location: $locName", e)
+              null
+            }
+
+        if (best != null) {
+          markers +=
+              TodoMarker(
+                  id = todo.id,
+                  title = todo.title,
+                  locationName = best.name,
+                  deadlineText = "Due: ${todo.dueDate}",
+                  position = LatLng(best.latitude, best.longitude),
+              )
+        }
+      }
+
+      todoMarkers = markers
+    }
   }
 
   // One MarkerState per friend id (prevents association crash)
@@ -461,6 +512,21 @@ private fun StudyMap(
               onUserSelected()
               true
             })
+
+        // --- To-Do markers ---
+        val todoIcon = remember {
+          BitmapDescriptorFactory.fromBitmap(
+              loadDrawableAsBitmap(context, R.drawable.marker, sizeDp = TODO_MARKER_SIZE_DP))
+        }
+        todoMarkers.forEach { marker ->
+          Marker(
+              state = MarkerState(position = marker.position),
+              title = marker.title,
+              snippet = marker.deadlineText,
+              icon = todoIcon,
+              anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
+          )
+        }
 
         // --- Friend markers ---
         val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }

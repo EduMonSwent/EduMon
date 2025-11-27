@@ -1,13 +1,8 @@
 package com.android.sample.ui.location
 
 import android.Manifest
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
 import org.junit.Test
@@ -15,6 +10,7 @@ import org.junit.Test
 class StudyTogetherScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
+
   @get:Rule
   val permissionRule: GrantPermissionRule =
       GrantPermissionRule.grant(
@@ -29,7 +25,7 @@ class StudyTogetherScreenTest {
     val repo = FakeFriendRepository(emptyList())
     val vm = buildViewModel(repo)
 
-    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, false) }
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
 
     // Open dialog
     composeTestRule.onNodeWithTag("fab_add_friend").performClick()
@@ -74,7 +70,7 @@ class StudyTogetherScreenTest {
   fun addFriendDialog_duplicateUid_showsSnackbarError() {
     val repo = FakeFriendRepository(emptyList())
     val vm = buildViewModel(repo)
-    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, false) }
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
 
     // Add once
     composeTestRule.onNodeWithTag("fab_add_friend").performClick()
@@ -162,6 +158,9 @@ class StudyTogetherScreenTest {
 
     // Should display the empty state message
     composeTestRule.onNodeWithText("No friends yet").assertExists()
+
+    // And the map stub should be visible when showMap = false
+    composeTestRule.onNodeWithTag("map_stub").assertExists()
   }
 
   @Test
@@ -316,7 +315,8 @@ class StudyTogetherScreenTest {
     // Error shown
     composeTestRule.onNodeWithText("You're already friends.").assertExists()
 
-    // Wait for snackbar to potentially disappear
+    // Let any snackbar clearing logic run; we don't assert absence here,
+    // but this ensures the effect executes for coverage.
     composeTestRule.waitForIdle()
   }
 
@@ -355,7 +355,9 @@ class StudyTogetherScreenTest {
     composeTestRule.waitForIdle()
 
     // Dropdown should collapse - the friend name in dropdown should no longer be visible
-    // (only in the bottom card)
+    // (only in the bottom card). We just assert the bottom card content for coverage.
+    composeTestRule.onNodeWithText("Bob").assertExists()
+    composeTestRule.onNodeWithText("Studying").assertExists()
   }
 
   @Test
@@ -378,5 +380,45 @@ class StudyTogetherScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithText("You're already friends.").assertExists()
+  }
+
+  // ---------- EXTRA TESTS TO INCREASE COVERAGE ----------
+
+  @Test
+  fun userStatusCard_showsStudyText_whenStudyModeTrue() {
+    composeTestRule.setContent { UserStatusCard(isStudyMode = true) }
+
+    composeTestRule.onNodeWithText("You're studying").assertExists()
+  }
+
+  @Test
+  fun userStatusCard_showsBreakText_whenStudyModeFalse() {
+    composeTestRule.setContent { UserStatusCard(isStudyMode = false) }
+
+    composeTestRule.onNodeWithText("You're on a break").assertExists()
+  }
+
+  @Test
+  fun friendInfoCard_showsStudyChip() {
+    composeTestRule.setContent { FriendInfoCard(name = "Carl", mode = FriendMode.STUDY) }
+
+    composeTestRule.onNodeWithText("Carl").assertExists()
+    composeTestRule.onNodeWithText("Studying").assertExists()
+  }
+
+  @Test
+  fun friendInfoCard_showsBreakChip() {
+    composeTestRule.setContent { FriendInfoCard(name = "Dana", mode = FriendMode.BREAK) }
+
+    composeTestRule.onNodeWithText("Dana").assertExists()
+    composeTestRule.onNodeWithText("Break").assertExists()
+  }
+
+  @Test
+  fun friendInfoCard_showsIdleChip() {
+    composeTestRule.setContent { FriendInfoCard(name = "Eve", mode = FriendMode.IDLE) }
+
+    composeTestRule.onNodeWithText("Eve").assertExists()
+    composeTestRule.onNodeWithText("Idle").assertExists()
   }
 }
