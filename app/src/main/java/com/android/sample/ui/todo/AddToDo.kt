@@ -41,8 +41,12 @@ fun AddToDoScreen(onBack: () -> Unit) {
 
       // Optional fields
       showOptionalInitial = false,
-      location = vm.location,
-      onLocationChange = { vm.location = it },
+      // location = vm.location,
+      locationQuery = vm.locationQuery,
+      onLocationQueryChange = vm::onLocationQueryChange,
+      locationSuggestions = vm.locationSuggestions,
+      onLocationSelected = vm::onLocationSelected,
+      // onLocationChange = { vm.location = it },
       linksText = vm.linksText,
       onLinksTextChange = { vm.linksText = it },
       note = vm.note,

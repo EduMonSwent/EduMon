@@ -46,7 +46,8 @@ class FirestoreFlashcardsRepository(
   private data class DeckFs(
       val title: String = "",
       val description: String = "",
-      val createdAtMillis: Long? = null
+      val createdAtMillis: Long? = null,
+      val shareable: Boolean = false
   )
 
   private data class CardFs(val q: String = "", val a: String = "")
@@ -56,7 +57,7 @@ class FirestoreFlashcardsRepository(
           title = getString("title") ?: "",
           description = getString("description") ?: "",
           createdAtMillis = getLong("createdAtMillis"),
-      )
+          shareable = getBoolean("shareable") ?: false)
 
   private fun DocumentSnapshot.toCardFs(): CardFs =
       CardFs(q = getString("q") ?: "", a = getString("a") ?: "")
@@ -67,7 +68,8 @@ class FirestoreFlashcardsRepository(
           title = fs.title.ifBlank { "New deck" },
           description = fs.description,
           createdAt = fs.createdAtMillis ?: System.currentTimeMillis(),
-          cards = cards.toMutableList())
+          cards = cards.toMutableList(),
+          shareable = fs.shareable)
 
   private fun cardFrom(id: String, fs: CardFs): Flashcard =
       Flashcard(id = id, question = fs.q, answer = fs.a)
@@ -80,27 +82,40 @@ class FirestoreFlashcardsRepository(
       return@callbackFlow
     }
 
-    val reg =
-        decksCol().addSnapshotListener { decksSnap, _ ->
-          val snap = decksSnap ?: return@addSnapshotListener
+    val listener =
+        decksCol().addSnapshotListener { decksSnap, error ->
+          if (error != null) {
+            trySend(emptyList())
+            return@addSnapshotListener
+          }
+
+          val docs =
+              decksSnap?.documents
+                  ?: run {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                  }
 
           launch(dispatchers.io) {
-            val decks =
-                snap.documents.map { d ->
-                  val deckId = d.id
-                  val deckFs = d.toDeckFs()
-                  val cardsSnap = Tasks.await(cardsCol(deckId).get())
-                  val cards =
-                      cardsSnap.documents
-                          .map { it.id to it.toCardFs() }
-                          .filter { (_, c) -> c.q.isNotBlank() && c.a.isNotBlank() }
-                          .map { (id, c) -> cardFrom(id, c) }
-                  deckFrom(deckId, deckFs, cards)
-                }
-            trySend(decks).isSuccess
+            val finalList = mutableListOf<Deck>()
+
+            for (doc in docs) {
+              try {
+                val deckId = doc.id
+                val fs = doc.toDeckFs()
+                val cardsSnap = Tasks.await(cardsCol(deckId).get())
+                val cards = cardsSnap.documents.map { d -> cardFrom(d.id, d.toCardFs()) }
+                finalList += deckFrom(deckId, fs, cards)
+              } catch (e: Exception) {
+                // Skip this deck if there's an error
+              }
+            }
+
+            trySend(finalList)
           }
         }
-    awaitClose { reg.remove() }
+
+    awaitClose { listener.remove() }
   }
 
   override fun observeDeck(deckId: String): Flow<Deck?> = callbackFlow {
@@ -123,7 +138,6 @@ class FirestoreFlashcardsRepository(
             val cards =
                 cardsSnap.documents
                     .map { it.id to it.toCardFs() }
-                    .filter { (_, c) -> c.q.isNotBlank() && c.a.isNotBlank() }
                     .map { (id, c) -> cardFrom(id, c) }
 
             trySend(deckFrom(deckId, deckFs, cards)).isSuccess
@@ -156,7 +170,7 @@ class FirestoreFlashcardsRepository(
                       "description" to description,
                       "createdAtMillis" to nowMs,
                       "updatedAt" to FieldValue.serverTimestamp(),
-                  )
+                      "shareable" to false)
               b.set(deckRef, deckData, SetOptions.merge())
 
               cards
@@ -220,5 +234,114 @@ class FirestoreFlashcardsRepository(
           /* keep deleting */
         }
         Tasks.await(deckDoc(deckId).delete())
+      }
+
+  // Toggle shareable flag
+  override suspend fun setDeckShareable(deckId: String, shareable: Boolean) =
+      withContext(dispatchers.io) {
+        if (!isSignedIn()) return@withContext
+        Tasks.await(deckDoc(deckId).update("shareable", shareable))
+      }
+
+  // Create a share token
+  override suspend fun createShareToken(deckId: String): String =
+      withContext(dispatchers.io) {
+        // Must be signed in to create share tokens
+        if (!isSignedIn()) return@withContext ""
+
+        // Generate a unique token (UUID)
+        // Example: "310f9d42-cb27-4fed-93d1-afa7cec79a7d"
+        val token = UUID.randomUUID().toString()
+
+        // Data saved for a shared deck:
+        // sharedDecks/{token} = {
+        //   ownerId: String (UID of the sharer),
+        //   deckId: String,
+        //   createdAt: Timestamp
+        // }
+        val data =
+            mapOf(
+                "ownerId" to auth.currentUser!!.uid,
+                "deckId" to deckId,
+                "createdAt" to FieldValue.serverTimestamp())
+        // Store the share entry in Firestore
+
+        Tasks.await(db.collection("sharedDecks").document(token).set(data))
+
+        return@withContext token
+      }
+
+  // IMPORT SHARED DECK
+  override suspend fun importSharedDeck(token: String): String =
+      withContext(dispatchers.io) {
+        // Cannot import unless signed in
+        if (!isSignedIn()) {
+          return@withContext ""
+        }
+
+        // 1. Lookup shared token
+        val sharedRef = db.collection("sharedDecks").document(token)
+        val sharedSnap = Tasks.await(sharedRef.get())
+
+        // Token not found → invalid / expired token
+        if (!sharedSnap.exists()) {
+          return@withContext ""
+        }
+        // Extract info stored by the original owner
+        val ownerId = sharedSnap.getString("ownerId") ?: return@withContext ""
+        val deckId = sharedSnap.getString("deckId") ?: return@withContext ""
+
+        // 2. Read the original owner's deck document
+        // users/{ownerId}/decks/{deckId}
+        val ownerDeckRef =
+            db.collection("users").document(ownerId).collection("decks").document(deckId)
+
+        val deckSnap = Tasks.await(ownerDeckRef.get())
+        if (!deckSnap.exists()) {
+          return@withContext ""
+        }
+
+        val deckFs = deckSnap.data ?: return@withContext ""
+
+        // 3. Read owner's cards
+        val cardsSnap = Tasks.await(ownerDeckRef.collection("cards").get())
+
+        // 4. Create new deck for current user
+        val newDeckId = UUID.randomUUID().toString()
+        val newDeckRef = deckDoc(newDeckId)
+
+        val batchTask =
+            db.runBatch { batch ->
+              // Copy deck
+              val deckData =
+                  deckFs.toMutableMap().apply {
+                    this["id"] = newDeckId
+                    this["shareable"] = false
+                    this["createdAtMillis"] = System.currentTimeMillis()
+                    this["updatedAt"] = FieldValue.serverTimestamp()
+                  }
+              // Firestore WriteBatch.set() is not a map setter — ignore Sonar. // NOSONAR
+              batch.set(newDeckRef, deckData)
+
+              // Copy each card with corrected IDs
+              for (cardDoc in cardsSnap.documents) {
+                val newCardId = UUID.randomUUID().toString()
+                val c = cardDoc.data?.toMutableMap() ?: continue
+
+                // Update the ID to match the new document
+                c["id"] = newCardId
+                c["createdAt"] = FieldValue.serverTimestamp()
+                c["updatedAt"] = FieldValue.serverTimestamp()
+
+                val newCardRef = newDeckRef.collection("cards").document(newCardId)
+                // Firestore WriteBatch.set() is not a map setter — ignore Sonar. // NOSONAR
+                batch.set(newCardRef, c)
+              }
+            }
+
+        // Wait for the batch to complete
+        Tasks.await(batchTask)
+
+        return@withContext newDeckId
       }
 }

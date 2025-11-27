@@ -54,19 +54,32 @@ class DeckListViewModel(
 
   constructor(repo: FlashcardsRepository) : this(repo, requireAuth = false)
 
-  // Ensure auth once, then start collecting the repository flow.
+  // Use WhileSubscribed to keep the flow alive during navigation
   val decks: StateFlow<List<Deck>> =
       flow {
             FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
             emitAll(repo.observeDecks())
           }
-          .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+          .stateIn(
+              scope = viewModelScope, started = SharingStarted.Lazily, initialValue = emptyList())
 
   fun deleteDeck(id: String) =
       viewModelScope.launch {
         FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
         repo.deleteDeck(id)
       }
+
+  fun toggleShareable(deckId: String, enabled: Boolean) =
+      viewModelScope.launch {
+        FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+        repo.setDeckShareable(deckId, enabled)
+      }
+
+  // NOSONAR – Exposing a suspend function is intentional for coroutine-based UI.
+  suspend fun createShareToken(deckId: String): String {
+    FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
+    return repo.createShareToken(deckId)
+  }
 }
 
 /** ViewModel for creating a new deck. */

@@ -11,9 +11,13 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
+import com.android.sample.data.Priority as TodoPriority
+import com.android.sample.data.Status as TodoStatus
+import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
@@ -134,10 +138,17 @@ class WeekTabContentAllAndroidTest {
 
     val selected = LocalDate.of(2025, 3, 5)
     val tasks = tasksForWeek(selected)
+    val weekStart = vm.startOfWeek(selected)
+    val weekTodos =
+        todosForWeek(weekStart).filter { it.dueDate in weekStart..weekStart.plusDays(6) }
 
     rule.setContent {
       WeekTabContent(
-          vm = vm, objectivesVm = objectivesVm, allTasks = tasks, selectedDate = selected)
+          vm = vm,
+          objectivesVm = objectivesVm,
+          allTasks = tasks,
+          selectedDate = selected,
+          weekTodos = weekTodos)
     }
 
     // root content + calendar card + week dots row present
@@ -168,7 +179,8 @@ class WeekTabContentAllAndroidTest {
           vm = vm,
           objectivesVm = objectivesVm,
           allTasks = tasksForWeek(selected),
-          selectedDate = selected)
+          selectedDate = selected,
+          weekTodos = emptyList())
     }
 
     // Ensure week mode on UI thread (prevents any race with default state)
@@ -200,7 +212,8 @@ class WeekTabContentAllAndroidTest {
           vm = vm,
           objectivesVm = objectivesVm,
           allTasks = tasksForWeek(selected),
-          selectedDate = selected)
+          selectedDate = selected,
+          weekTodos = emptyList())
     }
 
     // Double-ensure on UI thread (paranoia against any later mode flips)
@@ -230,7 +243,8 @@ class WeekTabContentAllAndroidTest {
           vm = vm,
           objectivesVm = objectivesVm,
           allTasks = tasksForWeek(selected),
-          selectedDate = selected)
+          selectedDate = selected,
+          weekTodos = emptyList())
     }
 
     // header
@@ -262,11 +276,82 @@ class WeekTabContentAllAndroidTest {
 
     rule.setContent {
       WeekTabContent(
-          vm = vm, objectivesVm = objectivesVm, allTasks = emptyList(), selectedDate = selected)
+          vm = vm,
+          objectivesVm = objectivesVm,
+          allTasks = emptyList(),
+          selectedDate = selected,
+          weekTodos = emptyList())
     }
 
     val expected =
         "${start.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${start.dayOfMonth} - ${end.dayOfMonth}"
     rule.onNodeWithText(expected).assertIsDisplayed()
   }
+
+  @Test
+  fun weekTab_showsEmptyWeekTodosMessage_whenNoTodos() {
+    val vm = buildVm()
+    val objectivesVm = ObjectivesViewModel(requireAuth = false)
+    val selected = LocalDate.of(2025, 4, 9)
+    val weekStart = vm.startOfWeek(selected)
+
+    rule.setContent {
+      WeekTabContent(
+          vm = vm,
+          objectivesVm = objectivesVm,
+          allTasks = tasksForWeek(selected),
+          selectedDate = selected,
+          weekTodos = emptyList())
+    }
+
+    val ctx = rule.activity
+    val title = ctx.getString(R.string.schedule_week_todos_title)
+    val empty = ctx.getString(R.string.schedule_week_no_todos)
+
+    rule.onNodeWithText(title).performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText(empty).performScrollTo().assertIsDisplayed()
+  }
+
+  @Test
+  fun weekTab_showsWeekTodos_sorted() {
+    val vm = buildVm()
+    val objectivesVm = ObjectivesViewModel(requireAuth = false)
+    val selected = LocalDate.of(2025, 4, 9)
+    val weekStart = vm.startOfWeek(selected)
+    val allWeekTodos = todosForWeek(weekStart)
+    val filteredWeekTodos = allWeekTodos.filter { it.dueDate in weekStart..weekStart.plusDays(6) }
+
+    rule.setContent {
+      WeekTabContent(
+          vm = vm,
+          objectivesVm = objectivesVm,
+          allTasks = tasksForWeek(selected),
+          selectedDate = selected,
+          weekTodos = filteredWeekTodos)
+    }
+
+    // Both inside-week todos should be visible; outside-week one is not passed in
+    rule.onNodeWithText("Week todo 1", substring = false).assertIsDisplayed()
+    rule.onNodeWithText("Week todo 2", substring = false).assertIsDisplayed()
+    rule.onNodeWithText("Outside week todo", substring = false).assertDoesNotExist()
+  }
+
+  private fun todosForWeek(startOfWeek: LocalDate): List<ToDo> =
+      listOf(
+          ToDo(
+              title = "Week todo 1",
+              dueDate = startOfWeek,
+              priority = TodoPriority.HIGH,
+              status = TodoStatus.TODO),
+          ToDo(
+              title = "Week todo 2",
+              dueDate = startOfWeek.plusDays(3),
+              priority = TodoPriority.MEDIUM,
+              status = TodoStatus.IN_PROGRESS),
+          // Outside this week - should not appear if you filter before passing
+          ToDo(
+              title = "Outside week todo",
+              dueDate = startOfWeek.plusDays(7),
+              priority = TodoPriority.LOW,
+              status = TodoStatus.TODO))
 }

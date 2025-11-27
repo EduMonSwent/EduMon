@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.map
 
 /** In-memory repository for managing flashcard decks. */
 object InMemoryFlashcardsRepository : FlashcardsRepository {
+
   private var _decks = MutableStateFlow<List<Deck>>(emptyList())
   val decks: StateFlow<List<Deck>> = _decks
 
