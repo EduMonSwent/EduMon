@@ -298,6 +298,10 @@
     <string name="week_progression">Week progression</string>
     <string name="schedule_month_important_title">Most important this month</string>
     <string name="schedule_month_no_important">No important events this month</string>
+    <string name="schedule_day_todos_title">Today\'s To-Dos</string>
+    <string name="schedule_day_todos_empty">No to-dos for today</string>
+    <string name="schedule_week_todos_title">This week\'s To-Dos</string>
+    <string name="schedule_week_no_todos">No to-dos this week</string>
 
     <!-- Schedule task snackbar messages -->
     <string name="task_saved">Task saved successfully</string>
@@ -306,6 +310,10 @@
     <string name="task_delete_error">Error while deleting task</string>
     <!-- StudyTogether UI -->
     <string name="study_together_no_friends_yet">No friends yet</string>
+
+    <string name="edumon_content_description">EduMon character</string>
+    <string name="level_label">Level %1$d</string>
+
 
 
 

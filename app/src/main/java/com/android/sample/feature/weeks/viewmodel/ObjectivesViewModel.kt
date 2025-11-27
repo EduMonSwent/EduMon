@@ -9,11 +9,22 @@ import com.android.sample.repos_providors.FakeRepositories
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import java.time.DayOfWeek
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await // <- coroutines-play-services
+
+// Navigation targets when user taps "Start" on an objective.
+sealed class ObjectiveNavigation {
+  data class ToQuiz(val objective: Objective) : ObjectiveNavigation()
+
+  data class ToCourseExercises(val objective: Objective) : ObjectiveNavigation()
+
+  data class ToResume(val objective: Objective) : ObjectiveNavigation()
+}
 
 // Holds only objective-related UI state
 data class ObjectivesUiState(
@@ -31,6 +42,10 @@ class ObjectivesViewModel(
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
+
+  // One-shot navigation events the UI can observe.
+  private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
+  val navigationEvents = _navigationEvents.asSharedFlow()
 
   init {
     // Ensure we have a user (optionally), then load data
@@ -101,8 +116,20 @@ class ObjectivesViewModel(
     _uiState.update { it.copy(showWhy = show) }
   }
 
+  fun markObjectiveCompleted(objective: Objective) {
+    viewModelScope.launch {
+      val current = _uiState.value.objectives
+      val index = current.indexOf(objective)
+      if (index == -1) return@launch
+
+      // Reuse existing update logic; this takes care of repo + uiState.
+      updateObjective(index, current[index].copy(completed = true))
+    }
+  }
+
   @Suppress("UNUSED_PARAMETER")
   fun startObjective(index: Int = 0) {
-    // hook for analytics / navigation later
+    val obj = _uiState.value.objectives.getOrNull(index) ?: return
+    viewModelScope.launch { _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(obj)) }
   }
 }
