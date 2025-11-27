@@ -34,6 +34,7 @@ import com.android.sample.ui.schedule.ScheduleScreen
 import com.android.sample.ui.session.StudySessionScreen
 import com.android.sample.ui.shop.ShopScreen
 import com.android.sample.ui.stats.StatsRoute
+import com.android.sample.ui.todo.AddToDoScreen
 import com.android.sample.ui.todo.TodoNavHostInThisFile
 
 /** Stable tags used by UI tests */
@@ -120,9 +121,24 @@ fun EduMonNavHost(
                           }
                     })
               }) { padding ->
-                Box(Modifier.fillMaxSize().padding(padding)) { ScheduleScreen() }
+                Box(Modifier.fillMaxSize().padding(padding)) {
+                  ScheduleScreen(
+                      onAddTodoClicked = { date ->
+                        nav.navigate("addTodoFromSchedule/$date") { launchSingleTop = true }
+                      },
+                      onOpenTodo = { _ -> nav.navigate(AppDestination.Todo.route) })
+                }
               }
         }
+        composable(
+            route = "addTodoFromSchedule/{date}",
+            arguments = listOf(navArgument("date") { type = NavType.StringType })) { backStackEntry
+              ->
+              AddToDoScreen(
+                  onBack = {
+                    nav.popBackStack(route = AppDestination.Schedule.route, inclusive = false)
+                  })
+            }
 
         // STATS
         composable(AppDestination.Stats.route) {

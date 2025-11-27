@@ -4,6 +4,7 @@ import android.content.res.Resources
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.R
+import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
@@ -11,6 +12,8 @@ import com.android.sample.feature.schedule.data.planner.CompletionStatus
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.repositories.ToDoRepository
 import com.android.sample.ui.schedule.AdaptivePlanner
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -31,13 +34,15 @@ data class ScheduleUiState(
     val errorMessage: String? = null,
     val showAddTaskModal: Boolean = false,
     val showAttendanceModal: Boolean = false,
-    val selectedClass: Class? = null
+    val selectedClass: Class? = null,
+    val todos: List<ToDo> = emptyList()
 )
 
 class ScheduleViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val plannerRepository: PlannerRepository,
-    private val resources: Resources
+    private val resources: Resources,
+    private val toDoRepository: ToDoRepository = AppRepositories.toDoRepository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ScheduleUiState())
@@ -53,6 +58,7 @@ class ScheduleViewModel(
   init {
     observeScheduleData()
     observePlannerData()
+    observeTodos()
   }
 
   private fun observeScheduleData() {
@@ -90,6 +96,12 @@ class ScheduleViewModel(
               _uiState.update { it.copy(attendanceRecords = attendance, isLoading = false) }
             }
       }
+    }
+  }
+
+  private fun observeTodos() {
+    viewModelScope.launch {
+      toDoRepository.todos.collect { todos -> _uiState.update { it.copy(todos = todos) } }
     }
   }
 
@@ -265,4 +277,14 @@ class ScheduleViewModel(
   }
 
   fun startOfWeek(date: LocalDate): LocalDate = date.with(DayOfWeek.MONDAY)
+
+  private fun currentTodos(): List<ToDo> =
+      (toDoRepository.todos as? StateFlow<List<ToDo>>)?.value.orEmpty()
+
+  fun todosForDate(date: LocalDate): List<ToDo> = currentTodos().filter { it.dueDate == date }
+
+  fun todosForWeek(weekStart: LocalDate): List<ToDo> {
+    val weekEnd = weekStart.plusDays(6)
+    return currentTodos().filter { it.dueDate in weekStart..weekEnd }
+  }
 }
