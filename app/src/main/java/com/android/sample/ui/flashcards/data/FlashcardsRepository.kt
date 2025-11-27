@@ -45,12 +45,14 @@ interface FlashcardsRepository {
   /**
    * Toggle whether a deck can be shared or not.
    *
-   * DEFAULT BEHAVIOR: No-op. This is intentional for repositories that do not support sharing, such
-   * as in-memory or local-only repositories used in tests.
-   *
    * FirestoreRepository overrides this to persist the field.
    */
-  suspend fun setDeckShareable(deckId: String, enabled: Boolean) {}
+  suspend fun setDeckShareable(deckId: String, enabled: Boolean) {
+    /**
+     * DEFAULT BEHAVIOR: No-op. This is intentional for repositories that do not support sharing,
+     * such as in-memory or local-only repositories used in tests.
+     */
+  }
   /**
    * Create a token that can be used to share a deck with another user.
    *

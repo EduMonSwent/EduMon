@@ -320,7 +320,8 @@ class FirestoreFlashcardsRepository(
                     this["createdAtMillis"] = System.currentTimeMillis()
                     this["updatedAt"] = FieldValue.serverTimestamp()
                   }
-              batch.set(newDeckRef, deckData)
+              // set() is a Firestore API call, not a map operation — keep as-is.
+              @Suppress("ReplaceGetOrSet") batch.set(newDeckRef, deckData)
 
               // Copy each card with corrected IDs
               for (cardDoc in cardsSnap.documents) {
@@ -333,7 +334,8 @@ class FirestoreFlashcardsRepository(
                 c["updatedAt"] = FieldValue.serverTimestamp()
 
                 val newCardRef = newDeckRef.collection("cards").document(newCardId)
-                batch.set(newCardRef, c)
+                // set() is a Firestore API call, not a map operation — keep as-is.
+                @Suppress("ReplaceGetOrSet") batch.set(newCardRef, c)
               }
             }
 

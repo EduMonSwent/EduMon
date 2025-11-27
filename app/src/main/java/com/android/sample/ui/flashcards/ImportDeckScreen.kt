@@ -2,6 +2,7 @@ package com.android.sample.ui.flashcards
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,13 @@ import com.android.sample.ui.flashcards.model.ImportDeckViewModel
  * trigger the import, and shows loading/error states from the ImportDeckViewModel. Some parts of
  * this code have been written by an LLM(ChatGPT)
  */
+private const val IMPORT_SUCCESS_DELAY_MS = 100L
+private const val BACK_NAVIGATION_ARROW = "Back"
+
+private const val SHARE_CODE = "Share Code"
+
+private const val IMPORT = "Import"
+
 @Composable
 fun ImportDeckScreen(
     onSuccess: () -> Unit,
@@ -28,7 +36,8 @@ fun ImportDeckScreen(
   // Navigate back when success
   LaunchedEffect(state.success) {
     if (state.success) {
-      kotlinx.coroutines.delay(100)
+      // Small delay to let the UI finish updating before navigating away (prevents flicker).
+      kotlinx.coroutines.delay(IMPORT_SUCCESS_DELAY_MS)
       onSuccess()
     }
   }
@@ -40,7 +49,7 @@ fun ImportDeckScreen(
         // ---- TOP BAR ----
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
           IconButton(onClick = onBack) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = BACK_NAVIGATION_ARROW)
           }
           Spacer(Modifier.width(8.dp))
           Text("Import Shared Deck", style = MaterialTheme.typography.headlineLarge)
@@ -50,7 +59,7 @@ fun ImportDeckScreen(
         OutlinedTextField(
             value = token,
             onValueChange = { token = it },
-            label = { Text("Share Code") },
+            label = { Text(SHARE_CODE) },
             modifier = Modifier.fillMaxWidth())
 
         // ---- IMPORT BUTTON ----
@@ -58,7 +67,7 @@ fun ImportDeckScreen(
             onClick = { vm.importToken(token) },
             enabled = token.isNotBlank() && !state.loading,
             modifier = Modifier.fillMaxWidth()) {
-              Text("Import")
+              Text(IMPORT)
             }
 
         // ---- LOADING ----

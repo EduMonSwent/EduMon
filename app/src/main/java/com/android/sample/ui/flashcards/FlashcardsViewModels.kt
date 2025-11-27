@@ -75,6 +75,7 @@ class DeckListViewModel(
         repo.setDeckShareable(deckId, enabled)
       }
 
+  @Suppress("SuspendFunctionOnViewModel")
   suspend fun createShareToken(deckId: String): String {
     FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
     return repo.createShareToken(deckId)
