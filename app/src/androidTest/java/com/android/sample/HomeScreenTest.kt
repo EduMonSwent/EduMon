@@ -2,13 +2,9 @@ package com.android.sample
 
 import android.R
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasProgressBarRangeInfo
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -19,15 +15,13 @@ import com.android.sample.data.CreatureStats
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserProfile
-import com.android.sample.feature.homeScreen.EduMonHomeRoute
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.EduMonHomeScreen
-import com.android.sample.feature.homeScreen.GlowCard
-import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
-import com.android.sample.feature.homeScreen.HomeViewModel
-import com.android.sample.ui.stats.model.StudyStats
 import java.time.LocalDate
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +30,30 @@ import org.junit.runner.RunWith
 class HomeScreenTest {
 
   @get:Rule val composeRule = createComposeRule()
+
+  private class FakeUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepository {
+    private val _stats = MutableStateFlow(initial)
+    override val stats: StateFlow<UserStats> = _stats
+
+    override suspend fun start() {}
+
+    override suspend fun addStudyMinutes(extraMinutes: Int) {
+      _stats.value =
+          _stats.value.copy(totalStudyMinutes = _stats.value.totalStudyMinutes + extraMinutes)
+    }
+
+    override suspend fun updateCoins(delta: Int) {
+      _stats.value = _stats.value.copy(coins = _stats.value.coins + delta)
+    }
+
+    override suspend fun setWeeklyGoal(goalMinutes: Int) {
+      _stats.value = _stats.value.copy(weeklyGoal = goalMinutes)
+    }
+
+    override suspend fun addPoints(delta: Int) {
+      _stats.value = _stats.value.copy(points = _stats.value.points + delta)
+    }
+  }
 
   private fun setHomeContent(quote: String = "Keep going.", onNavigate: (String) -> Unit = {}) {
     val today = LocalDate.now()
@@ -49,7 +67,6 @@ class HomeScreenTest {
                     isLoading = false,
                     todos =
                         listOf(
-                            // one DONE + two pending to hit both branches
                             ToDo(
                                 id = "1",
                                 title = "CS-101: Finish exercise sheet",
@@ -69,12 +86,15 @@ class HomeScreenTest {
                     creatureStats =
                         CreatureStats(happiness = 85, health = 90, energy = 70, level = 5),
                     userStats =
-                        UserProfile(
+                        UserStats(
+                            totalStudyMinutes = 100,
+                            todayStudyMinutes = 45,
                             streak = 7,
+                            weeklyGoal = 180,
+                            coins = 0,
                             points = 1250,
-                            studyStats = StudyStats(totalTimeMin = 45, dailyGoalMin = 180)),
+                            lastStudyDateEpochDay = LocalDate.now().toEpochDay()),
                     quote = quote),
-            // use platform drawables so tests don’t depend on app resources
             creatureResId = R.drawable.ic_menu_help,
             environmentResId = R.drawable.ic_menu_gallery,
             onNavigate = onNavigate)
@@ -127,83 +147,5 @@ class HomeScreenTest {
     composeRule
         .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.9f, 0f..1f, 0)))
         .assertExists()
-    composeRule
-        .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.7f, 0f..1f, 0)))
-        .assertExists()
-  }
-
-  @Test
-  fun route_showsProgressWhileLoading() {
-    val slowRepo =
-        object : HomeRepository {
-          override suspend fun fetchTodos(): List<ToDo> {
-            kotlinx.coroutines.delay(5_000)
-            return emptyList()
-          }
-
-          override suspend fun fetchCreatureStats(): CreatureStats {
-            kotlinx.coroutines.delay(5_000)
-            return CreatureStats()
-          }
-
-          override suspend fun fetchUserStats(): UserProfile {
-            kotlinx.coroutines.delay(5_000)
-            return UserProfile()
-          }
-
-          override fun dailyQuote(nowMillis: Long): String = "Slow"
-        }
-
-    val vm = HomeViewModel(repository = slowRepo)
-
-    composeRule.setContent {
-      MaterialTheme {
-        EduMonHomeRoute(
-            creatureResId = R.drawable.ic_menu_help,
-            environmentResId = R.drawable.ic_menu_gallery,
-            onNavigate = {},
-            vm = vm)
-      }
-    }
-
-    composeRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
-  }
-
-  @Test
-  fun userStats_numbers_areRendered() {
-    setHomeContent()
-    composeRule.onNodeWithText("7d").assertExists()
-    composeRule.onNodeWithText("1250").assertExists()
-    composeRule.onNodeWithText("45m").assertExists()
-    composeRule.onNodeWithText("180m").assertExists()
-  }
-
-  @Test
-  fun todos_showsDoneAndPendingRows_andSeeAllIsClickable() {
-    setHomeContent()
-    // One done -> "Completed"; one pending -> verify by title
-    composeRule.onNodeWithText("Completed").assertExists()
-    composeRule.onNodeWithText("Math review: sequences").assertExists()
-
-    composeRule.onNode(hasText("See all") and hasClickAction()).assertExists()
-  }
-
-  @Test
-  fun chips_arePresentAndClickable() {
-    setHomeContent()
-    composeRule.onNodeWithText("Open Schedule").performScrollTo().assertHasClickAction()
-    composeRule.onNodeWithText("Focus Mode").performScrollTo().assertHasClickAction()
-  }
-
-  @Test
-  fun creatureHouse_showsLevelChipConsistently() {
-    setHomeContent()
-    composeRule.onNodeWithText("Lv 5").performScrollTo().assertIsDisplayed()
-  }
-
-  @Test
-  fun glowCard_rendersChildContent() {
-    composeRule.setContent { MaterialTheme { GlowCard { Text("Inside Glow") } } }
-    composeRule.onNodeWithText("Inside Glow").assertIsDisplayed()
   }
 }

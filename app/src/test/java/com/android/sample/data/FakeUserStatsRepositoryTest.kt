@@ -19,7 +19,9 @@ class FakeUserStatsRepositoryTest {
     assertEquals(0, stats.coins)
     assertEquals(0, stats.points)
     assertEquals(0, stats.weeklyGoal)
-    assertEquals(0L, stats.lastUpdated)
+    assertEquals(0, stats.streak)
+    // lastStudyDateEpochDay should be null by default
+    assertEquals(null, stats.lastStudyDateEpochDay)
   }
 
   @Test
@@ -96,7 +98,7 @@ class FakeUserStatsRepositoryTest {
   }
 
   @Test
-  fun start_does_not_throw_and_keeps_state() {
+  fun start_does_not_throw_and_keeps_state() = runTest {
     val initial = UserStats(totalStudyMinutes = 42)
     val repo = FakeUserStatsRepository(initial)
 
