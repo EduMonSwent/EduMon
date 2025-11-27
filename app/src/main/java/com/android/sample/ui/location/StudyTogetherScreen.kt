@@ -368,16 +368,28 @@ private fun StudyTogetherContent(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-          StudyMap(
-              showMap = showMap,
-              cameraPositionState = cameraPositionState,
-              permissionsGranted = permissionsGranted,
-              uiState = uiState,
-              onUserSelected = actions.onUserSelected,
-              onFriendSelected = actions.onFriendSelected,
-              modifier = Modifier.matchParentSize())
+            if (showMap) {
+                StudyMap(
+                    cameraPositionState = cameraPositionState,
+                    permissionsGranted = permissionsGranted,
+                    uiState = uiState,
+                    onUserSelected = actions.onUserSelected,
+                    onFriendSelected = actions.onFriendSelected,
+                    modifier = Modifier.matchParentSize()
+                )
+            } else {
+                // Simple stub so layout stays similar in tests
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .testTag(TAG_MAP_STUB)
+                )
+            }
 
-          // On-campus indicator (only show after location is initialized)
+
+            // On-campus indicator (only show after location is initialized)
           if (uiState.isLocationInitialized) {
             OnCampusIndicator(
                 modifier =
@@ -423,7 +435,6 @@ private fun StudyTogetherContent(
 
 @Composable
 private fun StudyMap(
-    showMap: Boolean,
     cameraPositionState: CameraPositionState,
     permissionsGranted: Boolean,
     uiState: StudyTogetherUiState,
@@ -431,73 +442,66 @@ private fun StudyMap(
     onFriendSelected: (FriendStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-  val userLatLng = uiState.effectiveUserLatLng
-  val friends = uiState.friends
-  val context = LocalContext.current
+    val userLatLng = uiState.effectiveUserLatLng
+    val friends = uiState.friends
+    val context = LocalContext.current
 
-  if (!showMap) {
-    // Simple stub so layout stays similar in tests
-    Box(
-        modifier =
-            modifier.background(MaterialTheme.colorScheme.surfaceVariant).testTag(TAG_MAP_STUB))
-    return
-  }
-  // --- ToDo markers state + loading from repository ---
-  val todoRepo = remember { AppRepositories.toDoRepository }
-  val okHttpClient = remember { OkHttpClient() }
-  val locationRepo = remember { NominatimLocationRepository(okHttpClient) }
+    // --- ToDo markers state + loading from repository ---
+    val todoRepo = remember { AppRepositories.toDoRepository }
+    val okHttpClient = remember { OkHttpClient() }
+    val locationRepo = remember { NominatimLocationRepository(okHttpClient) }
 
-  var todoMarkers by remember { mutableStateOf<List<TodoMarker>>(emptyList()) }
+    var todoMarkers by remember { mutableStateOf<List<TodoMarker>>(emptyList()) }
 
-  // Collect todos and geocode their locations on a background dispatcher (inside repo)
-  LaunchedEffect(todoRepo) {
-    todoRepo.todos.collectLatest { todos ->
-      val markers = mutableListOf<TodoMarker>()
+    // Collect todos and geocode their locations on a background dispatcher (inside repo)
+    LaunchedEffect(todoRepo) {
+        todoRepo.todos.collectLatest { todos ->
+            val markers = mutableListOf<TodoMarker>()
 
-      for (todo in todos) {
-        val locName = todo.location ?: continue
-        if (locName.isBlank()) continue
+            for (todo in todos) {
+                val locName = todo.location ?: continue
+                if (locName.isBlank()) continue
 
-        val best =
-            try {
-              locationRepo.search(locName).firstOrNull()
-            } catch (e: Exception) {
-              Log.w(TAG, "Failed to geocode todo location: $locName", e)
-              null
+                val best =
+                    try {
+                        locationRepo.search(locName).firstOrNull()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to geocode todo location: $locName", e)
+                        null
+                    }
+
+                if (best != null) {
+                    markers +=
+                        TodoMarker(
+                            id = todo.id,
+                            title = todo.title,
+                            locationName = best.name,
+                            deadlineText = "Due: ${todo.dueDate}",
+                            position = LatLng(best.latitude, best.longitude),
+                        )
+                }
             }
 
-        if (best != null) {
-          markers +=
-              TodoMarker(
-                  id = todo.id,
-                  title = todo.title,
-                  locationName = best.name,
-                  deadlineText = "Due: ${todo.dueDate}",
-                  position = LatLng(best.latitude, best.longitude),
-              )
+            todoMarkers = markers
         }
-      }
-
-      todoMarkers = markers
     }
-  }
 
-  // One MarkerState per friend id (prevents association crash)
-  val markerStates = remember { mutableStateMapOf<String, MarkerState>() }
-  LaunchedEffect(friends) {
-    val ids = friends.map { it.id }.toSet()
-    (markerStates.keys - ids).forEach { markerStates.remove(it) }
-  }
+    // One MarkerState per friend id (prevents association crash)
+    val markerStates = remember { mutableStateMapOf<String, MarkerState>() }
+    LaunchedEffect(friends) {
+        val ids = friends.map { it.id }.toSet()
+        (markerStates.keys - ids).forEach { markerStates.remove(it) }
+    }
 
-  GoogleMap(
-      modifier = modifier,
-      cameraPositionState = cameraPositionState,
-      properties =
-          MapProperties(mapType = MapType.NORMAL, isMyLocationEnabled = permissionsGranted)) {
+    GoogleMap(
+        modifier = modifier,
+        cameraPositionState = cameraPositionState,
+        properties =
+            MapProperties(mapType = MapType.NORMAL, isMyLocationEnabled = permissionsGranted)) {
         // --- User marker (BitmapDescriptorFactory only used *inside* GoogleMap) ---
         val userIcon = remember {
-          BitmapDescriptorFactory.fromBitmap(
-              loadDrawableAsBitmap(context, R.drawable.edumon, sizeDp = USER_MARKER_SIZE_DP))
+            BitmapDescriptorFactory.fromBitmap(
+                loadDrawableAsBitmap(context, R.drawable.edumon, sizeDp = USER_MARKER_SIZE_DP))
         }
         val userMarkerState = remember { MarkerState(position = userLatLng) }
         LaunchedEffect(userLatLng) { userMarkerState.position = userLatLng }
@@ -509,52 +513,53 @@ private fun StudyMap(
             anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
             zIndex = USER_MARKER_Z_INDEX,
             onClick = {
-              onUserSelected()
-              true
+                onUserSelected()
+                true
             })
 
         // --- To-Do markers ---
         val todoIcon = remember {
-          BitmapDescriptorFactory.fromBitmap(
-              loadDrawableAsBitmap(context, R.drawable.marker, sizeDp = TODO_MARKER_SIZE_DP))
+            BitmapDescriptorFactory.fromBitmap(
+                loadDrawableAsBitmap(context, R.drawable.marker, sizeDp = TODO_MARKER_SIZE_DP))
         }
         todoMarkers.forEach { marker ->
-          Marker(
-              state = MarkerState(position = marker.position),
-              title = marker.title,
-              snippet = marker.deadlineText, // <- was marker.locationName
-              icon = todoIcon,
-              anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
-          )
+            Marker(
+                state = MarkerState(position = marker.position),
+                title = marker.title,
+                snippet = marker.deadlineText,
+                icon = todoIcon,
+                anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
+            )
         }
 
         // --- Friend markers ---
         val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }
 
         friendsDistinct.forEach { friend ->
-          key(friend.id) {
-            val target = LatLng(friend.latitude, friend.longitude)
-            val state = markerStates.getOrPut(friend.id) { MarkerState(position = target) }
-            LaunchedEffect(friend.id, friend.latitude, friend.longitude) { state.position = target }
-            val iconRes = edumonFor(friend.id)
-            val friendIcon =
-                remember(friend.id) {
-                  val bmp = loadDrawableAsBitmap(context, iconRes, sizeDp = FRIEND_MARKER_SIZE_DP)
-                  BitmapDescriptorFactory.fromBitmap(bmp)
-                }
-            Marker(
-                state = state,
-                title = friend.name,
-                icon = friendIcon,
-                anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
-                onClick = {
-                  onFriendSelected(friend)
-                  true
-                })
-          }
+            key(friend.id) {
+                val target = LatLng(friend.latitude, friend.longitude)
+                val state = markerStates.getOrPut(friend.id) { MarkerState(position = target) }
+                LaunchedEffect(friend.id, friend.latitude, friend.longitude) { state.position = target }
+                val iconRes = edumonFor(friend.id)
+                val friendIcon =
+                    remember(friend.id) {
+                        val bmp = loadDrawableAsBitmap(context, iconRes, sizeDp = FRIEND_MARKER_SIZE_DP)
+                        BitmapDescriptorFactory.fromBitmap(bmp)
+                    }
+                Marker(
+                    state = state,
+                    title = friend.name,
+                    icon = friendIcon,
+                    anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
+                    onClick = {
+                        onFriendSelected(friend)
+                        true
+                    })
+            }
         }
-      }
+    }
 }
+
 
 /* ---------- Bottom selection panel (cards) ---------- */
 
