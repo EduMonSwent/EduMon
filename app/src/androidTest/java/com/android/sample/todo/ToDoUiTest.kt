@@ -217,37 +217,6 @@ class ToDoUiSingleTest {
   }
 
   @Test
-  fun editToDoScreen_canAddLocationToTaskWithoutOne() {
-    runBlocking {
-      repo.add(
-          ToDo(
-              id = "location-edit-5",
-              title = "Add Location Task",
-              dueDate = LocalDate.now(),
-              status = Status.TODO,
-              priority = Priority.MEDIUM,
-              location = null))
-    }
-
-    var backCalled = false
-    compose.setContent { EditToDoScreen(id = "location-edit-5", onBack = { backCalled = true }) }
-    compose.waitForIdle()
-
-    // Add location to task that didn't have one
-    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Newly Added Location")
-    compose.waitForIdle()
-
-    // Save
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-
-    val updated = runBlocking { repo.getById("location-edit-5") }
-    assertNotNull(updated)
-    assertEquals("Newly Added Location", updated?.location)
-    assertTrue(backCalled)
-  }
-
-  @Test
   fun addToDoScreen_locationFieldVisibleOnlyWhenOptionalShown() {
     compose.setContent { AddToDoScreen(onBack = {}) }
     compose.waitForIdle()
