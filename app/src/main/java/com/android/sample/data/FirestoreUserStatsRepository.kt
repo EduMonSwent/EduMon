@@ -2,6 +2,7 @@ package com.android.sample.data
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
@@ -49,32 +50,42 @@ class FirestoreUserStatsRepository(
       withContext(ioDispatcher) {
         if (listener != null) return@withContext
 
-        // Ensure doc exists
-        doc.get().addOnSuccessListener { snap ->
-          if (!snap.exists()) {
-            doc.set(UserStats().toMap(), SetOptions.merge())
-          }
-        }
-
-        listener =
-            doc.addSnapshotListener { snap, error ->
-              if (error != null) return@addSnapshotListener
-              val raw =
-                  if (snap != null && snap.exists()) {
-                    snap.data?.toUserStats() ?: UserStats()
-                  } else {
-                    UserStats()
-                  }
-
-              val rolled = applyDailyRollover(raw, LocalDate.now())
-              _stats.value = rolled
-
-              if (rolled != raw) {
-                // persist rollover
-                doc.set(rolled.toMap(), SetOptions.merge())
-              }
-            }
+        ensureDocExists()
+        addSnapshotListener()
       }
+
+  private fun ensureDocExists() {
+    doc.get().addOnSuccessListener { snap ->
+      if (!snap.exists()) {
+        doc.set(UserStats().toMap(), SetOptions.merge())
+      }
+    }
+  }
+
+  private fun addSnapshotListener() {
+    listener =
+        doc.addSnapshotListener { snap, error ->
+          if (error != null) return@addSnapshotListener
+          val raw = getRawStats(snap)
+          val rolled = applyDailyRollover(raw, LocalDate.now())
+          _stats.value = rolled
+          persistRollOverIfNeeded(raw, rolled)
+        }
+  }
+
+  private fun getRawStats(snap: DocumentSnapshot?): UserStats {
+    return if (snap != null && snap.exists()) {
+      snap.data?.toUserStats() ?: UserStats()
+    } else {
+      UserStats()
+    }
+  }
+
+  private fun persistRollOverIfNeeded(raw: UserStats, rolled: UserStats) {
+    if (rolled != raw) {
+      doc.set(rolled.toMap(), SetOptions.merge())
+    }
+  }
 
   override suspend fun addStudyMinutes(extraMinutes: Int) {
     withContext(ioDispatcher) {
