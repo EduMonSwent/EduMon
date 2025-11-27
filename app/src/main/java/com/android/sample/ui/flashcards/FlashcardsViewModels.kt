@@ -75,10 +75,13 @@ class DeckListViewModel(
         repo.setDeckShareable(deckId, enabled)
       }
 
-  @Suppress("SuspendFunctionOnViewModel")
-  suspend fun createShareToken(deckId: String): String {
+  internal suspend fun createShareTokenInternal(deckId: String): String {
     FlashcardsAuth.ensureSignedInIfRequired(requireAuth)
     return repo.createShareToken(deckId)
+  }
+
+  fun createShareToken(deckId: String, onResult: (String) -> Unit) {
+    viewModelScope.launch { onResult(createShareTokenInternal(deckId)) }
   }
 }
 
