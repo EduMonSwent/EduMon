@@ -233,7 +233,6 @@ internal fun CampusEntrySection(
   // Educational dialog extracted
   if (showBackgroundLocationDialog) {
     BackgroundLocationEducationDialog(
-        pendingEnableRequest = pendingEnableRequest,
         onConfirmGrant = {
           showBackgroundLocationDialog = false
           vm.requestBackgroundLocationIfNeeded(ctx) { permission ->
@@ -262,11 +261,7 @@ internal fun CampusEntrySection(
 
 // Extracted dialog composable
 @Composable
-private fun BackgroundLocationEducationDialog(
-    pendingEnableRequest: Boolean,
-    onConfirmGrant: () -> Unit,
-    onCancel: () -> Unit
-) {
+private fun BackgroundLocationEducationDialog(onConfirmGrant: () -> Unit, onCancel: () -> Unit) {
   AlertDialog(
       onDismissRequest = { onCancel() },
       title = { Text(stringResource(R.string.background_location_dialog_title)) },

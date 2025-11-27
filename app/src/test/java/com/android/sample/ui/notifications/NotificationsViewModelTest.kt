@@ -1,5 +1,6 @@
 package com.android.sample.ui.notifications
 
+import android.Manifest
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,6 +10,9 @@ import java.util.Calendar
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+
+// Parts of this code were written using ChatGPT
 
 private class FakeRepo : NotificationRepository {
   var oneShotCalls = 0
@@ -44,6 +48,7 @@ private class FakeRepo : NotificationRepository {
 }
 
 @RunWith(AndroidJUnit4::class)
+@Config(sdk = [33])
 class NotificationsViewModelTest {
 
   private val ctx: Context = ApplicationProvider.getApplicationContext()
@@ -90,5 +95,74 @@ class NotificationsViewModelTest {
     vm.setKickoffEnabled(ctx, false)
     vm.applyKickoffSchedule(ctx)
     assertTrue(repo.canceled.contains(NotificationKind.NO_WORK_TODAY))
+  }
+
+  @Test
+  fun kickoffTimes_initialized_for_all_days_at_nine() {
+    val vm = NotificationsViewModel(FakeRepo())
+    val times = vm.kickoffTimes.value
+    assertEquals(7, times.size)
+    val expected = 9 to 0
+    assertTrue(times.values.all { it == expected })
+  }
+
+  @Test
+  fun setStreakEnabled_updates_state_and_repo() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    vm.setStreakEnabled(ctx, true)
+    assertTrue(vm.streakEnabled.value)
+    assertTrue(repo.dailyCalls.isNotEmpty())
+    val (kindTrue, enabledTrue, hourTrue) = repo.dailyCalls.last()
+    assertEquals(NotificationKind.KEEP_STREAK, kindTrue)
+    assertTrue(enabledTrue)
+    assertEquals(19, hourTrue)
+
+    vm.setStreakEnabled(ctx, false)
+    assertFalse(vm.streakEnabled.value)
+    val (kindFalse, enabledFalse, hourFalse) = repo.dailyCalls.last()
+    assertEquals(NotificationKind.KEEP_STREAK, kindFalse)
+    assertFalse(enabledFalse)
+    assertEquals(19, hourFalse)
+  }
+
+  @Test
+  fun needsNotificationPermission_and_requestOrSchedule_behave_with_permission_denied() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // Simulate permission denied
+    (ctx as? android.app.Application)?.let {
+      org.robolectric.Shadows.shadowOf(it).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    assertTrue(vm.needsNotificationPermission(ctx))
+
+    var requestedPermission: String? = null
+    vm.requestOrSchedule(ctx) { perm -> requestedPermission = perm }
+
+    assertEquals(Manifest.permission.POST_NOTIFICATIONS, requestedPermission)
+    assertEquals(0, repo.oneShotCalls)
+  }
+
+  @Test
+  fun needsNotificationPermission_and_requestOrSchedule_behave_with_permission_granted() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // Simulate permission granted
+    (ctx as? android.app.Application)?.let {
+      org.robolectric.Shadows.shadowOf(it).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    assertFalse(vm.needsNotificationPermission(ctx))
+
+    var requestedPermission: String? = null
+    vm.requestOrSchedule(ctx) { perm -> requestedPermission = perm }
+
+    // Should schedule directly, not request permission
+    assertNull(requestedPermission)
+    assertEquals(1, repo.oneShotCalls)
   }
 }

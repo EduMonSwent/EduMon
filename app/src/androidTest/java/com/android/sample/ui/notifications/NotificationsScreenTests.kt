@@ -19,6 +19,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// Parts of this code were written using ChatGPT
+
 @RunWith(AndroidJUnit4::class)
 class NotificationsUnifiedTest {
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()

@@ -21,6 +21,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+// Parts of this code were written using ChatGPT
+
 /**
  * Additional coverage for campus entry enable logic:
  * - Preference persistence already covered in NotificationsViewModelCampusTest
@@ -51,6 +53,26 @@ class NotificationsViewModelCampusLocationTest {
       androidx.core.content.ContextCompat.checkSelfPermission(
           context, Manifest.permission.ACCESS_COARSE_LOCATION)
     } returns (if (grant) PackageManager.PERMISSION_GRANTED else PackageManager.PERMISSION_DENIED)
+    every {
+      androidx.core.content.ContextCompat.checkSelfPermission(
+          context, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    } returns PackageManager.PERMISSION_DENIED
+  }
+
+  private fun setBackgroundPermission(granted: Boolean) {
+    mockkStatic("androidx.core.content.ContextCompat")
+    every {
+      androidx.core.content.ContextCompat.checkSelfPermission(
+          context, Manifest.permission.ACCESS_FINE_LOCATION)
+    } returns PackageManager.PERMISSION_GRANTED
+    every {
+      androidx.core.content.ContextCompat.checkSelfPermission(
+          context, Manifest.permission.ACCESS_COARSE_LOCATION)
+    } returns PackageManager.PERMISSION_GRANTED
+    every {
+      androidx.core.content.ContextCompat.checkSelfPermission(
+          context, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    } returns (if (granted) PackageManager.PERMISSION_GRANTED else PackageManager.PERMISSION_DENIED)
   }
 
   private fun mockLastLocation(location: Location?) {
@@ -131,5 +153,34 @@ class NotificationsViewModelCampusLocationTest {
     assertTrue(viewModel.campusEntryEnabled.value)
     viewModel.setCampusEntryEnabled(context, false)
     assertFalse(viewModel.campusEntryEnabled.value)
+  }
+
+  @Test
+  fun needsBackgroundLocationPermission_true_only_when_foreground_granted_and_background_missing() {
+    // Foreground granted, background missing -> true
+    setBackgroundPermission(granted = false)
+    assertTrue(viewModel.needsBackgroundLocationPermission(context))
+  }
+
+  @Test
+  fun hasBackgroundLocationPermission_reflects_system_permission() {
+    setBackgroundPermission(granted = true)
+    assertTrue(viewModel.hasBackgroundLocationPermission(context))
+
+    setBackgroundPermission(granted = false)
+    assertFalse(viewModel.hasBackgroundLocationPermission(context))
+  }
+
+  @Test
+  fun requestBackgroundLocationIfNeeded_launches_only_when_missing() {
+    setBackgroundPermission(granted = false)
+    var requested: String? = null
+    viewModel.requestBackgroundLocationIfNeeded(context) { requested = it }
+    assertEquals(Manifest.permission.ACCESS_BACKGROUND_LOCATION, requested)
+
+    setBackgroundPermission(granted = true)
+    requested = null
+    viewModel.requestBackgroundLocationIfNeeded(context) { requested = it }
+    assertNull(requested)
   }
 }
