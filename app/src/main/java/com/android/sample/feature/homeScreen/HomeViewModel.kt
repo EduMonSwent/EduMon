@@ -1,10 +1,13 @@
 package com.android.sample.feature.homeScreen
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
-import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,19 +19,28 @@ data class HomeUiState(
     val isLoading: Boolean = true,
     val todos: List<ToDo> = emptyList(),
     val creatureStats: CreatureStats = CreatureStats(),
-    val userStats: UserProfile = UserProfile(),
+    val userStats: UserStats = UserStats(),
     val quote: String = "",
 )
 
 // ---------- ViewModel ----------
 class HomeViewModel(
     private val repository: HomeRepository = AppRepositories.homeRepository,
+    private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(HomeUiState())
   val uiState: StateFlow<HomeUiState> = _uiState
 
   init {
+    // Start unified stats listener
+    viewModelScope.launch { userStatsRepository.start() }
+
+    // Keep Home screen in sync with unified stats
+    viewModelScope.launch {
+      userStatsRepository.stats.collect { stats -> _uiState.update { it.copy(userStats = stats) } }
+    }
+
     refresh()
   }
 
@@ -37,16 +49,10 @@ class HomeViewModel(
     viewModelScope.launch {
       val todos = repository.fetchTodos()
       val creature = repository.fetchCreatureStats()
-      val user = repository.fetchUserStats()
       val quote = repository.dailyQuote()
 
       _uiState.update {
-        it.copy(
-            isLoading = false,
-            todos = todos,
-            creatureStats = creature,
-            userStats = user,
-            quote = quote)
+        it.copy(isLoading = false, todos = todos, creatureStats = creature, quote = quote)
       }
     }
   }
