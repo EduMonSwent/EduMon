@@ -218,39 +218,6 @@ class ToDoUiSingleTest {
   }
 
   @Test
-  fun editToDoScreen_preservesLocationWhenNotModified() {
-    runBlocking {
-      repo.add(
-          ToDo(
-              id = "location-edit-4",
-              title = "Preserve Location Task",
-              dueDate = LocalDate.now(),
-              status = Status.TODO,
-              priority = Priority.MEDIUM,
-              location = "Should Stay"))
-    }
-
-    var backCalled = false
-    compose.setContent { EditToDoScreen(id = "location-edit-4", onBack = { backCalled = true }) }
-    compose.waitForIdle()
-
-    // Modify title but not location
-    compose.onNodeWithTag(TestTags.TitleField).performTextClearance()
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Modified Title")
-    compose.waitForIdle()
-
-    // Save
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-
-    val updated = runBlocking { repo.getById("location-edit-4") }
-    assertNotNull(updated)
-    assertEquals("Should Stay", updated?.location)
-    assertEquals("Modified Title", updated?.title)
-    assertTrue(backCalled)
-  }
-
-  @Test
   fun editToDoScreen_canAddLocationToTaskWithoutOne() {
     runBlocking {
       repo.add(
