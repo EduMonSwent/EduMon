@@ -6,9 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -111,11 +113,9 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
   }
 
   private fun persistLastLocation(ctx: Context, pos: LatLng) {
-    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
-        .edit()
-        .putFloat("lat", pos.latitude.toFloat())
-        .putFloat("lon", pos.longitude.toFloat())
-        .apply()
+    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE).edit {
+      putFloat("lat", pos.latitude.toFloat()).putFloat("lon", pos.longitude.toFloat())
+    }
   }
 
   private suspend fun resolvePosition(
@@ -159,8 +159,7 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
 
   /**
    * Fetch current device location using FusedLocationProviderClient. This requires
-   * ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION permission. For background use,
-   * ACCESS_BACKGROUND_LOCATION is also recommended (API 29+).
+   * ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION permission. For background use
    */
   @Suppress("MissingPermission") // Permission already checked in doWork()
   private suspend fun getCurrentLocation(context: Context): LatLng {
@@ -194,10 +193,9 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
   }
 
   private fun updateCampusFlag(ctx: Context, onCampus: Boolean) {
-    ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
-        .edit()
-        .putBoolean(KEY_WAS_ON_CAMPUS, onCampus)
-        .apply()
+    ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE).edit {
+      putBoolean(KEY_WAS_ON_CAMPUS, onCampus)
+    }
   }
 
   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -217,15 +215,7 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
     NotificationManagerCompat.from(ctx).notify(CAMPUS_ENTRY_NOTIFICATION_ID, n)
   }
 
-  private fun isOnEpflCampus(position: LatLng): Boolean {
-    val lat = position.latitude
-    val lng = position.longitude
-    val minLat = 46.515
-    val maxLat = 46.525
-    val minLng = 6.555
-    val maxLng = 6.575
-    return lat in minLat..maxLat && lng in minLng..maxLng
-  }
+  private fun isOnEpflCampus(position: LatLng): Boolean = isOnEpflCampusInternal(position)
 
   companion object {
     private const val TAG = "CampusEntryPollWorker"
@@ -241,6 +231,17 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
     internal const val KEY_TEST_SKIP_FETCH = "test_skip_fetch"
     internal const val KEY_TEST_LAT = "test_lat"
     internal const val KEY_TEST_LON = "test_lon"
+
+    @VisibleForTesting
+    internal fun isOnEpflCampusInternal(position: LatLng): Boolean {
+      val lat = position.latitude
+      val lng = position.longitude
+      val minLat = 46.515
+      val maxLat = 46.525
+      val minLng = 6.555
+      val maxLng = 6.575
+      return lat in minLat..maxLat && lng in minLng..maxLng
+    }
 
     fun scheduleNext(ctx: Context) {
       val request =
