@@ -113,9 +113,11 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
   }
 
   private fun persistLastLocation(ctx: Context, pos: LatLng) {
-    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE).edit {
-      putFloat("lat", pos.latitude.toFloat()).putFloat("lon", pos.longitude.toFloat())
-    }
+    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
+        .edit()
+        .putFloat("lat", pos.latitude.toFloat())
+        .putFloat("lon", pos.longitude.toFloat())
+        .commit() // Use commit() for synchronous write, ensuring data is available immediately
   }
 
   private suspend fun resolvePosition(

@@ -183,6 +183,7 @@ dependencies {
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation("com.google.guava:guava:31.1-android")
 
 
     // Navigation testing in both test types
