@@ -278,15 +278,13 @@ class ScheduleViewModel(
 
   fun startOfWeek(date: LocalDate): LocalDate = date.with(DayOfWeek.MONDAY)
 
-  fun todosForDate(date: LocalDate): List<ToDo> =
-      (toDoRepository.todos as? StateFlow<List<ToDo>>)?.value.orEmpty().filter {
-        it.dueDate == date
-      }
+  private fun currentTodos(): List<ToDo> =
+      (toDoRepository.todos as? StateFlow<List<ToDo>>)?.value.orEmpty()
+
+  fun todosForDate(date: LocalDate): List<ToDo> = currentTodos().filter { it.dueDate == date }
 
   fun todosForWeek(weekStart: LocalDate): List<ToDo> {
     val weekEnd = weekStart.plusDays(6)
-    return (toDoRepository.todos as? StateFlow<List<ToDo>>)?.value.orEmpty().filter {
-      it.dueDate in weekStart..weekEnd
-    }
+    return currentTodos().filter { it.dueDate in weekStart..weekEnd }
   }
 }

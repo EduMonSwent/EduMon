@@ -20,6 +20,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -46,6 +47,10 @@ import java.time.LocalDate
  * Weekly tab content adapted to the existing Day/GlassSurface styling. Place this in
  * ui/schedule/WeekTabContent.kt This class was implemented with the help of ai (chatgbt)
  */
+private val TodoBarWidth = 5.dp
+private val TodoBarHeight = 32.dp
+private val TodoSpacing = 10.dp
+
 @Composable
 fun WeekTabContent(
     vm: ScheduleViewModel,
@@ -72,7 +77,6 @@ fun WeekTabContent(
                 title = weekTitle,
                 onPrevClick = { vm.onPreviousMonthWeekClicked() },
                 onNextClick = { vm.onNextMonthWeekClicked() })
-
             Spacer(Modifier.height(8.dp))
 
             // ---- Week header + day tiles (WeekRow renders its own title/arrows) ----
@@ -89,7 +93,6 @@ fun WeekTabContent(
                       allTasks = allTasks,
                       onDayClick = { vm.onDateSelected(it) })
                 }
-
             Spacer(Modifier.height(16.dp))
 
             // ---- Frame: "Week progression" ----
@@ -133,22 +136,22 @@ fun WeekTabContent(
                         modifier = Modifier.fillMaxWidth())
                   } else {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                      weekTodos.sortedWith(compareBy({ it.dueDate }, { it.title })).forEach { todo
-                        ->
+                      val sortedTodos =
+                          remember(weekTodos) {
+                            weekTodos.sortedWith(compareBy({ it.dueDate }, { it.title }))
+                          }
+                      sortedTodos.forEach { todo ->
                         Row(
                             modifier =
                                 Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable {
                                   onTodoClicked(todo.id)
                                 }) {
-                              // little color bar
                               Box(
                                   modifier =
-                                      Modifier.width(5.dp)
-                                          .height(32.dp)
+                                      Modifier.width(TodoBarWidth)
+                                          .height(TodoBarHeight)
                                           .background(cs.primary, RoundedCornerShape(999.dp)))
-
-                              Spacer(Modifier.width(10.dp))
-
+                              Spacer(Modifier.width(TodoSpacing))
                               Column(modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = todo.title,

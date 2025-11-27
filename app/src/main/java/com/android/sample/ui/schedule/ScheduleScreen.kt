@@ -18,9 +18,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
+import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.schedule.ScheduleTab
 import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
+import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.ui.CourseExercisesRoute
@@ -47,190 +49,241 @@ object ScheduleScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (String) -> Unit = {}) {
-  // Repos
-  val resources = LocalContext.current.resources
+fun ScheduleScreen(
+    onAddTodoClicked: (LocalDate) -> Unit = {},
+    onOpenTodo: (String) -> Unit = {}
+) {
+    // Repos
+    val resources = LocalContext.current.resources
+    val repositories = remember { AppRepositories }
+    val scheduleRepo = remember { repositories.scheduleRepository }
+    val plannerRepo = remember { repositories.plannerRepository }
 
-  val repositories = remember { AppRepositories }
-  val scheduleRepo = remember { repositories.scheduleRepository }
-  val plannerRepo = remember { repositories.plannerRepository }
-
-  val vm: ScheduleViewModel =
-      viewModel(
-          key = "ScheduleVM",
-          factory =
-              object : ViewModelProvider.Factory {
+    val vm: ScheduleViewModel =
+        viewModel(
+            key = "ScheduleVM",
+            factory = object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                  return ScheduleViewModel(
-                      scheduleRepository = scheduleRepo,
-                      plannerRepository = plannerRepo,
-                      resources = resources)
-                      as T
+                    return ScheduleViewModel(
+                        scheduleRepository = scheduleRepo,
+                        plannerRepository = plannerRepo,
+                        resources = resources
+                    ) as T
                 }
-              })
+            }
+        )
 
-  val objectivesVm: ObjectivesViewModel = viewModel()
+    val objectivesVm: ObjectivesViewModel = viewModel()
+    val state by vm.uiState.collectAsState()
 
-  val state by vm.uiState.collectAsState()
-  val allTasks: List<StudyItem> =
-      remember(state.allEvents) {
-        state.allEvents.map { StudyItemMapper.fromScheduleEvent(it, resources) }
-      }
+    var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
+    var activeObjective by remember { mutableStateOf<Objective?>(null) }
 
-  var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
-  val weekStart = vm.startOfWeek(state.selectedDate)
-  val weekEnd = weekStart.plusDays(6)
-  val weekTodos = state.todos.filter { it.dueDate in weekStart..weekEnd }
-  var activeObjectiveForCourse by remember { mutableStateOf<Objective?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-  // Snackbar for VM events
-  val snackbarHostState = remember { SnackbarHostState() }
-  LaunchedEffect(Unit) {
-    vm.eventFlow.collect { e ->
-      when (e) {
-        is ScheduleViewModel.UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(e.message)
-      }
-    }
-  }
-
-  // Keep VM mode in sync with tab
-  LaunchedEffect(currentTab) {
-    when (currentTab) {
-      ScheduleTab.WEEK -> {
-        vm.setWeekMode()
-        if (!state.isAdjustingPlan) vm.adjustWeeklyPlan()
-      }
-      ScheduleTab.MONTH -> vm.setMonthMode()
-      else -> Unit
-    }
-  }
-
-  Scaffold(
-      snackbarHost = { SnackbarHost(snackbarHostState) },
-      floatingActionButton = {
-        if (currentTab == ScheduleTab.DAY || currentTab == ScheduleTab.WEEK) {
-          FloatingActionButton(
-              modifier = Modifier.testTag(ScheduleScreenTestTags.FAB_ADD),
-              onClick = {
-                val date =
-                    when (currentTab) {
-                      ScheduleTab.DAY -> LocalDate.now()
-                      ScheduleTab.WEEK -> vm.startOfWeek(state.selectedDate)
-                      ScheduleTab.MONTH -> state.selectedDate
-                    }
-                onAddTodoClicked(date)
-              },
-              containerColor = PurplePrimary,
-              contentColor = Color.White) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_event))
-              }
+    val allTasks: List<StudyItem> =
+        remember(state.allEvents) {
+            state.allEvents.map { StudyItemMapper.fromScheduleEvent(it, resources) }
         }
-      },
-      containerColor = Color.Transparent,
-      modifier =
-          Modifier.background(
-              Brush.verticalGradient(listOf(BackgroundDark, BackgroundGradientEnd)))) { padding ->
+
+    val weekStart = vm.startOfWeek(state.selectedDate)
+    val weekTodos = state.todos.filter { it.dueDate in weekStart..weekStart.plusDays(6) }
+
+    // Extracted — greatly reduces complexity
+    ScheduleSideEffects(
+        vm = vm,
+        snackbarHostState = snackbarHostState,
+        currentTab = currentTab,
+        state = state
+    )
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            ScheduleFab(
+                currentTab = currentTab,
+                state = state,
+                vm = vm,
+                onAddTodoClicked = onAddTodoClicked
+            )
+        },
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(
+            Brush.verticalGradient(listOf(BackgroundDark, BackgroundGradientEnd))
+        )
+    ) { padding ->
         Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .testTag(ScheduleScreenTestTags.ROOT),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-              PetHeader(level = 5)
-
-              Spacer(Modifier.height(8.dp))
-
-              // ThemedTabRow will now use the GlassSurface background and adjusted styling
-              Box(Modifier.testTag(ScheduleScreenTestTags.TAB_ROW)) {
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .testTag(ScheduleScreenTestTags.ROOT),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            PetHeader(level = 5)
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.testTag(ScheduleScreenTestTags.TAB_ROW)) {
                 ThemedTabRow(
                     selected = currentTab.ordinal,
                     onSelected = { currentTab = ScheduleTab.values()[it] },
-                    labels =
-                        listOf(
-                            stringResource(R.string.tab_day),
-                            stringResource(R.string.tab_week),
-                            stringResource(R.string.tab_month)))
-              }
-
-              Spacer(Modifier.height(8.dp))
-              if (state.isAdjustingPlan) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(4.dp))
-                Spacer(Modifier.height(8.dp))
-              }
-
-              when (currentTab) {
-                ScheduleTab.DAY ->
-                    Box(
-                        modifier =
-                            Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_DAY)) {
-                          DayTabContent(
-                              vm = vm,
-                              state = state,
-                              objectivesVm = objectivesVm,
-                              onObjectiveNavigation = { nav ->
-                                when (nav) {
-                                  is ObjectiveNavigation.ToCourseExercises -> {
-                                    activeObjectiveForCourse = nav.objective
-                                  }
-                                  else ->
-                                      Unit // we ignore ToQuiz/ToResume, since you don't use them
-                                // now
-                                }
-                              })
-                        }
-                ScheduleTab.WEEK -> {
-                  Box(
-                      modifier =
-                          Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_WEEK)) {
-                        WeekTabContent(
-                            vm = vm,
-                            objectivesVm = objectivesVm,
-                            allTasks = allTasks,
-                            selectedDate = state.selectedDate,
-                            weekTodos = weekTodos,
-                            onTodoClicked = { id -> onOpenTodo(id) })
-                      }
-                }
-                ScheduleTab.MONTH -> {
-                  Box(
-                      modifier =
-                          Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_MONTH)) {
-                        MonthTabContent(
-                            allTasks = allTasks,
-                            selectedDate = state.selectedDate,
-                            currentMonth = YearMonth.from(state.selectedDate),
-                            onPreviousMonthClick = { vm.onPreviousMonthWeekClicked() },
-                            onNextMonthClick = { vm.onNextMonthWeekClicked() },
-                            onDateSelected = { vm.onDateSelected(it) },
-                        )
-                      }
-                }
-              }
+                    labels = listOf(
+                        stringResource(R.string.tab_day),
+                        stringResource(R.string.tab_week),
+                        stringResource(R.string.tab_month)
+                    )
+                )
             }
-      }
-  val activeObjective = activeObjectiveForCourse
-  if (activeObjective != null) {
-    CourseExercisesRoute(
-        objective = activeObjective,
-        coursePdfLabel = "Course material for ${activeObjective.course}",
-        exercisesPdfLabel = "Exercises for ${activeObjective.course}",
-        onBack = {
-          // Just close the screen without changing completion
-          activeObjectiveForCourse = null
-        },
-        onOpenCoursePdf = {
-          // TODO: open the course PDF for this objective
-        },
-        onOpenExercisesPdf = {
-          // TODO: open the exercises PDF for this objective
-        },
-        onCompleted = {
-          // 1) Mark objective as completed in the VM
-          objectivesVm.markObjectiveCompleted(activeObjective)
-          // 2) Close the Course/Exercises screen
-          activeObjectiveForCourse = null
-        })
-  }
+
+            Spacer(Modifier.height(8.dp))
+
+            if (state.isAdjustingPlan) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().height(4.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
+            // Extracted content — major complexity reduction
+            ScheduleMainContent(
+                currentTab = currentTab,
+                vm = vm,
+                state = state,
+                objectivesVm = objectivesVm,
+                allTasks = allTasks,
+                weekTodos = weekTodos,
+                onOpenTodo = onOpenTodo,
+                onSelectObjective = { activeObjective = it }
+            )
+        }
+    }
+
+    // Course details modal (unchanged logic)
+    activeObjective?.let { obj ->
+        CourseExercisesRoute(
+            objective = obj,
+            coursePdfLabel = "Course material for ${obj.course}",
+            exercisesPdfLabel = "Exercises for ${obj.course}",
+            onBack = { activeObjective = null },
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {
+                objectivesVm.markObjectiveCompleted(obj)
+                activeObjective = null
+            }
+        )
+    }
+}
+@Composable
+private fun ScheduleMainContent(
+    currentTab: ScheduleTab,
+    vm: ScheduleViewModel,
+    state: ScheduleUiState,
+    objectivesVm: ObjectivesViewModel,
+    allTasks: List<StudyItem>,
+    weekTodos: List<ToDo>,
+    onOpenTodo: (String) -> Unit,
+    onSelectObjective: (Objective?) -> Unit
+) {
+    when (currentTab) {
+
+        ScheduleTab.DAY ->
+            Box(
+                Modifier.fillMaxSize()
+                    .testTag(ScheduleScreenTestTags.CONTENT_DAY)
+            ) {
+                DayTabContent(
+                    vm = vm,
+                    state = state,
+                    objectivesVm = objectivesVm,
+                    onObjectiveNavigation = { nav ->
+                        if (nav is ObjectiveNavigation.ToCourseExercises) {
+                            onSelectObjective(nav.objective)
+                        }
+                    },
+                    onTodoClicked = onOpenTodo
+                )
+            }
+
+        ScheduleTab.WEEK ->
+            Box(
+                Modifier.fillMaxSize()
+                    .testTag(ScheduleScreenTestTags.CONTENT_WEEK)
+            ) {
+                WeekTabContent(
+                    vm = vm,
+                    objectivesVm = objectivesVm,
+                    allTasks = allTasks,
+                    selectedDate = state.selectedDate,
+                    weekTodos = weekTodos,
+                    onTodoClicked = onOpenTodo
+                )
+            }
+
+        ScheduleTab.MONTH ->
+            Box(
+                Modifier.fillMaxSize()
+                    .testTag(ScheduleScreenTestTags.CONTENT_MONTH)
+            ) {
+                MonthTabContent(
+                    allTasks = allTasks,
+                    selectedDate = state.selectedDate,
+                    currentMonth = YearMonth.from(state.selectedDate),
+                    onPreviousMonthClick = { vm.onPreviousMonthWeekClicked() },
+                    onNextMonthClick = { vm.onNextMonthWeekClicked() },
+                    onDateSelected = { vm.onDateSelected(it) },
+                )
+            }
+    }
+}
+@Composable
+private fun ScheduleFab(
+    currentTab: ScheduleTab,
+    state: ScheduleUiState,
+    vm: ScheduleViewModel,
+    onAddTodoClicked: (LocalDate) -> Unit
+) {
+    if (currentTab == ScheduleTab.DAY || currentTab == ScheduleTab.WEEK) {
+        FloatingActionButton(
+            modifier = Modifier.testTag(ScheduleScreenTestTags.FAB_ADD),
+            onClick = {
+                val date = when (currentTab) {
+                    ScheduleTab.DAY -> LocalDate.now()
+                    ScheduleTab.WEEK -> vm.startOfWeek(state.selectedDate)
+                    ScheduleTab.MONTH -> state.selectedDate
+                }
+                onAddTodoClicked(date)
+            },
+            containerColor = PurplePrimary,
+            contentColor = Color.White
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_event))
+        }
+    }
+}
+@Composable
+private fun ScheduleSideEffects(
+    vm: ScheduleViewModel,
+    snackbarHostState: SnackbarHostState,
+    currentTab: ScheduleTab,
+    state: ScheduleUiState
+) {
+    LaunchedEffect(Unit) {
+        vm.eventFlow.collect { e ->
+            if (e is ScheduleViewModel.UiEvent.ShowSnackbar) {
+                snackbarHostState.showSnackbar(e.message)
+            }
+        }
+    }
+
+    LaunchedEffect(currentTab) {
+        when (currentTab) {
+            ScheduleTab.WEEK -> {
+                vm.setWeekMode()
+                if (!state.isAdjustingPlan) vm.adjustWeeklyPlan()
+            }
+            ScheduleTab.MONTH -> vm.setMonthMode()
+            else -> Unit
+        }
+    }
 }

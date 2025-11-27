@@ -126,7 +126,7 @@ fun EduMonNavHost(
                       onAddTodoClicked = { date ->
                         nav.navigate("addTodoFromSchedule/$date") { launchSingleTop = true }
                       },
-                      onOpenTodo = { todoId -> nav.navigate(AppDestination.Todo.route) })
+                      onOpenTodo = { _ -> nav.navigate(AppDestination.Todo.route) })
                 }
               }
         }
@@ -134,7 +134,6 @@ fun EduMonNavHost(
             route = "addTodoFromSchedule/{date}",
             arguments = listOf(navArgument("date") { type = NavType.StringType })) { backStackEntry
               ->
-              val dateArg = backStackEntry.arguments?.getString("date")
               AddToDoScreen(
                   onBack = {
                     nav.popBackStack(route = AppDestination.Schedule.route, inclusive = false)
