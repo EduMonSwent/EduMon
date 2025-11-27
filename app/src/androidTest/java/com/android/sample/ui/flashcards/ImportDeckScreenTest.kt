@@ -9,6 +9,7 @@ import com.android.sample.ui.theme.EduMonTheme
 import org.junit.Rule
 import org.junit.Test
 
+// Some parts of this code have been written by an LLM(ChatGPT)
 class ImportDeckScreenTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()

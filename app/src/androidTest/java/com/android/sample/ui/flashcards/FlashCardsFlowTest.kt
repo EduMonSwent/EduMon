@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -119,5 +120,23 @@ class FlashcardsFlowTest {
     assert(deletedId == deck.id)
 
     composeRule.onNodeWithText("Delete deck?").assertDoesNotExist()
+  }
+
+  @Test
+  fun navigate_to_createDeck() {
+    composeRule.setContent { EduMonTheme { FlashcardsApp() } }
+
+    composeRule.onNodeWithTag("CreateDeckButton").performClick()
+
+    composeRule.onNodeWithTag("CreateDeckScreenRoot").assertIsDisplayed()
+  }
+
+  @Test
+  fun navigate_to_importDeck() {
+    composeRule.setContent { EduMonTheme { FlashcardsApp() } }
+
+    composeRule.onNodeWithTag("ImportDeckFab").performClick()
+
+    composeRule.onNodeWithTag("ImportDeckScreenRoot").assertIsDisplayed()
   }
 }

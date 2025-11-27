@@ -1,14 +1,19 @@
-package com.android.sample.ui.flashcards.model
+package com.android.sample.ui.flashcards.data
 
-import com.android.sample.ui.flashcards.data.FlashcardsRepository
+import com.android.sample.ui.flashcards.model.Flashcard
+import com.android.sample.ui.flashcards.model.ImportDeckViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.*
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
-/** Fake repo that fully controls importSharedDeck behavior. */
+/**
+ * Fake repo that fully controls importSharedDeck behavior. Some parts of this code have been
+ * written by an LLM(ChatGPT)
+ */
 private class FakeImportRepo : FlashcardsRepository {
 
   var nextResult: String? = null
@@ -29,7 +34,7 @@ private class FakeImportRepo : FlashcardsRepository {
 
   override suspend fun importSharedDeck(token: String): String {
     lastToken = token
-    if (delayMs > 0) kotlinx.coroutines.delay(delayMs)
+    if (delayMs > 0) delay(delayMs)
     return nextResult ?: ""
   }
 }

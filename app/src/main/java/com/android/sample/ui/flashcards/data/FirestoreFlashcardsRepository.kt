@@ -243,29 +243,38 @@ class FirestoreFlashcardsRepository(
         Tasks.await(deckDoc(deckId).update("shareable", shareable))
       }
 
-  // Create a share token (like "SHR_89smfw32")
+  // Create a share token
   override suspend fun createShareToken(deckId: String): String =
       withContext(dispatchers.io) {
+        // Must be signed in to create share tokens
         if (!isSignedIn()) return@withContext ""
 
+        // Generate a unique token (UUID)
+        // Example: "310f9d42-cb27-4fed-93d1-afa7cec79a7d"
         val token = UUID.randomUUID().toString()
 
+        // Data saved for a shared deck:
+        // sharedDecks/{token} = {
+        //   ownerId: String (UID of the sharer),
+        //   deckId: String,
+        //   createdAt: Timestamp
+        // }
         val data =
             mapOf(
                 "ownerId" to auth.currentUser!!.uid,
                 "deckId" to deckId,
                 "createdAt" to FieldValue.serverTimestamp())
+        // Store the share entry in Firestore
 
         Tasks.await(db.collection("sharedDecks").document(token).set(data))
 
         return@withContext token
       }
 
-  // --------------------------
   // IMPORT SHARED DECK
-  // --------------------------
   override suspend fun importSharedDeck(token: String): String =
       withContext(dispatchers.io) {
+        // Cannot import unless signed in
         if (!isSignedIn()) {
           return@withContext ""
         }
@@ -274,14 +283,16 @@ class FirestoreFlashcardsRepository(
         val sharedRef = db.collection("sharedDecks").document(token)
         val sharedSnap = Tasks.await(sharedRef.get())
 
+        // Token not found → invalid / expired token
         if (!sharedSnap.exists()) {
           return@withContext ""
         }
-
+        // Extract info stored by the original owner
         val ownerId = sharedSnap.getString("ownerId") ?: return@withContext ""
         val deckId = sharedSnap.getString("deckId") ?: return@withContext ""
 
-        // 2. Read original deck
+        // 2. Read the original owner's deck document
+        // users/{ownerId}/decks/{deckId}
         val ownerDeckRef =
             db.collection("users").document(ownerId).collection("decks").document(deckId)
 

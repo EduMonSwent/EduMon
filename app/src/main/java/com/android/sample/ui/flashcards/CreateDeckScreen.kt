@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.ui.theme.*
@@ -22,81 +23,92 @@ fun CreateDeckScreen(
     onCancel: () -> Unit,
     vm: CreateDeckViewModel = viewModel()
 ) {
-  Column(Modifier.fillMaxSize().background(BackgroundDark).padding(16.dp)) {
-    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      Text("New Deck", style = MaterialTheme.typography.headlineMedium, color = AccentViolet)
-      TextButton(
-          onClick = onCancel, colors = ButtonDefaults.textButtonColors(contentColor = TextLight)) {
-            Text("Cancel")
-          }
-    }
-    Spacer(Modifier.height(8.dp))
-
-    OutlinedTextField(
-        value = vm.title.collectAsState().value,
-        onValueChange = vm::setTitle,
-        label = { Text("Title", color = TextLight) },
-        modifier = Modifier.fillMaxWidth(),
-        colors = textFieldColors())
-    Spacer(Modifier.height(8.dp))
-    OutlinedTextField(
-        value = vm.description.collectAsState().value,
-        onValueChange = vm::setDescription,
-        label = { Text("Description", color = TextLight) },
-        modifier = Modifier.fillMaxWidth(),
-        colors = textFieldColors())
-
-    Spacer(Modifier.height(12.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-      Text("Cards", color = TextLight, style = MaterialTheme.typography.titleMedium)
-      Button(
-          onClick = vm::addEmptyCard,
-          colors =
-              ButtonDefaults.buttonColors(
-                  containerColor = AccentViolet, contentColor = TextLight)) {
-            Text("Add card")
-          }
-    }
-
-    val cards = vm.cards.collectAsState().value
-    Spacer(Modifier.height(8.dp))
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-      itemsIndexed(cards) { index, card ->
-        Surface(color = MidDarkCard, contentColor = TextLight, shape = MaterialTheme.shapes.large) {
-          Column(Modifier.padding(12.dp)) {
-            OutlinedTextField(
-                value = card.question,
-                onValueChange = { vm.updateCard(index, question = it) },
-                label = { Text("Question", color = TextLight) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = textFieldColors())
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = card.answer,
-                onValueChange = { vm.updateCard(index, answer = it) },
-                label = { Text("Answer", color = TextLight) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = textFieldColors())
-            Spacer(Modifier.height(8.dp))
-            TextButton(
-                onClick = { vm.removeCard(index) },
-                colors = ButtonDefaults.textButtonColors(contentColor = AccentMagenta)) {
-                  Text("Remove")
-                }
-          }
+  Column(
+      Modifier.fillMaxSize()
+          .background(BackgroundDark)
+          .padding(16.dp)
+          .testTag("CreateDeckScreenRoot")) {
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+          Text("New Deck", style = MaterialTheme.typography.headlineMedium, color = AccentViolet)
+          TextButton(
+              onClick = onCancel,
+              colors = ButtonDefaults.textButtonColors(contentColor = TextLight)) {
+                Text("Cancel")
+              }
         }
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = vm.title.collectAsState().value,
+            onValueChange = vm::setTitle,
+            label = { Text("Title", color = TextLight) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = textFieldColors())
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = vm.description.collectAsState().value,
+            onValueChange = vm::setDescription,
+            label = { Text("Description", color = TextLight) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = textFieldColors())
+
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          Text("Cards", color = TextLight, style = MaterialTheme.typography.titleMedium)
+          Button(
+              onClick = vm::addEmptyCard,
+              colors =
+                  ButtonDefaults.buttonColors(
+                      containerColor = AccentViolet, contentColor = TextLight)) {
+                Text("Add card")
+              }
+        }
+
+        val cards = vm.cards.collectAsState().value
+        Spacer(Modifier.height(8.dp))
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
+              itemsIndexed(cards) { index, card ->
+                Surface(
+                    color = MidDarkCard,
+                    contentColor = TextLight,
+                    shape = MaterialTheme.shapes.large) {
+                      Column(Modifier.padding(12.dp)) {
+                        OutlinedTextField(
+                            value = card.question,
+                            onValueChange = { vm.updateCard(index, question = it) },
+                            label = { Text("Question", color = TextLight) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = textFieldColors())
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = card.answer,
+                            onValueChange = { vm.updateCard(index, answer = it) },
+                            label = { Text("Answer", color = TextLight) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = textFieldColors())
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { vm.removeCard(index) },
+                            colors =
+                                ButtonDefaults.textButtonColors(contentColor = AccentMagenta)) {
+                              Text("Remove")
+                            }
+                      }
+                    }
+              }
+            }
+
+        Button(
+            onClick = { vm.save(onSaved) },
+            enabled = cards.any { it.question.isNotBlank() && it.answer.isNotBlank() },
+            modifier = Modifier.fillMaxWidth(),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = AccentMint, contentColor = TextLight)) {
+              Text("Save Deck")
+            }
       }
-    }
-
-    Button(
-        onClick = { vm.save(onSaved) },
-        enabled = cards.any { it.question.isNotBlank() && it.answer.isNotBlank() },
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            ButtonDefaults.buttonColors(containerColor = AccentMint, contentColor = TextLight)) {
-          Text("Save Deck")
-        }
-  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -17,7 +17,7 @@ import org.junit.Test
 
 /**
  * Full coverage for ShareDeckDialog using the REAL DeckListViewModel while injecting a fake
- * repository (no Firebase).
+ * repository (no Firebase). Some parts of this code have been written by an LLM(ChatGPT)
  */
 class ShareDeckDialogTest {
 

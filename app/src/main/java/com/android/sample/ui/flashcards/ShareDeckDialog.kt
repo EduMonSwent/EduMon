@@ -13,6 +13,12 @@ import com.android.sample.ui.flashcards.model.Deck
 import com.android.sample.ui.theme.*
 import kotlinx.coroutines.launch
 
+/**
+ * Dialog for sharing a deck. Lets the user:
+ * - Enable/disable sharing for the deck
+ * - Generate a share token (if sharing is enabled)
+ * - Copy the token to clipboard Some parts of this code have been written by an LLM(ChatGPT)
+ */
 @Composable
 fun ShareDeckDialog(deck: Deck, vm: DeckListViewModel, onDismiss: () -> Unit) {
   var generating by remember { mutableStateOf(false) }

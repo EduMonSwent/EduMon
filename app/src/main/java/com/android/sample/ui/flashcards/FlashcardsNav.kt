@@ -37,7 +37,7 @@ fun FlashcardsApp() {
 
   NavHost(navController = nav, startDestination = DeckListRoute.route) {
 
-    // ---------- DECK LIST ----------
+    // DECK LIST
     composable(DeckListRoute.route) {
       DeckListScreen(
           onCreateDeck = { nav.navigate(CreateDeckRoute.route) },
@@ -45,18 +45,18 @@ fun FlashcardsApp() {
           onImportDeck = { nav.navigate(ImportRoute.route) })
     }
 
-    // ---------- CREATE DECK ----------
+    // CREATE DECK
     composable(CreateDeckRoute.route) {
       CreateDeckScreen(onSaved = { nav.popBackStack() }, onCancel = { nav.popBackStack() })
     }
 
-    // ---------- STUDY DECK ----------
+    // STUDY DECK
     composable(StudyRoute.route) { backStack ->
       val deckId = backStack.arguments?.getString(StudyRoute.arg) ?: return@composable
       StudyScreen(deckId = deckId, onBack = { nav.popBackStack() })
     }
 
-    // ---------- IMPORT SHARED DECK ----------
+    // IMPORT SHARED DECK
     composable(ImportRoute.route) {
       ImportDeckScreen(onSuccess = { nav.popBackStack() }, onBack = { nav.popBackStack() })
     }

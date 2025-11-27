@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.ui.flashcards.model.Deck
@@ -40,6 +41,7 @@ fun DeckListScreen(
 
             Button(
                 onClick = onCreateDeck,
+                modifier = Modifier.testTag("CreateDeckButton"),
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = AccentViolet, contentColor = TextLight)) {
@@ -64,7 +66,7 @@ fun DeckListScreen(
         onClick = onImportDeck,
         containerColor = AccentMagenta,
         contentColor = TextLight,
-        modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)) {
+        modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp).testTag("ImportDeckFab")) {
           Icon(Icons.Default.Share, contentDescription = "Import deck")
         }
   }

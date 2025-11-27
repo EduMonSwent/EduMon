@@ -39,10 +39,4 @@ object InMemoryFlashcardsRepository : FlashcardsRepository {
   override suspend fun deleteDeck(deckId: String) {
     _decks.value = _decks.value.filterNot { it.id == deckId }
   }
-
-  override suspend fun importSharedDeck(token: String): String {
-    // In-memory repo cannot import shared decks.
-    // Returning "" tells the VM the token is invalid.
-    return ""
-  }
 }
