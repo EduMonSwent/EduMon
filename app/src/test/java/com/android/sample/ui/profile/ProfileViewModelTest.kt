@@ -225,10 +225,6 @@ class ProfileViewModelTest {
               override suspend fun updateProfile(newProfile: UserProfile) {
                 state.value = newProfile
               }
-
-              override suspend fun increaseStudyTimeBy(time: Int) {}
-
-              override suspend fun increaseStreakIfCorrect() {}
             }
         val (vm, _) = vmWith(profileRepo, RecordingUserStatsRepository())
 
