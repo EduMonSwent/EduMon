@@ -35,7 +35,7 @@ class HomeViewModelTest {
 
     var startCalled = false
 
-    override fun start() {
+    override suspend fun start() {
       startCalled = true
     }
 

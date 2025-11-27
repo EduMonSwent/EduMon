@@ -1,55 +1,70 @@
 package com.android.sample.data
 
-// This code has been written partially using A.I (LLM).
-
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /** In-memory fake implementation of UserStatsRepository for tests and previews. */
 class FakeUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepository {
 
-  private companion object {
-    private const val DEFAULT_INT_DELTA = 0
-  }
-
   private val _stats = MutableStateFlow(initial)
   override val stats: StateFlow<UserStats> = _stats
 
-  override fun start() {
-    // No-op: everything is in memory.
+  override suspend fun start() {
+    // no-op for fakes
   }
 
   override suspend fun addStudyMinutes(extraMinutes: Int) {
-    if (extraMinutes <= DEFAULT_INT_DELTA) {
-      return
-    }
+    if (extraMinutes <= 0) return
+
+    val now = java.time.LocalDate.now()
     val current = _stats.value
-    val isFirstStudyToday = current.todayStudyMinutes == 0
-    _stats.value =
-        current.copy(
-            totalStudyMinutes = current.totalStudyMinutes + extraMinutes,
-            todayStudyMinutes = current.todayStudyMinutes + extraMinutes,
-            streak = if (isFirstStudyToday) current.streak + 1 else current.streak)
+
+    // apply simple rollover in the fake as well so UI behaves like real repo
+    val rolled = applyDailyRollover(current, now)
+
+    val firstToday = rolled.todayStudyMinutes == 0
+    val updated =
+        rolled.copy(
+            totalStudyMinutes = rolled.totalStudyMinutes + extraMinutes,
+            todayStudyMinutes = rolled.todayStudyMinutes + extraMinutes,
+            streak = rolled.streak + if (firstToday) 1 else 0,
+            lastStudyDateEpochDay = now.toEpochDay())
+
+    _stats.value = updated
   }
 
   override suspend fun updateCoins(delta: Int) {
-    if (delta == DEFAULT_INT_DELTA) {
-      return
-    }
-    val current = _stats.value
-    _stats.value = current.copy(coins = current.coins + delta)
+    if (delta == 0) return
+    val c = _stats.value
+    _stats.value = c.copy(coins = (c.coins + delta).coerceAtLeast(0))
   }
 
   override suspend fun setWeeklyGoal(goalMinutes: Int) {
-    val current = _stats.value
-    _stats.value = current.copy(weeklyGoal = goalMinutes)
+    val c = _stats.value
+    _stats.value = c.copy(weeklyGoal = goalMinutes.coerceAtLeast(0))
   }
 
   override suspend fun addPoints(delta: Int) {
-    if (delta == DEFAULT_INT_DELTA) {
-      return
-    }
-    val current = _stats.value
-    _stats.value = current.copy(points = current.points + delta)
+    if (delta == 0) return
+    val c = _stats.value
+    _stats.value = c.copy(points = (c.points + delta).coerceAtLeast(0))
+  }
+
+  private fun applyDailyRollover(stats: UserStats, today: java.time.LocalDate): UserStats {
+    val lastEpoch =
+        stats.lastStudyDateEpochDay ?: return stats.copy(lastStudyDateEpochDay = today.toEpochDay())
+    val last = java.time.LocalDate.ofEpochDay(lastEpoch)
+
+    if (last.isEqual(today)) return stats
+
+    val gap = java.time.temporal.ChronoUnit.DAYS.between(last, today)
+
+    val hadStudyThatDay = stats.todayStudyMinutes > 0
+    val newStreak =
+        if (!hadStudyThatDay || gap > 1L) 0
+        else stats.streak // break streak if we skipped ≥1 full day
+
+    return stats.copy(
+        todayStudyMinutes = 0, streak = newStreak, lastStudyDateEpochDay = today.toEpochDay())
   }
 }

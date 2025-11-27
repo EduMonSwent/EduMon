@@ -29,29 +29,37 @@ class ProfileViewModelRewardIntegrationTest {
     private val _stats = MutableStateFlow(initial)
     override val stats: StateFlow<UserStats> = _stats
 
-    var startCalled = false
+    var startCalled: Boolean = false
 
-    override fun start() {
+    override suspend fun start() {
       startCalled = true
     }
 
     override suspend fun addStudyMinutes(extraMinutes: Int) {
+      if (extraMinutes <= 0) return
+
+      val current = _stats.value
       _stats.value =
-          _stats.value.copy(
-              totalStudyMinutes = _stats.value.totalStudyMinutes + extraMinutes,
-              todayStudyMinutes = _stats.value.todayStudyMinutes + extraMinutes)
+          current.copy(
+              totalStudyMinutes = current.totalStudyMinutes + extraMinutes,
+              todayStudyMinutes = current.todayStudyMinutes + extraMinutes)
     }
 
     override suspend fun addPoints(delta: Int) {
-      _stats.value = _stats.value.copy(points = _stats.value.points + delta)
+      if (delta == 0) return
+      val current = _stats.value
+      _stats.value = current.copy(points = (current.points + delta).coerceAtLeast(0))
     }
 
     override suspend fun updateCoins(delta: Int) {
-      _stats.value = _stats.value.copy(coins = _stats.value.coins + delta)
+      if (delta == 0) return
+      val current = _stats.value
+      _stats.value = current.copy(coins = (current.coins + delta).coerceAtLeast(0))
     }
 
     override suspend fun setWeeklyGoal(goalMinutes: Int) {
-      _stats.value = _stats.value.copy(weeklyGoal = goalMinutes)
+      val current = _stats.value
+      _stats.value = current.copy(weeklyGoal = goalMinutes.coerceAtLeast(0))
     }
   }
 

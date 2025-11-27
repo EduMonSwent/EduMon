@@ -1,32 +1,22 @@
 package com.android.sample.data
 
-// This code has been written partially using A.I (LLM).
-
 import kotlinx.coroutines.flow.StateFlow
 
-/**
- * Repository abstraction for the unified user stats document. Single Firestore document:
- * /users/{uid}/stats/stats
- */
 interface UserStatsRepository {
-
   val stats: StateFlow<UserStats>
 
-  /** Start listening to Firestore realtime updates for /users/{uid}/stats/stats. */
-  fun start()
+  /** Idempotent: safe to call multiple times. */
+  suspend fun start()
 
-  /**
-   * Add study minutes to the global counters. Implementations handle daily reset for
-   * todayStudyMinutes and streak updates.
-   */
-  suspend fun addStudyMinutes(extraMinutes: Int)
+  /** Adds study minutes for “today” and updates streak. */
+  suspend fun addStudyMinutes(delta: Int)
 
-  /** Update coin balance by a delta (can be negative). */
+  /** Adds points (can be negative). */
+  suspend fun addPoints(delta: Int)
+
+  /** Adds coins (can be negative, but never goes below 0). */
   suspend fun updateCoins(delta: Int)
 
-  /** Set the weekly goal (in minutes). */
-  suspend fun setWeeklyGoal(goalMinutes: Int)
-
-  /** Add points (e.g. on Pomodoro completion). */
-  suspend fun addPoints(delta: Int)
+  /** Sets the weekly goal in minutes. */
+  suspend fun setWeeklyGoal(minutes: Int)
 }

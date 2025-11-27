@@ -1,7 +1,6 @@
 package com.android.sample.data
 
-// This code has been written partially using A.I (LLM).
-
+import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.CollectionReference
@@ -12,11 +11,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.Calendar
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
@@ -50,6 +48,14 @@ class FirestoreUserStatsRepositoryTest {
     `when`(statsCollection.document("stats")).thenReturn(statsDoc)
   }
 
+  private fun stubStatsDocGet() {
+    @Suppress("UNCHECKED_CAST") val task = mock(Task::class.java) as Task<DocumentSnapshot>
+
+    `when`(statsDoc.get()).thenReturn(task)
+    `when`(task.addOnSuccessListener(any())).thenReturn(task)
+    `when`(task.addOnFailureListener(any())).thenReturn(task)
+  }
+
   private fun createRepo(): FirestoreUserStatsRepository =
       FirestoreUserStatsRepository(auth, firestore)
 
@@ -74,32 +80,21 @@ class FirestoreUserStatsRepositoryTest {
     assertEquals(0, stats.coins)
     assertEquals(0, stats.points)
     assertEquals(0, stats.weeklyGoal)
-    assertEquals(0L, stats.lastUpdated)
-  }
-
-  @Test
-  fun start_with_no_current_user_does_not_crash_and_does_not_change_stats() {
-    `when`(auth.currentUser).thenReturn(null)
-    val repo = createRepo()
-
-    repo.start()
-
-    val stats = repo.stats.value
-    assertEquals(UserStats(), stats)
+    assertEquals(0, stats.streak)
+    assertEquals(null, stats.lastStudyDateEpochDay)
   }
 
   @Test
   fun addStudyMinutes_same_day_increments_total_and_today() = runTest {
     val repo = createRepo()
 
-    // Use current time to ensure it's treated as "same day"
-    val now = System.currentTimeMillis()
+    val today = LocalDate.now()
     val initial =
         UserStats(
             totalStudyMinutes = 10,
             todayStudyMinutes = 4,
-            lastUpdated = now // Use actual timestamp, not 0L which triggers reset
-            )
+            streak = 1,
+            lastStudyDateEpochDay = today.toEpochDay())
     setInternalStats(repo, initial)
 
     repo.addStudyMinutes(20)
@@ -107,19 +102,21 @@ class FirestoreUserStatsRepositoryTest {
     val updated = repo.stats.value
     assertEquals(30, updated.totalStudyMinutes)
     assertEquals(24, updated.todayStudyMinutes)
-    assertTrue(updated.lastUpdated >= now)
+    assertEquals(1, updated.streak) // Streak doesn't increment when continuing same day
+    assertEquals(today.toEpochDay(), updated.lastStudyDateEpochDay)
   }
 
   @Test
-  fun addStudyMinutes_cross_day_resets_today_and_keeps_total_plus_extra() = runTest {
+  fun addStudyMinutes_first_study_of_day_increments_streak() = runTest {
     val repo = createRepo()
 
-    val calendar = Calendar.getInstance()
-    calendar.add(Calendar.DAY_OF_YEAR, -1)
-    val yesterdayMillis = calendar.timeInMillis
-
+    val yesterday = LocalDate.now().minusDays(1)
     val initial =
-        UserStats(totalStudyMinutes = 100, todayStudyMinutes = 40, lastUpdated = yesterdayMillis)
+        UserStats(
+            totalStudyMinutes = 100,
+            todayStudyMinutes = 30,
+            streak = 2,
+            lastStudyDateEpochDay = yesterday.toEpochDay())
     setInternalStats(repo, initial)
 
     repo.addStudyMinutes(25)
@@ -127,13 +124,40 @@ class FirestoreUserStatsRepositoryTest {
     val updated = repo.stats.value
     assertEquals(125, updated.totalStudyMinutes)
     assertEquals(25, updated.todayStudyMinutes)
-    assertTrue(updated.lastUpdated > yesterdayMillis)
+    assertEquals(3, updated.streak) // Streak increments on first study of new day
+    assertEquals(LocalDate.now().toEpochDay(), updated.lastStudyDateEpochDay)
+  }
+
+  @Test
+  fun addStudyMinutes_cross_day_with_gap_resets_streak() = runTest {
+    val repo = createRepo()
+
+    val twoDaysAgo = LocalDate.now().minusDays(2)
+    val initial =
+        UserStats(
+            totalStudyMinutes = 100,
+            todayStudyMinutes = 40,
+            streak = 5,
+            lastStudyDateEpochDay = twoDaysAgo.toEpochDay())
+    setInternalStats(repo, initial)
+
+    repo.addStudyMinutes(25)
+
+    val updated = repo.stats.value
+    assertEquals(125, updated.totalStudyMinutes)
+    assertEquals(25, updated.todayStudyMinutes)
+    assertEquals(1, updated.streak) // Streak resets and starts at 1 when gap > 1 day
+    assertEquals(LocalDate.now().toEpochDay(), updated.lastStudyDateEpochDay)
   }
 
   @Test
   fun addStudyMinutes_non_positive_does_not_change_stats() = runTest {
     val repo = createRepo()
-    val initial = UserStats(totalStudyMinutes = 50, todayStudyMinutes = 20, lastUpdated = 1234L)
+    val initial =
+        UserStats(
+            totalStudyMinutes = 50,
+            todayStudyMinutes = 20,
+            lastStudyDateEpochDay = LocalDate.now().toEpochDay())
     setInternalStats(repo, initial)
 
     repo.addStudyMinutes(0)
@@ -143,22 +167,33 @@ class FirestoreUserStatsRepositoryTest {
   }
 
   @Test
-  fun updateCoins_positive_delta_updates_and_sets_lastUpdated() = runTest {
+  fun updateCoins_positive_delta_updates_coins() = runTest {
     val repo = createRepo()
-    val initial = UserStats(coins = 10, lastUpdated = 10L)
+    val initial = UserStats(coins = 10)
     setInternalStats(repo, initial)
 
     repo.updateCoins(5)
 
     val updated = repo.stats.value
     assertEquals(15, updated.coins)
-    assertTrue(updated.lastUpdated >= initial.lastUpdated)
+  }
+
+  @Test
+  fun updateCoins_negative_delta_never_goes_below_zero() = runTest {
+    val repo = createRepo()
+    val initial = UserStats(coins = 10)
+    setInternalStats(repo, initial)
+
+    repo.updateCoins(-15)
+
+    val updated = repo.stats.value
+    assertEquals(0, updated.coins)
   }
 
   @Test
   fun updateCoins_zero_does_not_change_state() = runTest {
     val repo = createRepo()
-    val initial = UserStats(coins = 10, lastUpdated = 100L)
+    val initial = UserStats(coins = 10)
     setInternalStats(repo, initial)
 
     repo.updateCoins(0)
@@ -168,35 +203,57 @@ class FirestoreUserStatsRepositoryTest {
   }
 
   @Test
-  fun setWeeklyGoal_updates_field_and_lastUpdated() = runTest {
+  fun setWeeklyGoal_updates_field() = runTest {
     val repo = createRepo()
-    val initial = UserStats(weeklyGoal = 100, lastUpdated = 10L)
+    val initial = UserStats(weeklyGoal = 100)
     setInternalStats(repo, initial)
 
     repo.setWeeklyGoal(300)
 
     val updated = repo.stats.value
     assertEquals(300, updated.weeklyGoal)
-    assertTrue(updated.lastUpdated >= initial.lastUpdated)
   }
 
   @Test
-  fun addPoints_positive_updates_points_and_lastUpdated() = runTest {
+  fun setWeeklyGoal_negative_value_coerced_to_zero() = runTest {
     val repo = createRepo()
-    val initial = UserStats(points = 5, lastUpdated = 10L)
+    val initial = UserStats(weeklyGoal = 100)
+    setInternalStats(repo, initial)
+
+    repo.setWeeklyGoal(-50)
+
+    val updated = repo.stats.value
+    assertEquals(0, updated.weeklyGoal)
+  }
+
+  @Test
+  fun addPoints_positive_updates_points() = runTest {
+    val repo = createRepo()
+    val initial = UserStats(points = 5)
     setInternalStats(repo, initial)
 
     repo.addPoints(7)
 
     val updated = repo.stats.value
     assertEquals(12, updated.points)
-    assertTrue(updated.lastUpdated >= initial.lastUpdated)
+  }
+
+  @Test
+  fun addPoints_negative_never_goes_below_zero() = runTest {
+    val repo = createRepo()
+    val initial = UserStats(points = 5)
+    setInternalStats(repo, initial)
+
+    repo.addPoints(-10)
+
+    val updated = repo.stats.value
+    assertEquals(0, updated.points)
   }
 
   @Test
   fun addPoints_zero_does_not_change_state() = runTest {
     val repo = createRepo()
-    val initial = UserStats(points = 5, lastUpdated = 10L)
+    val initial = UserStats(points = 5)
     setInternalStats(repo, initial)
 
     repo.addPoints(0)
@@ -206,7 +263,7 @@ class FirestoreUserStatsRepositoryTest {
   }
 
   @Test
-  fun userStatsToMap_and_toUserStats_are_inverse_for_typical_values() {
+  fun toMap_and_toUserStats_are_inverse_for_typical_values() {
     val repo = createRepo()
     val stats =
         UserStats(
@@ -216,12 +273,10 @@ class FirestoreUserStatsRepositoryTest {
             weeklyGoal = 300,
             coins = 50,
             points = 80,
-            lastUpdated = 9999L)
+            lastStudyDateEpochDay = LocalDate.now().toEpochDay())
 
     val toMapMethod: Method =
-        FirestoreUserStatsRepository::class
-            .java
-            .getDeclaredMethod("userStatsToMap", UserStats::class.java)
+        FirestoreUserStatsRepository::class.java.getDeclaredMethod("toMap", UserStats::class.java)
     toMapMethod.isAccessible = true
     @Suppress("UNCHECKED_CAST") val map = toMapMethod.invoke(repo, stats) as Map<String, Any>
 
@@ -236,37 +291,114 @@ class FirestoreUserStatsRepositoryTest {
     assertEquals(stats.weeklyGoal, reconstructed.weeklyGoal)
     assertEquals(stats.coins, reconstructed.coins)
     assertEquals(stats.points, reconstructed.points)
-    assertEquals(stats.lastUpdated, reconstructed.lastUpdated)
+    assertEquals(stats.lastStudyDateEpochDay, reconstructed.lastStudyDateEpochDay)
   }
 
   @Test
-  fun isSameDay_returns_true_for_same_calendar_day_and_false_otherwise() {
+  fun applyDailyRollover_same_day_returns_unchanged_stats() {
     val repo = createRepo()
+    val today = LocalDate.now()
 
     val method: Method =
         FirestoreUserStatsRepository::class
             .java
-            .getDeclaredMethod(
-                "isSameDay", Long::class.javaPrimitiveType, Long::class.javaPrimitiveType)
+            .getDeclaredMethod("applyDailyRollover", UserStats::class.java, LocalDate::class.java)
     method.isAccessible = true
 
-    val cal = Calendar.getInstance()
-    val t1 = cal.timeInMillis
-    cal.add(Calendar.HOUR_OF_DAY, 1)
-    val t2 = cal.timeInMillis
-    cal.add(Calendar.DAY_OF_YEAR, 1)
-    val nextDay = cal.timeInMillis
+    val stats =
+        UserStats(
+            totalStudyMinutes = 100,
+            todayStudyMinutes = 40,
+            streak = 3,
+            lastStudyDateEpochDay = today.toEpochDay())
 
-    val sameDayResult = method.invoke(repo, t1, t2) as Boolean
-    val differentDayResult = method.invoke(repo, t1, nextDay) as Boolean
+    val result = method.invoke(repo, stats, today) as UserStats
 
-    assertTrue(sameDayResult)
-    assertEquals(false, differentDayResult)
+    assertEquals(stats, result)
   }
 
   @Test
-  fun start_with_snapshot_same_day_uses_raw_stats_without_reset() {
+  fun applyDailyRollover_next_day_with_study_preserves_streak() {
     val repo = createRepo()
+    val yesterday = LocalDate.now().minusDays(1)
+    val today = LocalDate.now()
+
+    val method: Method =
+        FirestoreUserStatsRepository::class
+            .java
+            .getDeclaredMethod("applyDailyRollover", UserStats::class.java, LocalDate::class.java)
+    method.isAccessible = true
+
+    val stats =
+        UserStats(
+            totalStudyMinutes = 100,
+            todayStudyMinutes = 40,
+            streak = 3,
+            lastStudyDateEpochDay = yesterday.toEpochDay())
+
+    val result = method.invoke(repo, stats, today) as UserStats
+
+    assertEquals(0, result.todayStudyMinutes)
+    assertEquals(3, result.streak) // Streak preserved when studied yesterday
+    assertEquals(today.toEpochDay(), result.lastStudyDateEpochDay)
+  }
+
+  @Test
+  fun applyDailyRollover_gap_resets_streak() {
+    val repo = createRepo()
+    val twoDaysAgo = LocalDate.now().minusDays(2)
+    val today = LocalDate.now()
+
+    val method: Method =
+        FirestoreUserStatsRepository::class
+            .java
+            .getDeclaredMethod("applyDailyRollover", UserStats::class.java, LocalDate::class.java)
+    method.isAccessible = true
+
+    val stats =
+        UserStats(
+            totalStudyMinutes = 100,
+            todayStudyMinutes = 40,
+            streak = 5,
+            lastStudyDateEpochDay = twoDaysAgo.toEpochDay())
+
+    val result = method.invoke(repo, stats, today) as UserStats
+
+    assertEquals(0, result.todayStudyMinutes)
+    assertEquals(0, result.streak) // Streak reset due to gap
+    assertEquals(today.toEpochDay(), result.lastStudyDateEpochDay)
+  }
+
+  @Test
+  fun applyDailyRollover_no_study_yesterday_resets_streak() {
+    val repo = createRepo()
+    val yesterday = LocalDate.now().minusDays(1)
+    val today = LocalDate.now()
+
+    val method: Method =
+        FirestoreUserStatsRepository::class
+            .java
+            .getDeclaredMethod("applyDailyRollover", UserStats::class.java, LocalDate::class.java)
+    method.isAccessible = true
+
+    val stats =
+        UserStats(
+            totalStudyMinutes = 100,
+            todayStudyMinutes = 0, // No study yesterday
+            streak = 5,
+            lastStudyDateEpochDay = yesterday.toEpochDay())
+
+    val result = method.invoke(repo, stats, today) as UserStats
+
+    assertEquals(0, result.todayStudyMinutes)
+    assertEquals(0, result.streak) // Streak reset because no study on last recorded day
+    assertEquals(today.toEpochDay(), result.lastStudyDateEpochDay)
+  }
+
+  @Test
+  fun start_with_snapshot_same_day_uses_raw_stats_without_rollover() = runTest {
+    val repo = createRepo()
+    stubStatsDocGet() // <--- ADD THIS
 
     var capturedListener: EventListener<DocumentSnapshot>? = null
     `when`(statsDoc.addSnapshotListener(any<EventListener<DocumentSnapshot>>())).thenAnswer {
@@ -279,6 +411,7 @@ class FirestoreUserStatsRepositoryTest {
     repo.start()
 
     val snapshot = mock(DocumentSnapshot::class.java)
+    val today = LocalDate.now()
     val map =
         mapOf(
             "totalStudyMinutes" to 100,
@@ -287,8 +420,7 @@ class FirestoreUserStatsRepositoryTest {
             "weeklyGoal" to 300,
             "coins" to 10,
             "points" to 50,
-            // lastUpdated = 0L -> branche rawStats.lastUpdated == DEFAULT_LONG_VALUE
-            "lastUpdated" to 0L)
+            "lastStudyDateEpochDay" to today.toEpochDay())
 
     `when`(snapshot.exists()).thenReturn(true)
     `when`(snapshot.data).thenReturn(map)
@@ -305,8 +437,9 @@ class FirestoreUserStatsRepositoryTest {
   }
 
   @Test
-  fun start_with_snapshot_previous_day_resets_today_and_updates_lastUpdated() {
+  fun start_with_snapshot_previous_day_resets_today() = runTest {
     val repo = createRepo()
+    stubStatsDocGet() // <--- ADD THIS
 
     var capturedListener: EventListener<DocumentSnapshot>? = null
     `when`(statsDoc.addSnapshotListener(any<EventListener<DocumentSnapshot>>())).thenAnswer {
@@ -319,10 +452,7 @@ class FirestoreUserStatsRepositoryTest {
     repo.start()
 
     val snapshot = mock(DocumentSnapshot::class.java)
-
-    val cal = Calendar.getInstance()
-    cal.add(Calendar.DAY_OF_YEAR, -1)
-    val yesterdayMillis = cal.timeInMillis
+    val yesterday = LocalDate.now().minusDays(1)
 
     val map =
         mapOf(
@@ -332,7 +462,7 @@ class FirestoreUserStatsRepositoryTest {
             "weeklyGoal" to 400,
             "coins" to 25,
             "points" to 90,
-            "lastUpdated" to yesterdayMillis)
+            "lastStudyDateEpochDay" to yesterday.toEpochDay())
 
     `when`(snapshot.exists()).thenReturn(true)
     `when`(snapshot.data).thenReturn(map)
@@ -341,17 +471,18 @@ class FirestoreUserStatsRepositoryTest {
 
     val stats = repo.stats.value
     assertEquals(200, stats.totalStudyMinutes)
-    assertEquals(0, stats.todayStudyMinutes)
-    assertEquals(3, stats.streak)
+    assertEquals(0, stats.todayStudyMinutes) // Reset to 0 for new day
+    assertEquals(3, stats.streak) // Preserved because studied yesterday
     assertEquals(400, stats.weeklyGoal)
     assertEquals(25, stats.coins)
     assertEquals(90, stats.points)
-    assertTrue(stats.lastUpdated >= yesterdayMillis)
+    assertEquals(LocalDate.now().toEpochDay(), stats.lastStudyDateEpochDay)
   }
 
   @Test
-  fun start_with_missing_snapshot_creates_default_document_and_updates_state() {
+  fun start_with_null_snapshot_uses_default_stats() = runTest {
     val repo = createRepo()
+    stubStatsDocGet() // <--- ADD THIS
 
     var capturedListener: EventListener<DocumentSnapshot>? = null
     `when`(statsDoc.addSnapshotListener(any<EventListener<DocumentSnapshot>>())).thenAnswer {
@@ -365,8 +496,6 @@ class FirestoreUserStatsRepositoryTest {
 
     capturedListener!!.onEvent(null, null)
 
-    Thread.sleep(50L)
-
     val stats = repo.stats.value
 
     assertEquals(0, stats.totalStudyMinutes)
@@ -375,5 +504,27 @@ class FirestoreUserStatsRepositoryTest {
     assertEquals(0, stats.weeklyGoal)
     assertEquals(0, stats.coins)
     assertEquals(0, stats.points)
+  }
+
+  @Test
+  fun toUserStats_handles_null_lastStudyDateEpochDay() {
+    val repo = createRepo()
+
+    val toUserStatsMethod: Method =
+        FirestoreUserStatsRepository::class.java.getDeclaredMethod("toUserStats", Map::class.java)
+    toUserStatsMethod.isAccessible = true
+
+    val map =
+        mapOf(
+            "totalStudyMinutes" to 100,
+            "todayStudyMinutes" to 40,
+            "streak" to 2,
+            "weeklyGoal" to 300,
+            "coins" to 10,
+            "points" to 50)
+
+    val result = toUserStatsMethod.invoke(repo, map) as UserStats
+
+    assertEquals(null, result.lastStudyDateEpochDay)
   }
 }

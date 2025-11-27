@@ -46,29 +46,43 @@ class ProfileViewModelTest {
   // --- simple fake stats repo for tests ----
   private class RecordingUserStatsRepository(initial: UserStats = UserStats()) :
       UserStatsRepository {
+
     private val _stats = MutableStateFlow(initial)
     override val stats: StateFlow<UserStats> = _stats
 
-    var started = false
+    var started: Boolean = false
     var lastCoinsDelta: Int? = null
 
-    override fun start() {
+    override suspend fun start() {
       started = true
     }
 
-    override suspend fun addStudyMinutes(extraMinutes: Int) {}
+    override suspend fun addStudyMinutes(extraMinutes: Int) {
+      if (extraMinutes <= 0) return
+      val current = _stats.value
+      _stats.value =
+          current.copy(
+              totalStudyMinutes = current.totalStudyMinutes + extraMinutes,
+              todayStudyMinutes = current.todayStudyMinutes + extraMinutes,
+          )
+    }
 
     override suspend fun updateCoins(delta: Int) {
+      if (delta == 0) return
       lastCoinsDelta = delta
-      _stats.value = _stats.value.copy(coins = _stats.value.coins + delta)
+      val current = _stats.value
+      _stats.value = current.copy(coins = (current.coins + delta).coerceAtLeast(0))
     }
 
     override suspend fun setWeeklyGoal(goalMinutes: Int) {
-      _stats.value = _stats.value.copy(weeklyGoal = goalMinutes)
+      val current = _stats.value
+      _stats.value = current.copy(weeklyGoal = goalMinutes.coerceAtLeast(0))
     }
 
     override suspend fun addPoints(delta: Int) {
-      _stats.value = _stats.value.copy(points = _stats.value.points + delta)
+      if (delta == 0) return
+      val current = _stats.value
+      _stats.value = current.copy(points = (current.points + delta).coerceAtLeast(0))
     }
   }
 
@@ -343,7 +357,7 @@ class ProfileViewModelTest {
 
         advanceUntilIdle()
 
-        // Try to equip an item we don't own
+        // Try to equip an item we do not own
         vm.equip(AccessorySlot.TORSO, "cape")
         advanceUntilIdle()
 
