@@ -2,6 +2,9 @@ package com.android.sample.ui.schedule
 
 import android.content.res.Resources
 import androidx.test.core.app.ApplicationProvider
+import com.android.sample.data.Priority as TodoPriority
+import com.android.sample.data.Status as TodoStatus
+import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.CompletionStatus
@@ -42,6 +45,7 @@ class ScheduleViewModelTest {
   private lateinit var fakePlannerRepo: FakePlannerRepository
   private lateinit var vm: ScheduleViewModel
   private lateinit var resources: Resources
+  private lateinit var fakeToDoRepo: FakeToDoRepository
 
   @Before
   fun setup() {
@@ -49,7 +53,8 @@ class ScheduleViewModelTest {
     fakeScheduleRepo = FakeScheduleRepository()
     fakePlannerRepo = FakePlannerRepository() // your provided fake
     resources = ApplicationProvider.getApplicationContext<android.content.Context>().resources
-    vm = ScheduleViewModel(fakeScheduleRepo, fakePlannerRepo, resources)
+    fakeToDoRepo = FakeToDoRepository()
+    vm = ScheduleViewModel(fakeScheduleRepo, fakePlannerRepo, resources, fakeToDoRepo)
   }
 
   @After
@@ -181,6 +186,84 @@ class ScheduleViewModelTest {
     assertNotNull(pulledMove)
     val movedDate = pulledMove!!.second
     assertTrue(movedDate >= today && movedDate <= end)
+  }
+
+  @Test
+  fun observeTodos_updatesUiStateTodos() = runTest {
+    // Initially empty
+    advanceUntilIdle()
+    assertTrue(vm.uiState.value.todos.isEmpty())
+
+    val today = LocalDate.now()
+    val t1 =
+        ToDo(
+            title = "Write lab report",
+            dueDate = today,
+            priority = TodoPriority.HIGH,
+            status = TodoStatus.TODO)
+    val t2 =
+        ToDo(
+            title = "Read chapter 3",
+            dueDate = today.plusDays(1),
+            priority = TodoPriority.MEDIUM,
+            status = TodoStatus.IN_PROGRESS)
+
+    fakeToDoRepo.add(t1)
+    fakeToDoRepo.add(t2)
+
+    advanceUntilIdle()
+    val todos = vm.uiState.value.todos
+    assertEquals(2, todos.size)
+    assertTrue(todos.any { it.title == "Write lab report" })
+    assertTrue(todos.any { it.title == "Read chapter 3" })
+  }
+
+  @Test
+  fun todosForDate_filtersByExactDate() = runTest {
+    val base = LocalDate.now()
+    val tToday = ToDo(title = "Task today", dueDate = base, priority = TodoPriority.MEDIUM)
+    val tTomorrow =
+        ToDo(title = "Task tomorrow", dueDate = base.plusDays(1), priority = TodoPriority.MEDIUM)
+
+    fakeToDoRepo.add(tToday)
+    fakeToDoRepo.add(tTomorrow)
+    advanceUntilIdle()
+
+    val listToday = vm.todosForDate(base)
+    val listTomorrow = vm.todosForDate(base.plusDays(1))
+
+    assertEquals(1, listToday.size)
+    assertEquals("Task today", listToday.first().title)
+
+    assertEquals(1, listTomorrow.size)
+    assertEquals("Task tomorrow", listTomorrow.first().title)
+  }
+
+  @Test
+  fun todosForWeek_filtersWithinWeekRange() = runTest {
+    val weekStart = LocalDate.now().with(java.time.DayOfWeek.MONDAY)
+    val inside1 = ToDo(title = "Inside 1", dueDate = weekStart, priority = TodoPriority.LOW)
+    val inside2 =
+        ToDo(title = "Inside 2", dueDate = weekStart.plusDays(3), priority = TodoPriority.MEDIUM)
+    val outsideBefore =
+        ToDo(title = "Before", dueDate = weekStart.minusDays(1), priority = TodoPriority.HIGH)
+    val outsideAfter =
+        ToDo(title = "After", dueDate = weekStart.plusDays(7), priority = TodoPriority.HIGH)
+
+    fakeToDoRepo.add(inside1)
+    fakeToDoRepo.add(inside2)
+    fakeToDoRepo.add(outsideBefore)
+    fakeToDoRepo.add(outsideAfter)
+    advanceUntilIdle()
+
+    val weekList = vm.todosForWeek(weekStart)
+    val titles = weekList.map { it.title }
+
+    assertEquals(2, weekList.size)
+    assertTrue("Inside 1" in titles)
+    assertTrue("Inside 2" in titles)
+    assertFalse("Before" in titles)
+    assertFalse("After" in titles)
   }
 
   // -------- Simple in-memory fake for ScheduleRepository --------

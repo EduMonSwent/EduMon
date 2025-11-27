@@ -1,12 +1,18 @@
 package com.android.sample.ui.schedule
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -23,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
+import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.ui.WeekDotsRow
@@ -44,7 +51,9 @@ fun WeekTabContent(
     vm: ScheduleViewModel,
     objectivesVm: ObjectivesViewModel,
     allTasks: List<StudyItem>,
-    selectedDate: LocalDate
+    selectedDate: LocalDate,
+    weekTodos: List<ToDo>,
+    onTodoClicked: (String) -> Unit = {}
 ) {
   val weekStart = vm.startOfWeek(selectedDate)
   LazyColumn(
@@ -99,6 +108,63 @@ fun WeekTabContent(
                           Modifier.fillMaxWidth()
                               .padding(top = 6.dp)
                               .testTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
+                }
+
+            Spacer(Modifier.height(16.dp))
+            SectionBox(
+                header = {
+                  Text(
+                      text =
+                          stringResource(
+                              R.string.schedule_week_todos_title), // e.g. "This week's To-Dos"
+                      style =
+                          MaterialTheme.typography.titleMedium.copy(
+                              fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
+                      modifier = Modifier.padding(bottom = 14.dp))
+                }) {
+                  val cs = MaterialTheme.colorScheme
+
+                  if (weekTodos.isEmpty()) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.schedule_week_no_todos), // e.g. "No to-dos this week"
+                        color = cs.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth())
+                  } else {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                      weekTodos.sortedWith(compareBy({ it.dueDate }, { it.title })).forEach { todo
+                        ->
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable {
+                                  onTodoClicked(todo.id)
+                                }) {
+                              // little color bar
+                              Box(
+                                  modifier =
+                                      Modifier.width(5.dp)
+                                          .height(32.dp)
+                                          .background(cs.primary, RoundedCornerShape(999.dp)))
+
+                              Spacer(Modifier.width(10.dp))
+
+                              Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = todo.title,
+                                    style =
+                                        MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.SemiBold, color = cs.onSurface))
+                                Text(
+                                    text = todo.dueDateFormatted(),
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            color = cs.onSurfaceVariant))
+                              }
+                            }
+                      }
+                    }
+                  }
                 }
 
             Spacer(Modifier.height(16.dp))

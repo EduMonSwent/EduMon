@@ -19,11 +19,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.feature.schedule.data.calendar.StudyItem
-import com.android.sample.feature.schedule.data.schedule.EventKind
-import com.android.sample.feature.schedule.data.schedule.Priority
-import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.data.schedule.ScheduleTab
-import com.android.sample.feature.schedule.data.schedule.SourceTag
 import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.model.Objective
@@ -31,7 +27,6 @@ import com.android.sample.feature.weeks.ui.CourseExercisesRoute
 import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.repos_providors.AppRepositories
-import com.android.sample.ui.planner.AddStudyTaskModal
 import com.android.sample.ui.planner.PetHeader
 import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
@@ -52,7 +47,7 @@ object ScheduleScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen() {
+fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (String) -> Unit = {}) {
   // Repos
   val resources = LocalContext.current.resources
 
@@ -84,8 +79,9 @@ fun ScheduleScreen() {
       }
 
   var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
-  var showAddModal by remember { mutableStateOf(false) }
-  var addDate by remember { mutableStateOf<LocalDate?>(null) }
+  val weekStart = vm.startOfWeek(state.selectedDate)
+  val weekEnd = weekStart.plusDays(6)
+  val weekTodos = state.todos.filter { it.dueDate in weekStart..weekEnd }
   var activeObjectiveForCourse by remember { mutableStateOf<Objective?>(null) }
 
   // Snackbar for VM events
@@ -113,21 +109,23 @@ fun ScheduleScreen() {
   Scaffold(
       snackbarHost = { SnackbarHost(snackbarHostState) },
       floatingActionButton = {
-        FloatingActionButton(
-            modifier = Modifier.testTag(ScheduleScreenTestTags.FAB_ADD),
-            onClick = {
-              addDate =
-                  when (currentTab) {
-                    ScheduleTab.DAY -> LocalDate.now()
-                    ScheduleTab.WEEK -> vm.startOfWeek(state.selectedDate)
-                    ScheduleTab.MONTH -> state.selectedDate
-                  }
-              showAddModal = true
-            },
-            containerColor = PurplePrimary,
-            contentColor = Color.White) {
-              Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_event))
-            }
+        if (currentTab == ScheduleTab.DAY || currentTab == ScheduleTab.WEEK) {
+          FloatingActionButton(
+              modifier = Modifier.testTag(ScheduleScreenTestTags.FAB_ADD),
+              onClick = {
+                val date =
+                    when (currentTab) {
+                      ScheduleTab.DAY -> LocalDate.now()
+                      ScheduleTab.WEEK -> vm.startOfWeek(state.selectedDate)
+                      ScheduleTab.MONTH -> state.selectedDate
+                    }
+                onAddTodoClicked(date)
+              },
+              containerColor = PurplePrimary,
+              contentColor = Color.White) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_event))
+              }
+        }
       },
       containerColor = Color.Transparent,
       modifier =
@@ -190,7 +188,9 @@ fun ScheduleScreen() {
                             vm = vm,
                             objectivesVm = objectivesVm,
                             allTasks = allTasks,
-                            selectedDate = state.selectedDate)
+                            selectedDate = state.selectedDate,
+                            weekTodos = weekTodos,
+                            onTodoClicked = { id -> onOpenTodo(id) })
                       }
                 }
                 ScheduleTab.MONTH -> {
@@ -210,33 +210,6 @@ fun ScheduleScreen() {
               }
             }
       }
-
-  if (showAddModal && addDate != null) {
-    AddStudyTaskModal(
-        onDismiss = {
-          showAddModal = false
-          addDate = null
-        },
-        onAddTask = { subject, title, duration, _, priority ->
-          val event =
-              ScheduleEvent(
-                  title = if (title.isNotBlank()) title else subject,
-                  date = addDate!!,
-                  time = null,
-                  durationMinutes = duration,
-                  kind = EventKind.STUDY,
-                  priority =
-                      when (priority.lowercase()) {
-                        "low" -> Priority.LOW
-                        "high" -> Priority.HIGH
-                        else -> Priority.MEDIUM
-                      },
-                  sourceTag = SourceTag.Task)
-          vm.save(event)
-          showAddModal = false
-          addDate = null
-        })
-  }
   val activeObjective = activeObjectiveForCourse
   if (activeObjective != null) {
     CourseExercisesRoute(
