@@ -36,7 +36,11 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Whatshot
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -77,8 +81,18 @@ import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
+import com.android.sample.data.UserStats
 import com.android.sample.ui.profile.ProfileViewModel.Companion.POINTS_PER_LEVEL
 import com.android.sample.ui.theme.*
+import com.android.sample.ui.theme.AccentBlue
+import com.android.sample.ui.theme.AccentViolet
+import com.android.sample.ui.theme.DarkCardItem
+import com.android.sample.ui.theme.DarkDivider
+import com.android.sample.ui.theme.MidDarkCard
+import com.android.sample.ui.theme.StatBarHeart
+import com.android.sample.ui.theme.StatBarLightbulb
+import com.android.sample.ui.theme.StatBarLightning
+import com.android.sample.ui.theme.TextLight
 
 object ProfileScreenTestTags {
   const val PROFILE_SCREEN = "profileScreen"
@@ -97,6 +111,7 @@ private val CARD_CORNER_RADIUS = 16.dp
 private val SECTION_SPACING = 16.dp
 private val SCREEN_PADDING = 60.dp
 private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
+private const val STREAK_PLURAL_THRESHOLD = 1
 private const val LEVEL_PROGRESS_ANIM_DURATION_MS = 600
 private const val LABEL_FONT_SIZE_SP = 12
 private const val VALUE_FONT_SIZE_SP = 11
@@ -112,6 +127,7 @@ fun ProfileScreen(
     onOpenNotifications: () -> Unit = {}
 ) {
   val user by viewModel.userProfile.collectAsState()
+  val stats by viewModel.userStats.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
 
@@ -140,7 +156,7 @@ fun ProfileScreen(
               }
               item {
                 GlowCard {
-                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user) }
+                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user, stats) }
                 }
               }
               item {
@@ -291,27 +307,38 @@ fun Badge(text: String, bg: Color, textColor: Color = Color.White) {
 }
 
 @Composable
-fun StatsCard(user: UserProfile) {
+fun StatsCard(
+    profile: UserProfile,
+    stats: UserStats,
+) {
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
         text = stringResource(id = R.string.stats_title),
         fontWeight = FontWeight.SemiBold,
         color = TextLight.copy(alpha = 0.8f))
     Spacer(modifier = Modifier.height(8.dp))
+
+    val streakUnit =
+        if (stats.streak > STREAK_PLURAL_THRESHOLD) {
+          stringResource(id = R.string.days)
+        } else {
+          "day"
+        }
+
     StatRow(
         Icons.Outlined.Whatshot,
         stringResource(id = R.string.stats_streak),
-        "${user.streak} ${stringResource(R.string.days)}")
-    StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${user.points}")
-    StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${user.coins}")
+        "${stats.streak} $streakUnit")
+    StatRow(Icons.Outlined.Star, stringResource(id = R.string.stats_points), "${stats.points}")
+    StatRow(Icons.Outlined.AttachMoney, stringResource(id = R.string.stats_coins), "${stats.coins}")
     StatRow(
         Icons.AutoMirrored.Outlined.MenuBook,
         stringResource(id = R.string.stats_study_time),
-        "${user.studyStats.totalTimeMin} ${stringResource(R.string.minute)}")
+        "${stats.todayStudyMinutes} ${stringResource(R.string.minute)}")
     StatRow(
         Icons.Outlined.Flag,
         stringResource(id = R.string.stats_goal),
-        "${user.studyStats.dailyGoalMin} ${stringResource(R.string.minute)}")
+        "${profile.studyStats.dailyGoalMin} ${stringResource(R.string.minute)}")
   }
 }
 
@@ -499,7 +526,6 @@ fun SettingsCard(
         onToggle = {
           onToggleFocusMode()
           if (!user.focusModeEnabled) {
-
             onEnterFocusMode()
           }
         },

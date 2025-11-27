@@ -9,7 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.repos_providors.FakeRepositories
-import com.android.sample.ui.flashcards.data.FlashcardsRepositoryProvider
+import com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository
 import com.android.sample.ui.theme.EduMonTheme
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -31,7 +31,7 @@ class CreateDeckScreenTest {
 
   @Test
   fun renders_staticElements() {
-    val vm = CreateDeckViewModel(FakeRepositories.toDoRepository)
+    val vm = CreateDeckViewModel(FakeRepositories.toDoRepository, InMemoryFlashcardsRepository)
     composeRule.setContent {
       EduMonTheme { CreateDeckScreen(onSaved = {}, onCancel = {}, vm = vm) }
     }
@@ -47,7 +47,7 @@ class CreateDeckScreenTest {
 
   @Test
   fun addCard_click_addsOne() {
-    val vm = CreateDeckViewModel()
+    val vm = CreateDeckViewModel(FakeRepositories.toDoRepository, InMemoryFlashcardsRepository)
     composeRule.setContent {
       EduMonTheme { CreateDeckScreen(onSaved = {}, onCancel = {}, vm = vm) }
     }
@@ -60,7 +60,7 @@ class CreateDeckScreenTest {
   @Test
   fun removeCard_click_removesOne() {
     val vm =
-        CreateDeckViewModel().apply {
+        CreateDeckViewModel(FakeRepositories.toDoRepository, InMemoryFlashcardsRepository).apply {
           addEmptyCard()
           addEmptyCard()
         }
@@ -79,7 +79,7 @@ class CreateDeckScreenTest {
   @Test
   fun saveDeck_callsOnSaved_whenValidCard() {
     val vm =
-        CreateDeckViewModel().apply {
+        CreateDeckViewModel(FakeRepositories.toDoRepository, InMemoryFlashcardsRepository).apply {
           addEmptyCard()
           updateCard(0, question = "Q?", answer = "A!")
           setTitle("Algorithms")
@@ -101,7 +101,7 @@ class CreateDeckScreenTest {
   @Test
   fun cancel_callsOnCancel() {
     val cancelled = AtomicBoolean(false)
-    val vm = CreateDeckViewModel()
+    val vm = CreateDeckViewModel(FakeRepositories.toDoRepository, InMemoryFlashcardsRepository)
 
     composeRule.setContent {
       EduMonTheme { CreateDeckScreen(onSaved = {}, onCancel = { cancelled.set(true) }, vm = vm) }
@@ -115,11 +115,11 @@ class CreateDeckScreenTest {
   @Test
   fun saveDeck_trimsTitleAndDescription_andFiltersBlankCards() {
     // 1) Get ONE shared repo instance first
-    val sharedRepo = FlashcardsRepositoryProvider.repository
+    val sharedRepo = InMemoryFlashcardsRepository
 
     // 2) Inject it into the VM so save() writes to the same instance you’ll read from
     val vm =
-        CreateDeckViewModel(repo = sharedRepo).apply {
+        CreateDeckViewModel(FakeRepositories.toDoRepository, sharedRepo).apply {
           addEmptyCard() // will be filled
           addEmptyCard() // remains blank and should be filtered
           updateCard(0, question = "  Q?  ", answer = "  A!  ")
