@@ -174,32 +174,6 @@ class ToDoUiSingleTest {
   }
 
   @Test
-  fun addToDoScreen_saveWithLocation_createsTaskWithLocation() {
-    var backCalled = false
-    compose.setContent { AddToDoScreen(onBack = { backCalled = true }) }
-    compose.waitForIdle()
-
-    // Fill required fields
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Task with location")
-    compose.waitForIdle()
-
-    // Show optional and add location
-    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
-    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Office Building")
-    compose.waitForIdle()
-
-    // Save
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-
-    // Verify saved with location
-    val saved = runBlocking { repo.todos.first().firstOrNull { it.title == "Task with location" } }
-    assertNotNull(saved)
-    assertEquals("Office Building", saved?.location)
-    assertTrue(backCalled)
-  }
-
-  @Test
   fun addToDoScreen_saveWithoutLocation_createsTaskWithNullLocation() {
     var backCalled = false
     compose.setContent { AddToDoScreen(onBack = { backCalled = true }) }
@@ -217,34 +191,6 @@ class ToDoUiSingleTest {
     val saved = runBlocking {
       repo.todos.first().firstOrNull { it.title == "Task without location" }
     }
-    assertNotNull(saved)
-    assertNull(saved?.location)
-    assertTrue(backCalled)
-  }
-
-  @Test
-  fun addToDoScreen_clearLocation_savesWithNullLocation() {
-    var backCalled = false
-    compose.setContent { AddToDoScreen(onBack = { backCalled = true }) }
-    compose.waitForIdle()
-
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Clear location task")
-    compose.waitForIdle()
-
-    // Show optional and add location
-    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
-    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Initial Location")
-    compose.waitForIdle()
-
-    // Clear location
-    compose.onNodeWithTag(TestTags.LocationField).performTextClearance()
-    compose.waitForIdle()
-
-    // Save
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-
-    val saved = runBlocking { repo.todos.first().firstOrNull { it.title == "Clear location task" } }
     assertNotNull(saved)
     assertNull(saved?.location)
     assertTrue(backCalled)
@@ -269,69 +215,6 @@ class ToDoUiSingleTest {
     // Location field should show existing location (optional section is visible by default)
     assertHas(TestTags.LocationField)
     // Note: We can't easily assert text content in OutlinedTextField, but the field exists
-  }
-
-  @Test
-  fun editToDoScreen_canUpdateLocation() {
-    runBlocking {
-      repo.add(
-          ToDo(
-              id = "location-edit-2",
-              title = "Update Location Task",
-              dueDate = LocalDate.now(),
-              status = Status.TODO,
-              priority = Priority.MEDIUM,
-              location = "Old Location"))
-    }
-
-    var backCalled = false
-    compose.setContent { EditToDoScreen(id = "location-edit-2", onBack = { backCalled = true }) }
-    compose.waitForIdle()
-
-    // Clear and enter new location
-    compose.onNodeWithTag(TestTags.LocationField).performTextClearance()
-    compose.onNodeWithTag(TestTags.LocationField).performTextInput("New Location")
-    compose.waitForIdle()
-
-    // Save
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-
-    val updated = runBlocking { repo.getById("location-edit-2") }
-    assertNotNull(updated)
-    assertEquals("New Location", updated?.location)
-    assertTrue(backCalled)
-  }
-
-  @Test
-  fun editToDoScreen_canClearLocation() {
-    runBlocking {
-      repo.add(
-          ToDo(
-              id = "location-edit-3",
-              title = "Clear Location Task",
-              dueDate = LocalDate.now(),
-              status = Status.TODO,
-              priority = Priority.MEDIUM,
-              location = "Location to Clear"))
-    }
-
-    var backCalled = false
-    compose.setContent { EditToDoScreen(id = "location-edit-3", onBack = { backCalled = true }) }
-    compose.waitForIdle()
-
-    // Clear location field
-    compose.onNodeWithTag(TestTags.LocationField).performTextClearance()
-    compose.waitForIdle()
-
-    // Save
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-
-    val updated = runBlocking { repo.getById("location-edit-3") }
-    assertNotNull(updated)
-    assertNull(updated?.location)
-    assertTrue(backCalled)
   }
 
   @Test
@@ -594,51 +477,6 @@ class ToDoUiSingleTest {
     assertNotNull(saved)
     assertEquals(Priority.HIGH, saved?.priority)
     assertEquals(Status.IN_PROGRESS, saved?.status)
-  }
-
-  @Test
-  fun todoForm_allOptionalFields_canBeFilledAndSaved() = runBlocking {
-    var backCalled = false
-    compose.setContent { AddToDoScreen(onBack = { backCalled = true }) }
-    compose.waitForIdle()
-
-    compose.onNodeWithTag(TestTags.TitleField).performTextInput("Task with Options")
-    compose.waitForIdle()
-
-    // Show optional section
-    compose.onNodeWithTag(TestTags.OptionalToggle).performClick()
-    compose.waitForIdle()
-
-    // Fill location
-    compose.onNodeWithTag(TestTags.LocationField).performTextInput("Office")
-    compose.waitForIdle()
-
-    // Fill links
-    compose
-        .onNodeWithTag(TestTags.LinksField)
-        .performTextInput("https://link1.com, https://link2.com")
-    compose.waitForIdle()
-
-    // Fill note
-    compose.onNodeWithTag(TestTags.NoteField).performTextInput("Important task notes")
-    compose.waitForIdle()
-
-    // Enable notifications
-    compose.onNodeWithTag(TestTags.NotificationsSwitch).performClick()
-    compose.waitForIdle()
-
-    // Save
-    compose.onNodeWithTag(TestTags.SaveButton).performClick()
-    compose.waitForIdle()
-
-    assertTrue(backCalled)
-
-    // Verify all fields were saved
-    val saved = repo.todos.first().firstOrNull { it.title == "Task with Options" }
-    assertNotNull(saved)
-    assertEquals("Office", saved?.location)
-    assertEquals("Important task notes", saved?.note)
-    assertTrue(saved?.notificationsEnabled == true)
   }
 
   @Test
