@@ -9,33 +9,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocalHospital
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -58,6 +39,7 @@ fun CreatureHouseCard(
     level: Int,
     environmentResId: Int,
     modifier: Modifier = Modifier,
+    overrideCreature: (@Composable () -> Unit)? = null,
 ) {
   Surface(
       modifier = modifier.fillMaxWidth(),
@@ -79,10 +61,16 @@ fun CreatureHouseCard(
                   .height(6.dp)
                   .clip(RoundedCornerShape(50))
                   .background(MaterialTheme.colorScheme.onSurface.copy(alpha = .18f)))
-          CreatureSprite(
-              resId = creatureResId,
-              size = 120.dp,
-              modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-28).dp))
+          if (overrideCreature != null) {
+            Box(modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-28).dp)) {
+              overrideCreature()
+            }
+          } else {
+            CreatureSprite(
+                resId = creatureResId,
+                size = 120.dp,
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-28).dp))
+          }
           AssistChip(
               onClick = {},
               label = { Text("Lv $level", color = MaterialTheme.colorScheme.primary) },
@@ -121,12 +109,12 @@ fun CreatureSprite(resId: Int, modifier: Modifier = Modifier, size: Dp = 120.dp)
                   repeatMode = RepeatMode.Reverse),
           label = "glow")
 
-  Box(modifier = modifier.size(size + 40.dp), contentAlignment = Alignment.Center) {
+  Box(modifier.size(size + 40.dp), contentAlignment = Alignment.Center) {
     Canvas(modifier = Modifier.fillMaxSize()) {
       drawCircle(
           brush =
               Brush.radialGradient(
-                  0.0f to Color(0xFFA26BF2).copy(alpha = glowAlpha), 1.0f to Color.Transparent),
+                  0f to Color(0xFFA26BF2).copy(alpha = glowAlpha), 1f to Color.Transparent),
           radius = (size.value * 0.9f) * density,
           center = center)
     }
@@ -153,17 +141,13 @@ fun CreatureStatsCard(stats: CreatureStats, modifier: Modifier = Modifier) {
               "Happiness",
               stats.happiness,
               Icons.Outlined.FavoriteBorder,
-              barColor = MaterialTheme.colorScheme.primary)
+              MaterialTheme.colorScheme.primary)
           StatRow(
               "Health",
               stats.health,
               Icons.Outlined.LocalHospital,
-              barColor = MaterialTheme.colorScheme.secondary)
-          StatRow(
-              "Energy",
-              stats.energy,
-              Icons.Outlined.Bolt,
-              barColor = MaterialTheme.colorScheme.tertiary)
+              MaterialTheme.colorScheme.secondary)
+          StatRow("Energy", stats.energy, Icons.Outlined.Bolt, MaterialTheme.colorScheme.tertiary)
         }
       }
 }
@@ -180,7 +164,7 @@ private fun StatRow(
       Icon(icon, contentDescription = null, tint = barColor)
       Spacer(Modifier.width(6.dp))
       Text(title, modifier = Modifier.weight(1f))
-      Text("${value}%", color = MaterialTheme.colorScheme.onSurface)
+      Text("$value%", color = MaterialTheme.colorScheme.onSurface)
     }
     Spacer(Modifier.height(6.dp))
     LinearProgressIndicator(

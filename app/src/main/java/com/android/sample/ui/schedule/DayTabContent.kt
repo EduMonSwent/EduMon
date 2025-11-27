@@ -41,6 +41,7 @@ import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.ui.DailyObjectivesSection
 import com.android.sample.feature.weeks.ui.GlassSurface
+import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.planner.ClassAttendanceModal
 import com.android.sample.ui.planner.WellnessEventItem
@@ -58,7 +59,8 @@ import java.time.format.DateTimeFormatter
 fun DayTabContent(
     vm: ScheduleViewModel,
     state: ScheduleUiState,
-    objectivesVm: ObjectivesViewModel
+    objectivesVm: ObjectivesViewModel,
+    onObjectiveNavigation: (ObjectiveNavigation) -> Unit = {},
 ) {
   // Attendance modal (wired to VM state)
   if (state.showAttendanceModal && state.selectedClass != null) {
@@ -84,6 +86,7 @@ fun DayTabContent(
               attendance = state.attendanceRecords,
               objectivesVm = objectivesVm,
               onClassClick = { vm.onClassClicked(it) },
+              onObjectiveNavigate = onObjectiveNavigation,
               modifier = Modifier.fillMaxWidth())
         }
       }
@@ -97,6 +100,7 @@ private fun TodayCard(
     attendance: List<ClassAttendance>,
     objectivesVm: ObjectivesViewModel,
     onClassClick: (Class) -> Unit,
+    onObjectiveNavigate: (ObjectiveNavigation) -> Unit,
     modifier: Modifier = Modifier
 ) {
   val cs = MaterialTheme.colorScheme
@@ -160,7 +164,10 @@ private fun TodayCard(
                 titleMedium =
                     MaterialTheme.typography.titleMedium.copy(
                         fontSize = 18.sp, fontWeight = FontWeight.SemiBold))) {
-          DailyObjectivesSection(viewModel = objectivesVm, modifier = Modifier.fillMaxWidth())
+          DailyObjectivesSection(
+              viewModel = objectivesVm,
+              modifier = Modifier.fillMaxWidth(),
+              onNavigate = onObjectiveNavigate)
         }
 
     Spacer(Modifier.height(14.dp))

@@ -47,7 +47,7 @@ fun WeekProgDailyObj(
 
           // Objectives Section
           DailyObjectivesSection(
-              viewModel = objectivesViewModel, modifier = Modifier.fillMaxWidth())
+              viewModel = objectivesViewModel, modifier = Modifier.fillMaxWidth(), onNavigate = {})
         }
 
         // Footer: weekly dots

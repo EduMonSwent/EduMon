@@ -78,7 +78,6 @@ class ProfileViewModel(
   // reward engine instance
   private val rewardEngine = LevelRewardEngine()
 
-  // one-shot events for UI (snackbar/dialog/etc.)
   private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
   val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
 
@@ -103,13 +102,13 @@ class ProfileViewModel(
   private val accentVariant = MutableStateFlow(AccentVariant.Base)
   val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
-  val accentEffective: StateFlow<Color> =
+  open val accentEffective: StateFlow<Color> =
       combine(userProfile, accentVariantFlow) { user, variant ->
             applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
 
-  fun accessoryResId(slot: AccessorySlot, id: String): Int {
+  open fun accessoryResId(slot: AccessorySlot, id: String): Int {
     return when (slot) {
       AccessorySlot.HEAD ->
           when (id) {
@@ -159,17 +158,15 @@ class ProfileViewModel(
   fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
 
   fun equip(slot: AccessorySlot, id: String) {
-
     val owned = ownedIds()
     if (id != "none" && !owned.contains(id)) return
 
     val cur = _userProfile.value
     val prefix = slot.name.lowercase() + ":"
     val cleaned = cur.accessories.filterNot { it.startsWith(prefix) }
-
     val updatedAccessories = if (id == "none") cleaned else cleaned + (prefix + id)
-
     val updated = cur.copy(accessories = updatedAccessories)
+
     _userProfile.value = updated
     pushProfile(updated)
   }
@@ -219,15 +216,6 @@ class ProfileViewModel(
     viewModelScope.launch { userStatsRepository.updateCoins(amount) }
   }
 
-  /**
-   * Adds points to the user, recomputes the level based on total points, and routes the change
-   * through the reward engine.
-   *
-   * If the new level is higher than the old one:
-   * - LevelRewardEngine applies rewards
-   * - lastRewardedLevel is updated
-   * - UI receives a LevelUpRewardUiEvent
-   */
   fun addPoints(amount: Int) {
     if (amount <= 0) return
 
@@ -238,40 +226,26 @@ class ProfileViewModel(
     }
   }
 
-  // --- Helpers ---
-  /**
-   * Pushes the current or provided profile to the repository. Centralizes the fire-and-forget
-   * update with error safety.
-   */
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
     viewModelScope.launch { runCatching { profileRepository.updateProfile(updated) } }
   }
 
-  /**
-   * Applies a change to the profile (via [edit]) and, if that change includes a level increase,
-   * routes the old/new profiles through the reward engine.
-   * - If level didn't increase → just update and push as usual.
-   * - If level increased → apply rewards, update profile, push, and emit UI event.
-   */
   private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
     val oldProfile = _userProfile.value
     val candidate = edit(oldProfile)
 
-    // No level up → regular path
     if (candidate.level <= oldProfile.level) {
       _userProfile.value = candidate
       pushProfile(candidate)
       return
     }
 
-    // Level increased → let the reward engine do its job
     val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
     val updated = result.updatedProfile
 
     _userProfile.value = updated
     pushProfile(updated)
 
-    // Emit UI event only if something was actually rewarded
     if (!result.summary.isEmpty) {
       viewModelScope.launch {
         _rewardEvents.emit(
@@ -280,38 +254,16 @@ class ProfileViewModel(
     }
   }
 
-  /**
-   * Computes the level for a given amount of points.
-   *
-   * Simple rule:
-   * - Every 300 points = +1 level
-   * - Minimum level is 1
-   */
   private fun computeLevelFromPoints(points: Int): Int {
     if (points <= 0) return 1
     return 1 + (points / POINTS_PER_LEVEL)
   }
-  /**
-   * DEBUG / TEST-ONLY helper.
-   *
-   * This function exists purely to simplify unit testing of the reward system. Not used in
-   * production UI. It's kept to make reward-related tests shorter, more deterministic, and easier
-   * to maintain (if we later decide to change the level up calculation)
-   */
+
   fun debugLevelUpForTests() {
     applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
   }
-  /**
-   * DEBUG / TEST-ONLY helper.
-   *
-   * This function exists purely to simplify unit testing of the reward system. Not used in
-   * production UI. It's kept to make reward-related tests shorter, more deterministic, and easier
-   * to maintain (if we later decide to change the level up calculation)
-   */
+
   fun debugNoLevelChangeForTests() {
-    applyProfileWithPotentialRewards { current ->
-      // Change points, keep level the same
-      current.copy(points = current.points + 10)
-    }
+    applyProfileWithPotentialRewards { current -> current.copy(points = current.points + 10) }
   }
 }
