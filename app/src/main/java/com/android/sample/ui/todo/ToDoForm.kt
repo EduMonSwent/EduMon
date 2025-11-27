@@ -35,13 +35,10 @@ fun TodoForm(
     status: Status,
     onStatusChange: (Status) -> Unit,
     showOptionalInitial: Boolean = false,
-    // location: String?,
-    // location: Location?,
     locationQuery: String,
     onLocationQueryChange: (String) -> Unit,
     locationSuggestions: List<Location>,
     onLocationSelected: (Location) -> Unit,
-    // onLocationChange: (String?) -> Unit,
     linksText: String,
     onLinksTextChange: (String) -> Unit,
     note: String?,
@@ -54,9 +51,6 @@ fun TodoForm(
   var showOptional by remember { mutableStateOf(showOptionalInitial) }
   val scrollState = rememberScrollState()
 
-  /*var locationQuery by remember(location?.name) {
-      mutableStateOf(location?.name ?: "")
-  }*/
   var showLocationDropdown by remember { mutableStateOf(false) }
 
   val fieldColors =
@@ -130,13 +124,6 @@ fun TodoForm(
                   }
 
               if (showOptional) {
-                /*OutlinedTextField(
-                value = location.orEmpty(),
-                onValueChange = onLocationChange,
-                label = { Text("Location") },
-                singleLine = true,
-                colors = fieldColors,
-                modifier = Modifier.fillMaxWidth().testTag(TestTags.LocationField))*/
                 ExposedDropdownMenuBox(
                     expanded = showLocationDropdown && locationSuggestions.isNotEmpty(),
                     onExpandedChange = { expanded ->

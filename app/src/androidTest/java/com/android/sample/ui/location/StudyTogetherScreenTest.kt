@@ -381,4 +381,44 @@ class StudyTogetherScreenTest {
 
     composeTestRule.onNodeWithText("You're already friends.").assertExists()
   }
+
+  // ---------- EXTRA TESTS TO INCREASE COVERAGE ----------
+
+  @Test
+  fun userStatusCard_showsStudyText_whenStudyModeTrue() {
+    composeTestRule.setContent { UserStatusCard(isStudyMode = true) }
+
+    composeTestRule.onNodeWithText("You're studying").assertExists()
+  }
+
+  @Test
+  fun userStatusCard_showsBreakText_whenStudyModeFalse() {
+    composeTestRule.setContent { UserStatusCard(isStudyMode = false) }
+
+    composeTestRule.onNodeWithText("You're on a break").assertExists()
+  }
+
+  @Test
+  fun friendInfoCard_showsStudyChip() {
+    composeTestRule.setContent { FriendInfoCard(name = "Carl", mode = FriendMode.STUDY) }
+
+    composeTestRule.onNodeWithText("Carl").assertExists()
+    composeTestRule.onNodeWithText("Studying").assertExists()
+  }
+
+  @Test
+  fun friendInfoCard_showsBreakChip() {
+    composeTestRule.setContent { FriendInfoCard(name = "Dana", mode = FriendMode.BREAK) }
+
+    composeTestRule.onNodeWithText("Dana").assertExists()
+    composeTestRule.onNodeWithText("Break").assertExists()
+  }
+
+  @Test
+  fun friendInfoCard_showsIdleChip() {
+    composeTestRule.setContent { FriendInfoCard(name = "Eve", mode = FriendMode.IDLE) }
+
+    composeTestRule.onNodeWithText("Eve").assertExists()
+    composeTestRule.onNodeWithText("Idle").assertExists()
+  }
 }
