@@ -46,8 +46,6 @@ class NotificationsScreenComposeTest {
     override val streakEnabled: kotlinx.coroutines.flow.StateFlow<Boolean> = _streakEnabled
 
     private val _campusEntryEnabled = kotlinx.coroutines.flow.MutableStateFlow(false)
-    override val campusEntryEnabled: kotlinx.coroutines.flow.StateFlow<Boolean> =
-        _campusEntryEnabled
 
     // spy flag
     var demoCalled = false
@@ -96,22 +94,6 @@ class NotificationsScreenComposeTest {
     }
 
     override fun startObservingSchedule(ctx: android.content.Context) {
-      // no-op for spy
-    }
-
-    override fun setCampusEntryEnabled(ctx: android.content.Context, on: Boolean) {
-      _campusEntryEnabled.value = on
-    }
-
-    // Background location helpers: keep simple behavior for tests
-    override fun needsBackgroundLocationPermission(ctx: android.content.Context): Boolean = false
-
-    override fun hasBackgroundLocationPermission(ctx: android.content.Context): Boolean = true
-
-    override fun requestBackgroundLocationIfNeeded(
-        ctx: android.content.Context,
-        launcher: (String) -> Unit
-    ) {
       // no-op for spy
     }
   }

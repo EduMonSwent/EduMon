@@ -14,7 +14,6 @@ import java.util.Calendar
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,23 +31,17 @@ class NotificationsUnifiedTest {
     val _kickoffTimes = MutableStateFlow(mapOf<Int, Pair<Int, Int>>())
     val _taskEnabled = MutableStateFlow(false)
     val _streakEnabled = MutableStateFlow(false)
-    val _campusEnabled = MutableStateFlow(false)
-    var needsBg = true
-    var hasBg = false
     var needsNotif = false
     var lastUpdateKickoff: Pair<Int, Pair<Int, Int>>? = null
-    var requestedBgPermission: String? = null
     var scheduleObservedCalls = 0
     var scheduleObservedThrows = false
     var deepLinkDemoCalls = 0
     var testNotificationCalls = 0
-    var campusToggleCalls = mutableListOf<Boolean>()
     override val kickoffEnabled: StateFlow<Boolean> = _kickoffEnabled
     override val kickoffDays: StateFlow<Set<Int>> = _kickoffDays
     override val kickoffTimes: StateFlow<Map<Int, Pair<Int, Int>>> = _kickoffTimes
     override val taskNotificationsEnabled: StateFlow<Boolean> = _taskEnabled
     override val streakEnabled: StateFlow<Boolean> = _streakEnabled
-    override val campusEntryEnabled: StateFlow<Boolean> = _campusEnabled
 
     override fun setKickoffEnabled(ctx: Context, enabled: Boolean) {
       _kickoffEnabled.value = enabled
@@ -73,19 +66,6 @@ class NotificationsUnifiedTest {
 
     override fun setTaskNotificationsEnabled(ctx: Context, enabled: Boolean) {
       _taskEnabled.value = enabled
-    }
-
-    override fun setCampusEntryEnabled(ctx: Context, enabled: Boolean) {
-      _campusEnabled.value = enabled
-      campusToggleCalls.add(enabled)
-    }
-
-    override fun needsBackgroundLocationPermission(ctx: Context): Boolean = needsBg
-
-    override fun hasBackgroundLocationPermission(ctx: Context): Boolean = hasBg
-
-    override fun requestBackgroundLocationIfNeeded(ctx: Context, request: (String) -> Unit) {
-      request("android.permission.ACCESS_BACKGROUND_LOCATION")
     }
 
     override fun needsNotificationPermission(ctx: Context): Boolean = needsNotif
@@ -147,69 +127,6 @@ class NotificationsUnifiedTest {
   }
 
   /* ---------------- CampusEntrySection / dialog flows ---------------- */
-  @Test
-  fun campusEntry_banner_and_dialog_flow_requests_permission() {
-    val vm =
-        FakeVm().apply {
-          _campusEnabled.value = true
-          needsBg = true
-          hasBg = false
-        }
-    var permissionRequested = false
-    val initialEnabled = vm.campusEntryEnabled.value
-    composeRule.setContent {
-      CampusEntrySection(
-          enabled = initialEnabled,
-          onToggle = { enabled -> vm.setCampusEntryEnabled(composeRule.activity, enabled) },
-          vm = vm,
-          ctx = composeRule.activity,
-          requestBackgroundPermission = { permission ->
-            permissionRequested = true
-            vm.requestedBgPermission = permission
-          })
-    }
-    val neededText = composeRule.activity.getString(R.string.campus_background_location_needed)
-    composeRule.onNodeWithText(neededText).assertIsDisplayed()
-    val grantText = composeRule.activity.getString(R.string.grant_permission)
-    // If multiple nodes have the same text (banner + dialog), choose nodes explicitly
-    val grantNodes = composeRule.onAllNodesWithText(grantText)
-    // Click the banner's grant button (first occurrence)
-    grantNodes[0].assertIsDisplayed().performClick()
-
-    // Dialog should appear; wait and click the dialog's grant button (second occurrence)
-    composeRule.waitForIdle()
-    if (grantNodes.fetchSemanticsNodes().size > 1) {
-      grantNodes[1].assertIsDisplayed().performClick()
-    }
-
-    assertTrue(permissionRequested)
-    assertEquals("android.permission.ACCESS_BACKGROUND_LOCATION", vm.requestedBgPermission)
-  }
-
-  @Test
-  fun campusEntry_effect_enables_toggle_when_permission_present() {
-    val vm =
-        FakeVm().apply {
-          _campusEnabled.value = false
-          needsBg = true
-          hasBg = true
-        }
-    var enabledResult = false
-    val initialEnabled = vm.campusEntryEnabled.value
-    composeRule.setContent {
-      CampusEntrySection(
-          enabled = initialEnabled,
-          onToggle = { enabled -> enabledResult = enabled },
-          vm = vm,
-          ctx = composeRule.activity,
-          requestBackgroundPermission = { _ -> })
-    }
-    composeRule.onNodeWithTag("campus_entry_switch").performClick()
-    val title = composeRule.activity.getString(R.string.background_location_dialog_title)
-    composeRule.onNodeWithText(title).assertIsDisplayed()
-    composeRule.waitForIdle()
-    assertTrue(enabledResult)
-  }
 
   /* ---------------- StartScheduleObserver error path ---------------- */
   @Test

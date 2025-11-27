@@ -5,10 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresPermission
 import androidx.annotation.VisibleForTesting
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.work.CoroutineWorker
@@ -16,7 +13,6 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.android.sample.R
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
@@ -27,8 +23,11 @@ import kotlinx.coroutines.tasks.await
 // Parts of this code were written with ChatGPT assistance
 
 /**
- * Polling worker to detect campus entry at ~5 minute intervals. Because PeriodicWorkRequest
+ * Polling worker to detect campus presence at ~5 minute intervals. Because PeriodicWorkRequest
  * enforces 15m minimum interval, we chain OneTimeWorkRequests manually with 5 minute delays.
+ *
+ * This worker tracks whether the user is on campus by periodically checking their location and
+ * updating the campus state in SharedPreferences for other components to use.
  *
  * IMPORTANT: This worker actively fetches the device's current location in the background using
  * FusedLocationProviderClient. For best results on Android 10+, users should grant
@@ -48,12 +47,6 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
       return Result.success()
     }
 
-    // Guard: notifications permission (T+)
-    if (!hasNotifPermission(applicationContext)) {
-      Log.w(TAG, "Notification permission not granted, skipping campus detection")
-      return Result.success()
-    }
-
     // Resolve a position (test/robolectric/normal)
     val skipFetch = inputData.getBoolean(KEY_TEST_SKIP_FETCH, false)
     val testLat = inputData.getDouble(KEY_TEST_LAT, Double.NaN)
@@ -68,16 +61,7 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
 
     val onCampus = isOnEpflCampus(position)
 
-    if (shouldPostCampusEntry(applicationContext, onCampus)) {
-      // Fire-and-forget notification (permission already checked)
-      try {
-        postCampusEntryNotification(applicationContext)
-      } catch (se: SecurityException) {
-        Log.w(TAG, "Notification post aborted due to missing permission at runtime", se)
-      }
-    }
-
-    // Persist new state for next run
+    // Persist new state for next run (other components can check this)
     updateCampusFlag(applicationContext, onCampus)
 
     return Result.success()
@@ -93,13 +77,6 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
         ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
     return fine || coarse
-  }
-
-  private fun hasNotifPermission(ctx: Context): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
-          PackageManager.PERMISSION_GRANTED
-    } else true
   }
 
   /* ---------------------------- helpers: location IO ---------------------------- */
@@ -188,33 +165,10 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
 
   /* ---------------------------- helpers: state & gating ---------------------------- */
 
-  private fun shouldPostCampusEntry(ctx: Context, onCampus: Boolean): Boolean {
-    val prefs = ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
-    val wasOnCampus = prefs.getBoolean(KEY_WAS_ON_CAMPUS, false)
-    return onCampus && !wasOnCampus
-  }
-
   private fun updateCampusFlag(ctx: Context, onCampus: Boolean) {
     ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE).edit {
       putBoolean(KEY_WAS_ON_CAMPUS, onCampus)
     }
-  }
-
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-  private fun postCampusEntryNotification(ctx: Context) {
-    NotificationUtils.ensureChannel(ctx)
-
-    // No deep link: tapping the notification does nothing
-    val n =
-        NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(ctx.getString(R.string.campus_entry_title))
-            .setContentText(ctx.getString(R.string.campus_entry_text))
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
-
-    NotificationManagerCompat.from(ctx).notify(CAMPUS_ENTRY_NOTIFICATION_ID, n)
   }
 
   private fun isOnEpflCampus(position: LatLng): Boolean = isOnEpflCampusInternal(position)
@@ -225,7 +179,6 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
     private const val DEFAULT_LAT = 46.5202f
     private const val DEFAULT_LON = 6.5652f
     private const val KEY_WAS_ON_CAMPUS = "was_on_campus"
-    private const val CAMPUS_ENTRY_NOTIFICATION_ID = 9101
     private const val UNIQUE_WORK_NAME = "campus_entry_poll"
     private const val DELAY_MINUTES = 5L
     internal const val KEY_DISABLE_CHAIN = "disable_chain" // for tests only

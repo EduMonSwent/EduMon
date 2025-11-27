@@ -49,7 +49,6 @@ class NotificationsScreenCampusTest {
     override val streakEnabled: StateFlow<Boolean> = _streakEnabled
 
     private val _campusEntryEnabled = MutableStateFlow(campusEntryEnabledInit)
-    override val campusEntryEnabled: StateFlow<Boolean> = _campusEntryEnabled
 
     // record last campus toggle request
     var lastCampusToggle: Boolean? = null
@@ -86,18 +85,7 @@ class NotificationsScreenCampusTest {
       _taskNotificationsEnabled.value = on
     }
 
-    override fun setCampusEntryEnabled(ctx: Context, on: Boolean) {
-      _campusEntryEnabled.value = on
-      lastCampusToggle = on
-    }
-
     override fun startObservingSchedule(ctx: Context) {}
-
-    override fun needsBackgroundLocationPermission(ctx: Context): Boolean = false
-
-    override fun hasBackgroundLocationPermission(ctx: Context): Boolean = true
-
-    override fun requestBackgroundLocationIfNeeded(ctx: Context, launcher: (String) -> Unit) {}
   }
 
   @Composable
