@@ -143,7 +143,7 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.database.ktx)
-    implementation("org.json:json:20231013")
+    //implementation("org.json:json:20231013")
 
 
     implementation(libs.credentials)

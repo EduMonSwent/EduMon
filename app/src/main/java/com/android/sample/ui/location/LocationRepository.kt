@@ -8,6 +8,6 @@ data class Location(
 )
 
 /** Abstraction over a location search service. */
-interface LocationRepository {
+fun interface LocationRepository {
   suspend fun search(query: String): List<Location>
 }
