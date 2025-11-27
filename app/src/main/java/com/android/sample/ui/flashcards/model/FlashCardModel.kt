@@ -14,7 +14,8 @@ data class Deck(
     val title: String,
     val description: String,
     val createdAt: Long = Instant.now().toEpochMilli(),
-    val cards: MutableList<Flashcard> = mutableListOf()
+    val cards: MutableList<Flashcard> = mutableListOf(),
+    val shareable: Boolean = false
 )
 
 enum class Confidence {

@@ -149,4 +149,10 @@ class InMemoryFlashcardsRepositoryTest {
     assertFalse(allDecks.any { it.id == deckId1 })
     assertTrue(allDecks.any { it.id == deckId2 })
   }
+
+  @Test
+  fun importSharedDeck_alwaysReturnsEmptyString() = runTest {
+    val result = InMemoryFlashcardsRepository.importSharedDeck("any-token")
+    assertEquals("", result)
+  }
 }
