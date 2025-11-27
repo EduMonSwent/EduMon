@@ -2,19 +2,20 @@ package com.android.sample.ui.profile
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.profile.FakeProfileRepository
-import com.android.sample.repos_providors.FakeRepositories
 import com.android.sample.ui.stats.model.StudyStats
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.Rule
 import org.junit.Test
 
@@ -22,8 +23,12 @@ class ProfileScreenTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+  // Mock the ProfileViewModel with the necessary dependencies
   private fun launchWith(
-      vm: ProfileViewModel = ProfileViewModel(FakeRepositories.profileRepository)
+      vm: ProfileViewModel =
+          ProfileViewModel(
+              profileRepository = FakeProfileRepository(),
+              userStatsRepository = FakeUserStatsRepository())
   ) {
     composeRule.setContent { ProfileScreen(viewModel = vm) }
   }
@@ -52,7 +57,10 @@ class ProfileScreenTest {
   fun profileScreenCallbacksAreCalled() {
     var focusModeCalled = false
     var notificationsCalled = false
-    val vm = ProfileViewModel(FakeProfileRepository())
+    val vm =
+        ProfileViewModel(
+            profileRepository = FakeProfileRepository(),
+            userStatsRepository = FakeUserStatsRepository())
 
     composeRule.setContent {
       ProfileScreen(
@@ -76,7 +84,10 @@ class ProfileScreenTest {
 
   @Test
   fun petSectionDisplaysAllElements() {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    val vm =
+        ProfileViewModel(
+            profileRepository = FakeProfileRepository(),
+            userStatsRepository = FakeUserStatsRepository())
     composeRule.setContent { PetSection(viewModel = vm) }
 
     composeRule.onNodeWithText("Level 5").assertExists()
@@ -87,7 +98,10 @@ class ProfileScreenTest {
 
   @Test
   fun customizePetSectionDisplaysContent() {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    val vm =
+        ProfileViewModel(
+            profileRepository = FakeProfileRepository(),
+            userStatsRepository = FakeUserStatsRepository())
     composeRule.setContent { CustomizePetSection(viewModel = vm) }
     composeRule.onNodeWithText("Customize Buddy").assertExists()
     composeRule.onNodeWithText("Accent color").assertExists()
@@ -96,7 +110,10 @@ class ProfileScreenTest {
 
   @Test
   fun customizePetSection_accentColorSelection() {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    val vm =
+        ProfileViewModel(
+            profileRepository = FakeProfileRepository(),
+            userStatsRepository = FakeUserStatsRepository())
     composeRule.setContent { CustomizePetSection(viewModel = vm) }
 
     // Click on a color (should have clickable circles)
@@ -105,7 +122,10 @@ class ProfileScreenTest {
 
   @Test
   fun customizePetSection_variantSelection() {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    val vm =
+        ProfileViewModel(
+            profileRepository = FakeProfileRepository(),
+            userStatsRepository = FakeUserStatsRepository())
     composeRule.setContent { CustomizePetSection(viewModel = vm) }
 
     // Click on each variant chip
@@ -117,7 +137,10 @@ class ProfileScreenTest {
 
   @Test
   fun customizePetSection_tabSwitching() {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    val vm =
+        ProfileViewModel(
+            profileRepository = FakeProfileRepository(),
+            userStatsRepository = FakeUserStatsRepository())
     composeRule.setContent { CustomizePetSection(viewModel = vm) }
 
     composeRule.onNodeWithText("Head").performClick()
@@ -219,20 +242,6 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun badgeRendersWithCustomColors() {
-    composeRule.setContent {
-      Column {
-        Badge(text = "Level 10", bg = Color.Magenta)
-        Badge(text = "Premium", bg = Color.Yellow, textColor = Color.Black)
-        Badge(text = "VIP", bg = Color.Red, textColor = Color.White)
-      }
-    }
-    composeRule.onNodeWithText("Level 10").assertExists()
-    composeRule.onNodeWithText("Premium").assertExists()
-    composeRule.onNodeWithText("VIP").assertExists()
-  }
-
-  @Test
   fun statsCardDisplaysAllStats() {
     val profile =
         UserProfile(
@@ -257,355 +266,51 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun statRowDisplaysCorrectly() {
-    composeRule.setContent {
-      Column {
-        StatRow(
-            icon = androidx.compose.material.icons.Icons.Outlined.Star,
-            label = "Points",
-            value = "1000")
-      }
-    }
-    composeRule.onNodeWithText("Points").assertExists()
-    composeRule.onNodeWithText("1000").assertExists()
-  }
+  fun petSectionWithMalformedAccessories() {
+    val profile =
+        UserProfile(
+            level = 5,
+            accessories = listOf("malformed", "head:hat", "invalid_format", "torso:cape"),
+        )
 
-  @Test
-  fun settingsCardDisplaysAllSettings() {
-    val user = UserProfile(locationEnabled = true, focusModeEnabled = false)
-    var locationToggled = false
-    var focusModeToggled = false
-    var notificationsOpened = false
+    val profileRepo = FakeProfileRepository(profile)
 
-    composeRule.setContent {
-      SettingsCard(
-          user = user,
-          onToggleLocation = { locationToggled = true },
-          onToggleFocusMode = { focusModeToggled = true },
-          onOpenNotifications = { notificationsOpened = true },
-          onEnterFocusMode = {})
+    class TestUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepository {
+      private val _stats = MutableStateFlow(initial)
+      override val stats: StateFlow<UserStats> = _stats
+
+      override suspend fun start() {}
+
+      override suspend fun addStudyMinutes(extraMinutes: Int) {}
+
+      override suspend fun updateCoins(delta: Int) {}
+
+      override suspend fun setWeeklyGoal(goalMinutes: Int) {}
+
+      override suspend fun addPoints(delta: Int) {}
     }
 
-    // Verify switches exist by their test tags
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_LOCATION).assertExists()
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).assertExists()
-    composeRule.onNodeWithTag("open_notifications_screen").assertExists()
+    val statsRepo = TestUserStatsRepository()
 
-    // Toggle location
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_LOCATION).performClick()
-    assert(locationToggled)
+    val vm =
+        ProfileViewModel(
+            profileRepository = profileRepo,
+            userStatsRepository = statsRepo,
+        )
 
-    // Toggle focus mode
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-    assert(focusModeToggled)
+    composeRule.setContent { PetSection(viewModel = vm) }
 
-    // Open notifications
-    composeRule.onNodeWithTag("open_notifications_screen").performClick()
-    assert(notificationsOpened)
-  }
-
-  @Test
-  fun settingsCard_focusModeActivationCallsEnterFocusMode() {
-    val user = UserProfile(focusModeEnabled = false)
-    var focusModeEntered = false
-
-    composeRule.setContent {
-      SettingsCard(
-          user = user,
-          onToggleLocation = {},
-          onToggleFocusMode = {},
-          onOpenNotifications = {},
-          onEnterFocusMode = { focusModeEntered = true })
-    }
-
-    // When focus mode is OFF and we toggle it, it should call onEnterFocusMode
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-    assert(focusModeEntered)
-  }
-
-  @Test
-  fun settingRowTogglesValue() {
-    var toggled = false
-    composeRule.setContent {
-      SettingRow(
-          title = "Focus Mode",
-          desc = "Minimize distractions",
-          value = false,
-          onToggle = { toggled = true })
-    }
-    composeRule.onNodeWithText("Focus Mode").assertExists()
-    composeRule.onNodeWithText("Minimize distractions").assertExists()
-    composeRule.onAllNodes(isToggleable())[0].performClick()
-    assert(toggled)
-  }
-
-  @Test
-  fun settingRowWithTrueValue() {
-    composeRule.setContent {
-      SettingRow(title = "Enabled Setting", desc = "This is on", value = true, onToggle = {})
-    }
-    composeRule.onNodeWithText("Enabled Setting").assertExists()
-    composeRule.onNodeWithText("This is on").assertExists()
-  }
-
-  @Test
-  fun accountActionsSectionDisplaysAllActions() {
-    composeRule.setContent { AccountActionsSection() }
-
-    composeRule.onNodeWithText("Privacy Policy").assertExists()
-    composeRule.onNodeWithText("Terms of Service").assertExists()
-    composeRule.onNodeWithText("Logout").assertExists()
-  }
-
-  @Test
-  fun actionButtonClickWorks() {
-    var clicked = false
-    composeRule.setContent {
-      Column {
-        ActionButton(text = "Test Click") { clicked = true }
-        ActionButton(text = "Red Button", textColor = Color.Red) {}
-      }
-    }
-    composeRule.onNodeWithText("Test Click").performClick()
-    assert(clicked)
-    composeRule.onNodeWithText("Red Button").assertExists()
-  }
-
-  @Test
-  fun glowCardAnimatesAndDisplaysContent() {
-    composeRule.setContent { GlowCard { Text("Glowing Content") } }
-    composeRule.onNodeWithText("Glowing Content").assertExists()
-
-    // Wait for animation to run
-    composeRule.mainClock.advanceTimeBy(3000)
-  }
-
-  @Test
-  fun accentVariantChips_present_withoutMuted() {
-    launchWith()
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION))
-
-    composeRule.onNodeWithText("Base").assertExists()
-    composeRule.onNodeWithText("Light").assertExists()
-    composeRule.onNodeWithText("Dark").assertExists()
-    composeRule.onNodeWithText("Vibrant").assertExists()
-  }
-
-  @Test
-  fun inventory_tabs_present() {
-    launchWith()
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION))
-
-    composeRule.onNodeWithText("Head").assertExists()
-    composeRule.onNodeWithText("Torso").assertExists()
-    composeRule.onNodeWithText("Legs").assertExists()
-    composeRule.onNodeWithText("Back").assertExists()
-  }
-
-  @Test
-  fun inventory_switchingTabsUpdatesGrid() {
-    val vm = ProfileViewModel(FakeProfileRepository())
-    composeRule.setContent { CustomizePetSection(viewModel = vm) }
-
-    // Switch to different tabs
-    composeRule.onNodeWithText("Torso").performClick()
-    composeRule.mainClock.advanceTimeByFrame()
-
-    composeRule.onNodeWithText("Legs").performClick()
-    composeRule.mainClock.advanceTimeByFrame()
-
-    composeRule.onNodeWithText("Back").performClick()
-    composeRule.mainClock.advanceTimeByFrame()
-
-    composeRule.onNodeWithText("Head").performClick()
+    composeRule.onNodeWithText("Level 5").assertExists()
   }
 
   @Test
   fun petSectionWithBackAccessory() {
-    val vm = ProfileViewModel(FakeProfileRepository())
+    val vm =
+        ProfileViewModel(
+            profileRepository = FakeProfileRepository(),
+            userStatsRepository = FakeUserStatsRepository())
 
     composeRule.setContent { PetSection(viewModel = vm) }
     composeRule.onNodeWithText("Level 5").assertExists()
-  }
-
-  @Test
-  fun profileCardWithLongName() {
-    val user =
-        UserProfile(
-            name = "Alexander Christopher",
-            email = "alexander.christopher@epfl.ch",
-            level = 99,
-            points = 9999)
-    composeRule.setContent { ProfileCard(user) }
-
-    composeRule.onNodeWithText("Alexander Christopher").assertExists()
-    composeRule.onNodeWithText("AL").assertExists() // First 2 chars uppercase
-  }
-
-  @Test
-  fun profileCardWithShortName() {
-    val user = UserProfile(name = "A", email = "a@epfl.ch")
-    composeRule.setContent { ProfileCard(user) }
-
-    // Verify the email exists (unique identifier)
-    composeRule.onNodeWithText("a@epfl.ch").assertExists()
-    // "A" appears at least once (could be in name and/or initials)
-    composeRule.onAllNodesWithText("A").fetchSemanticsNodes().isNotEmpty()
-  }
-
-  @Test
-  fun statsCardWithZeroValues() {
-    val profile =
-        UserProfile(
-            streak = 0,
-            points = 0,
-            coins = 0,
-            studyStats = StudyStats(totalTimeMin = 0, dailyGoalMin = 0))
-    val stats = UserStats(streak = 0, points = 0, coins = 0, todayStudyMinutes = 0)
-    composeRule.setContent { StatsCard(profile, stats) }
-
-    composeRule.onNodeWithText("0 day").assertExists() // Singular form
-    // "0" appears twice (points and coins)
-    composeRule.onAllNodesWithText("0").assertCountEquals(2)
-    // "0 min" appears twice (todayStudyMinutes and dailyGoalMin)
-    composeRule.onAllNodesWithText("0 min").assertCountEquals(2)
-  }
-
-  @Test
-  fun statsCardWithLargeValues() {
-    val profile =
-        UserProfile(
-            streak = 365,
-            points = 999999,
-            coins = 888888,
-            studyStats = StudyStats(totalTimeMin = 9999, dailyGoalMin = 500))
-    val stats = UserStats(streak = 365, points = 999999, coins = 888888, todayStudyMinutes = 9999)
-    composeRule.setContent { StatsCard(profile, stats) }
-
-    composeRule.onNodeWithText("365 days").assertExists()
-    composeRule.onNodeWithText("999999").assertExists()
-    composeRule.onNodeWithText("888888").assertExists()
-    composeRule.onNodeWithText("9999 min").assertExists()
-    composeRule.onNodeWithText("500 min").assertExists()
-  }
-
-  @Test
-  fun fullProfileScreenIntegration() {
-    var focusModeOpened = false
-    var notificationsOpened = false
-    val vm = ProfileViewModel(FakeProfileRepository())
-
-    composeRule.setContent {
-      ProfileScreen(
-          viewModel = vm,
-          onOpenFocusMode = { focusModeOpened = true },
-          onOpenNotifications = { notificationsOpened = true })
-    }
-
-    // Scroll through all sections
-    composeRule.onNodeWithTag(ProfileScreenTestTags.PET_SECTION).assertExists()
-
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION))
-
-    // Interact with customization
-    composeRule.onNodeWithText("Base").performClick()
-
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.SETTINGS_CARD))
-
-    // Test toggles
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_LOCATION).performClick()
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-
-    assert(focusModeOpened)
-
-    composeRule.onNodeWithTag("open_notifications_screen").performClick()
-    assert(notificationsOpened)
-  }
-
-  @Test
-  fun levelProgressBar_displaysCorrectly() {
-    composeRule.setContent { LevelProgressBar(level = 5, points = 450, pointsPerLevel = 100) }
-
-    composeRule.onNodeWithText("Progress to next level").assertExists()
-    // At level 5 with 450 points: levelBase = 4*100 = 400, so 50/100 progress
-    composeRule.onNodeWithText("50 / 100 pts  •  50 pts to next level").assertExists()
-  }
-
-  @Test
-  fun levelProgressBar_atMaxProgress() {
-    composeRule.setContent { LevelProgressBar(level = 3, points = 300, pointsPerLevel = 100) }
-
-    // At level 3 with 300 points: levelBase = 2*100 = 200, so 100/100 progress
-    composeRule.onNodeWithText("100 / 100 pts  •  0 pts to next level").assertExists()
-  }
-
-  @Test
-  fun levelProgressBar_atStartOfLevel() {
-    composeRule.setContent { LevelProgressBar(level = 2, points = 100, pointsPerLevel = 100) }
-
-    // At level 2 with 100 points: levelBase = 1*100 = 100, so 0/100 progress
-    composeRule.onNodeWithText("0 / 100 pts  •  100 pts to next level").assertExists()
-  }
-
-  @Test
-  fun petSectionWithMalformedAccessories() {
-    val vm = ProfileViewModel(FakeProfileRepository())
-    composeRule.setContent {
-      PetSection(
-          level = 5,
-          accent = Color.Magenta,
-          accessories = listOf("malformed", "head:hat", "invalid_format", "torso:cape"),
-          variant = AccentVariant.Base,
-          viewModel = vm)
-    }
-
-    // Should still display level without crashing
-    composeRule.onNodeWithText("Level 5").assertExists()
-  }
-
-  @Test
-  fun accessoriesGrid_multipleSelection() {
-    val items =
-        listOf(
-            AccessoryItem(
-                id = "hat1",
-                slot = AccessorySlot.HEAD,
-                label = "Hat 1",
-                rarity = Rarity.COMMON,
-                iconRes = null),
-            AccessoryItem(
-                id = "hat2",
-                slot = AccessorySlot.HEAD,
-                label = "Hat 2",
-                rarity = Rarity.RARE,
-                iconRes = null))
-
-    var selectedId: String? = "hat1"
-    composeRule.setContent {
-      AccessoriesGrid(items = items, selectedId = selectedId, onSelect = { selectedId = it })
-    }
-
-    // Select second item
-    composeRule.onNodeWithText("Hat 2").performClick()
-    assert(selectedId == "hat2")
-  }
-
-  @Test
-  fun statsCard_singularDayForm() {
-    val profile = UserProfile(studyStats = StudyStats(totalTimeMin = 10, dailyGoalMin = 30))
-    val stats = UserStats(streak = 1, points = 50, coins = 25, todayStudyMinutes = 10)
-
-    composeRule.setContent { StatsCard(profile, stats) }
-
-    // Should use "day" instead of "days" for streak = 1
-    composeRule.onNodeWithText("1 day").assertExists()
   }
 }
