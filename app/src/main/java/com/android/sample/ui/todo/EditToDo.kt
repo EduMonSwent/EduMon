@@ -23,7 +23,11 @@ fun EditToDoScreen(id: String, onBack: () -> Unit) {
               object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                  return EditToDoViewModel(repo = AppRepositories.toDoRepository, id = id) as T
+                  return EditToDoViewModel(
+                      repo = AppRepositories.toDoRepository,
+                      id = id,
+                  )
+                      as T
                 }
               })
 
@@ -44,8 +48,11 @@ fun EditToDoScreen(id: String, onBack: () -> Unit) {
 
       // Optional fields
       showOptionalInitial = true,
-      location = vm.location,
-      onLocationChange = { vm.location = it },
+      // NEW location wiring (same as AddToDoScreen)
+      locationQuery = vm.locationQuery,
+      onLocationQueryChange = vm::onLocationQueryChange,
+      locationSuggestions = vm.locationSuggestions,
+      onLocationSelected = vm::onLocationSelected,
       linksText = vm.linksText,
       onLinksTextChange = { vm.linksText = it },
       note = vm.note,

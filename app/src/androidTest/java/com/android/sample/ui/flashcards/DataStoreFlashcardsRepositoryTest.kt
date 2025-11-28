@@ -54,4 +54,24 @@ class DataStoreFlashcardsRepositoryTest {
     val single = repo.observeDeck(deckId).firstOrNull()
     assertNull(single)
   }
+
+  @Test
+  fun importSharedDeck_invalidToken_returnsEmptyString() = runBlocking {
+    val repo = repo // FlashcardsRepositoryProvider.repository
+
+    val result = repo.importSharedDeck("invalid-token")
+
+    assertEquals("", result)
+  }
+
+  @Test
+  fun importSharedDeck_returnsEmptyString_whenTokenInvalid() = runBlocking {
+    val repo = repo
+
+    // Token does NOT start with "share-"
+    val badToken = "invalid-token"
+
+    val newId = repo.importSharedDeck(badToken)
+    assertTrue(newId.isBlank())
+  }
 }

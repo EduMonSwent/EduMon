@@ -6,6 +6,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import com.android.sample.R
+import com.android.sample.data.Priority as TodoPriority
+import com.android.sample.data.Status as TodoStatus
+import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.ClassType
 import com.android.sample.feature.schedule.data.planner.CompletionStatus
@@ -193,5 +196,60 @@ class DayTabContentAllAndroidTest {
         .onNodeWithText(ctx.getString(R.string.wellness_event_lecture_description))
         .performScrollTo()
         .assertIsDisplayed()
+  }
+
+  @Test
+  fun dayTab_showsEmptyTodosMessage_whenNoTodosForToday() {
+    val ctx = rule.activity
+    val vm = buildScheduleVM(ctx) // your existing helper
+    val state =
+        ScheduleUiState(
+            todayClasses = emptyList(), attendanceRecords = emptyList(), todos = emptyList())
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    val title = ctx.getString(R.string.schedule_day_todos_title)
+    val empty = ctx.getString(R.string.schedule_day_todos_empty)
+
+    // Scroll down to the title/section
+    rule.onNodeWithText(title).performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText(empty).performScrollTo().assertIsDisplayed()
+  }
+
+  @Test
+  fun dayTab_showsOnlyTodayTodos() {
+    val ctx = rule.activity
+    val vm = buildScheduleVM(ctx)
+    val today = LocalDate.now()
+    val tomorrow = today.plusDays(1)
+
+    val todayTodo =
+        ToDo(
+            title = "Today task",
+            dueDate = today,
+            priority = TodoPriority.MEDIUM,
+            status = TodoStatus.TODO)
+    val tomorrowTodo =
+        ToDo(
+            title = "Tomorrow task",
+            dueDate = tomorrow,
+            priority = TodoPriority.MEDIUM,
+            status = TodoStatus.TODO)
+
+    val state =
+        ScheduleUiState(
+            todayClasses = emptyList(),
+            attendanceRecords = emptyList(),
+            todos = listOf(todayTodo, tomorrowTodo))
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    // Only today's task should appear in the "Today's To-Dos" section
+    rule.onNodeWithText("Today task", substring = false).performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText("Tomorrow task").assertDoesNotExist()
   }
 }

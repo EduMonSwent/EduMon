@@ -15,6 +15,7 @@ import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repos_providors.FakeRepositories
+import com.android.sample.ui.schedule.ScheduleScreenTestTags
 import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -159,5 +160,23 @@ class HomeNavigationTests {
   @OptIn(ExperimentalTestApi::class)
   private fun waitUntilRoute(expected: String) {
     rule.waitUntil(5_000) { nav.currentBackStackEntry?.destination?.route == expected }
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  @Test
+  fun scheduleFab_navigatesTo_addTodoFromSchedule_route() {
+    setContent()
+    navigateDirect(AppDestination.Schedule.route)
+    waitUntilRoute(AppDestination.Schedule.route)
+    assertRoute(AppDestination.Schedule.route)
+
+    rule.waitUntilExactlyOneExists(hasTestTag(ScheduleScreenTestTags.FAB_ADD))
+    rule.onNode(hasTestTag(ScheduleScreenTestTags.FAB_ADD)).performClick()
+    rule.waitForIdle()
+
+    val route = nav.currentBackStackEntry?.destination?.route
+    assert(route != null && route.startsWith("addTodoFromSchedule")) {
+      "Expected route starting with addTodoFromSchedule but was: $route"
+    }
   }
 }

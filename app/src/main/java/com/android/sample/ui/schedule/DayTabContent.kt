@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
+import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
@@ -61,6 +62,7 @@ fun DayTabContent(
     state: ScheduleUiState,
     objectivesVm: ObjectivesViewModel,
     onObjectiveNavigation: (ObjectiveNavigation) -> Unit = {},
+    onTodoClicked: (String) -> Unit = {}
 ) {
   // Attendance modal (wired to VM state)
   if (state.showAttendanceModal && state.selectedClass != null) {
@@ -81,12 +83,16 @@ fun DayTabContent(
       contentPadding = PaddingValues(bottom = 96.dp) // leave room for FAB
       ) {
         item {
+          val today = LocalDate.now()
+          val dayTodos = state.todos.filter { it.dueDate == today }
           TodayCard(
               classes = state.todayClasses,
               attendance = state.attendanceRecords,
               objectivesVm = objectivesVm,
               onClassClick = { vm.onClassClicked(it) },
               onObjectiveNavigate = onObjectiveNavigation,
+              todos = dayTodos,
+              onTodoClicked = onTodoClicked,
               modifier = Modifier.fillMaxWidth())
         }
       }
@@ -101,6 +107,8 @@ private fun TodayCard(
     objectivesVm: ObjectivesViewModel,
     onClassClick: (Class) -> Unit,
     onObjectiveNavigate: (ObjectiveNavigation) -> Unit,
+    todos: List<ToDo>,
+    onTodoClicked: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
   val cs = MaterialTheme.colorScheme
@@ -168,6 +176,54 @@ private fun TodayCard(
               viewModel = objectivesVm,
               modifier = Modifier.fillMaxWidth(),
               onNavigate = onObjectiveNavigate)
+        }
+    Spacer(Modifier.height(14.dp))
+    // ---- Today's To-Dos ----
+    SectionBox(
+        header = {
+          Text(
+              text = stringResource(R.string.schedule_day_todos_title),
+              fontSize = 18.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = cs.onSurface,
+              modifier = Modifier.padding(bottom = 8.dp))
+        }) {
+          if (todos.isEmpty()) {
+            Text(
+                text = stringResource(R.string.schedule_day_todos_empty),
+                color = cs.onSurface.copy(alpha = 0.7f),
+                modifier = modifier.fillMaxWidth())
+          } else {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+              todos.forEach { todo ->
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable {
+                          onTodoClicked(todo.id)
+                        }) {
+                      Box(
+                          modifier =
+                              Modifier.width(5.dp)
+                                  .height(32.dp)
+                                  .background(cs.primary, RoundedCornerShape(999.dp)))
+
+                      Spacer(Modifier.width(10.dp))
+
+                      Column {
+                        Text(
+                            text = todo.title,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = cs.onSurface)
+                        Text(
+                            text = todo.dueDateFormatted(),
+                            fontSize = 12.sp,
+                            color = cs.onSurface.copy(alpha = 0.7f))
+                      }
+                    }
+              }
+            }
+          }
         }
 
     Spacer(Modifier.height(14.dp))

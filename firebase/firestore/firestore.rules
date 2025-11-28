@@ -75,21 +75,21 @@ service cloud.firestore {
     }
 
     /* ---------- SHARED DECK TOKENS ---------- */
-        match /sharedDecks/{token} {
+    match /sharedDecks/{token} {
 
-          // Anyone signed in (even anonymously) may read a share token
-          allow get: if request.auth != null;
+      // Anyone signed in (even anonymously) may read a share token
+      allow get: if request.auth != null;
 
-          // Only the owner of the deck can create the share token
-          allow create: if request.auth != null
-                        && request.resource.data.ownerId == request.auth.uid;
+      // Only the owner of the deck can create the share token
+      allow create: if request.auth != null
+                    && request.resource.data.ownerId == request.auth.uid;
 
-          // Tokens must never be modified after creation
-          allow update: if false;
+      // Tokens must never be modified after creation
+      allow update: if false;
 
-          // Tokens must never be deleted
-          allow delete: if false;
-        }
+      // Tokens must never be deleted
+      allow delete: if false;
+    }
 
     /* ---------- Catch-all deny ---------- */
     match /{document=**} {
