@@ -75,6 +75,8 @@ import kotlin.math.abs
 import kotlinx.coroutines.flow.collectLatest
 import okhttp3.OkHttpClient
 
+// Parts of this code were written with ChatGPT assistance
+
 // Test tags
 private const val TAG_FAB_ADD = "fab_add_friend"
 private const val TAG_FIELD_UID = "field_friend_uid"
@@ -858,4 +860,13 @@ private suspend fun CameraPositionState.safeAnimateTo(
   } catch (e: Exception) {
     Log.w(TAG, "Camera Problem", e)
   }
+}
+
+// Helper to persist last location for background polling worker
+internal fun persistLastLocation(ctx: Context, lat: Double, lon: Double) {
+  ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
+      .edit()
+      .putFloat("lat", lat.toFloat())
+      .putFloat("lon", lon.toFloat())
+      .apply()
 }

@@ -11,6 +11,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+// Parts of this code were written with ChatGPT assistance
+
 /**
  * Re-register alarms after device reboot. This receiver is invoked on BOOT_COMPLETED. It should
  * query the app's repository for upcoming study tasks and schedule alarms. Here we schedule via
@@ -24,6 +26,13 @@ class BootReceiver(
 ) : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+
+    // Restart campus polling chain if it was enabled
+    val prefs = context.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+    val campusEnabled = prefs.getBoolean("campus_entry_enabled", false)
+    if (campusEnabled) {
+      CampusEntryPollWorker.startChain(context)
+    }
 
     // Re-schedule next alarms in background
     scope.launch {

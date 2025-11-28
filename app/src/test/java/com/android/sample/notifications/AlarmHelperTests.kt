@@ -69,29 +69,35 @@ class AlarmHelperTest {
     }
   }
 
-  private fun assertFallbackEnqueued(tag: String) {
-    val infos = WorkManager.getInstance(appCtx).getWorkInfosByTag(tag).get()
-    assertTrue("Expected fallback work enqueued with tag=$tag", infos.isNotEmpty())
+  private fun assertFallbackEnqueued(baseTag: String, eventId: String) {
+    val fullTag =
+        baseTag // tag passed to WorkRequest .addTag("study_session_start") remains constant
+    val infos = WorkManager.getInstance(appCtx).getWorkInfosByTag(fullTag).get()
+    assertTrue(
+        "Expected fallback work enqueued with tag=$fullTag for event $eventId", infos.isNotEmpty())
   }
 
   @Test
   fun `scheduleStudyAlarm falls back when SecurityException thrown`() {
+    val eventId = "sec-event"
     val ctx = contextWithFailingAlarmManager(SecurityException("denied"))
-    AlarmHelper.scheduleStudyAlarm(ctx, "sec-event", System.currentTimeMillis() + 2000)
-    assertFallbackEnqueued("study_session_start")
+    AlarmHelper.scheduleStudyAlarm(ctx, eventId, System.currentTimeMillis() + 2000)
+    assertFallbackEnqueued("study_session_start", eventId)
   }
 
   @Test
   fun `scheduleStudyAlarm falls back when IllegalArgumentException thrown`() {
+    val eventId = "iae-event"
     val ctx = contextWithFailingAlarmManager(IllegalArgumentException("bad args"))
-    AlarmHelper.scheduleStudyAlarm(ctx, "iae-event", System.currentTimeMillis() + 2000)
-    assertFallbackEnqueued("study_session_start")
+    AlarmHelper.scheduleStudyAlarm(ctx, eventId, System.currentTimeMillis() + 2000)
+    assertFallbackEnqueued("study_session_start", eventId)
   }
 
   @Test
   fun `scheduleStudyAlarm falls back when generic Throwable thrown`() {
+    val eventId = "thr-event"
     val ctx = contextWithFailingAlarmManager(RuntimeException("boom"))
-    AlarmHelper.scheduleStudyAlarm(ctx, "thr-event", System.currentTimeMillis() + 2000)
-    assertFallbackEnqueued("study_session_start")
+    AlarmHelper.scheduleStudyAlarm(ctx, eventId, System.currentTimeMillis() + 2000)
+    assertFallbackEnqueued("study_session_start", eventId)
   }
 }

@@ -185,6 +185,7 @@ dependencies {
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation("com.google.guava:guava:31.1-android")
 
 
     // Navigation testing in both test types
@@ -193,10 +194,18 @@ dependencies {
 }
 
 tasks.withType<Test> {
-    // Jacoco for unit tests
+    // Jacoco for unit tests (avoid instrumenting JDK classes on Java 21+)
     configure<JacocoTaskExtension> {
-        isIncludeNoLocationClasses = true
-        excludes = listOf("jdk.internal.*")
+        isIncludeNoLocationClasses = false // was true; this caused JaCoCo to try to instrument JDK classes
+        excludes = listOf(
+            "jdk.*",
+            "java.*",
+            "javax.*",
+            "sun.*",
+            "com.sun.*",
+            "org.jacoco.*",
+            "kotlin.*"
+        )
     }
 }
 

@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
+// Parts of this code were written with ChatGPT assistance
+
 class NotificationsViewModel(
     private val repo: NotificationRepository = WorkManagerNotificationRepository(),
     private val calendarRepository: CalendarRepository = AppRepositories.calendarRepository,
@@ -293,6 +295,7 @@ class NotificationsViewModel(
     super.onCleared()
     scheduleObserverJob?.cancel()
     scheduleObserverJob = null
+    // Do not cancel campus polling here; user preference drives it.
   }
 
   @VisibleForTesting internal fun currentScheduledTaskId(): String? = scheduledTaskId

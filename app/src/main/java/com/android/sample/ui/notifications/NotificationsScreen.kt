@@ -33,6 +33,8 @@ import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
+// Parts of this code were written with ChatGPT assistance
+
 /* ---------- Helpers testables ---------- */
 
 @VisibleForTesting
@@ -104,7 +106,7 @@ private fun HeaderBar(onBack: () -> Unit, onGoHome: () -> Unit) {
 }
 
 @Composable
-private fun StartupErrorBanner(startupError: String?) {
+internal fun StartupErrorBanner(startupError: String?) {
   startupError?.let { msg ->
     Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
       Text(stringResource(R.string.notification_setup_error_fmt, msg), color = Color.Red)
@@ -113,7 +115,7 @@ private fun StartupErrorBanner(startupError: String?) {
 }
 
 @Composable
-private fun KickoffSection(
+internal fun KickoffSection(
     kickoffEnabled: Boolean,
     kickoffDays: Set<Int>,
     kickoffTimes: Map<Int, Pair<Int, Int>>,
@@ -132,7 +134,8 @@ private fun KickoffSection(
           Text(
               if (kickoffEnabled) stringResource(R.string.select_days_set_times)
               else stringResource(R.string.enable_to_configure_schedule),
-              color = TextLight.copy(0.7f))
+              color = TextLight.copy(0.7f),
+              modifier = Modifier.testTag("kickoff_empty_hint"))
         }
         if (kickoffDays.isNotEmpty()) {
           TimeChipsRow(
@@ -140,11 +143,16 @@ private fun KickoffSection(
               times = kickoffTimes,
               enabled = kickoffEnabled,
               onPickRequest = onPickRequest)
-          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            OutlinedButton(enabled = kickoffEnabled, onClick = onApply) {
-              Text(stringResource(R.string.apply_kickoff_schedule))
-            }
-          }
+          Row(
+              Modifier.fillMaxWidth().testTag("kickoff_apply_row"),
+              horizontalArrangement = Arrangement.End) {
+                OutlinedButton(
+                    enabled = kickoffEnabled,
+                    onClick = onApply,
+                    modifier = Modifier.testTag("btn_apply_kickoff")) {
+                      Text(stringResource(R.string.apply_kickoff_schedule))
+                    }
+              }
         }
       }
 }
@@ -178,25 +186,25 @@ private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -
 }
 
 @Composable
-private fun TestNotificationButton(
+internal fun TestNotificationButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
-    launcherTest: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+    requestPermission: (String) -> Unit
 ) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Button(
         modifier = Modifier.testTag("btn_test_1_min"),
-        onClick = { vm.requestOrSchedule(ctx) { permission -> launcherTest.launch(permission) } }) {
+        onClick = { vm.requestOrSchedule(ctx) { permission -> requestPermission(permission) } }) {
           Text(stringResource(R.string.send_notification_1_min))
         }
   }
 }
 
 @Composable
-private fun DeepLinkDemoButton(
+internal fun DeepLinkDemoButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
-    launcherDemo: androidx.activity.compose.ManagedActivityResultLauncher<String, Boolean>
+    requestPermission: (String) -> Unit
 ) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     val needs = vm.needsNotificationPermission(ctx)
@@ -204,7 +212,7 @@ private fun DeepLinkDemoButton(
         modifier = Modifier.testTag("btn_demo_deep_link"),
         onClick = {
           if (needs && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            launcherDemo.launch(Manifest.permission.POST_NOTIFICATIONS)
+            requestPermission(Manifest.permission.POST_NOTIFICATIONS)
           } else {
             vm.sendDeepLinkDemoNotification(ctx)
           }
@@ -215,7 +223,7 @@ private fun DeepLinkDemoButton(
 }
 
 @Composable
-private fun StartScheduleObserver(
+internal fun StartScheduleObserver(
     taskNotificationsEnabled: Boolean,
     vm: NotificationsUiModel,
     ctx: android.content.Context,
@@ -243,18 +251,34 @@ fun NotificationsScreen(
     vm: NotificationsUiModel = viewModel<NotificationsViewModel>(),
     onBack: () -> Unit = {},
     onGoHome: () -> Unit = {},
-    forceDialogForDay: Int? = null
+    forceDialogForDay: Int? = null,
+    // New: avoid creating ActivityResult launchers under Robolectric/unit tests
+    testMode: Boolean = false,
 ) {
   val ctx = LocalContext.current
 
-  val launcherTest =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.scheduleTestNotification(ctx)
-      }
-  val launcherDemo =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.sendDeepLinkDemoNotification(ctx)
-      }
+  // Build permission request lambdas; under tests we don't create ActivityResult launchers
+  var requestNotifPermissionForTest: (String) -> Unit = { _: String ->
+    vm.scheduleTestNotification(ctx)
+  }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted) vm.scheduleTestNotification(ctx)
+        }
+    requestNotifPermissionForTest = { permission: String -> launcher.launch(permission) }
+  }
+
+  var requestNotifPermissionForDemo: (String) -> Unit = { _: String ->
+    vm.sendDeepLinkDemoNotification(ctx)
+  }
+  if (!testMode) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted) vm.sendDeepLinkDemoNotification(ctx)
+        }
+    requestNotifPermissionForDemo = { permission: String -> launcher.launch(permission) }
+  }
 
   val kickoffEnabled by vm.kickoffEnabled.collectAsState()
   val kickoffDays by vm.kickoffDays.collectAsState()
@@ -293,8 +317,8 @@ fun NotificationsScreen(
               taskEnabled = taskNotificationsEnabled,
               onToggle = { on -> vm.setTaskNotificationsEnabled(ctx, on) })
 
-          TestNotificationButton(vm, ctx, launcherTest)
-          DeepLinkDemoButton(vm, ctx, launcherDemo)
+          TestNotificationButton(vm, ctx, requestNotifPermissionForTest)
+          DeepLinkDemoButton(vm, ctx, requestNotifPermissionForDemo)
         }
   }
 
@@ -317,6 +341,7 @@ private fun SectionCard(
     subtitle: String,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
+    switchTag: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
   Card(
@@ -334,7 +359,10 @@ private fun SectionCard(
                       color = TextLight.copy(0.75f),
                       style = MaterialTheme.typography.bodySmall)
                 }
-                Switch(checked = enabled, onCheckedChange = onToggle)
+                Switch(
+                    modifier = if (switchTag != null) Modifier.testTag(switchTag) else Modifier,
+                    checked = enabled,
+                    onCheckedChange = onToggle)
               }
               content()
             }

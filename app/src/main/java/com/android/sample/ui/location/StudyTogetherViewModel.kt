@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+// Parts of this code were written with ChatGPT assistance
+
 class StudyTogetherViewModel(
     private val friendRepository: FriendRepository = AppRepositories.friendRepository,
     initialMode: FriendMode = FriendMode.STUDY,
@@ -57,6 +59,10 @@ class StudyTogetherViewModel(
   // These were in the original code; keeping as-is to avoid changing behavior.
   private val minSendIntervalMs = 10_000L
   private val minMoveMeters = 10f
+
+  // Foreground campus entry notification support (Option A)
+  // Campus-entry notifications are handled by CampusEntryPollWorker in the background.
+  // The ViewModel no longer posts notifications directly and doesn't need a Context.
 
   init {
     // Live friends.
@@ -113,6 +119,9 @@ class StudyTogetherViewModel(
         }
       }
     }
+
+    // Campus entry notification no longer handled here. Background polling via
+    // CampusEntryPollWorker posts notifications even when the app is closed.
   }
 
   /** Change user mode; if signed in we send presence with the chosen policy’s location. */
