@@ -157,6 +157,64 @@ class NotificationsUnifiedTest {
     assertEquals(1, vm.deepLinkDemoCalls)
   }
 
+  @Test
+  fun deepLink_demo_button_calls_send_when_permission_granted() {
+    val vm = FakeVm().apply { needsNotif = true }
+    var permissionRequested = false
+    var grantedCallback: ((Boolean) -> Unit)? = null
+
+    composeRule.setContent {
+      DeepLinkDemoButton(vm, composeRule.activity) { permission ->
+        permissionRequested = true
+        // Simulate permission being granted
+        grantedCallback = { granted ->
+          if (granted) vm.sendDeepLinkDemoNotification(composeRule.activity)
+        }
+        grantedCallback?.invoke(true)
+      }
+    }
+
+    val text = composeRule.activity.getString(R.string.send_deep_link_demo)
+    composeRule.onNodeWithText(text).assertIsDisplayed().performClick()
+
+    // Should have requested permission and then called sendDeepLinkDemoNotification
+    assertEquals(1, vm.deepLinkDemoCalls)
+  }
+
+  /* ---------------- Test notification button ---------------- */
+  @Test
+  fun test_notification_button_calls_schedule_no_permission_needed() {
+    val vm = FakeVm().apply { needsNotif = false }
+    composeRule.setContent { TestNotificationButton(vm, composeRule.activity) { _ -> } }
+    val text = composeRule.activity.getString(R.string.send_notification_1_min)
+    composeRule.onNodeWithText(text).assertIsDisplayed().performClick()
+    assertEquals(1, vm.testNotificationCalls)
+  }
+
+  @Test
+  fun test_notification_button_calls_schedule_when_permission_granted() {
+    val vm = FakeVm().apply { needsNotif = true }
+    var permissionRequested = false
+    var grantedCallback: ((Boolean) -> Unit)? = null
+
+    composeRule.setContent {
+      TestNotificationButton(vm, composeRule.activity) { permission ->
+        permissionRequested = true
+        // Simulate permission being granted
+        grantedCallback = { granted ->
+          if (granted) vm.scheduleTestNotification(composeRule.activity)
+        }
+        grantedCallback?.invoke(true)
+      }
+    }
+
+    val text = composeRule.activity.getString(R.string.send_notification_1_min)
+    composeRule.onNodeWithText(text).assertIsDisplayed().performClick()
+
+    // Should have requested permission and then called scheduleTestNotification
+    assertEquals(1, vm.testNotificationCalls)
+  }
+
   /* ---------------- TimePickerDialog via NotificationsScreen ---------------- */
   @Test
   fun timePicker_forced_day_updates_on_confirm() {

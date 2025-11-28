@@ -1,8 +1,10 @@
 package com.android.sample.notifications
 
+import android.Manifest
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.GrantPermissionRule
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
@@ -14,7 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -25,6 +27,11 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class CampusEntryPollWorkerAndroidTest {
+
+  @get:Rule
+  val permissionRule: GrantPermissionRule =
+      GrantPermissionRule.grant(
+          Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
   private lateinit var context: Context
   private lateinit var workManager: WorkManager
@@ -60,7 +67,6 @@ class CampusEntryPollWorkerAndroidTest {
     return@runBlocking workManager.getWorkInfoById(request.id).await()
   }
 
-  @Ignore
   @Test
   fun doWork_withTestCoordinatesOnCampus_setsFlag() {
     // Given: test coordinates inside campus bounds
@@ -111,7 +117,6 @@ class CampusEntryPollWorkerAndroidTest {
     assertFalse("Campus flag should be false for off-campus coordinates", wasOnCampus)
   }
 
-  @Ignore
   @Test
   fun doWork_withStoredOnCampusLocation_setsFlag() {
     // Given: stored location on campus, skip fetch enabled
@@ -193,10 +198,10 @@ class CampusEntryPollWorkerAndroidTest {
     assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
   }
 
-  @Ignore
   @Test
   fun doWork_persistsLastLocation() = runBlocking {
     // Given: test coordinates
+    // This test verifies that the worker persists location to SharedPreferences
     val inputData =
         Data.Builder()
             .putBoolean(CampusEntryPollWorker.KEY_DISABLE_CHAIN, true)
@@ -225,9 +230,8 @@ class CampusEntryPollWorkerAndroidTest {
     assertEquals(6.5652f, lon, 0.0001f)
   }
 
-  @Ignore
   @Test
-  fun doWork_transitionFromOffToOnCampus_shouldTriggerNotification() {
+  fun doWork_transitionFromOffToOnCampus_updatesCampusFlag() {
     // Given: was previously off campus
     context
         .getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)

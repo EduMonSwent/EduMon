@@ -797,7 +797,7 @@ private suspend fun CameraPositionState.safeAnimateTo(
 }
 
 // Helper to persist last location for background polling worker
-private fun persistLastLocation(ctx: Context, lat: Double, lon: Double) {
+internal fun persistLastLocation(ctx: Context, lat: Double, lon: Double) {
   ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
       .edit()
       .putFloat("lat", lat.toFloat())

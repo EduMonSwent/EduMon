@@ -227,11 +227,14 @@ class CampusEntryPollWorkerCoverageTest {
     val infos2 = wm.getWorkInfosByTag("campus_entry_poll").get()
     assertTrue(infos2.isNotEmpty())
 
+    // Cancel the work - this should cancel all pending work with this unique name
     CampusEntryPollWorker.Companion.cancel(ctx)
+
+    // Verify the work was cancelled - all work items should be in CANCELLED state
     val after = wm.getWorkInfosByTag("campus_entry_poll").get()
-    // cancellation may produce CANCELLED state(s); ensure WorkManager returned entries (they exist
-    // or cancelled)
-    assertTrue(after.isNotEmpty())
+    // After cancellation, we should either have cancelled work items or no pending work
+    val allCancelled = after.all { it.state == androidx.work.WorkInfo.State.CANCELLED }
+    assertTrue("All work should be cancelled", after.isEmpty() || allCancelled)
   }
 
   @Test

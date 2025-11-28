@@ -186,7 +186,7 @@ private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -
 }
 
 @Composable
-private fun TestNotificationButton(
+internal fun TestNotificationButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
     requestPermission: (String) -> Unit

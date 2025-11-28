@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
 import org.junit.Test
@@ -378,5 +379,37 @@ class StudyTogetherScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithText("You're already friends.").assertExists()
+  }
+
+  @Test
+  fun persistLastLocation_savesLocationToSharedPreferences() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Test coordinates - EPFL campus center
+    val testLat = 46.5202
+    val testLon = 6.5652
+
+    // Get context and clear any existing data
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+    context
+        .getSharedPreferences("last_location", android.content.Context.MODE_PRIVATE)
+        .edit()
+        .clear()
+        .commit()
+
+    // Call persistLastLocation
+    composeTestRule.runOnUiThread { persistLastLocation(context, testLat, testLon) }
+
+    // Verify the data was saved correctly
+    val prefs = context.getSharedPreferences("last_location", android.content.Context.MODE_PRIVATE)
+    val savedLat = prefs.getFloat("lat", 0f)
+    val savedLon = prefs.getFloat("lon", 0f)
+
+    // Assert the values match (with small delta for float precision)
+    org.junit.Assert.assertEquals(testLat.toFloat(), savedLat, 0.0001f)
+    org.junit.Assert.assertEquals(testLon.toFloat(), savedLon, 0.0001f)
   }
 }
