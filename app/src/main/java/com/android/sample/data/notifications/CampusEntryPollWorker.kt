@@ -90,11 +90,9 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
   }
 
   private fun persistLastLocation(ctx: Context, pos: LatLng) {
-    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
-        .edit()
-        .putFloat("lat", pos.latitude.toFloat())
-        .putFloat("lon", pos.longitude.toFloat())
-        .commit() // Use commit() for synchronous write, ensuring data is available immediately
+    ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE).edit(commit = true) {
+      putFloat("lat", pos.latitude.toFloat()).putFloat("lon", pos.longitude.toFloat())
+    } // Use commit() for synchronous write, ensuring data is available immediately
   }
 
   private suspend fun resolvePosition(
@@ -158,7 +156,7 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
       if (lastLocation != null) {
         LatLng(lastLocation.latitude, lastLocation.longitude)
       } else {
-        throw IllegalStateException("No location available")
+        error("No location available")
       }
     }
   }
