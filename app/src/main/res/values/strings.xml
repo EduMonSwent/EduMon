@@ -319,6 +319,33 @@
     <string name="edumon_content_description">EduMon character</string>
     <string name="level_label">Level %1$d</string>
 
+    <!-- Intro -->
+    <string name="tap_to_start">Tap to Start</string>
+    <string name="onboarding_default_player_name">Player</string>
+
+    <!-- Professor / dialogue -->
+    <string name="onboarding_prof_line_1">Welcome to EPFL, young student !</string>
+    <string name="onboarding_prof_line_2">Here, your EduMon will accompany you all year long.</string>
+    <string name="onboarding_prof_line_3">But first… choose your first EduMon!</string>
+
+    <!-- Bouton -->
+    <string name="onboarding_confirm_starter">Confirm your EduMon</string>
+
+    <!-- Starters names -->
+    <string name="onboarding_edumon_fire_name">PyroMon</string>
+    <string name="onboarding_edumon_water_name">AquaMon</string>
+    <string name="onboarding_edumon_grass_name">FloraMon</string>
+
+    <string name="confirm_edumon">Confirm your EduMon</string>
+
+
+    <!-- Content descriptions (accessibilité) -->
+    <string name="onboarding_logo_content_description">Logo EduMon</string>
+    <string name="onboarding_background_content_description">
+        Background EPFL style Pokemon
+    </string>
+    <string name="onboarding_professor_image_description">Professor EduMon</string>
+
 
 
 
