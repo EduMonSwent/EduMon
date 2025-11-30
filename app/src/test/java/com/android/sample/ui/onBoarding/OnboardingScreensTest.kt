@@ -673,9 +673,6 @@ class OnboardingScreensTest {
         .onFirst()
         .performClick()
 
-    composeTestRule.setContent {
-      StarterSelectionScreen(onStarterSelected = { selectedIds.add(it) })
-    }
     composeTestRule.onRoot().performTouchInput { swipeLeft() }
     composeTestRule.waitForIdle()
     composeTestRule.onRoot().performTouchInput { swipeLeft() }
