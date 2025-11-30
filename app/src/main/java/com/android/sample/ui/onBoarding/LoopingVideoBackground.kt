@@ -16,41 +16,32 @@ import androidx.media3.ui.PlayerView
 
 @UnstableApi
 @Composable
-fun LoopingVideoBackgroundFromAssets(
-    assetFileName: String,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
+fun LoopingVideoBackgroundFromAssets(assetFileName: String, modifier: Modifier = Modifier) {
+  val context = LocalContext.current
 
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri("asset:///$assetFileName")
-            setMediaItem(mediaItem)
-            repeatMode = Player.REPEAT_MODE_ALL
-            playWhenReady = true
-            volume = 0f
-            prepare()
-        }
+  val exoPlayer = remember {
+    ExoPlayer.Builder(context).build().apply {
+      val mediaItem = MediaItem.fromUri("asset:///$assetFileName")
+      setMediaItem(mediaItem)
+      repeatMode = Player.REPEAT_MODE_ALL
+      playWhenReady = true
+      volume = 0f
+      prepare()
     }
+  }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer.release()
-        }
-    }
+  DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
 
-    AndroidView(
-        modifier = modifier,
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                player = exoPlayer
-                useController = false
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
+  AndroidView(
+      modifier = modifier,
+      factory = { ctx ->
+        PlayerView(ctx).apply {
+          player = exoPlayer
+          useController = false
+          resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+          layoutParams =
+              ViewGroup.LayoutParams(
+                  ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
-    )
+      })
 }

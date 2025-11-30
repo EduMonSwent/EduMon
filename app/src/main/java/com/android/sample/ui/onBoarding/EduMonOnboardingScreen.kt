@@ -30,58 +30,44 @@ fun EduMonOnboardingScreen(
     modifier: Modifier = Modifier,
     onOnboardingFinished: (playerName: String, starterId: String) -> Unit = { _, _ -> }
 ) {
-    var currentStep by remember { mutableStateOf(OnboardingStep.Intro) }
-    var selectedStarterId by remember { mutableStateOf<String?>(null) }
+  var currentStep by remember { mutableStateOf(OnboardingStep.Intro) }
+  var selectedStarterId by remember { mutableStateOf<String?>(null) }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colorResource(R.color.onboarding_background))
-    ) {
-        LoopingVideoBackgroundFromAssets(
-            assetFileName = "onboarding_background_epfl.mp4",
-            modifier = Modifier.fillMaxSize()
-        )
+  Box(modifier = modifier.fillMaxSize().background(colorResource(R.color.onboarding_background))) {
+    LoopingVideoBackgroundFromAssets(
+        assetFileName = "onboarding_background_epfl.mp4", modifier = Modifier.fillMaxSize())
 
-        AnimatedContent(
-            targetState = currentStep,
-            transitionSpec = {
-                val duration = OnboardingDimens.transitionDurationMillis
-                (fadeIn(animationSpec = tween(duration)) +
-                        slideInHorizontally(animationSpec = tween(duration)) { fullWidth ->
-                            fullWidth / OnboardingDimens.transitionSlideOffsetDivisor
-                        }).togetherWith(
-                    fadeOut(animationSpec = tween(duration)) +
-                            slideOutHorizontally(animationSpec = tween(duration)) { fullWidth ->
-                                -fullWidth / OnboardingDimens.transitionSlideOffsetDivisor
-                            }
-                )
-            },
-            modifier = Modifier.fillMaxSize(),
-            label = "edumon_onboarding_step"
-        ) { step ->
-            when (step) {
-                OnboardingStep.Intro -> IntroTapToStartScreen(
-                    onTap = { currentStep = OnboardingStep.Professor }
-                )
+    AnimatedContent(
+        targetState = currentStep,
+        transitionSpec = {
+          val duration = OnboardingDimens.transitionDurationMillis
+          (fadeIn(animationSpec = tween(duration)) +
+                  slideInHorizontally(animationSpec = tween(duration)) { fullWidth ->
+                    fullWidth / OnboardingDimens.transitionSlideOffsetDivisor
+                  })
+              .togetherWith(
+                  fadeOut(animationSpec = tween(duration)) +
+                      slideOutHorizontally(animationSpec = tween(duration)) { fullWidth ->
+                        -fullWidth / OnboardingDimens.transitionSlideOffsetDivisor
+                      })
+        },
+        modifier = Modifier.fillMaxSize(),
+        label = "edumon_onboarding_step") { step ->
+          when (step) {
+            OnboardingStep.Intro ->
+                IntroTapToStartScreen(onTap = { currentStep = OnboardingStep.Professor })
+            OnboardingStep.Professor ->
+                ProfessorDialogueScreen(
+                    onDialogueFinished = { currentStep = OnboardingStep.StarterSelection })
+            OnboardingStep.StarterSelection -> {
+              val defaultPlayerName = stringResource(R.string.onboarding_default_player_name)
 
-                OnboardingStep.Professor -> ProfessorDialogueScreen(
-                    onDialogueFinished = { currentStep = OnboardingStep.StarterSelection }
-                )
-
-                OnboardingStep.StarterSelection -> {
-                    val defaultPlayerName = stringResource(
-                        R.string.onboarding_default_player_name
-                    )
-
-                    StarterSelectionScreen(
-                        onStarterSelected = { starterId ->
-                            onOnboardingFinished(defaultPlayerName, starterId)
-                        }
-                    )
-
-                }
+              StarterSelectionScreen(
+                  onStarterSelected = { starterId ->
+                    onOnboardingFinished(defaultPlayerName, starterId)
+                  })
             }
+          }
         }
-    }
+  }
 }

@@ -23,44 +23,39 @@ import androidx.compose.ui.text.style.TextAlign
 import com.android.sample.R
 
 @Composable
-fun IntroTapToStartScreen(
-    modifier: Modifier = Modifier,
-    onTap: () -> Unit
-) {
-    val tapTextColor = colorResource(R.color.onboarding_tap_to_start_text)
+fun IntroTapToStartScreen(modifier: Modifier = Modifier, onTap: () -> Unit) {
+  val tapTextColor = colorResource(R.color.onboarding_tap_to_start_text)
 
-    val infiniteTransition = rememberInfiniteTransition(label = "tap_to_start_blink")
-    val tapAlpha by infiniteTransition.animateFloat(
-        initialValue = OnboardingDimens.tapBlinkAlphaMin,
-        targetValue = OnboardingDimens.tapBlinkAlphaMax,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = OnboardingDimens.tapBlinkDurationMillis,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "tap_to_start_alpha"
-    )
+  val infiniteTransition = rememberInfiniteTransition(label = "tap_to_start_blink")
+  val tapAlpha by
+      infiniteTransition.animateFloat(
+          initialValue = OnboardingDimens.tapBlinkAlphaMin,
+          targetValue = OnboardingDimens.tapBlinkAlphaMax,
+          animationSpec =
+              infiniteRepeatable(
+                  animation =
+                      tween(
+                          durationMillis = OnboardingDimens.tapBlinkDurationMillis,
+                          easing = LinearEasing),
+                  repeatMode = RepeatMode.Reverse),
+          label = "tap_to_start_alpha")
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(OnboardingDimens.screenPadding)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onTap
-            )
-    ) {
+  Box(
+      modifier =
+          modifier
+              .fillMaxSize()
+              .padding(OnboardingDimens.screenPadding)
+              .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = null,
+                  onClick = onTap)) {
         Text(
             text = stringResource(R.string.tap_to_start),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = OnboardingDimens.tapToStartBottomPadding),
+            modifier =
+                Modifier.align(Alignment.BottomCenter)
+                    .padding(bottom = OnboardingDimens.tapToStartBottomPadding),
             color = tapTextColor.copy(alpha = tapAlpha),
             fontSize = OnboardingDimens.bodyTextSize,
-            textAlign = TextAlign.Center
-        )
-    }
+            textAlign = TextAlign.Center)
+      }
 }
