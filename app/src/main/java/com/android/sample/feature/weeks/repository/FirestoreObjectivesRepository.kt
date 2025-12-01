@@ -3,7 +3,9 @@ package com.android.sample.feature.weeks.repository
 import com.android.sample.core.helpers.DefaultDispatcherProvider
 import com.android.sample.core.helpers.DispatcherProvider
 import com.android.sample.core.helpers.setMerged
+import com.android.sample.feature.weeks.model.DefaultObjectives
 import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.model.ObjectiveType
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
@@ -33,6 +35,8 @@ class FirestoreObjectivesRepository(
           "estimateMinutes" to estimateMinutes,
           "completed" to completed,
           "day" to day.name,
+          // Persist the type so the "Start" button knows which screen to open
+          "type" to type.name,
           "order" to (order ?: 0L),
           "updatedAt" to FieldValue.serverTimestamp(),
       )
@@ -44,7 +48,20 @@ class FirestoreObjectivesRepository(
     val completed = getBoolean("completed") ?: false
     val dayStr = getString("day") ?: DayOfWeek.MONDAY.name
     val dow = runCatching { DayOfWeek.valueOf(dayStr) }.getOrElse { DayOfWeek.MONDAY }
-    return Objective(title, course, estimate, completed, dow)
+
+    // Safely read the type; default to COURSE_OR_EXERCISES for old documents
+    val typeStr = getString("type") ?: ObjectiveType.COURSE_OR_EXERCISES.name
+    val type =
+        runCatching { ObjectiveType.valueOf(typeStr) }
+            .getOrElse { ObjectiveType.COURSE_OR_EXERCISES }
+
+    return Objective(
+        title = title,
+        course = course,
+        estimateMinutes = estimate,
+        completed = completed,
+        day = dow,
+        type = type)
   }
 
   private suspend fun fetchOrdered(): MutableList<Pair<DocumentSnapshot, Objective>> =
@@ -53,27 +70,17 @@ class FirestoreObjectivesRepository(
         snap.documents.map { it to it.toDomain() }.toMutableList()
       }
 
-  // ---------- unsigned defaults (no Firestore) ----------
-  private fun defaultObjectives(): MutableList<Objective> =
-      mutableListOf(
-          Objective("Setup Android Studio", "CS", 10, true, DayOfWeek.MONDAY),
-          Objective("Finish codelab", "CS", 20, true, DayOfWeek.TUESDAY),
-          Objective("Read Compose Basics", "CS", 30, false, DayOfWeek.WEDNESDAY),
-          Objective("Build layout challenge", "CS", 40, false, DayOfWeek.THURSDAY),
-          Objective("Repository implementation", "CS", 50, false, DayOfWeek.FRIDAY),
-      )
-
   // ---------- API ----------
   override suspend fun getObjectives(): List<Objective> =
       withContext(dispatchers.io) {
-        if (!isSignedIn()) return@withContext defaultObjectives()
+        if (!isSignedIn()) return@withContext DefaultObjectives.get()
         fetchOrdered().map { it.second }
       }
 
   override suspend fun addObjective(obj: Objective): List<Objective> =
       withContext(dispatchers.io) {
         if (!isSignedIn()) {
-          val items = defaultObjectives()
+          val items = DefaultObjectives.get().toMutableList()
           items.add(obj)
           return@withContext items
         }
@@ -87,7 +94,7 @@ class FirestoreObjectivesRepository(
   override suspend fun updateObjective(index: Int, obj: Objective): List<Objective> =
       withContext(dispatchers.io) {
         if (!isSignedIn()) {
-          val items = defaultObjectives()
+          val items = DefaultObjectives.get().toMutableList()
           if (index in items.indices) items[index] = obj
           return@withContext items
         }
@@ -102,7 +109,7 @@ class FirestoreObjectivesRepository(
   override suspend fun removeObjective(index: Int): List<Objective> =
       withContext(dispatchers.io) {
         if (!isSignedIn()) {
-          val items = defaultObjectives()
+          val items = DefaultObjectives.get().toMutableList()
           if (index in items.indices) items.removeAt(index)
           return@withContext items
         }
@@ -127,7 +134,7 @@ class FirestoreObjectivesRepository(
   override suspend fun moveObjective(fromIndex: Int, toIndex: Int): List<Objective> =
       withContext(dispatchers.io) {
         if (!isSignedIn()) {
-          val items = defaultObjectives()
+          val items = DefaultObjectives.get().toMutableList()
           if (items.isEmpty()) return@withContext items
           val from = fromIndex.coerceIn(0, items.lastIndex)
           val to = toIndex.coerceIn(0, items.lastIndex)

@@ -317,6 +317,66 @@ class ObjectivesViewModelTest {
     }
   }
 
+  @Test
+  fun todayObjectives_filters_by_current_day() = runTest {
+    // Set objectives for different days
+    val today = java.time.LocalDate.now().dayOfWeek
+    val objectives =
+        listOf(
+            Objective("Today task 1", "CS101", 20, false, today),
+            Objective("Today task 2", "CS102", 30, false, today),
+            Objective("Tomorrow task", "ENG200", 15, false, today.plus(1)),
+            Objective("Yesterday task", "MATH101", 25, false, today.minus(1)))
+    viewModel.setObjectives(objectives)
+    advanceUntilIdle()
+
+    // Collect todayObjectives
+    viewModel.todayObjectives.test {
+      val todayList = awaitItem()
+
+      // Should only have 2 objectives for today
+      assertEquals(2, todayList.size)
+      assertEquals("Today task 1", todayList[0].title)
+      assertEquals("Today task 2", todayList[1].title)
+      assertTrue(todayList.all { it.day == today })
+    }
+  }
+
+  @Test
+  fun todayObjectives_empty_when_no_objectives_for_current_day() = runTest {
+    val today = java.time.LocalDate.now().dayOfWeek
+    val notToday = today.plus(1)
+
+    val objectives =
+        listOf(
+            Objective("Not today 1", "CS101", 20, false, notToday),
+            Objective("Not today 2", "CS102", 30, false, notToday))
+    viewModel.setObjectives(objectives)
+    advanceUntilIdle()
+
+    viewModel.todayObjectives.test {
+      val todayList = awaitItem()
+      assertTrue(todayList.isEmpty())
+    }
+  }
+
+  @Test
+  fun todayObjectives_updates_when_objectives_change() = runTest {
+    val today = java.time.LocalDate.now().dayOfWeek
+
+    viewModel.todayObjectives.test {
+      // Skip initial state
+      awaitItem()
+
+      // Add an objective for today
+      viewModel.addObjective(Objective("New today task", "CS101", 20, false, today))
+      advanceUntilIdle()
+
+      val updated = awaitItem()
+      assertTrue(updated.any { it.title == "New today task" })
+    }
+  }
+
   private fun defaultObjectives(): List<Objective> =
       listOf(
           Objective(

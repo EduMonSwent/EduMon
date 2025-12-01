@@ -42,7 +42,7 @@ fun DailyObjectivesSection(
     onNavigate: (ObjectiveNavigation) -> Unit = {},
 ) {
   val ui by viewModel.uiState.collectAsState()
-  val objectives = ui.objectives
+  val todayObjectives by viewModel.todayObjectives.collectAsState(initial = emptyList())
   val showWhy = ui.showWhy
 
   LaunchedEffect(viewModel) { viewModel.navigationEvents.collect { event -> onNavigate(event) } }
@@ -50,7 +50,7 @@ fun DailyObjectivesSection(
   val cs = MaterialTheme.colorScheme
   GlassSurface(modifier = modifier, testTag = WeekProgDailyObjTags.OBJECTIVES_SECTION) {
     var objectivesExpanded by rememberSaveable { mutableStateOf(false) }
-    val hasMultiple = objectives.size > 1
+    val hasMultiple = todayObjectives.size > 1
 
     Row(
         modifier =
@@ -70,11 +70,11 @@ fun DailyObjectivesSection(
               tint = cs.primary,
               modifier = Modifier.size(30.dp).padding(end = 8.dp))
           Text(
-              if (!hasMultiple) "Today’s Objective" else "Today’s Objectives",
+              if (!hasMultiple) "Today's Objective" else "Today's Objectives",
               style =
                   MaterialTheme.typography.titleMedium.copy(
                       color = cs.onSurface, fontWeight = FontWeight.SemiBold),
-              modifier = Modifier.weight(1f))
+              modifier = Modifier.weight(1f).testTag(WeekProgDailyObjTags.OBJECTIVES_HEADER))
           if (hasMultiple) {
             val rotation by
                 animateFloatAsState(
@@ -90,18 +90,23 @@ fun DailyObjectivesSection(
 
     Spacer(Modifier.height(8.dp))
 
-    if (objectives.isEmpty()) {
+    if (todayObjectives.isEmpty()) {
       Text(
           "Fine Work! No objectives for today. Enjoy your learning journey!",
           color = cs.onSurface.copy(alpha = 0.6f),
           fontSize = 12.sp,
           modifier = Modifier.testTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY))
     } else {
-      ObjectiveRow(index = 0, objective = objectives.first(), showWhy = showWhy) {
-        viewModel.startObjective(0)
-      }
+      // Find the index of the first objective in the full list
+      val firstObjIndex = ui.objectives.indexOfFirst { it == todayObjectives.first() }
+      ObjectiveRow(
+          index = firstObjIndex.coerceAtLeast(0),
+          objective = todayObjectives.first(),
+          showWhy = showWhy) {
+            viewModel.startObjective(firstObjIndex.coerceAtLeast(0))
+          }
 
-      val remaining = objectives.drop(1)
+      val remaining = todayObjectives.drop(1)
       if (remaining.isNotEmpty()) {
         AnimatedVisibility(
             visible = objectivesExpanded,
@@ -112,9 +117,12 @@ fun DailyObjectivesSection(
                   HorizontalDivider(
                       modifier = Modifier.padding(vertical = 14.dp),
                       color = cs.onSurface.copy(alpha = 0.08f))
-                  ObjectiveRow(index = idx + 1, objective = obj, showWhy = showWhy) {
-                    viewModel.startObjective(idx + 1)
-                  }
+                  // Find the actual index in the full list
+                  val actualIndex = ui.objectives.indexOf(obj)
+                  ObjectiveRow(
+                      index = actualIndex.coerceAtLeast(0), objective = obj, showWhy = showWhy) {
+                        viewModel.startObjective(actualIndex.coerceAtLeast(0))
+                      }
                 }
               }
             }
@@ -125,7 +133,7 @@ fun DailyObjectivesSection(
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             modifier = Modifier.testTag(WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_BUTTON)) {
               Text(
-                  if (objectivesExpanded) "Show less" else "Show all (${objectives.size})",
+                  if (objectivesExpanded) "Show less" else "Show all (${todayObjectives.size})",
                   style = MaterialTheme.typography.labelMedium,
                   fontWeight = FontWeight.Medium,
                   modifier = Modifier.testTag(WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_LABEL))
@@ -146,7 +154,9 @@ private fun ObjectiveRow(index: Int, objective: Objective, showWhy: Boolean, onS
                 color = cs.onSurface, fontWeight = FontWeight.Bold),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(bottom = 6.dp))
+        modifier =
+            Modifier.padding(bottom = 6.dp)
+                .testTag(WeekProgDailyObjTags.OBJECTIVE_TITLE_PREFIX + index))
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
