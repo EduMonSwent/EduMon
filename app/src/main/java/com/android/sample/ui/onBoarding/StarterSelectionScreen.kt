@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.android.sample.R
 import kotlinx.coroutines.launch
 
+// This code has been written partially using A.I (LLM).
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StarterSelectionScreen(onStarterSelected: (String) -> Unit) {

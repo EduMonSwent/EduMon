@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.android.sample.R
 
+// This code has been written partially using A.I (LLM).
 @Composable
 fun IntroTapToStartScreen(modifier: Modifier = Modifier, onTap: () -> Unit) {
   val tapTextColor = colorResource(R.color.onboarding_tap_to_start_text)

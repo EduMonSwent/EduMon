@@ -4,6 +4,7 @@ package com.android.sample.ui.onBoarding
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// This code has been written partially using A.I (LLM).
 object OnboardingDimens {
   // Layout & spacing
   val screenPadding = 24.dp

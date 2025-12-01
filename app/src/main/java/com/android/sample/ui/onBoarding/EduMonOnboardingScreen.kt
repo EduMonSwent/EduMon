@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.media3.common.util.UnstableApi
 import com.android.sample.R
 
+// This code has been written partially using A.I (LLM).
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalAnimationApi::class, UnstableApi::class)
 @Composable

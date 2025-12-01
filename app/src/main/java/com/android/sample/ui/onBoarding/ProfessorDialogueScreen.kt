@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.android.sample.R
 import kotlinx.coroutines.delay
 
+// This code has been written partially using A.I (LLM).
 @Composable
 fun ProfessorDialogueScreen(modifier: Modifier = Modifier, onDialogueFinished: () -> Unit) {
   val lines =

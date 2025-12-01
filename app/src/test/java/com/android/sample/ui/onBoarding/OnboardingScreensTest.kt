@@ -13,6 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+// This code has been written partially using A.I (LLM).
 /**
  * Comprehensive test suite for EduMon Onboarding screens. Targets 99% line coverage across all
  * onboarding-related files.

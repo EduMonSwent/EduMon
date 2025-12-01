@@ -5,6 +5,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.android.sample.R
 
+// This code has been written partially using A.I (LLM).
 data class StarterDefinition(@StringRes val nameRes: Int, @DrawableRes val imageRes: Int)
 
 val onboardingStarters =

@@ -14,6 +14,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 
+// This code has been written partially using A.I (LLM).
 @UnstableApi
 @Composable
 fun LoopingVideoBackgroundFromAssets(assetFileName: String, modifier: Modifier = Modifier) {
