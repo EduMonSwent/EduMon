@@ -25,9 +25,12 @@ class FirestoreObjectivesRepositoryTest {
 
     val list = repo.getObjectives()
 
-    // From defaultObjectives(): 5 items, first two completed
-    assertEquals(5, list.size)
-    assertEquals(listOf("Setup Android Studio", "Finish codelab"), list.take(2).map { it.title })
+    // From DefaultObjectives.get(): 13 items
+    assertEquals(13, list.size)
+    // First two items are Monday objectives
+    assertEquals(listOf("Complete Quiz 1", "Read Chapter 1"), list.take(2).map { it.title })
+    assertEquals(listOf("CS-200", "CS-200"), list.take(2).map { it.course })
+    assertEquals(listOf(DayOfWeek.MONDAY, DayOfWeek.MONDAY), list.take(2).map { it.day })
   }
 
   @Test
@@ -36,7 +39,7 @@ class FirestoreObjectivesRepositoryTest {
 
     val out = repo.addObjective(Objective("Write tests", "CS", 25, false, DayOfWeek.THURSDAY))
 
-    assertEquals(6, out.size)
+    assertEquals(14, out.size) // 13 defaults + 1 new
     assertEquals("Write tests", out.last().title)
   }
 
@@ -47,9 +50,9 @@ class FirestoreObjectivesRepositoryTest {
     val out =
         repo.updateObjective(
             index = 0,
-            obj = Objective("Setup Android Studio (done)", "CS", 10, true, DayOfWeek.MONDAY))
+            obj = Objective("Complete Quiz 1 (done)", "CS-200", 10, true, DayOfWeek.MONDAY))
 
-    assertEquals("Setup Android Studio (done)", out[0].title)
+    assertEquals("Complete Quiz 1 (done)", out[0].title)
     assertEquals(true, out[0].completed)
   }
 
@@ -57,17 +60,13 @@ class FirestoreObjectivesRepositoryTest {
   fun removeObjective_unsigned_deletes_and_compacts() = runBlocking {
     val repo = repoWithNoUser()
 
-    val out = repo.removeObjective(index = 1)
+    val out = repo.removeObjective(index = 1) // Remove "Read Chapter 1"
 
-    // Removed "Finish codelab"
-    assertEquals(4, out.size)
-    assertEquals(
-        listOf(
-            "Setup Android Studio",
-            "Read Compose Basics",
-            "Build layout challenge",
-            "Repository implementation"),
-        out.map { it.title })
+    assertEquals(12, out.size) // 13 - 1
+    // First item should still be "Complete Quiz 1"
+    assertEquals("Complete Quiz 1", out[0].title)
+    // Second item should now be "Solve Exercise Set 1" (was third)
+    assertEquals("Solve Exercise Set 1", out[1].title)
   }
 
   @Test
@@ -76,14 +75,13 @@ class FirestoreObjectivesRepositoryTest {
 
     val out = repo.moveObjective(fromIndex = 0, toIndex = 2)
 
-    assertEquals(
-        listOf(
-            "Finish codelab",
-            "Read Compose Basics",
-            "Setup Android Studio",
-            "Build layout challenge",
-            "Repository implementation"),
-        out.map { it.title })
+    assertEquals(13, out.size)
+    // "Complete Quiz 1" (was at 0) should now be at index 2
+    assertEquals("Complete Quiz 1", out[2].title)
+    // "Read Chapter 1" (was at 1) should now be at index 0
+    assertEquals("Read Chapter 1", out[0].title)
+    // "Solve Exercise Set 1" (was at 2) should now be at index 1
+    assertEquals("Solve Exercise Set 1", out[1].title)
   }
 
   @Test
@@ -107,7 +105,7 @@ class FirestoreObjectivesRepositoryTest {
 
     val before = repo.getObjectives()
 
-    val u = repo.updateObjective(index = 10, obj = Objective("X", "CS", 0, false, DayOfWeek.MONDAY))
+    val u = repo.updateObjective(index = 99, obj = Objective("X", "CS", 0, false, DayOfWeek.MONDAY))
     val r = repo.removeObjective(index = 99)
     val m = repo.moveObjective(fromIndex = 3, toIndex = 3)
 

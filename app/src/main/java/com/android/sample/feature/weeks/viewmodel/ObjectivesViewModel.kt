@@ -3,16 +3,19 @@ package com.android.sample.feature.weeks.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.feature.weeks.model.DefaultObjectives
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
-import com.android.sample.repos_providors.FakeRepositories
+import com.android.sample.repos_providors.AppRepositories
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import java.time.DayOfWeek
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await // <- coroutines-play-services
@@ -35,13 +38,20 @@ data class ObjectivesUiState(
 class ObjectivesViewModel(
     // Default to provider; tests can still pass a Fake repo by overriding this param
     // private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
-    private val repository: ObjectivesRepository = FakeRepositories.objectivesRepository,
+    private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
     // When false, we won't attempt Firebase auth automatically (useful for tests)
     private val requireAuth: Boolean = true,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
+
+  // Filtered objectives for today only
+  val todayObjectives =
+      _uiState.map { state ->
+        val today = LocalDate.now().dayOfWeek
+        state.objectives.filter { it.day == today }
+      }
 
   // One-shot navigation events the UI can observe.
   private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
@@ -66,7 +76,13 @@ class ObjectivesViewModel(
   fun refresh() {
     viewModelScope.launch {
       val objs = repository.getObjectives()
-      _uiState.update { it.copy(objectives = objs) }
+      // If list is empty (fresh user), seed default objectives
+      if (objs.isEmpty()) {
+        val seeded = repository.setObjectives(DefaultObjectives.get())
+        _uiState.update { it.copy(objectives = seeded) }
+      } else {
+        _uiState.update { it.copy(objectives = objs) }
+      }
     }
   }
 
