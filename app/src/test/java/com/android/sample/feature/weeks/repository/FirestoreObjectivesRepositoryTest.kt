@@ -136,15 +136,15 @@ class FirestoreObjectivesRepositoryTest {
     val coursePdf = "https://example.com/course.pdf"
     val exercisePdf = "https://example.com/exercise.pdf"
 
-    val newObj = Objective(
-        title = "Test with PDFs",
-        course = "CS-101",
-        estimateMinutes = 30,
-        completed = false,
-        day = DayOfWeek.FRIDAY,
-        coursePdfUrl = coursePdf,
-        exercisePdfUrl = exercisePdf
-    )
+    val newObj =
+        Objective(
+            title = "Test with PDFs",
+            course = "CS-101",
+            estimateMinutes = 30,
+            completed = false,
+            day = DayOfWeek.FRIDAY,
+            coursePdfUrl = coursePdf,
+            exercisePdfUrl = exercisePdf)
 
     val result = repo.addObjective(newObj)
     val addedObj = result.last()
@@ -162,10 +162,7 @@ class FirestoreObjectivesRepositoryTest {
     val objectives = repo.getObjectives()
     val original = objectives[0]
 
-    val updated = original.copy(
-        coursePdfUrl = newCoursePdf,
-        exercisePdfUrl = newExercisePdf
-    )
+    val updated = original.copy(coursePdfUrl = newCoursePdf, exercisePdfUrl = newExercisePdf)
 
     val result = repo.updateObjective(index = 0, obj = updated)
 
@@ -177,15 +174,15 @@ class FirestoreObjectivesRepositoryTest {
   fun objective_withEmptyPdfUrls_storesEmpty() = runBlocking {
     val repo = repoWithNoUser()
 
-    val objWithoutPdfs = Objective(
-        title = "Quiz",
-        course = "CS-101",
-        estimateMinutes = 20,
-        completed = false,
-        day = DayOfWeek.WEDNESDAY,
-        coursePdfUrl = "",
-        exercisePdfUrl = ""
-    )
+    val objWithoutPdfs =
+        Objective(
+            title = "Quiz",
+            course = "CS-101",
+            estimateMinutes = 20,
+            completed = false,
+            day = DayOfWeek.WEDNESDAY,
+            coursePdfUrl = "",
+            exercisePdfUrl = "")
 
     val result = repo.addObjective(objWithoutPdfs)
     val added = result.last()
@@ -198,15 +195,15 @@ class FirestoreObjectivesRepositoryTest {
   fun objective_canHaveOnlyCoursePdf() = runBlocking {
     val repo = repoWithNoUser()
 
-    val objWithCoursePdfOnly = Objective(
-        title = "Review Material",
-        course = "CS-101",
-        estimateMinutes = 45,
-        completed = false,
-        day = DayOfWeek.SUNDAY,
-        coursePdfUrl = "https://example.com/review.pdf",
-        exercisePdfUrl = ""
-    )
+    val objWithCoursePdfOnly =
+        Objective(
+            title = "Review Material",
+            course = "CS-101",
+            estimateMinutes = 45,
+            completed = false,
+            day = DayOfWeek.SUNDAY,
+            coursePdfUrl = "https://example.com/review.pdf",
+            exercisePdfUrl = "")
 
     val result = repo.addObjective(objWithCoursePdfOnly)
     val added = result.last()
@@ -219,15 +216,15 @@ class FirestoreObjectivesRepositoryTest {
   fun objective_canHaveOnlyExercisePdf() = runBlocking {
     val repo = repoWithNoUser()
 
-    val objWithExercisePdfOnly = Objective(
-        title = "Practice Problems",
-        course = "CS-101",
-        estimateMinutes = 60,
-        completed = false,
-        day = DayOfWeek.SATURDAY,
-        coursePdfUrl = "",
-        exercisePdfUrl = "https://example.com/problems.pdf"
-    )
+    val objWithExercisePdfOnly =
+        Objective(
+            title = "Practice Problems",
+            course = "CS-101",
+            estimateMinutes = 60,
+            completed = false,
+            day = DayOfWeek.SATURDAY,
+            coursePdfUrl = "",
+            exercisePdfUrl = "https://example.com/problems.pdf")
 
     val result = repo.addObjective(objWithExercisePdfOnly)
     val added = result.last()

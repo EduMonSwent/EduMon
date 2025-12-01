@@ -21,8 +21,7 @@ class CourseExercisesRouteTest {
           completed = false,
           day = DayOfWeek.MONDAY,
           coursePdfUrl = "https://example.com/course.pdf",
-          exercisePdfUrl = "https://example.com/exercise.pdf"
-      )
+          exercisePdfUrl = "https://example.com/exercise.pdf")
 
   private val testObjectiveNoPdfs =
       Objective(
@@ -32,8 +31,7 @@ class CourseExercisesRouteTest {
           completed = false,
           day = DayOfWeek.TUESDAY,
           coursePdfUrl = "",
-          exercisePdfUrl = ""
-      )
+          exercisePdfUrl = "")
 
   @Test
   fun courseExercisesScreen_rendersWithoutCrashing() {
@@ -216,7 +214,6 @@ class CourseExercisesRouteTest {
     composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_PDF_CARD).assertDoesNotExist()
   }
 
-
   @Test
   fun multipleTabs_canBeToggledMultipleTimes() {
     composeTestRule.setContent {
@@ -250,8 +247,6 @@ class CourseExercisesRouteTest {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_PDF_CARD).assertExists()
   }
-
-
 
   @Test
   fun courseTab_isSelectedInitially() {
@@ -433,15 +428,15 @@ class CourseExercisesRouteTest {
   @Test
   fun objectiveWithPdfUrls_passedFromSchedule_displaysCorrectly() {
     // Simulate what ScheduleScreen passes when objective has PDF URLs
-    val objectiveWithPdfs = Objective(
-        title = "Complete Android Basics",
-        course = "CS-200",
-        estimateMinutes = 45,
-        completed = false,
-        day = DayOfWeek.WEDNESDAY,
-        coursePdfUrl = "https://developer.android.com/courses/basics",
-        exercisePdfUrl = "https://developer.android.com/codelabs/first-app"
-    )
+    val objectiveWithPdfs =
+        Objective(
+            title = "Complete Android Basics",
+            course = "CS-200",
+            estimateMinutes = 45,
+            completed = false,
+            day = DayOfWeek.WEDNESDAY,
+            coursePdfUrl = "https://developer.android.com/courses/basics",
+            exercisePdfUrl = "https://developer.android.com/codelabs/first-app")
 
     composeTestRule.setContent {
       EduMonTheme {
@@ -473,15 +468,15 @@ class CourseExercisesRouteTest {
     val testUrl1 = "https://test.com/unique-course-url.pdf"
     val testUrl2 = "https://test.com/unique-exercise-url.pdf"
 
-    val objective = Objective(
-        title = "Test Objective",
-        course = "TEST-101",
-        estimateMinutes = 30,
-        completed = false,
-        day = DayOfWeek.FRIDAY,
-        coursePdfUrl = testUrl1,
-        exercisePdfUrl = testUrl2
-    )
+    val objective =
+        Objective(
+            title = "Test Objective",
+            course = "TEST-101",
+            estimateMinutes = 30,
+            completed = false,
+            day = DayOfWeek.FRIDAY,
+            coursePdfUrl = testUrl1,
+            exercisePdfUrl = testUrl2)
 
     composeTestRule.setContent {
       EduMonTheme {
@@ -503,4 +498,3 @@ class CourseExercisesRouteTest {
     composeTestRule.onNodeWithText("Open course").assertExists()
   }
 }
-

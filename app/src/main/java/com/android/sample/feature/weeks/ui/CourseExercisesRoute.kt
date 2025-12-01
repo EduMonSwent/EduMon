@@ -181,7 +181,8 @@ private fun CourseExercisesScreen(
                         pdfUrl = exercisePdfUrl,
                         onClick = {
                           if (exercisePdfUrl.isNotBlank()) {
-                            com.android.sample.core.helpers.PdfHelper.openPdf(context, exercisePdfUrl)
+                            com.android.sample.core.helpers.PdfHelper.openPdf(
+                                context, exercisePdfUrl)
                           } else {
                             onOpenExercisesPdf()
                           }
@@ -258,9 +259,8 @@ private fun PdfCard(
   Surface(
       shape = RoundedCornerShape(24.dp),
       tonalElevation = 6.dp,
-      modifier = Modifier.fillMaxWidth()
-          .clickable(enabled = hasPdf, onClick = onClick)
-          .testTag(cardTag)) {
+      modifier =
+          Modifier.fillMaxWidth().clickable(enabled = hasPdf, onClick = onClick).testTag(cardTag)) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
           Box(
               modifier =
@@ -268,14 +268,12 @@ private fun PdfCard(
                       .clip(RoundedCornerShape(16.dp))
                       .background(
                           if (hasPdf) cs.primary.copy(alpha = 0.12f)
-                          else cs.onSurface.copy(alpha = 0.05f)
-                      ),
+                          else cs.onSurface.copy(alpha = 0.05f)),
               contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Default.Description,
                     contentDescription = null,
-                    tint = if (hasPdf) cs.primary else cs.onSurface.copy(alpha = 0.3f)
-                )
+                    tint = if (hasPdf) cs.primary else cs.onSurface.copy(alpha = 0.3f))
               }
 
           Spacer(Modifier.width(16.dp))

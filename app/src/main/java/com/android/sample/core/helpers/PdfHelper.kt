@@ -5,10 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 
-/**
- * Helper object for opening PDF files.
- * Supports both local files and web URLs.
- */
+/** Helper object for opening PDF files. Supports both local files and web URLs. */
 object PdfHelper {
 
   /**
@@ -30,14 +27,15 @@ object PdfHelper {
 
     try {
       val uri = Uri.parse(pdfUrl)
-      val intent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(uri, "application/pdf")
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        // Add FLAG_GRANT_READ_URI_PERMISSION for content:// URIs
-        if (uri.scheme == "content") {
-          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-      }
+      val intent =
+          Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            // Add FLAG_GRANT_READ_URI_PERMISSION for content:// URIs
+            if (uri.scheme == "content") {
+              addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+          }
 
       // Check if there's an app that can handle this intent
       if (intent.resolveActivity(context.packageManager) != null) {
@@ -58,10 +56,7 @@ object PdfHelper {
 
   /**
    * Checks if a PDF URL is valid (non-empty).
-
-  fun isValidPdfUrl(pdfUrl: String?): Boolean {
-    return !pdfUrl.isNullOrBlank()
-  }
+   *
+   * fun isValidPdfUrl(pdfUrl: String?): Boolean { return !pdfUrl.isNullOrBlank() }
    */
 }
-

@@ -56,20 +56,19 @@ class FirestoreObjectivesRepository(
         runCatching { ObjectiveType.valueOf(typeStr) }
             .getOrElse { ObjectiveType.COURSE_OR_EXERCISES }
 
-      // Read PDF URLs
-      val coursePdfUrl = getString("coursePdfUrl") ?: ""
-      val exercisePdfUrl = getString("exercisePdfUrl") ?: ""
+    // Read PDF URLs
+    val coursePdfUrl = getString("coursePdfUrl") ?: ""
+    val exercisePdfUrl = getString("exercisePdfUrl") ?: ""
 
-      return Objective(
-          title = title,
-          course = course,
-          estimateMinutes = estimate,
-          completed = completed,
-          day = dow,
-          type = type,
-          coursePdfUrl = coursePdfUrl,
-          exercisePdfUrl = exercisePdfUrl
-      )
+    return Objective(
+        title = title,
+        course = course,
+        estimateMinutes = estimate,
+        completed = completed,
+        day = dow,
+        type = type,
+        coursePdfUrl = coursePdfUrl,
+        exercisePdfUrl = exercisePdfUrl)
   }
 
   private suspend fun fetchOrdered(): MutableList<Pair<DocumentSnapshot, Objective>> =
@@ -89,8 +88,7 @@ class FirestoreObjectivesRepository(
               day = DayOfWeek.MONDAY,
               type = ObjectiveType.COURSE_OR_EXERCISES,
               coursePdfUrl = "https://developer.android.com/courses/android-basics-compose/course",
-              exercisePdfUrl = "https://developer.android.com/studio/intro"
-          ),
+              exercisePdfUrl = "https://developer.android.com/studio/intro"),
           Objective(
               title = "Finish codelab",
               course = "CS-200",
@@ -99,8 +97,8 @@ class FirestoreObjectivesRepository(
               day = DayOfWeek.TUESDAY,
               type = ObjectiveType.COURSE_OR_EXERCISES,
               coursePdfUrl = "https://developer.android.com/jetpack/compose/tutorial",
-              exercisePdfUrl = "https://developer.android.com/codelabs/basic-android-kotlin-compose-first-app"
-          ),
+              exercisePdfUrl =
+                  "https://developer.android.com/codelabs/basic-android-kotlin-compose-first-app"),
           Objective(
               title = "Build layout challenge",
               course = "CS-201",
@@ -109,8 +107,8 @@ class FirestoreObjectivesRepository(
               day = DayOfWeek.WEDNESDAY,
               type = ObjectiveType.COURSE_OR_EXERCISES,
               coursePdfUrl = "https://developer.android.com/jetpack/compose/layouts",
-              exercisePdfUrl = "https://developer.android.com/codelabs/basic-android-kotlin-compose-add-a-button"
-          ),
+              exercisePdfUrl =
+                  "https://developer.android.com/codelabs/basic-android-kotlin-compose-add-a-button"),
       )
 
   // ---------- API ----------

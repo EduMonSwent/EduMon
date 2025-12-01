@@ -18,6 +18,10 @@ data class Objective(
     // Defaults to COURSE_OR_EXERCISES so existing callers keep working
     val type: ObjectiveType = ObjectiveType.COURSE_OR_EXERCISES,
     // PDFs for COURSE_OR_EXERCISES type
-    val coursePdfUrl: String = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", // URL to the course material PDF
-    val exercisePdfUrl: String = "https://www.africau.edu/images/default/sample.pdf" // URL to the exercise PDF
+    val coursePdfUrl: String =
+        "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", // URL to the
+                                                                                   // course
+                                                                                   // material PDF
+    val exercisePdfUrl: String =
+        "https://www.africau.edu/images/default/sample.pdf" // URL to the exercise PDF
 )
