@@ -113,7 +113,7 @@ fun DailyObjectivesSection(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()) {
               Column(modifier = Modifier.padding(top = 16.dp)) {
-                remaining.forEachIndexed { idx, obj ->
+                remaining.forEachIndexed { _, obj ->
                   HorizontalDivider(
                       modifier = Modifier.padding(vertical = 14.dp),
                       color = cs.onSurface.copy(alpha = 0.08f))
