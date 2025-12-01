@@ -19,7 +19,21 @@ class CourseExercisesRouteTest {
           course = "CS101",
           estimateMinutes = 30,
           completed = false,
-          day = DayOfWeek.MONDAY)
+          day = DayOfWeek.MONDAY,
+          coursePdfUrl = "https://example.com/course.pdf",
+          exercisePdfUrl = "https://example.com/exercise.pdf"
+      )
+
+  private val testObjectiveNoPdfs =
+      Objective(
+          title = "Quiz Without PDFs",
+          course = "CS102",
+          estimateMinutes = 20,
+          completed = false,
+          day = DayOfWeek.TUESDAY,
+          coursePdfUrl = "",
+          exercisePdfUrl = ""
+      )
 
   @Test
   fun courseExercisesScreen_rendersWithoutCrashing() {
@@ -202,78 +216,6 @@ class CourseExercisesRouteTest {
     composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_PDF_CARD).assertDoesNotExist()
   }
 
-  @Test
-  fun coursePdfCard_callsOnOpenCoursePdfWhenClicked() {
-    var coursePdfClicked = false
-
-    composeTestRule.setContent {
-      EduMonTheme {
-        CourseExercisesRoute(
-            objective = testObjective,
-            coursePdfLabel = "Course PDF",
-            exercisesPdfLabel = "Exercises PDF",
-            onBack = {},
-            onOpenCoursePdf = { coursePdfClicked = true },
-            onOpenExercisesPdf = {},
-            onCompleted = {})
-      }
-    }
-
-    // Click on the course PDF card (or the button inside it)
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).performClick()
-
-    assertEquals(true, coursePdfClicked)
-  }
-
-  @Test
-  fun exercisesPdfCard_callsOnOpenExercisesPdfWhenClicked() {
-    var exercisesPdfClicked = false
-
-    composeTestRule.setContent {
-      EduMonTheme {
-        CourseExercisesRoute(
-            objective = testObjective,
-            coursePdfLabel = "Course PDF",
-            exercisesPdfLabel = "Exercises PDF",
-            onBack = {},
-            onOpenCoursePdf = {},
-            onOpenExercisesPdf = { exercisesPdfClicked = true },
-            onCompleted = {})
-      }
-    }
-
-    // Switch to Exercises tab
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).performClick()
-    composeTestRule.waitForIdle()
-
-    // Click on the exercises PDF button
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).performClick()
-
-    assertEquals(true, exercisesPdfClicked)
-  }
-
-  @Test
-  fun pdfCard_canBeClickedOnCard_triggersCallback() {
-    var coursePdfClicked = false
-
-    composeTestRule.setContent {
-      EduMonTheme {
-        CourseExercisesRoute(
-            objective = testObjective,
-            coursePdfLabel = "Course PDF",
-            exercisesPdfLabel = "Exercises PDF",
-            onBack = {},
-            onOpenCoursePdf = { coursePdfClicked = true },
-            onOpenExercisesPdf = {},
-            onCompleted = {})
-      }
-    }
-
-    // Click directly on the card surface
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.COURSE_PDF_CARD).performClick()
-
-    assertEquals(true, coursePdfClicked)
-  }
 
   @Test
   fun multipleTabs_canBeToggledMultipleTimes() {
@@ -309,74 +251,7 @@ class CourseExercisesRouteTest {
     composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_PDF_CARD).assertExists()
   }
 
-  @Test
-  fun allCallbacks_canBeInvokedIndependently() {
-    var backClicked = false
-    var coursePdfClicked = false
-    var exercisesPdfClicked = false
-    var completedClicked = false
 
-    composeTestRule.setContent {
-      EduMonTheme {
-        CourseExercisesRoute(
-            objective = testObjective,
-            coursePdfLabel = "Course",
-            exercisesPdfLabel = "Exercises",
-            onBack = { backClicked = true },
-            onOpenCoursePdf = { coursePdfClicked = true },
-            onOpenExercisesPdf = { exercisesPdfClicked = true },
-            onCompleted = { completedClicked = true })
-      }
-    }
-
-    // Click back
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.BACK_BUTTON).performClick()
-    assertEquals(true, backClicked)
-
-    // Click course PDF
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).performClick()
-    assertEquals(true, coursePdfClicked)
-
-    // Switch to Exercises and click
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).performClick()
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).performClick()
-    assertEquals(true, exercisesPdfClicked)
-
-    // Click completed FAB
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.COMPLETED_FAB).performClick()
-    assertEquals(true, completedClicked)
-  }
-
-  @Test
-  fun pdfOpenButtons_displayCorrectLabels() {
-    composeTestRule.setContent {
-      EduMonTheme {
-        CourseExercisesRoute(
-            objective = testObjective,
-            coursePdfLabel = "Course",
-            exercisesPdfLabel = "Exercises",
-            onBack = {},
-            onOpenCoursePdf = {},
-            onOpenExercisesPdf = {},
-            onCompleted = {})
-      }
-    }
-
-    // Course tab: button should say "Open course"
-    composeTestRule
-        .onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON)
-        .assertTextEquals("Open course")
-
-    // Switch to Exercises tab
-    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).performClick()
-    composeTestRule.waitForIdle()
-
-    // Button should now say "Open exercises"
-    composeTestRule
-        .onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON)
-        .assertTextEquals("Open exercises")
-  }
 
   @Test
   fun courseTab_isSelectedInitially() {
@@ -419,4 +294,213 @@ class CourseExercisesRouteTest {
     composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(CourseExercisesTestTags.COURSE_TAB).assertIsNotSelected()
   }
+
+  // ========== PDF FUNCTIONALITY TESTS ==========
+
+  @Test
+  fun coursePdfCard_withPdfUrl_showsEnabledButton() {
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = testObjective,
+            coursePdfLabel = "Android Basics Course",
+            exercisesPdfLabel = "Setup Exercises",
+            coursePdfUrl = "https://example.com/course.pdf",
+            exercisePdfUrl = "https://example.com/exercise.pdf",
+            onBack = {},
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {})
+      }
+    }
+
+    // Course PDF card should be visible and enabled
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.COURSE_PDF_CARD).assertExists()
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).assertIsEnabled()
+    composeTestRule.onNodeWithText("Open course").assertExists()
+    composeTestRule.onNodeWithText("Android Basics Course").assertExists()
+  }
+
+  @Test
+  fun coursePdfCard_withoutPdfUrl_showsDisabledState() {
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = testObjectiveNoPdfs,
+            coursePdfLabel = "No PDF Course",
+            exercisesPdfLabel = "No PDF Exercises",
+            coursePdfUrl = "",
+            exercisePdfUrl = "",
+            onBack = {},
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {})
+      }
+    }
+
+    // Should show "No PDF available" and disabled button
+    composeTestRule.onNodeWithText("No PDF available").assertExists()
+    composeTestRule.onNodeWithText("Unavailable").assertExists()
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).assertIsNotEnabled()
+  }
+
+  @Test
+  fun exercisePdfCard_withPdfUrl_showsEnabledButton() {
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = testObjective,
+            coursePdfLabel = "Course Material",
+            exercisesPdfLabel = "Practice Exercises",
+            coursePdfUrl = "https://example.com/course.pdf",
+            exercisePdfUrl = "https://example.com/exercise.pdf",
+            onBack = {},
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {})
+      }
+    }
+
+    // Switch to exercises tab
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    // Exercise PDF card should be enabled
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_PDF_CARD).assertExists()
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).assertIsEnabled()
+    composeTestRule.onNodeWithText("Open exercises").assertExists()
+    composeTestRule.onNodeWithText("Practice Exercises").assertExists()
+  }
+
+  @Test
+  fun exercisePdfCard_withoutPdfUrl_showsDisabledState() {
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = testObjectiveNoPdfs,
+            coursePdfLabel = "Course",
+            exercisesPdfLabel = "Exercise",
+            coursePdfUrl = "",
+            exercisePdfUrl = "",
+            onBack = {},
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {})
+      }
+    }
+
+    // Switch to exercises tab
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    // Should show disabled state
+    composeTestRule.onNodeWithText("No PDF available").assertExists()
+    composeTestRule.onNodeWithText("Unavailable").assertExists()
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).assertIsNotEnabled()
+  }
+
+  @Test
+  fun pdfCards_displayCorrectLabels() {
+    val courseLabel = "Introduction to Kotlin Programming"
+    val exerciseLabel = "Kotlin Practice Set 1"
+
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = testObjective,
+            coursePdfLabel = courseLabel,
+            exercisesPdfLabel = exerciseLabel,
+            coursePdfUrl = "https://example.com/kotlin.pdf",
+            exercisePdfUrl = "https://example.com/practice.pdf",
+            onBack = {},
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {})
+      }
+    }
+
+    // Course tab shows course label
+    composeTestRule.onNodeWithText(courseLabel).assertExists()
+
+    // Switch to exercises tab
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    // Exercises tab shows exercise label
+    composeTestRule.onNodeWithText(exerciseLabel).assertExists()
+  }
+
+  @Test
+  fun objectiveWithPdfUrls_passedFromSchedule_displaysCorrectly() {
+    // Simulate what ScheduleScreen passes when objective has PDF URLs
+    val objectiveWithPdfs = Objective(
+        title = "Complete Android Basics",
+        course = "CS-200",
+        estimateMinutes = 45,
+        completed = false,
+        day = DayOfWeek.WEDNESDAY,
+        coursePdfUrl = "https://developer.android.com/courses/basics",
+        exercisePdfUrl = "https://developer.android.com/codelabs/first-app"
+    )
+
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = objectiveWithPdfs,
+            coursePdfLabel = "Course material for ${objectiveWithPdfs.course}",
+            exercisesPdfLabel = "Exercises for ${objectiveWithPdfs.course}",
+            coursePdfUrl = objectiveWithPdfs.coursePdfUrl,
+            exercisePdfUrl = objectiveWithPdfs.exercisePdfUrl,
+            onBack = {},
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {})
+      }
+    }
+
+    // Verify both PDFs are enabled
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).assertIsEnabled()
+
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).assertIsEnabled()
+  }
+
+  @Test
+  fun pdfUrlsFromObjective_areUsedDirectly() {
+    // Test that PDF URLs from objective are used (not fetched from elsewhere)
+    val testUrl1 = "https://test.com/unique-course-url.pdf"
+    val testUrl2 = "https://test.com/unique-exercise-url.pdf"
+
+    val objective = Objective(
+        title = "Test Objective",
+        course = "TEST-101",
+        estimateMinutes = 30,
+        completed = false,
+        day = DayOfWeek.FRIDAY,
+        coursePdfUrl = testUrl1,
+        exercisePdfUrl = testUrl2
+    )
+
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = objective,
+            coursePdfLabel = "Test Course",
+            exercisesPdfLabel = "Test Exercise",
+            coursePdfUrl = objective.coursePdfUrl,
+            exercisePdfUrl = objective.exercisePdfUrl,
+            onBack = {},
+            onOpenCoursePdf = {},
+            onOpenExercisesPdf = {},
+            onCompleted = {})
+      }
+    }
+
+    // Both should be enabled since URLs are present
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.PDF_OPEN_BUTTON).assertIsEnabled()
+    composeTestRule.onNodeWithText("Open course").assertExists()
+  }
 }
+

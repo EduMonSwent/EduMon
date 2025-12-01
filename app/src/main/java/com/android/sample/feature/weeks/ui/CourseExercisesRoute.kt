@@ -34,6 +34,8 @@ fun CourseExercisesRoute(
     objective: Objective,
     coursePdfLabel: String,
     exercisesPdfLabel: String,
+    coursePdfUrl: String = "",
+    exercisePdfUrl: String = "",
     onBack: () -> Unit,
     onOpenCoursePdf: () -> Unit,
     onOpenExercisesPdf: () -> Unit,
@@ -44,6 +46,8 @@ fun CourseExercisesRoute(
         objective = objective,
         coursePdfLabel = coursePdfLabel,
         exercisesPdfLabel = exercisesPdfLabel,
+        coursePdfUrl = coursePdfUrl,
+        exercisePdfUrl = exercisePdfUrl,
         onBack = onBack,
         onOpenCoursePdf = onOpenCoursePdf,
         onOpenExercisesPdf = onOpenExercisesPdf,
@@ -62,12 +66,15 @@ private fun CourseExercisesScreen(
     objective: Objective,
     coursePdfLabel: String,
     exercisesPdfLabel: String,
+    coursePdfUrl: String = "",
+    exercisePdfUrl: String = "",
     onBack: () -> Unit,
     onOpenCoursePdf: () -> Unit,
     onOpenExercisesPdf: () -> Unit,
     onCompleted: () -> Unit,
 ) {
   val cs = MaterialTheme.colorScheme
+  val context = androidx.compose.ui.platform.LocalContext.current
   var selectedTab by remember { mutableIntStateOf(0) } // 0 = Course, 1 = Exercises
 
   Scaffold(
@@ -157,14 +164,28 @@ private fun CourseExercisesScreen(
                         title = "Course PDF",
                         description = coursePdfLabel,
                         primaryActionLabel = "Open course",
-                        onClick = onOpenCoursePdf,
+                        pdfUrl = coursePdfUrl,
+                        onClick = {
+                          if (coursePdfUrl.isNotBlank()) {
+                            com.android.sample.core.helpers.PdfHelper.openPdf(context, coursePdfUrl)
+                          } else {
+                            onOpenCoursePdf()
+                          }
+                        },
                         cardTag = CourseExercisesTestTags.COURSE_PDF_CARD)
                 1 ->
                     PdfCard(
                         title = "Exercises PDF",
                         description = exercisesPdfLabel,
                         primaryActionLabel = "Open exercises",
-                        onClick = onOpenExercisesPdf,
+                        pdfUrl = exercisePdfUrl,
+                        onClick = {
+                          if (exercisePdfUrl.isNotBlank()) {
+                            com.android.sample.core.helpers.PdfHelper.openPdf(context, exercisePdfUrl)
+                          } else {
+                            onOpenExercisesPdf()
+                          }
+                        },
                         cardTag = CourseExercisesTestTags.EXERCISES_PDF_CARD)
               }
 
@@ -227,22 +248,34 @@ private fun PdfCard(
     title: String,
     description: String,
     primaryActionLabel: String,
+    pdfUrl: String = "",
     onClick: () -> Unit,
     cardTag: String = CourseExercisesTestTags.PDF_CARD,
 ) {
   val cs = MaterialTheme.colorScheme
+  val hasPdf = pdfUrl.isNotBlank()
+
   Surface(
       shape = RoundedCornerShape(24.dp),
       tonalElevation = 6.dp,
-      modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).testTag(cardTag)) {
+      modifier = Modifier.fillMaxWidth()
+          .clickable(enabled = hasPdf, onClick = onClick)
+          .testTag(cardTag)) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
           Box(
               modifier =
                   Modifier.size(52.dp)
                       .clip(RoundedCornerShape(16.dp))
-                      .background(cs.primary.copy(alpha = 0.12f)),
+                      .background(
+                          if (hasPdf) cs.primary.copy(alpha = 0.12f)
+                          else cs.onSurface.copy(alpha = 0.05f)
+                      ),
               contentAlignment = Alignment.Center) {
-                Icon(imageVector = Icons.Default.Description, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Default.Description,
+                    contentDescription = null,
+                    tint = if (hasPdf) cs.primary else cs.onSurface.copy(alpha = 0.3f)
+                )
               }
 
           Spacer(Modifier.width(16.dp))
@@ -254,12 +287,13 @@ private fun PdfCard(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                color = if (hasPdf) cs.onSurface else cs.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.testTag(CourseExercisesTestTags.PDF_TITLE))
             Spacer(Modifier.height(4.dp))
             Text(
-                text = description,
+                text = if (hasPdf) description else "No PDF available",
                 style = MaterialTheme.typography.bodyMedium,
-                color = cs.onSurfaceVariant,
+                color = cs.onSurfaceVariant.copy(alpha = if (hasPdf) 1f else 0.5f),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.testTag(CourseExercisesTestTags.PDF_DESCRIPTION))
@@ -269,8 +303,9 @@ private fun PdfCard(
 
           TextButton(
               onClick = onClick,
+              enabled = hasPdf,
               modifier = Modifier.testTag(CourseExercisesTestTags.PDF_OPEN_BUTTON)) {
-                Text(primaryActionLabel)
+                Text(if (hasPdf) primaryActionLabel else "Unavailable")
               }
         }
       }

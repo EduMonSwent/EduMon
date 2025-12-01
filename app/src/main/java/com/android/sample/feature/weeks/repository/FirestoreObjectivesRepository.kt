@@ -35,8 +35,9 @@ class FirestoreObjectivesRepository(
           "estimateMinutes" to estimateMinutes,
           "completed" to completed,
           "day" to day.name,
-          // Persist the type so the "Start" button knows which screen to open
           "type" to type.name,
+          "coursePdfUrl" to coursePdfUrl,
+          "exercisePdfUrl" to exercisePdfUrl,
           "order" to (order ?: 0L),
           "updatedAt" to FieldValue.serverTimestamp(),
       )
@@ -55,13 +56,20 @@ class FirestoreObjectivesRepository(
         runCatching { ObjectiveType.valueOf(typeStr) }
             .getOrElse { ObjectiveType.COURSE_OR_EXERCISES }
 
-    return Objective(
-        title = title,
-        course = course,
-        estimateMinutes = estimate,
-        completed = completed,
-        day = dow,
-        type = type)
+      // Read PDF URLs
+      val coursePdfUrl = getString("coursePdfUrl") ?: ""
+      val exercisePdfUrl = getString("exercisePdfUrl") ?: ""
+
+      return Objective(
+          title = title,
+          course = course,
+          estimateMinutes = estimate,
+          completed = completed,
+          day = dow,
+          type = type,
+          coursePdfUrl = coursePdfUrl,
+          exercisePdfUrl = exercisePdfUrl
+      )
   }
 
   private suspend fun fetchOrdered(): MutableList<Pair<DocumentSnapshot, Objective>> =
@@ -69,6 +77,41 @@ class FirestoreObjectivesRepository(
         val snap = Tasks.await(col().orderBy("order", Query.Direction.ASCENDING).get())
         snap.documents.map { it to it.toDomain() }.toMutableList()
       }
+
+  // ---------- unsigned defaults (no Firestore) ----------
+  private fun defaultObjectives(): MutableList<Objective> =
+      mutableListOf(
+          Objective(
+              title = "Setup Android Studio",
+              course = "CS-200",
+              estimateMinutes = 30,
+              completed = false,
+              day = DayOfWeek.MONDAY,
+              type = ObjectiveType.COURSE_OR_EXERCISES,
+              coursePdfUrl = "https://developer.android.com/courses/android-basics-compose/course",
+              exercisePdfUrl = "https://developer.android.com/studio/intro"
+          ),
+          Objective(
+              title = "Finish codelab",
+              course = "CS-200",
+              estimateMinutes = 45,
+              completed = false,
+              day = DayOfWeek.TUESDAY,
+              type = ObjectiveType.COURSE_OR_EXERCISES,
+              coursePdfUrl = "https://developer.android.com/jetpack/compose/tutorial",
+              exercisePdfUrl = "https://developer.android.com/codelabs/basic-android-kotlin-compose-first-app"
+          ),
+          Objective(
+              title = "Build layout challenge",
+              course = "CS-201",
+              estimateMinutes = 60,
+              completed = false,
+              day = DayOfWeek.WEDNESDAY,
+              type = ObjectiveType.COURSE_OR_EXERCISES,
+              coursePdfUrl = "https://developer.android.com/jetpack/compose/layouts",
+              exercisePdfUrl = "https://developer.android.com/codelabs/basic-android-kotlin-compose-add-a-button"
+          ),
+      )
 
   // ---------- API ----------
   override suspend fun getObjectives(): List<Objective> =

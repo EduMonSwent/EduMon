@@ -113,4 +113,153 @@ class FirestoreObjectivesRepositoryTest {
     assertEquals(before.map { it.title }, r.map { it.title })
     assertEquals(before.map { it.title }, m.map { it.title })
   }
+
+  // ========== PDF URL TESTS ==========
+
+  @Test
+  fun getObjectives_unsigned_defaultsHavePdfUrls() = runBlocking {
+    val repo = repoWithNoUser()
+
+    val list = repo.getObjectives()
+
+    // Default objectives should have PDF URLs
+    val firstObjective = list[0] // "Setup Android Studio"
+    assertFalse(firstObjective.coursePdfUrl.isEmpty())
+    assertFalse(firstObjective.exercisePdfUrl.isEmpty())
+    assertTrue(firstObjective.coursePdfUrl.startsWith("https://"))
+    assertTrue(firstObjective.exercisePdfUrl.startsWith("https://"))
+  }
+
+  @Test
+  fun addObjective_withPdfUrls_preservesUrls() = runBlocking {
+    val repo = repoWithNoUser()
+    val coursePdf = "https://example.com/course.pdf"
+    val exercisePdf = "https://example.com/exercise.pdf"
+
+    val newObj = Objective(
+        title = "Test with PDFs",
+        course = "CS-101",
+        estimateMinutes = 30,
+        completed = false,
+        day = DayOfWeek.FRIDAY,
+        coursePdfUrl = coursePdf,
+        exercisePdfUrl = exercisePdf
+    )
+
+    val result = repo.addObjective(newObj)
+    val addedObj = result.last()
+
+    assertEquals(coursePdf, addedObj.coursePdfUrl)
+    assertEquals(exercisePdf, addedObj.exercisePdfUrl)
+  }
+
+  @Test
+  fun updateObjective_canUpdatePdfUrls() = runBlocking {
+    val repo = repoWithNoUser()
+    val newCoursePdf = "https://example.com/updated-course.pdf"
+    val newExercisePdf = "https://example.com/updated-exercise.pdf"
+
+    val objectives = repo.getObjectives()
+    val original = objectives[0]
+
+    val updated = original.copy(
+        coursePdfUrl = newCoursePdf,
+        exercisePdfUrl = newExercisePdf
+    )
+
+    val result = repo.updateObjective(index = 0, obj = updated)
+
+    assertEquals(newCoursePdf, result[0].coursePdfUrl)
+    assertEquals(newExercisePdf, result[0].exercisePdfUrl)
+  }
+
+  @Test
+  fun objective_withEmptyPdfUrls_storesEmpty() = runBlocking {
+    val repo = repoWithNoUser()
+
+    val objWithoutPdfs = Objective(
+        title = "Quiz",
+        course = "CS-101",
+        estimateMinutes = 20,
+        completed = false,
+        day = DayOfWeek.WEDNESDAY,
+        coursePdfUrl = "",
+        exercisePdfUrl = ""
+    )
+
+    val result = repo.addObjective(objWithoutPdfs)
+    val added = result.last()
+
+    assertEquals("", added.coursePdfUrl)
+    assertEquals("", added.exercisePdfUrl)
+  }
+
+  @Test
+  fun objective_canHaveOnlyCoursePdf() = runBlocking {
+    val repo = repoWithNoUser()
+
+    val objWithCoursePdfOnly = Objective(
+        title = "Review Material",
+        course = "CS-101",
+        estimateMinutes = 45,
+        completed = false,
+        day = DayOfWeek.SUNDAY,
+        coursePdfUrl = "https://example.com/review.pdf",
+        exercisePdfUrl = ""
+    )
+
+    val result = repo.addObjective(objWithCoursePdfOnly)
+    val added = result.last()
+
+    assertFalse(added.coursePdfUrl.isEmpty())
+    assertTrue(added.exercisePdfUrl.isEmpty())
+  }
+
+  @Test
+  fun objective_canHaveOnlyExercisePdf() = runBlocking {
+    val repo = repoWithNoUser()
+
+    val objWithExercisePdfOnly = Objective(
+        title = "Practice Problems",
+        course = "CS-101",
+        estimateMinutes = 60,
+        completed = false,
+        day = DayOfWeek.SATURDAY,
+        coursePdfUrl = "",
+        exercisePdfUrl = "https://example.com/problems.pdf"
+    )
+
+    val result = repo.addObjective(objWithExercisePdfOnly)
+    val added = result.last()
+
+    assertTrue(added.coursePdfUrl.isEmpty())
+    assertFalse(added.exercisePdfUrl.isEmpty())
+  }
+
+  @Test
+  fun defaultObjectives_allHaveValidPdfUrls() = runBlocking {
+    val repo = repoWithNoUser()
+
+    val objectives = repo.getObjectives()
+
+    // All default objectives should have at least one PDF URL
+    objectives.forEach { obj ->
+      val hasPdf = obj.coursePdfUrl.isNotBlank() || obj.exercisePdfUrl.isNotBlank()
+      assertTrue("Objective ${obj.title} should have at least one PDF", hasPdf)
+    }
+  }
+
+  private fun assertFalse(condition: Boolean) {
+    assertEquals(false, condition)
+  }
+
+  private fun assertTrue(condition: Boolean) {
+    assertEquals(true, condition)
+  }
+
+  private fun assertTrue(message: String, condition: Boolean) {
+    if (!condition) {
+      throw AssertionError(message)
+    }
+  }
 }

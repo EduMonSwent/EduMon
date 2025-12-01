@@ -141,12 +141,14 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
             }
       }
 
-  // Course details modal (unchanged logic)
+  // Course details modal - uses PDF URLs directly from objective
   activeObjective?.let { obj ->
     CourseExercisesRoute(
         objective = obj,
         coursePdfLabel = "Course material for ${obj.course}",
         exercisesPdfLabel = "Exercises for ${obj.course}",
+        coursePdfUrl = obj.coursePdfUrl,
+        exercisePdfUrl = obj.exercisePdfUrl,
         onBack = { activeObjective = null },
         onOpenCoursePdf = {},
         onOpenExercisesPdf = {},
