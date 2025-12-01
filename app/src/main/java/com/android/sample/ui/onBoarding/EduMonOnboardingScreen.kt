@@ -32,7 +32,6 @@ fun EduMonOnboardingScreen(
     onOnboardingFinished: (playerName: String, starterId: String) -> Unit = { _, _ -> }
 ) {
   var currentStep by remember { mutableStateOf(OnboardingStep.Intro) }
-  var selectedStarterId by remember { mutableStateOf<String?>(null) }
 
   Box(modifier = modifier.fillMaxSize().background(colorResource(R.color.onboarding_background))) {
     LoopingVideoBackgroundFromAssets(

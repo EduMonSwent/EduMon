@@ -336,21 +336,6 @@
     <string name="onboarding_edumon_water_name">AquaMon</string>
     <string name="onboarding_edumon_grass_name">FloraMon</string>
 
-    <string name="confirm_edumon">Confirm your EduMon</string>
-
-
-    <!-- Content descriptions (accessibilité) -->
-    <string name="onboarding_logo_content_description">Logo EduMon</string>
-    <string name="onboarding_background_content_description">
-        Background EPFL style Pokemon
-    </string>
-    <string name="onboarding_professor_image_description">Professor EduMon</string>
-
-
-
-
-
-
 
 
 </resources>

@@ -37,8 +37,8 @@ fun ProfessorDialogueScreen(modifier: Modifier = Modifier, onDialogueFinished: (
           R.drawable.onboarding_prof_line2,
           R.drawable.onboarding_prof_line3)
 
-  var currentLineIndex by remember { mutableStateOf(0) }
-  var visibleCharCount by remember { mutableStateOf(0) }
+  var currentLineIndex by remember { mutableIntStateOf(0) }
+  var visibleCharCount by remember { mutableIntStateOf(0) }
 
   val currentLine = lines[currentLineIndex]
 

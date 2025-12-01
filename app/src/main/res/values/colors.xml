@@ -16,17 +16,11 @@
     <color name="onboarding_dialog_text">#F5F5F5</color>
 
     <!-- Highlights / accents -->
-    <color name="onboarding_highlight">#FFD700</color> <!-- Doré -->
-    <color name="onboarding_logo_tint">#FFFFFF</color>
+
     <color name="onboarding_tap_to_start_text">#F5F5F5</color>
 
     <!-- Starters -->
-    <color name="onboarding_starter_card_background">#1B1F33</color>
-    <color name="onboarding_starter_card_border_selected">#FFD700</color>
-    <color name="onboarding_starter_card_border_unselected">#555A71</color>
-
-
     <color name="onboarding_button_background">#FFD700</color>
-    <color name="onboarding_button_disabled_background">#555A71</color>
+
     <color name="onboarding_button_text">#101322</color>
 </resources>
