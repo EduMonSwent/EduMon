@@ -241,7 +241,6 @@ private fun PdfCard(
     onClick: () -> Unit,
     cardTag: String = CourseExercisesTestTags.PDF_CARD,
 ) {
-  val cs = MaterialTheme.colorScheme
   val hasPdf = pdfUrl.isNotBlank()
 
   Surface(
@@ -250,49 +249,68 @@ private fun PdfCard(
       modifier =
           Modifier.fillMaxWidth().clickable(enabled = hasPdf, onClick = onClick).testTag(cardTag)) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-          Box(
-              modifier =
-                  Modifier.size(52.dp)
-                      .clip(RoundedCornerShape(16.dp))
-                      .background(
-                          if (hasPdf) cs.primary.copy(alpha = 0.12f)
-                          else cs.onSurface.copy(alpha = 0.05f)),
-              contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Default.Description,
-                    contentDescription = null,
-                    tint = if (hasPdf) cs.primary else cs.onSurface.copy(alpha = 0.3f))
-              }
-
+          PdfIconBox(hasPdf = hasPdf)
           Spacer(Modifier.width(16.dp))
-
-          Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = if (hasPdf) cs.onSurface else cs.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier.testTag(CourseExercisesTestTags.PDF_TITLE))
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = if (hasPdf) description else "No PDF available",
-                style = MaterialTheme.typography.bodyMedium,
-                color = cs.onSurfaceVariant.copy(alpha = if (hasPdf) 1f else 0.5f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.testTag(CourseExercisesTestTags.PDF_DESCRIPTION))
-          }
-
+          PdfCardContent(title = title, description = description, hasPdf = hasPdf)
           Spacer(Modifier.width(12.dp))
-
-          TextButton(
-              onClick = onClick,
-              enabled = hasPdf,
-              modifier = Modifier.testTag(CourseExercisesTestTags.PDF_OPEN_BUTTON)) {
-                Text(if (hasPdf) primaryActionLabel else "Unavailable")
-              }
+          PdfActionButton(
+              hasPdf = hasPdf, primaryActionLabel = primaryActionLabel, onClick = onClick)
         }
+      }
+}
+
+/** Icon box for PDF card - displays document icon with appropriate styling based on availability */
+@Composable
+private fun PdfIconBox(hasPdf: Boolean) {
+  val cs = MaterialTheme.colorScheme
+  val backgroundColor =
+      if (hasPdf) cs.primary.copy(alpha = 0.12f) else cs.onSurface.copy(alpha = 0.05f)
+  val iconTint = if (hasPdf) cs.primary else cs.onSurface.copy(alpha = 0.3f)
+
+  Box(
+      modifier = Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(backgroundColor),
+      contentAlignment = Alignment.Center) {
+        Icon(imageVector = Icons.Default.Description, contentDescription = null, tint = iconTint)
+      }
+}
+
+/** Content section of PDF card - displays title and description with appropriate styling */
+@Composable
+private fun RowScope.PdfCardContent(title: String, description: String, hasPdf: Boolean) {
+  val cs = MaterialTheme.colorScheme
+  val titleColor = if (hasPdf) cs.onSurface else cs.onSurface.copy(alpha = 0.5f)
+  val descriptionText = if (hasPdf) description else "No PDF available"
+  val descriptionAlpha = if (hasPdf) 1f else 0.5f
+
+  Column(modifier = Modifier.weight(1f)) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = titleColor,
+        modifier = Modifier.testTag(CourseExercisesTestTags.PDF_TITLE))
+    Spacer(Modifier.height(4.dp))
+    Text(
+        text = descriptionText,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = descriptionAlpha),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.testTag(CourseExercisesTestTags.PDF_DESCRIPTION))
+  }
+}
+
+/** Action button for PDF card - opens PDF or shows unavailable state */
+@Composable
+private fun PdfActionButton(hasPdf: Boolean, primaryActionLabel: String, onClick: () -> Unit) {
+  val buttonText = if (hasPdf) primaryActionLabel else "Unavailable"
+
+  TextButton(
+      onClick = onClick,
+      enabled = hasPdf,
+      modifier = Modifier.testTag(CourseExercisesTestTags.PDF_OPEN_BUTTON)) {
+        Text(buttonText)
       }
 }
