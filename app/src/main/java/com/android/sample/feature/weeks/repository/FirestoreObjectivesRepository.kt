@@ -77,40 +77,6 @@ class FirestoreObjectivesRepository(
         snap.documents.map { it to it.toDomain() }.toMutableList()
       }
 
-  // ---------- unsigned defaults (no Firestore) ----------
-  private fun defaultObjectives(): MutableList<Objective> =
-      mutableListOf(
-          Objective(
-              title = "Setup Android Studio",
-              course = "CS-200",
-              estimateMinutes = 30,
-              completed = false,
-              day = DayOfWeek.MONDAY,
-              type = ObjectiveType.COURSE_OR_EXERCISES,
-              coursePdfUrl = "https://developer.android.com/courses/android-basics-compose/course",
-              exercisePdfUrl = "https://developer.android.com/studio/intro"),
-          Objective(
-              title = "Finish codelab",
-              course = "CS-200",
-              estimateMinutes = 45,
-              completed = false,
-              day = DayOfWeek.TUESDAY,
-              type = ObjectiveType.COURSE_OR_EXERCISES,
-              coursePdfUrl = "https://developer.android.com/jetpack/compose/tutorial",
-              exercisePdfUrl =
-                  "https://developer.android.com/codelabs/basic-android-kotlin-compose-first-app"),
-          Objective(
-              title = "Build layout challenge",
-              course = "CS-201",
-              estimateMinutes = 60,
-              completed = false,
-              day = DayOfWeek.WEDNESDAY,
-              type = ObjectiveType.COURSE_OR_EXERCISES,
-              coursePdfUrl = "https://developer.android.com/jetpack/compose/layouts",
-              exercisePdfUrl =
-                  "https://developer.android.com/codelabs/basic-android-kotlin-compose-add-a-button"),
-      )
-
   // ---------- API ----------
   override suspend fun getObjectives(): List<Objective> =
       withContext(dispatchers.io) {

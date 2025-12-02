@@ -37,8 +37,6 @@ fun CourseExercisesRoute(
     coursePdfUrl: String = "",
     exercisePdfUrl: String = "",
     onBack: () -> Unit,
-    onOpenCoursePdf: () -> Unit,
-    onOpenExercisesPdf: () -> Unit,
     onCompleted: () -> Unit,
 ) {
   EduMonTheme {
@@ -49,8 +47,6 @@ fun CourseExercisesRoute(
         coursePdfUrl = coursePdfUrl,
         exercisePdfUrl = exercisePdfUrl,
         onBack = onBack,
-        onOpenCoursePdf = onOpenCoursePdf,
-        onOpenExercisesPdf = onOpenExercisesPdf,
         onCompleted = onCompleted,
     )
   }
@@ -69,8 +65,6 @@ private fun CourseExercisesScreen(
     coursePdfUrl: String = "",
     exercisePdfUrl: String = "",
     onBack: () -> Unit,
-    onOpenCoursePdf: () -> Unit,
-    onOpenExercisesPdf: () -> Unit,
     onCompleted: () -> Unit,
 ) {
   val cs = MaterialTheme.colorScheme
@@ -166,11 +160,8 @@ private fun CourseExercisesScreen(
                         primaryActionLabel = "Open course",
                         pdfUrl = coursePdfUrl,
                         onClick = {
-                          if (coursePdfUrl.isNotBlank()) {
-                            com.android.sample.core.helpers.PdfHelper.openPdf(context, coursePdfUrl)
-                          } else {
-                            onOpenCoursePdf()
-                          }
+                          // Only called when coursePdfUrl.isNotBlank() (card is disabled otherwise)
+                          com.android.sample.core.helpers.PdfHelper.openPdf(context, coursePdfUrl)
                         },
                         cardTag = CourseExercisesTestTags.COURSE_PDF_CARD)
                 1 ->
@@ -180,12 +171,9 @@ private fun CourseExercisesScreen(
                         primaryActionLabel = "Open exercises",
                         pdfUrl = exercisePdfUrl,
                         onClick = {
-                          if (exercisePdfUrl.isNotBlank()) {
-                            com.android.sample.core.helpers.PdfHelper.openPdf(
-                                context, exercisePdfUrl)
-                          } else {
-                            onOpenExercisesPdf()
-                          }
+                          // Only called when exercisePdfUrl.isNotBlank() (card is disabled
+                          // otherwise)
+                          com.android.sample.core.helpers.PdfHelper.openPdf(context, exercisePdfUrl)
                         },
                         cardTag = CourseExercisesTestTags.EXERCISES_PDF_CARD)
               }

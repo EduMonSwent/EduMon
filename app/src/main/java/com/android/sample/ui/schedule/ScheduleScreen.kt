@@ -150,8 +150,6 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
         coursePdfUrl = obj.coursePdfUrl,
         exercisePdfUrl = obj.exercisePdfUrl,
         onBack = { activeObjective = null },
-        onOpenCoursePdf = {},
-        onOpenExercisesPdf = {},
         onCompleted = {
           objectivesVm.markObjectiveCompleted(obj)
           activeObjective = null
