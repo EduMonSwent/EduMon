@@ -5,7 +5,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.annotation.VisibleForTesting
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.work.CoroutineWorker
@@ -13,6 +16,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.android.sample.R
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
@@ -61,6 +65,20 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
 
     val onCampus = isOnEpflCampus(position)
 
+    // Check if we should send a notification (transitioned from OFF → ON campus)
+    if (shouldPostCampusEntryNotification(applicationContext, onCampus)) {
+      // Send notification if permission is granted (API 33+) or pre-Tiramisu
+      if (hasNotificationPermission(applicationContext)) {
+        try {
+          postCampusEntryNotification(applicationContext)
+        } catch (se: SecurityException) {
+          Log.w(TAG, "Notification post aborted due to missing permission at runtime", se)
+        }
+      } else {
+        Log.w(TAG, "Notification permission not granted, skipping campus entry notification")
+      }
+    }
+
     // Persist new state for next run (other components can check this)
     updateCampusFlag(applicationContext, onCampus)
 
@@ -77,6 +95,15 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
         ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
     return fine || coarse
+  }
+
+  private fun hasNotificationPermission(ctx: Context): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) ==
+          PackageManager.PERMISSION_GRANTED
+    } else {
+      true // Pre-Tiramisu doesn't require runtime permission
+    }
   }
 
   /* ---------------------------- helpers: location IO ---------------------------- */
@@ -163,10 +190,41 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
 
   /* ---------------------------- helpers: state & gating ---------------------------- */
 
+  /**
+   * Determines if we should post a campus entry notification. Only returns true when transitioning
+   * from OFF campus → ON campus.
+   */
+  private fun shouldPostCampusEntryNotification(ctx: Context, onCampus: Boolean): Boolean {
+    val prefs = ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE)
+    val wasOnCampus = prefs.getBoolean(KEY_WAS_ON_CAMPUS, false)
+    // Notify only when entering campus (transition from false → true)
+    return onCampus && !wasOnCampus
+  }
+
   private fun updateCampusFlag(ctx: Context, onCampus: Boolean) {
     ctx.getSharedPreferences("campus_entry_poll", Context.MODE_PRIVATE).edit {
       putBoolean(KEY_WAS_ON_CAMPUS, onCampus)
     }
+  }
+
+  /**
+   * Post a notification informing the user they have entered campus. Requires
+   * POST_NOTIFICATIONS permission on Android 13+.
+   */
+  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  private fun postCampusEntryNotification(ctx: Context) {
+    NotificationUtils.ensureChannel(ctx)
+
+    val notification =
+        NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(ctx.getString(R.string.campus_entry_title))
+            .setContentText(ctx.getString(R.string.campus_entry_text))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+    NotificationManagerCompat.from(ctx).notify(NotificationUtils.ID_CAMPUS_ENTRY, notification)
   }
 
   private fun isOnEpflCampus(position: LatLng): Boolean = isOnEpflCampusInternal(position)
