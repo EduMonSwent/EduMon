@@ -274,9 +274,7 @@ class ProfileViewModel(
     viewModelScope.launch {
       try {
         val stream = context.contentResolver.openInputStream(uri) ?: return@launch
-        val importer =
-            IcsImporter(
-                AppRepositories.scheduleRepository, AppRepositories.plannerRepository, context)
+        val importer = IcsImporter(AppRepositories.plannerRepository, context)
         importer.importFromStream(stream)
       } catch (e: Exception) {
         e.printStackTrace()
