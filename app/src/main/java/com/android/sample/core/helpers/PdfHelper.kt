@@ -8,6 +8,15 @@ import android.widget.Toast
 /** Helper object for opening PDF files. Supports both local files and web URLs. */
 object PdfHelper {
 
+  // Constants for strings
+  private const val MIME_TYPE_PDF = "application/pdf"
+  private const val URI_SCHEME_CONTENT = "content"
+  private const val URI_SCHEME_HTTP = "http://"
+  private const val URI_SCHEME_HTTPS = "https://"
+  private const val DEFAULT_FALLBACK_MESSAGE = "No app available to open PDF"
+  private const val NO_PDF_AVAILABLE_MESSAGE = "No PDF available"
+  private const val ERROR_OPENING_PDF_PREFIX = "Error opening PDF: "
+
   /**
    * Opens a PDF file using an external app or web browser.
    *
@@ -18,10 +27,10 @@ object PdfHelper {
   fun openPdf(
       context: Context,
       pdfUrl: String,
-      fallbackMessage: String = "No app available to open PDF"
+      fallbackMessage: String = DEFAULT_FALLBACK_MESSAGE
   ) {
     if (pdfUrl.isBlank()) {
-      Toast.makeText(context, "No PDF available", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, NO_PDF_AVAILABLE_MESSAGE, Toast.LENGTH_SHORT).show()
       return
     }
 
@@ -29,10 +38,10 @@ object PdfHelper {
       val uri = Uri.parse(pdfUrl)
       val intent =
           Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/pdf")
+            setDataAndType(uri, MIME_TYPE_PDF)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
             // Add FLAG_GRANT_READ_URI_PERMISSION for content:// URIs
-            if (uri.scheme == "content") {
+            if (uri.scheme == URI_SCHEME_CONTENT) {
               addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
           }
@@ -42,7 +51,7 @@ object PdfHelper {
         context.startActivity(intent)
       } else {
         // Fallback: try opening in browser (for http/https URLs)
-        if (pdfUrl.startsWith("http://") || pdfUrl.startsWith("https://")) {
+        if (pdfUrl.startsWith(URI_SCHEME_HTTP) || pdfUrl.startsWith(URI_SCHEME_HTTPS)) {
           val browserIntent = Intent(Intent.ACTION_VIEW, uri)
           context.startActivity(browserIntent)
         } else {
@@ -50,7 +59,7 @@ object PdfHelper {
         }
       }
     } catch (e: Exception) {
-      Toast.makeText(context, "Error opening PDF: ${e.message}", Toast.LENGTH_LONG).show()
+      Toast.makeText(context, ERROR_OPENING_PDF_PREFIX + e.message, Toast.LENGTH_LONG).show()
     }
   }
 
