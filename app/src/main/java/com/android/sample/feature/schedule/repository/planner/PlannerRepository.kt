@@ -86,4 +86,8 @@ open class PlannerRepository {
                 completion = CompletionStatus.YES,
                 timestamp = Instant.now()))
   }
+
+  open suspend fun saveClass(classItem: Class): Result<Unit> {
+    return Result.failure(Exception("Not implemented"))
+  }
 }

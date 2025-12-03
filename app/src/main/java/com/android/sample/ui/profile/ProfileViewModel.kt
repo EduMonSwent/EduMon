@@ -2,6 +2,8 @@ package com.android.sample.ui.profile
 
 // This code has been written partially using A.I (LLM).
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -14,6 +16,7 @@ import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.rewards.LevelRewardEngine
+import com.android.sample.feature.schedule.repository.schedule.IcsImporter
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
@@ -265,5 +268,19 @@ class ProfileViewModel(
 
   fun debugNoLevelChangeForTests() {
     applyProfileWithPotentialRewards { current -> current.copy(points = current.points + 10) }
+  }
+
+  fun importIcs(context: Context, uri: Uri) {
+    viewModelScope.launch {
+      try {
+        val stream = context.contentResolver.openInputStream(uri) ?: return@launch
+        val importer =
+            IcsImporter(
+                AppRepositories.scheduleRepository, AppRepositories.plannerRepository, context)
+        importer.importFromStream(stream)
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }
   }
 }

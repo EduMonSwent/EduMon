@@ -6,6 +6,7 @@ import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.data.schedule.SourceTag
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
+import com.android.sample.repos_providors.FakeRepositoriesProvider.scheduleRepository
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineScope
@@ -29,9 +30,8 @@ class ScheduleRepositoryImpl(
       }
 
   private val classesFlow: Flow<List<ScheduleEvent>> =
-      classRepo.getTodayClassesFlow().map { classes ->
-        classes.map { ClassMapper.toScheduleEvent(it, resources) }
-      }
+      scheduleRepository.events // from FirestoreScheduleRepository
+          .map { events -> events.filter { it.sourceTag == SourceTag.Class } }
 
   private val _events = MutableStateFlow<List<ScheduleEvent>>(emptyList())
   override val events: StateFlow<List<ScheduleEvent>> = _events.asStateFlow()
@@ -110,4 +110,6 @@ class ScheduleRepositoryImpl(
     val end = start.plusDays(days.toLong())
     return getEventsBetween(start, end)
   }
+
+  override suspend fun importEvents(events: List<ScheduleEvent>) {}
 }

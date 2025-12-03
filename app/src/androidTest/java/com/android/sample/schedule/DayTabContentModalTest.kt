@@ -23,6 +23,142 @@ import org.junit.Test
 class DayTabContentAllAndroidTest {
 
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+  private val ctx
+    get() = rule.activity
+
+  // ---- Test new branch: allClassesFinished ----
+  @Test
+  fun showsFinishedClasses_when_allClassesFinishedTrue() {
+    val vm = buildScheduleVM(ctx)
+
+    val state =
+        ScheduleUiState(
+            todayClasses = listOf(), // irrelevant
+            attendanceRecords = emptyList(),
+            allClassesFinished = true)
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText(ctx.getString(R.string.finished_classes)).assertIsDisplayed()
+  }
+
+  // ---- Test original empty-classes branch ----
+  @Test
+  fun showsNoClassesMessage_whenEmpty_andNotFinished() {
+    val vm = buildScheduleVM(ctx)
+
+    val state =
+        ScheduleUiState(
+            todayClasses = emptyList(), attendanceRecords = emptyList(), allClassesFinished = false)
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText(ctx.getString(R.string.no_classes_today)).assertIsDisplayed()
+  }
+
+  // ---- Attendance YES/YES ----
+  @Test
+  fun showsAttendanceAndCompletionChips_yes_yes() {
+    val vm = buildScheduleVM(ctx)
+    val clazz = fakeClass(id = "c1", name = "Algorithms")
+    val record = fakeAttendance("c1") // default YES/YES
+
+    val state = ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(record))
+
+    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+
+    rule.onNodeWithText(ctx.getString(R.string.attendance_attended)).assertIsDisplayed()
+    rule.onNodeWithText(ctx.getString(R.string.completion_done)).assertIsDisplayed()
+  }
+
+  // ---- Attendance: ARRIVED_LATE / PARTIALLY ----
+  @Test
+  fun showsLateAndPartialStatuses() {
+    val vm = buildScheduleVM(ctx)
+    val clazz = fakeClass(id = "c2", name = "Databases")
+
+    val latePartial =
+        fakeAttendance(
+            classId = "c2",
+            attendance = AttendanceStatus.ARRIVED_LATE,
+            completion = CompletionStatus.PARTIALLY)
+
+    val state =
+        ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(latePartial))
+
+    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+
+    rule.onNodeWithText(ctx.getString(R.string.attendance_arrived_late)).assertIsDisplayed()
+    rule.onNodeWithText(ctx.getString(R.string.completion_partially)).assertIsDisplayed()
+  }
+
+  // ---- Attendance: NO / NO ----
+  @Test
+  fun showsMissedAndNotDoneStatuses() {
+    val vm = buildScheduleVM(ctx)
+    val clazz = fakeClass(id = "c3", name = "OS")
+
+    val missedNotDone =
+        fakeAttendance(
+            classId = "c3", attendance = AttendanceStatus.NO, completion = CompletionStatus.NO)
+
+    val state =
+        ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(missedNotDone))
+
+    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+
+    rule.onNodeWithText(ctx.getString(R.string.attendance_missed)).assertIsDisplayed()
+    rule.onNodeWithText(ctx.getString(R.string.completion_not_done)).assertIsDisplayed()
+  }
+
+  // ---- Wellness block ----
+  @Test
+  fun rendersWellnessEvents() {
+    val vm = buildScheduleVM(ctx)
+    val clazz = fakeClass("c9", "AI")
+    val state = ScheduleUiState(todayClasses = listOf(clazz))
+
+    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_events_label))
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_title))
+        .performScrollTo()
+        .assertIsDisplayed()
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_event_lecture_title))
+        .performScrollTo()
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun showsEmptyTodosMessage() {
+    val vm = buildScheduleVM(ctx)
+
+    val state =
+        ScheduleUiState(
+            todayClasses = emptyList(), attendanceRecords = emptyList(), todos = emptyList())
+
+    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+
+    rule
+        .onNodeWithText(ctx.getString(R.string.schedule_day_todos_title))
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    rule
+        .onNodeWithText(ctx.getString(R.string.schedule_day_todos_empty))
+        .performScrollTo()
+        .assertIsDisplayed()
+  }
 
   // ---- Modal branch ----
   @Test
@@ -64,12 +200,26 @@ class DayTabContentAllAndroidTest {
     }
 
     val dateText = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMM d"))
-    rule.onNodeWithText(ctx.getString(R.string.today_title_fmt, dateText)).assertIsDisplayed()
+    val todayHeader = ctx.getString(R.string.today_title_fmt, dateText)
+    val lectureLabel = ctx.getString(R.string.lecture_type)
 
-    // "Algorithms (Lecture)"
-    rule.onNodeWithText("Algorithms (Lecture)", useUnmergedTree = true).assertIsDisplayed()
+    // Header
+    rule.onNodeWithText(todayHeader).performScrollTo().assertIsDisplayed()
+
+    // "Algorithms"
+    rule.onNodeWithText("Algorithms", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+
+    // "(Lecture)" — exactly how CompactClassRow renders it
+    rule
+        .onNodeWithText("($lectureLabel)", useUnmergedTree = true)
+        .performScrollTo()
+        .assertIsDisplayed()
+
     // "BC02 • Dr. Smith"
-    rule.onNodeWithText("BC02 • Dr. Smith", useUnmergedTree = true).assertIsDisplayed()
+    rule
+        .onNodeWithText("BC02 • Dr. Smith", useUnmergedTree = true)
+        .performScrollTo()
+        .assertIsDisplayed()
   }
 
   // ---- Empty classes branch ----

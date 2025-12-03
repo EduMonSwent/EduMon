@@ -63,4 +63,10 @@ object FakeScheduleRepository : ScheduleRepository {
     val endDate = startDate.plusDays(6)
     return getEventsBetween(startDate, endDate)
   }
+
+  override suspend fun importEvents(events: List<ScheduleEvent>) {
+    val current = _events.value.toMutableList()
+    current.addAll(events)
+    _events.value = current
+  }
 }

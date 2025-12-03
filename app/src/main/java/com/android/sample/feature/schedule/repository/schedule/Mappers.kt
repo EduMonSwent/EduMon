@@ -156,6 +156,7 @@ object ClassMapper {
           ClassType.LECTURE -> EventKind.CLASS_LECTURE
           ClassType.EXERCISE -> EventKind.CLASS_EXERCISE
           ClassType.LAB -> EventKind.CLASS_LAB
+          ClassType.PROJECT -> EventKind.PROJECT
         }
 
     val durationMinutes =

@@ -93,6 +93,7 @@ fun DayTabContent(
               onObjectiveNavigate = onObjectiveNavigation,
               todos = dayTodos,
               onTodoClicked = onTodoClicked,
+              allClassesFinished = state.allClassesFinished,
               modifier = Modifier.fillMaxWidth())
         }
       }
@@ -109,7 +110,8 @@ private fun TodayCard(
     onObjectiveNavigate: (ObjectiveNavigation) -> Unit,
     todos: List<ToDo>,
     onTodoClicked: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    allClassesFinished: Boolean
 ) {
   val cs = MaterialTheme.colorScheme
   val today = LocalDate.now()
@@ -137,21 +139,40 @@ private fun TodayCard(
                       color = MaterialTheme.colorScheme.onSurface),
               modifier = Modifier.padding(bottom = 8.dp))
         }) {
-          if (classes.isEmpty()) {
-            Text(
-                stringResource(R.string.no_classes_today),
-                color = cs.onSurface.copy(alpha = 0.7f),
-                modifier = modifier.fillMaxWidth())
-          } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              classes.forEachIndexed { idx, c ->
-                val record = attendance.firstOrNull { it.classId == c.id }
-                CompactClassRow(
-                    clazz = c,
-                    record = record,
-                    modifier = Modifier.fillMaxWidth().clickable { onClassClick(c) })
-                if (idx != classes.lastIndex) {
-                  HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
+          when {
+            (classes.isEmpty() && !allClassesFinished) -> {
+              Text(
+                  stringResource(R.string.no_classes_today),
+                  color = cs.onSurface.copy(alpha = 0.7f),
+                  modifier = modifier.fillMaxWidth())
+            }
+            (allClassesFinished) -> {
+              Box(
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .padding(top = 12.dp)
+                          .clip(RoundedCornerShape(16.dp))
+                          .background(CustomGreen.copy(alpha = 0.15f))
+                          .padding(16.dp),
+                  contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(R.string.finished_classes),
+                        color = CustomGreen,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold)
+                  }
+            }
+            else -> {
+              Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                classes.forEachIndexed { idx, c ->
+                  val record = attendance.firstOrNull { it.classId == c.id }
+                  CompactClassRow(
+                      clazz = c,
+                      record = record,
+                      modifier = Modifier.fillMaxWidth().clickable { onClassClick(c) })
+                  if (idx != classes.lastIndex) {
+                    HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
+                  }
                 }
               }
             }
@@ -265,12 +286,14 @@ private fun CompactClassRow(clazz: Class, record: ClassAttendance?, modifier: Mo
         ClassType.LECTURE -> R.drawable.ic_lecture to LightBlueAccent
         ClassType.EXERCISE -> R.drawable.ic_exercise to CustomGreen
         ClassType.LAB -> R.drawable.ic_lab to AccentViolet
+        ClassType.PROJECT -> R.drawable.ic_lab to Pink
       }
   val typeLabel =
       when (clazz.type) {
         ClassType.LECTURE -> stringResource(R.string.lecture_type)
         ClassType.EXERCISE -> stringResource(R.string.exercise_type)
         ClassType.LAB -> stringResource(R.string.lab_type)
+        ClassType.PROJECT -> stringResource(R.string.project_type)
       }
   val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -289,7 +312,7 @@ private fun CompactClassRow(clazz: Class, record: ClassAttendance?, modifier: Mo
 
     Column(Modifier.weight(1f)) {
       Text(
-          "${clazz.courseName} ($typeLabel)",
+          clazz.courseName,
           color = cs.onSurface,
           fontWeight = FontWeight.SemiBold,
           fontSize = 16.sp)

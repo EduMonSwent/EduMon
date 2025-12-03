@@ -17,7 +17,8 @@ data class ScheduleEvent(
     val priority: Priority? = null,
     val courseCode: String? = null,
     val location: String? = null,
-    val sourceTag: SourceTag = SourceTag.Task
+    val sourceTag: SourceTag = SourceTag.Task,
+    val categories: List<String> = emptyList()
 ) {
 
   // Helper properties

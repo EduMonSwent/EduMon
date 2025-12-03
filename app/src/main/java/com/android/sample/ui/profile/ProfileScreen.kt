@@ -1,5 +1,7 @@
 package com.android.sample.ui.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -53,6 +55,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,6 +70,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -124,12 +128,20 @@ private val SPACING_SMALL = 4.dp
 fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(),
     onOpenFocusMode: () -> Unit = {},
-    onOpenNotifications: () -> Unit = {}
+    onOpenNotifications: () -> Unit = {},
+    onImportIcs: () -> Unit = {}
 ) {
   val user by viewModel.userProfile.collectAsState()
   val stats by viewModel.userStats.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
+  val context = LocalContext.current
+  val launcher =
+      rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+          viewModel.importIcs(context, uri)
+        }
+      }
 
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -174,7 +186,8 @@ fun ProfileScreen(
                         onToggleLocation = viewModel::toggleLocation,
                         onToggleFocusMode = viewModel::toggleFocusMode,
                         onOpenNotifications = onOpenNotifications,
-                        onEnterFocusMode = onOpenFocusMode)
+                        onEnterFocusMode = onOpenFocusMode,
+                        onImportIcs = { launcher.launch("text/calendar") })
                   }
                 }
               }
@@ -499,7 +512,8 @@ fun SettingsCard(
     onToggleLocation: () -> Unit,
     onToggleFocusMode: () -> Unit,
     onOpenNotifications: () -> Unit,
-    onEnterFocusMode: () -> Unit
+    onEnterFocusMode: () -> Unit,
+    onImportIcs: () -> Unit
 ) {
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
@@ -531,12 +545,22 @@ fun SettingsCard(
         },
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
 
+    Divider(color = DarkDivider)
     Spacer(Modifier.height(12.dp))
     androidx.compose.material3.TextButton(
         onClick = onOpenNotifications,
         modifier = Modifier.fillMaxWidth().testTag("open_notifications_screen")) {
           Text("Manage notifications")
         }
+    Divider(color = DarkDivider)
+    Spacer(Modifier.height(12.dp))
+
+    TextButton(onClick = onImportIcs, modifier = Modifier.fillMaxWidth()) {
+      Text(
+          text = stringResource(R.string.import_timetable),
+          color = AccentViolet,
+          fontWeight = FontWeight.Medium)
+    }
   }
 }
 

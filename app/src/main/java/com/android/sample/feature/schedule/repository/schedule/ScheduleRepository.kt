@@ -22,4 +22,6 @@ interface ScheduleRepository {
   suspend fun getEventsForDate(date: LocalDate): List<ScheduleEvent>
 
   suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent>
+
+  suspend fun importEvents(events: List<ScheduleEvent>)
 }

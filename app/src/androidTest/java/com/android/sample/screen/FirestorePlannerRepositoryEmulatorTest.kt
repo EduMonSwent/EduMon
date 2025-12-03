@@ -276,4 +276,36 @@ class FirestorePlannerRepositoryEmulatorTest {
     assertEquals(AttendanceStatus.YES, loaded?.attendance)
     assertEquals(CompletionStatus.PARTIALLY, loaded?.completion)
   }
+
+  @Test
+  fun saveClass_writes_class_and_is_returned_in_getTodayClassesFlow() = runBlocking {
+    val today = LocalDate.now()
+    val classItem =
+        com.android.sample.feature.schedule.data.planner.Class(
+            id = "C1",
+            courseName = "Distributed Systems",
+            startTime = LocalTime.of(10, 0),
+            endTime = LocalTime.of(12, 0),
+            type = ClassType.LAB,
+            location = "LAB-X",
+            instructor = "Prof. Turing")
+
+    val result = repo.saveClass(classItem)
+    assertTrue("saveClass() should succeed", result.isSuccess)
+
+    // Snapshot listener needs a moment to update
+    val loaded = repo.getTodayClassesFlow().first()
+
+    // Look for the class we just saved
+    val saved = loaded.firstOrNull { it.id == "C1" }
+    assertNotNull("Expected class C1 to be returned by getTodayClassesFlow()", saved)
+
+    saved!!
+    assertEquals("Distributed Systems", saved.courseName)
+    assertEquals(LocalTime.of(10, 0), saved.startTime)
+    assertEquals(LocalTime.of(12, 0), saved.endTime)
+    assertEquals(ClassType.LAB, saved.type)
+    assertEquals("LAB-X", saved.location)
+    assertEquals("Prof. Turing", saved.instructor)
+  }
 }
