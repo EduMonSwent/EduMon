@@ -59,7 +59,7 @@ class ModelClassesTest {
   @Test
   fun `enum values should be correct`() {
     // Then
-    assertEquals(3, ClassType.values().size)
+    assertEquals(4, ClassType.values().size)
     assertEquals(3, AttendanceStatus.values().size)
     assertEquals(3, CompletionStatus.values().size)
 
@@ -67,6 +67,7 @@ class ModelClassesTest {
     assertTrue(ClassType.values().contains(ClassType.LECTURE))
     assertTrue(ClassType.values().contains(ClassType.EXERCISE))
     assertTrue(ClassType.values().contains(ClassType.LAB))
+      assertTrue(ClassType.values().contains(ClassType.PROJECT))
 
     assertTrue(AttendanceStatus.values().contains(AttendanceStatus.YES))
     assertTrue(AttendanceStatus.values().contains(AttendanceStatus.NO))
