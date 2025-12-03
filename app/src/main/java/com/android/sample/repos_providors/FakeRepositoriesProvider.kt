@@ -9,6 +9,8 @@ import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepositoryImpl
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.FakeScheduleRepository
+import com.android.sample.feature.subjects.repository.FakeSubjectsRepository
+import com.android.sample.feature.subjects.repository.SubjectsRepository
 import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
 import com.android.sample.feature.weeks.repository.FakeWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
@@ -46,6 +48,8 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val toDoRepository: ToDoRepository = ToDoRepositoryLocal()
   override val profileRepository: ProfileRepository = FakeProfileRepository()
   override val flashcardsRepository: FlashcardsRepository = InMemoryFlashcardsRepository
+  override val subjectsRepository: SubjectsRepository = FakeSubjectsRepository()
+
 }
 
 @Volatile var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider

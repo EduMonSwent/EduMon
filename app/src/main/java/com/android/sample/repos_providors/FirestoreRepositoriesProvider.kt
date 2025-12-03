@@ -30,6 +30,9 @@ import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.android.sample.feature.subjects.repository.FirestoreSubjectsRepository
+import com.android.sample.feature.subjects.repository.SubjectsRepository
+
 
 /** Firebase-backed provider with LAZY init to prevent accidental Firebase loading. */
 object FirestoreRepositoriesProvider : RepositoriesProvider {
@@ -73,6 +76,11 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
 
   override val profileRepository: ProfileRepository by lazy { FakeProfileRepository() }
+
+  override val subjectsRepository: SubjectsRepository by lazy {
+    FirestoreSubjectsRepository(auth, db)
+  }
+
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider

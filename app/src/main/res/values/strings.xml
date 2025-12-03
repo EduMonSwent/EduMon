@@ -320,6 +320,13 @@
     <string name="level_label">Level %1$d</string>
 
 
+    <string name="study_session_subject_label">Subject</string>
+    <string name="study_session_new_subject_placeholder">New subject</string>
+    <string name="study_session_add_subject_button">Add</string>
+
+
+
+
 
 
 
