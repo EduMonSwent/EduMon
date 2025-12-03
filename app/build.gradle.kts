@@ -113,6 +113,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.junit.ktx)
 
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+
     // ---- Compose with BOM ----
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
@@ -154,6 +157,8 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.accompanist.permissions)
     implementation(libs.maps.compose)
+    implementation(libs.accompanist.pager)
+    implementation(libs.accompanist.pager.indicators)
 
 
     // ===================== Tests =====================
@@ -194,18 +199,10 @@ dependencies {
 }
 
 tasks.withType<Test> {
-    // Jacoco for unit tests (avoid instrumenting JDK classes on Java 21+)
+    // Jacoco for unit tests
     configure<JacocoTaskExtension> {
-        isIncludeNoLocationClasses = false // was true; this caused JaCoCo to try to instrument JDK classes
-        excludes = listOf(
-            "jdk.*",
-            "java.*",
-            "javax.*",
-            "sun.*",
-            "com.sun.*",
-            "org.jacoco.*",
-            "kotlin.*"
-        )
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
     }
 }
 
