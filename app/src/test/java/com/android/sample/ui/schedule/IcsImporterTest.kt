@@ -32,7 +32,7 @@ class IcsImporterTest {
     context = ApplicationProvider.getApplicationContext()
     planner = mockk(relaxed = true)
     schedule = mockk(relaxed = true)
-    importer = IcsImporter(schedule, planner, context)
+    importer = IcsImporter(planner, context)
   }
 
   private fun stream(text: String) = text.trimIndent().byteInputStream()

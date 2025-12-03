@@ -8,11 +8,8 @@ import java.io.InputStream
 import java.time.LocalTime
 import java.util.UUID
 
-class IcsImporter(
-    private val scheduleRepository: ScheduleRepository,
-    private val plannerRepository: PlannerRepository,
-    context: Context
-) {
+/** This class was implemented with the help of ai (ChatGPT) */
+class IcsImporter(private val plannerRepository: PlannerRepository, context: Context) {
   private val matcher = KeywordMatcher(context)
 
   suspend fun importFromStream(stream: InputStream) {
