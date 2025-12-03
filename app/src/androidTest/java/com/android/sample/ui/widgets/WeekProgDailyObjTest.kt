@@ -33,7 +33,7 @@ class WeekProgDailyObjTest {
   private fun setContent(customize: (WeeksViewModel, ObjectivesViewModel) -> Unit = { _, _ -> }) {
     // Use fake repos so tests don't require Firebase auth or emulator networking
     val weeksVM = WeeksViewModel(repository = FakeWeeksRepository())
-    val objVM = ObjectivesViewModel(repository = FakeObjectivesRepository)
+    val objVM = ObjectivesViewModel(repository = FakeObjectivesRepository, requireAuth = false)
 
     // Seed defaults similar to old WeekProgressViewModel
     weeksVM.setWeeks(
@@ -45,10 +45,13 @@ class WeekProgDailyObjTest {
         selectedIndex = 1)
     weeksVM.setProgress(55)
 
+    // Get today's day to ensure objectives show in the UI
+    val today = java.time.LocalDate.now().dayOfWeek
+
     objVM.setObjectives(
         listOf(
-            Objective("Finish Quiz 3", "CS101", 30, false, DayOfWeek.MONDAY),
-            Objective("Read Chapter 5", "Math201", 25, false, DayOfWeek.TUESDAY)))
+            Objective("Finish Quiz 3", "CS101", 30, false, today),
+            Objective("Read Chapter 5", "Math201", 25, false, today)))
 
     // Allow per-test overrides
     customize(weeksVM, objVM)
@@ -188,7 +191,11 @@ class WeekProgDailyObjTest {
 
   @Test
   fun objectives_emptyState_rendersWhenNoObjectives() {
-    setContent { _, objVM -> objVM.setObjectives(emptyList()) }
+    setContent { _, objVM ->
+      // Set objectives for a different day to ensure today's list is empty
+      val notToday = java.time.LocalDate.now().dayOfWeek.plus(1)
+      objVM.setObjectives(listOf(Objective("Future task", "CS101", 30, false, notToday)))
+    }
 
     compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY).assertExists().assertIsDisplayed()
   }
@@ -196,19 +203,84 @@ class WeekProgDailyObjTest {
   @Test
   fun weekDotsRow_rendersAllDays_withObjectivesVM() {
     // Build a VM with minimal per-day objectives (some days empty)
-    val vm = ObjectivesViewModel(repository = FakeObjectivesRepository)
+    val vm = ObjectivesViewModel(repository = FakeObjectivesRepository, requireAuth = false)
+    val today = java.time.LocalDate.now().dayOfWeek
+
     vm.setObjectives(
         listOf(
-            Objective("A", "CS", estimateMinutes = 5, completed = true, day = DayOfWeek.MONDAY),
-            Objective("B", "CS", estimateMinutes = 5, completed = false, day = DayOfWeek.TUESDAY),
-            Objective(
-                "C", "ENG", estimateMinutes = 5, completed = true, day = DayOfWeek.WEDNESDAY)))
+            Objective("A", "CS", estimateMinutes = 5, completed = true, day = today),
+            Objective("B", "CS", estimateMinutes = 5, completed = false, day = today.plus(1)),
+            Objective("C", "ENG", estimateMinutes = 5, completed = true, day = today.plus(2))))
 
     compose.setContent { EduMonTheme { WeekDotsRow(vm) } }
 
     DayOfWeek.values().forEach { dow ->
       compose.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOT_PREFIX + dow.name).assertExists()
     }
+  }
+
+  @Test
+  fun objectives_onlyShowsTodaysObjectives_notOtherDays() {
+    val today = java.time.LocalDate.now().dayOfWeek
+    val tomorrow = today.plus(1)
+
+    setContent { _, objVM ->
+      objVM.setObjectives(
+          listOf(
+              Objective("Today task 1", "CS101", 30, false, today),
+              Objective("Today task 2", "CS102", 25, false, today),
+              Objective("Tomorrow task", "Math201", 20, false, tomorrow),
+              Objective("Another tomorrow task", "ENG200", 15, false, tomorrow)))
+    }
+
+    compose.waitForIdle()
+
+    // Verify header shows plural since there are 2 today's objectives
+    compose.onNodeWithText("Today's Objectives").assertExists()
+
+    // Verify first today's task is shown (index 0)
+    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVE_TITLE_PREFIX + 0).assertExists()
+    compose.onNodeWithText("Today task 1").assertExists()
+
+    // Expand to show all today's objectives
+    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_BUTTON).performClick()
+    compose.waitForIdle()
+
+    // Verify second today's task is shown (index 1)
+    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVE_TITLE_PREFIX + 1).assertExists()
+    compose.onNodeWithText("Today task 2").assertExists()
+
+    // Verify tomorrow's tasks are NOT shown
+    compose.onNodeWithText("Tomorrow task").assertDoesNotExist()
+    compose.onNodeWithText("Another tomorrow task").assertDoesNotExist()
+
+    // Verify only 2 objective rows exist (for today's tasks)
+    val objectiveRows =
+        compose
+            .onAllNodes(hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX))
+            .fetchSemanticsNodes()
+    assertTrue("Expected exactly 2 objective rows for today", objectiveRows.size == 2)
+  }
+
+  @Test
+  fun objectives_showsSingularHeader_whenOnlyOneTodayObjective() {
+    val today = java.time.LocalDate.now().dayOfWeek
+
+    setContent { _, objVM ->
+      objVM.setObjectives(listOf(Objective("Single task", "CS101", 30, false, today)))
+    }
+
+    compose.waitForIdle()
+
+    // Verify header shows singular
+    compose.onNodeWithText("Today's Objective").assertExists()
+
+    // Verify the single task is shown using testTag
+    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVE_TITLE_PREFIX + 0).assertExists()
+    compose.onNodeWithText("Single task").assertExists()
+
+    // Verify no "Show all" button exists since there's only one objective
+    compose.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_BUTTON).assertDoesNotExist()
   }
 
   @Test
