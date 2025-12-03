@@ -35,8 +35,9 @@ class FirestoreObjectivesRepository(
           "estimateMinutes" to estimateMinutes,
           "completed" to completed,
           "day" to day.name,
-          // Persist the type so the "Start" button knows which screen to open
           "type" to type.name,
+          "coursePdfUrl" to coursePdfUrl,
+          "exercisePdfUrl" to exercisePdfUrl,
           "order" to (order ?: 0L),
           "updatedAt" to FieldValue.serverTimestamp(),
       )
@@ -55,13 +56,19 @@ class FirestoreObjectivesRepository(
         runCatching { ObjectiveType.valueOf(typeStr) }
             .getOrElse { ObjectiveType.COURSE_OR_EXERCISES }
 
+    // Read PDF URLs
+    val coursePdfUrl = getString("coursePdfUrl") ?: ""
+    val exercisePdfUrl = getString("exercisePdfUrl") ?: ""
+
     return Objective(
         title = title,
         course = course,
         estimateMinutes = estimate,
         completed = completed,
         day = dow,
-        type = type)
+        type = type,
+        coursePdfUrl = coursePdfUrl,
+        exercisePdfUrl = exercisePdfUrl)
   }
 
   private suspend fun fetchOrdered(): MutableList<Pair<DocumentSnapshot, Objective>> =
