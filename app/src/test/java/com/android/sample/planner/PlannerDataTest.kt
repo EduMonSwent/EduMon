@@ -41,7 +41,8 @@ class PlannerDataTest {
 
   @Test
   fun `enum names should be unique`() {
-    assertEquals(setOf("LECTURE", "EXERCISE", "LAB", "PROJECT"), ClassType.values().map { it.name }.toSet())
+    assertEquals(
+        setOf("LECTURE", "EXERCISE", "LAB", "PROJECT"), ClassType.values().map { it.name }.toSet())
     assertEquals(
         setOf("YES", "NO", "ARRIVED_LATE"), AttendanceStatus.values().map { it.name }.toSet())
     assertEquals(setOf("YES", "NO", "PARTIALLY"), CompletionStatus.values().map { it.name }.toSet())

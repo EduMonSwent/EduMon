@@ -67,7 +67,7 @@ class ModelClassesTest {
     assertTrue(ClassType.values().contains(ClassType.LECTURE))
     assertTrue(ClassType.values().contains(ClassType.EXERCISE))
     assertTrue(ClassType.values().contains(ClassType.LAB))
-      assertTrue(ClassType.values().contains(ClassType.PROJECT))
+    assertTrue(ClassType.values().contains(ClassType.PROJECT))
 
     assertTrue(AttendanceStatus.values().contains(AttendanceStatus.YES))
     assertTrue(AttendanceStatus.values().contains(AttendanceStatus.NO))
