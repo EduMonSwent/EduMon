@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repos_providors.FakeRepositoriesProvider
@@ -84,10 +85,17 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // 1) HOME + NAV HOST READY
     waitForHome()
 
-    // 2) MOTIVATION ON HOME (widgets & quick actions visible with scroll)
+    // 2) MOTIVATION WIDGETS VISIBLE ON HOME
     ensureHomeChildVisible(HomeTestTags.TODAY_SEE_ALL)
     ensureHomeChildVisible(HomeTestTags.CHIP_MOOD)
     ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
+    ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
+
+    // 3) HOME -> SCHEDULE (CALENDAR) VIA "OPEN SCHEDULE" CHIP
+    composeRule
+        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(ScheduleScreenTestTags.ROOT),
@@ -105,7 +113,7 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     composeRule.onNodeWithText("Month").assertExists().performClick()
     composeRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_MONTH).assertExists()
 
-    // Back to Home
+    // Back to Home from Schedule
     goBackToHome()
 
     // 4) HOME -> STUDY SESSION VIA QUICK ACTION
@@ -131,6 +139,9 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // Back to Home from Study
     goBackToHome()
 
+    // 5) HOME -> PROFILE VIA DRAWER
+    openDrawerDestination(AppDestination.Profile.route)
+
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
         timeoutMillis = 20_000,
@@ -143,6 +154,9 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // Back to Home
     goBackToHome()
 
+    // 6) HOME -> GAMES VIA DRAWER
+    openDrawerDestination(AppDestination.Games.route)
+
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
         timeoutMillis = 20_000,
@@ -152,7 +166,7 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
         .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Games"))
         .assertExists()
 
-    // Directly back to Home from Games
+    // Back to Home from Games
     goBackToHome()
 
     // Final sanity: Home is still reachable and stable
@@ -195,5 +209,27 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
 
     // 2) Scroll directly to the child. This will scroll its scrollable parent.
     composeRule.onNode(hasTestTag(childTag), useUnmergedTree = true).performScrollTo()
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  private fun openDrawerDestination(route: String) {
+    // Open the drawer from Home
+    composeRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists().performClick()
+
+    val drawerItemTag = HomeTestTags.drawerTag(route)
+
+    // Wait until the drawer item is visible
+    composeRule.waitUntil(timeoutMillis = 20_000) {
+      runCatching {
+            composeRule
+                .onAllNodesWithTag(drawerItemTag, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+          }
+          .getOrNull()
+          ?.isNotEmpty() == true
+    }
+
+    // Click the drawer item
+    composeRule.onNodeWithTag(drawerItemTag, useUnmergedTree = true).assertExists().performClick()
   }
 }
