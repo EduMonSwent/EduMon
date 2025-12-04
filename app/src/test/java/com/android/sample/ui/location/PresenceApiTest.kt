@@ -1,6 +1,5 @@
 package com.android.sample.ui.location
 
-import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -13,8 +12,8 @@ import org.junit.Test
 import org.mockito.kotlin.*
 
 /**
- * Unit tests for PresenceApi functions: updateMyPresence and ensureMyProfile.
- * Uses Mockito to mock FirebaseAuth and FirebaseFirestore.
+ * Unit tests for PresenceApi functions: updateMyPresence and ensureMyProfile. Uses Mockito to mock
+ * FirebaseAuth and FirebaseFirestore.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PresenceApiTest {
@@ -67,11 +66,16 @@ class PresenceApiTest {
         auth = mockAuth)
 
     // Then: document set is called with correct data
-    verify(mockDocument).set(argThat<Map<String, Any>> { map ->
-      map["name"] == TEST_NAME &&
-          map["mode"] == FriendMode.STUDY.name &&
-          (map["location"] as? GeoPoint)?.let { it.latitude == TEST_LAT && it.longitude == TEST_LON } == true
-    }, eq(SetOptions.merge()))
+    verify(mockDocument)
+        .set(
+            argThat<Map<String, Any>> { map ->
+              map["name"] == TEST_NAME &&
+                  map["mode"] == FriendMode.STUDY.name &&
+                  (map["location"] as? GeoPoint)?.let {
+                    it.latitude == TEST_LAT && it.longitude == TEST_LON
+                  } == true
+            },
+            eq(SetOptions.merge()))
   }
 
   @Test
@@ -111,9 +115,10 @@ class PresenceApiTest {
         auth = mockAuth)
 
     // Then: document set is called with BREAK mode
-    verify(mockDocument).set(argThat<Map<String, Any>> { map ->
-      map["mode"] == FriendMode.BREAK.name
-    }, eq(SetOptions.merge()))
+    verify(mockDocument)
+        .set(
+            argThat<Map<String, Any>> { map -> map["mode"] == FriendMode.BREAK.name },
+            eq(SetOptions.merge()))
   }
 
   @Test
@@ -133,9 +138,10 @@ class PresenceApiTest {
         auth = mockAuth)
 
     // Then: document set is called with IDLE mode
-    verify(mockDocument).set(argThat<Map<String, Any>> { map ->
-      map["mode"] == FriendMode.IDLE.name
-    }, eq(SetOptions.merge()))
+    verify(mockDocument)
+        .set(
+            argThat<Map<String, Any>> { map -> map["mode"] == FriendMode.IDLE.name },
+            eq(SetOptions.merge()))
   }
 
   // ======================== ensureMyProfile Tests ========================
@@ -172,21 +178,25 @@ class PresenceApiTest {
         .thenReturn(Tasks.forResult(null))
 
     // When: ensure profile
-    val result = ensureMyProfile(
-        name = TEST_NAME,
-        mode = FriendMode.STUDY,
-        lat = TEST_LAT,
-        lon = TEST_LON,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = TEST_NAME,
+            mode = FriendMode.STUDY,
+            lat = TEST_LAT,
+            lon = TEST_LON,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: document is created and returns true
     assertTrue(result)
-    verify(mockDocument).set(argThat<Map<String, Any>> { map ->
-      map["name"] == TEST_NAME &&
-          map["mode"] == FriendMode.STUDY.name &&
-          (map["location"] as? GeoPoint) != null
-    }, eq(SetOptions.merge()))
+    verify(mockDocument)
+        .set(
+            argThat<Map<String, Any>> { map ->
+              map["name"] == TEST_NAME &&
+                  map["mode"] == FriendMode.STUDY.name &&
+                  (map["location"] as? GeoPoint) != null
+            },
+            eq(SetOptions.merge()))
   }
 
   @Test
@@ -204,13 +214,14 @@ class PresenceApiTest {
         .thenReturn(Tasks.forResult(null))
 
     // When: ensure profile
-    val result = ensureMyProfile(
-        name = TEST_NAME,
-        mode = FriendMode.STUDY,
-        lat = TEST_LAT,
-        lon = TEST_LON,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = TEST_NAME,
+            mode = FriendMode.STUDY,
+            lat = TEST_LAT,
+            lon = TEST_LON,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: document is updated and returns true
     assertTrue(result)
@@ -232,13 +243,14 @@ class PresenceApiTest {
         .thenReturn(Tasks.forResult(null))
 
     // When: ensure profile
-    val result = ensureMyProfile(
-        name = TEST_NAME,
-        mode = FriendMode.STUDY,
-        lat = TEST_LAT,
-        lon = TEST_LON,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = TEST_NAME,
+            mode = FriendMode.STUDY,
+            lat = TEST_LAT,
+            lon = TEST_LON,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: document is updated and returns true
     assertTrue(result)
@@ -260,13 +272,14 @@ class PresenceApiTest {
         .thenReturn(Tasks.forResult(null))
 
     // When: ensure profile
-    val result = ensureMyProfile(
-        name = TEST_NAME,
-        mode = FriendMode.STUDY,
-        lat = TEST_LAT,
-        lon = TEST_LON,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = TEST_NAME,
+            mode = FriendMode.STUDY,
+            lat = TEST_LAT,
+            lon = TEST_LON,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: document is updated and returns true
     assertTrue(result)
@@ -286,13 +299,14 @@ class PresenceApiTest {
     whenever(mockDocument.get()).thenReturn(Tasks.forResult(mockSnapshot))
 
     // When: ensure profile
-    val result = ensureMyProfile(
-        name = TEST_NAME,
-        mode = FriendMode.STUDY,
-        lat = TEST_LAT,
-        lon = TEST_LON,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = TEST_NAME,
+            mode = FriendMode.STUDY,
+            lat = TEST_LAT,
+            lon = TEST_LON,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: no write needed, returns false
     assertFalse(result)
@@ -314,13 +328,14 @@ class PresenceApiTest {
         .thenReturn(Tasks.forResult(null))
 
     // When: ensure profile
-    val result = ensureMyProfile(
-        name = TEST_NAME,
-        mode = FriendMode.STUDY,
-        lat = TEST_LAT,
-        lon = TEST_LON,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = TEST_NAME,
+            mode = FriendMode.STUDY,
+            lat = TEST_LAT,
+            lon = TEST_LON,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: document is updated (blank name treated as missing)
     assertTrue(result)
@@ -342,13 +357,14 @@ class PresenceApiTest {
         .thenReturn(Tasks.forResult(null))
 
     // When: ensure profile
-    val result = ensureMyProfile(
-        name = TEST_NAME,
-        mode = FriendMode.STUDY,
-        lat = TEST_LAT,
-        lon = TEST_LON,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = TEST_NAME,
+            mode = FriendMode.STUDY,
+            lat = TEST_LAT,
+            lon = TEST_LON,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: document is updated (blank mode treated as missing)
     assertTrue(result)
@@ -367,24 +383,28 @@ class PresenceApiTest {
         .thenReturn(Tasks.forResult(null))
 
     // When: ensure profile with BREAK mode
-    val result = ensureMyProfile(
-        name = "John Doe",
-        mode = FriendMode.BREAK,
-        lat = 47.0,
-        lon = 8.0,
-        db = mockDb,
-        auth = mockAuth)
+    val result =
+        ensureMyProfile(
+            name = "John Doe",
+            mode = FriendMode.BREAK,
+            lat = 47.0,
+            lon = 8.0,
+            db = mockDb,
+            auth = mockAuth)
 
     // Then: verify all fields are set correctly
     assertTrue(result)
-    verify(mockDocument).set(argThat<Map<String, Any>> { map ->
-      map["name"] == "John Doe" &&
-          map["mode"] == FriendMode.BREAK.name &&
-          (map["location"] as? GeoPoint)?.let {
-            it.latitude == 47.0 && it.longitude == 8.0
-          } == true &&
-          map.containsKey("createdOrEnsuredAt")
-    }, eq(SetOptions.merge()))
+    verify(mockDocument)
+        .set(
+            argThat<Map<String, Any>> { map ->
+              map["name"] == "John Doe" &&
+                  map["mode"] == FriendMode.BREAK.name &&
+                  (map["location"] as? GeoPoint)?.let {
+                    it.latitude == 47.0 && it.longitude == 8.0
+                  } == true &&
+                  map.containsKey("createdOrEnsuredAt")
+            },
+            eq(SetOptions.merge()))
   }
 
   @Test
@@ -433,4 +453,3 @@ class PresenceApiTest {
     verify(mockCollection).document(TEST_UID)
   }
 }
-
