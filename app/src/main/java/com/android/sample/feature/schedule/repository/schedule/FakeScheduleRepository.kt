@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
+ * This class was implemented with the help of ai (ChatGPT)
+ *
  * Simple in-memory implementation of ScheduleRepository, similar in spirit to
  * FakeObjectivesRepository.
  *

@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 
 /**
- * Firestore-backed implementation of the unified ScheduleRepository.
+ * This class was implemented with the help of ai (ChatGPT) Firestore-backed implementation of the
+ * unified ScheduleRepository.
  *
  * Events are stored under: /users/{uid}/schedule/{eventId}
  * - Real-time sync via snapshot listeners

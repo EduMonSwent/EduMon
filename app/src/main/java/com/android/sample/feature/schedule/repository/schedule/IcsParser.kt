@@ -6,7 +6,6 @@ import java.time.LocalTime
 
 /** This class was implemented with the help of ai (ChatGPT) */
 object IcsParser {
-
   data class IcsClass(
       val title: String,
       val date: LocalDate,

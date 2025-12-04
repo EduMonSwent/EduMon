@@ -15,6 +15,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.util.Locale
 
+/** This class was implemented with the help of ai (ChatGPT) */
 object StudyItemMapper {
 
   fun toScheduleEvent(item: StudyItem, res: Resources): ScheduleEvent {
