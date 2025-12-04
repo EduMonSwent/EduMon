@@ -26,6 +26,7 @@ object WeekProgDailyObjTags {
 
   // Objectives section
   const val OBJECTIVES_SECTION = "OBJECTIVES_SECTION"
+  const val OBJECTIVES_HEADER = "OBJECTIVES_HEADER"
   const val OBJECTIVES_TOGGLE = "OBJECTIVES_TOGGLE"
   const val OBJECTIVES_EMPTY = "OBJECTIVES_EMPTY"
   const val OBJECTIVES_SHOW_ALL_BUTTON = "OBJECTIVES_SHOW_ALL_BUTTON"
@@ -33,6 +34,7 @@ object WeekProgDailyObjTags {
 
   // Objective rows prefixes (index appended)
   const val OBJECTIVE_ROW_PREFIX = "OBJECTIVE_ROW_"
+  const val OBJECTIVE_TITLE_PREFIX = "OBJECTIVE_TITLE_"
   const val OBJECTIVE_START_BUTTON_PREFIX = "OBJECTIVE_START_BUTTON_"
   const val OBJECTIVE_REASON_PREFIX = "OBJECTIVE_REASON_"
 
