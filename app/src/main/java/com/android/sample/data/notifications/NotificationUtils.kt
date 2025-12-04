@@ -11,7 +11,8 @@ object NotificationUtils {
   // IDs stables pour nos notifications
   const val TEST_NOTIFICATION_ID = 1001
   const val ID_KEEP_STREAK = 1002
-  const val ID_STUDY_KICKOFF = 1003 // ✅ ajoute celui-ci
+  const val ID_STUDY_KICKOFF = 1003
+  const val ID_CAMPUS_ENTRY = 1004
 
   fun ensureChannel(ctx: Context) {
     val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

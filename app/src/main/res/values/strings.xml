@@ -312,6 +312,7 @@
     <string name="study_together_no_friends_yet">No friends yet</string>
 
     <string name="campus_entry_title">Welcome to campus</string>
+    <string name="campus_entry_text">You have arrived on campus</string>
     <string name="campus_entry_toggle_title">Campus entry notifications</string>
     <string name="campus_entry_toggle_subtitle">Notify when you arrive on campus (every entry)</string>
 
