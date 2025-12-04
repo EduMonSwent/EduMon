@@ -38,7 +38,7 @@ data class UserProfile(
     val accessories: List<String> = emptyList(),
     val studyStats: StudyStats =
         StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL),
-    val lastRewardedLevel: Int = 0
+    val lastRewardedLevel: Int = 1
 ) {
   companion object {
     const val DEFAULT_NAME = "Alex"

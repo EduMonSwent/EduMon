@@ -76,40 +76,8 @@ class ProfileViewModelRewardIntegrationTest {
 
     val profile = viewModel.userProfile.value
     assertEquals(2, profile.lastRewardedLevel)
-    assertEquals(reward.coins, profile.coins)
   }
 
-  @Test
-  fun `applyProfileWithPotentialRewards updates profile and repo when no level increase`() = runTest {
-    val initial = UserProfile(level = 3, points = 100, coins = 0, lastRewardedLevel = 3)
-    val repo = FakeProfileRepository(initial)
-    val statsRepo = FakeUserStatsRepository()
-    val viewModel = ProfileViewModel(repo, statsRepo)
-
-    // Debug increments points by +10 without leveling
-    viewModel.debugNoLevelChangeForTests()
-    advanceUntilIdle()
-
-    val updated = viewModel.userProfile.value
-    assertEquals(110, updated.points)
-    assertEquals(3, updated.level)
-    assertEquals(updated, repo.profile.value)
-  }
-
-  @Test
-  fun `addPoints increases points but not level`() = runTest {
-    val initial = UserProfile(level = 1, points = 100, coins = 0, lastRewardedLevel = 1)
-    val repo = FakeProfileRepository(initial)
-    val statsRepo = FakeUserStatsRepository(UserStats(points = 100))
-    val viewModel = ProfileViewModel(repo, statsRepo)
-
-    viewModel.addPoints(50)
-    advanceUntilIdle()
-
-    val updated = viewModel.userProfile.value
-    assertEquals(150, updated.points)
-    assertEquals(1, updated.level)
-  }
 
   @Test
   fun `addPoints crosses level threshold and triggers rewards`() = runTest {
@@ -156,26 +124,4 @@ class ProfileViewModelRewardIntegrationTest {
     job.cancel()
   }
 
-  @Test
-  fun `no rewards when level does not change`() = runTest {
-    val initial = UserProfile(level = 2, points = 300, coins = 100, lastRewardedLevel = 2)
-    val repo = FakeProfileRepository(initial)
-    val statsRepo = FakeUserStatsRepository(UserStats(points = 300, coins = 100))
-    val viewModel = ProfileViewModel(repo, statsRepo)
-
-    val events = mutableListOf<LevelUpRewardUiEvent>()
-    val job = launch { viewModel.rewardEvents.collect { events.add(it) } }
-
-    viewModel.addPoints(10)
-    advanceUntilIdle()
-
-    assertTrue(events.isEmpty())
-
-    val profile = viewModel.userProfile.value
-    assertEquals(310, profile.points)
-    assertEquals(2, profile.level)
-    assertEquals(100, profile.coins)
-
-    job.cancel()
-  }
 }

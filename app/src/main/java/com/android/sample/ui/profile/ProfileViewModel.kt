@@ -262,11 +262,7 @@ class ProfileViewModel(
     applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
   }
 
-  fun debugNoLevelChangeForTests() {
-    applyProfileWithPotentialRewards { current -> current.copy(points = current.points + 10) }
-  }
-
-    private fun syncProfileWithStats(stats: UserStats) {
+    fun syncProfileWithStats(stats: UserStats) {
         val old = _userProfile.value
 
         val newPoints = stats.points

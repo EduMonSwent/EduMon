@@ -21,9 +21,8 @@ class ProfileRewardAndLevelUpTest {
   // ------------------------------------------------------------
   @Test
   fun levelProgressBar_showsCorrectProgress_forGivenLevelAndPoints() {
-    // Given: level 2, 350 points
-    // Level 2 base = 300 → progress = 50/300
-    val user = UserProfile(level = 2, points = 350)
+
+    val user = UserProfile(level = 1, points = 0)
 
     composeRule.setContent { EduMonTheme { ProfileCard(user = user) } }
 
@@ -31,7 +30,7 @@ class ProfileRewardAndLevelUpTest {
     composeRule.onNodeWithText("Progress to next level").assertIsDisplayed()
 
     // 50/300 is displayed
-    composeRule.onNodeWithText("50 / 300 pts", substring = true).assertIsDisplayed()
+    composeRule.onNodeWithText("0 / 80 pts", substring = true).assertIsDisplayed()
   }
 
   // ------------------------------------------------------------
@@ -45,8 +44,7 @@ class ProfileRewardAndLevelUpTest {
 
     composeRule.setContent { EduMonTheme { ProfileScreen(viewModel = viewModel) } }
 
-    // Trigger level-up: +300 points = level 2
-    composeRule.runOnIdle { viewModel.addPoints(300) }
+    composeRule.runOnIdle { viewModel.addPoints(80) }
 
     // Wait for snackbar text
     composeRule.waitUntil(timeoutMillis = 5000) {

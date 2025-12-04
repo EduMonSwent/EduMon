@@ -90,7 +90,7 @@ class ProfileScreenTest {
             userStatsRepository = FakeUserStatsRepository())
     composeRule.setContent { PetSection(viewModel = vm) }
 
-    composeRule.onNodeWithText("Level 5").assertExists()
+    composeRule.onNodeWithText("Level 1").assertExists()
     composeRule.onNodeWithText("90%").assertExists()
     composeRule.onNodeWithText("85%").assertExists()
     composeRule.onNodeWithText("70%").assertExists()
@@ -300,7 +300,7 @@ class ProfileScreenTest {
 
     composeRule.setContent { PetSection(viewModel = vm) }
 
-    composeRule.onNodeWithText("Level 5").assertExists()
+    composeRule.onNodeWithText("Level 1").assertExists()
   }
 
   @Test
@@ -311,6 +311,6 @@ class ProfileScreenTest {
             userStatsRepository = FakeUserStatsRepository())
 
     composeRule.setContent { PetSection(viewModel = vm) }
-    composeRule.onNodeWithText("Level 5").assertExists()
+    composeRule.onNodeWithText("Level 1").assertExists()
   }
 }
