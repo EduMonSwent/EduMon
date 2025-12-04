@@ -211,7 +211,7 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
    * Post a notification informing the user they have entered campus. Requires POST_NOTIFICATIONS
    * permission on Android 13+.
    */
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  @RequiresPermission("android.permission.POST_NOTIFICATIONS")
   private fun postCampusEntryNotification(ctx: Context) {
     NotificationUtils.ensureChannel(ctx)
 
