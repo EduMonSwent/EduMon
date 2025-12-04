@@ -148,11 +148,9 @@ fun ProfileScreen(
             contentPadding = PaddingValues(vertical = SECTION_SPACING),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
               item { PetSection(viewModel = viewModel) }
-            ///////  DEBUG
-            item {
-                DebugAddPointsButton(viewModel)
-            }
-            //////    DEBUG
+              ///////  DEBUG
+              item { DebugAddPointsButton(viewModel) }
+              //////    DEBUG
               item {
                 GlowCard {
                   Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
@@ -189,7 +187,6 @@ fun ProfileScreen(
                   }
                 }
               }
-
             }
       }
 }
@@ -584,58 +581,47 @@ fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit
 
 @Composable
 fun LevelProgressBar(level: Int, points: Int) {
-    val currentLevelBase = LevelingConfig.pointsForLevel(level)
-    val nextLevelBase = LevelingConfig.pointsForLevel(level + 1)
+  val currentLevelBase = LevelingConfig.pointsForLevel(level)
+  val nextLevelBase = LevelingConfig.pointsForLevel(level + 1)
 
-    val levelRange = (nextLevelBase - currentLevelBase).coerceAtLeast(1)
-    val rawProgressPoints = (points - currentLevelBase).coerceIn(0, levelRange)
-    val targetFraction = rawProgressPoints.toFloat() / levelRange.toFloat()
+  val levelRange = (nextLevelBase - currentLevelBase).coerceAtLeast(1)
+  val rawProgressPoints = (points - currentLevelBase).coerceIn(0, levelRange)
+  val targetFraction = rawProgressPoints.toFloat() / levelRange.toFloat()
 
-    val animatedFraction by animateFloatAsState(
-        targetValue = targetFraction,
-        animationSpec = tween(durationMillis = 600),
-        label = "levelProgressAnim"
-    )
+  val animatedFraction by
+      animateFloatAsState(
+          targetValue = targetFraction,
+          animationSpec = tween(durationMillis = 600),
+          label = "levelProgressAnim")
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text(
-            text = "Progress to next level",
-            color = TextLight.copy(alpha = 0.7f),
-            fontSize = 12.sp
-        )
+  Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+    Text(text = "Progress to next level", color = TextLight.copy(alpha = 0.7f), fontSize = 12.sp)
 
-        Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
+    Box(
+        modifier =
+            Modifier.fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(DarkCardItem)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(animatedFraction.coerceIn(0f, 1f))
-                    .fillMaxHeight()
-                    .background(AccentViolet)
-            )
+                .background(DarkCardItem)) {
+          Box(
+              modifier =
+                  Modifier.fillMaxWidth(animatedFraction.coerceIn(0f, 1f))
+                      .fillMaxHeight()
+                      .background(AccentViolet))
         }
 
-        Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
 
-        val remaining = nextLevelBase - points
+    val remaining = nextLevelBase - points
 
-        Text(
-            text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
-            color = TextLight.copy(alpha = 0.7f),
-            fontSize = 11.sp
-        )
-    }
+    Text(
+        text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
+        color = TextLight.copy(alpha = 0.7f),
+        fontSize = 11.sp)
+  }
 }
-
 
 /** Collects level-up reward events from the ViewModel and shows a snackbar for each. */
 @Composable
@@ -669,21 +655,16 @@ private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): Stri
 
 @Composable
 fun DebugAddPointsButton(viewModel: ProfileViewModel) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
+  Box(
+      modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+      contentAlignment = Alignment.Center) {
         androidx.compose.material3.Button(
             onClick = { viewModel.addPoints(20) },
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF673AB7), // purple
-                contentColor = Color.White
-            )
-        ) {
-            Text("⚡ Debug: +20 points")
-        }
-    }
+            colors =
+                androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF673AB7), // purple
+                    contentColor = Color.White)) {
+              Text("⚡ Debug: +20 points")
+            }
+      }
 }
-

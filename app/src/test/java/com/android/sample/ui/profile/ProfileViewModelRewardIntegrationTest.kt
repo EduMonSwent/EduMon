@@ -20,8 +20,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelRewardIntegrationTest {
 
-  @get:Rule
-  val mainDispatcherRule = MainDispatcherRule()
+  @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
   // Fake UserStatsRepository -----------------------------------------------
   private class FakeUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepository {
@@ -78,7 +77,6 @@ class ProfileViewModelRewardIntegrationTest {
     assertEquals(2, profile.lastRewardedLevel)
   }
 
-
   @Test
   fun `addPoints crosses level threshold and triggers rewards`() = runTest {
     val initial = UserProfile(level = 1, points = 0, coins = 0, lastRewardedLevel = 0)
@@ -123,5 +121,4 @@ class ProfileViewModelRewardIntegrationTest {
 
     job.cancel()
   }
-
 }

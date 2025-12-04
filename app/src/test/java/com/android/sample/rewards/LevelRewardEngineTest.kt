@@ -13,21 +13,20 @@ class LevelRewardEngineTest {
   private val engine = LevelRewardEngine()
 
   private fun baseProfile(
-    level: Int = 1,
-    coins: Int = 0,
-    points: Int = 0,
-    accessories: List<String> = emptyList(),
-    totalStudyMin: Int = 0,
-    lastRewardedLevel: Int = 0
+      level: Int = 1,
+      coins: Int = 0,
+      points: Int = 0,
+      accessories: List<String> = emptyList(),
+      totalStudyMin: Int = 0,
+      lastRewardedLevel: Int = 0
   ): UserProfile =
-    UserProfile(
-      level = level,
-      coins = coins,
-      points = points,
-      accessories = accessories,
-      studyStats = StudyStats(totalTimeMin = totalStudyMin, dailyGoalMin = 60),
-      lastRewardedLevel = lastRewardedLevel
-    )
+      UserProfile(
+          level = level,
+          coins = coins,
+          points = points,
+          accessories = accessories,
+          studyStats = StudyStats(totalTimeMin = totalStudyMin, dailyGoalMin = 60),
+          lastRewardedLevel = lastRewardedLevel)
 
   @Test
   fun `no level increase - returns new profile unchanged and empty summary`() {
@@ -117,11 +116,7 @@ class LevelRewardEngineTest {
 
   @Test
   fun `accessory rewards are not duplicated if already owned`() {
-    val old = baseProfile(
-      level = 1,
-      accessories = listOf("owned:hat"),
-      lastRewardedLevel = 1
-    )
+    val old = baseProfile(level = 1, accessories = listOf("owned:hat"), lastRewardedLevel = 1)
     val new = old.copy(level = 2)
 
     val result = engine.applyLevelUpRewards(old, new)
@@ -147,7 +142,7 @@ class LevelRewardEngineTest {
 
     assertEquals(listOf(5, 6, 7), summary.rewardedLevels)
 
-    val expectedCoins = (5*2) + (6*2) + (7*2)
+    val expectedCoins = (5 * 2) + (6 * 2) + (7 * 2)
     assertEquals(expectedCoins, summary.coinsGranted)
     assertEquals(expectedCoins, updated.coins)
 

@@ -53,8 +53,9 @@ class ProfileViewModel(
     viewModelScope.launch {
       userStatsRepository.start()
       userStatsRepository.stats.collect { stats ->
-          _userStats.value = stats
-          syncProfileWithStats(stats)}
+        _userStats.value = stats
+        syncProfileWithStats(stats)
+      }
     }
   }
 
@@ -72,14 +73,13 @@ class ProfileViewModel(
           GlowGold,
           VioletSoft)
 
-
   // ----- Profil LOCAL uniquement -----
   // reward engine instance
   private val rewardEngine = LevelRewardEngine()
 
   private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
   val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
-    // Accessories catalog
+  // Accessories catalog
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
@@ -219,12 +219,12 @@ class ProfileViewModel(
   fun addPoints(amount: Int) {
     if (amount <= 0) return
 
-      viewModelScope.launch {
-          // update STATS (source of truth)
-          userStatsRepository.addPoints(amount)
+    viewModelScope.launch {
+      // update STATS (source of truth)
+      userStatsRepository.addPoints(amount)
 
-          // Profile will update automatically via syncProfileWithStats()
-      }
+      // Profile will update automatically via syncProfileWithStats()
+    }
   }
 
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
@@ -257,79 +257,66 @@ class ProfileViewModel(
 
   private fun computeLevelFromPoints(points: Int): Int = levelForPoints(points)
 
-
   fun debugLevelUpForTests() {
     applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
   }
 
-    fun syncProfileWithStats(stats: UserStats) {
-        val old = _userProfile.value
+  fun syncProfileWithStats(stats: UserStats) {
+    val old = _userProfile.value
 
-        val newPoints = stats.points
-        val computedLevel = computeLevelFromPoints(newPoints)
+    val newPoints = stats.points
+    val computedLevel = computeLevelFromPoints(newPoints)
 
-        // If no level change → just sync fields and exit
-        if (computedLevel == old.level) {
-            val updated = old.copy(
-                points = newPoints,
-                coins = stats.coins,
-                streak = stats.streak,
-                studyStats = old.studyStats.copy(
-                    totalTimeMin = stats.totalStudyMinutes,
-                    dailyGoalMin = old.studyStats.dailyGoalMin
-                )
-            )
-            if (updated != old) {
-                _userProfile.value = updated
-                pushProfile(updated)
-            }
-            return
-        }
-
-        // ---- LEVEL UP DETECTED ----
-        val candidate = old.copy(
-            points = newPoints,
-            level = computedLevel
-        )
-
-        // Apply rewards
-        val result = rewardEngine.applyLevelUpRewards(old, candidate)
-        val rewardedProfile = result.updatedProfile
-
-        // If rewards include coins, push them to statsRepository
-        if (result.summary.coinsGranted > 0) {
-            viewModelScope.launch {
-                userStatsRepository.updateCoins(result.summary.coinsGranted)
-            }
-        }
-
-        // Final profile = reward result + FIRESTORE stats overlay
-        val final = rewardedProfile.copy(
-            coins = stats.coins + result.summary.coinsGranted,
-            streak = stats.streak,
-            studyStats = old.studyStats.copy(
-                totalTimeMin = stats.totalStudyMinutes,
-                dailyGoalMin = old.studyStats.dailyGoalMin
-            )
-        )
-
-        // Update profile
-        _userProfile.value = final
-        pushProfile(final)
-
-        // Emit level-up snackbar event
-        if (!result.summary.isEmpty) {
-            viewModelScope.launch {
-                _rewardEvents.emit(
-                    LevelUpRewardUiEvent.RewardsGranted(
-                        newLevel = final.level,
-                        summary = result.summary
-                    )
-                )
-            }
-        }
+    // If no level change → just sync fields and exit
+    if (computedLevel == old.level) {
+      val updated =
+          old.copy(
+              points = newPoints,
+              coins = stats.coins,
+              streak = stats.streak,
+              studyStats =
+                  old.studyStats.copy(
+                      totalTimeMin = stats.totalStudyMinutes,
+                      dailyGoalMin = old.studyStats.dailyGoalMin))
+      if (updated != old) {
+        _userProfile.value = updated
+        pushProfile(updated)
+      }
+      return
     }
 
+    // ---- LEVEL UP DETECTED ----
+    val candidate = old.copy(points = newPoints, level = computedLevel)
 
+    // Apply rewards
+    val result = rewardEngine.applyLevelUpRewards(old, candidate)
+    val rewardedProfile = result.updatedProfile
 
+    // If rewards include coins, push them to statsRepository
+    if (result.summary.coinsGranted > 0) {
+      viewModelScope.launch { userStatsRepository.updateCoins(result.summary.coinsGranted) }
+    }
+
+    // Final profile = reward result + FIRESTORE stats overlay
+    val final =
+        rewardedProfile.copy(
+            coins = stats.coins + result.summary.coinsGranted,
+            streak = stats.streak,
+            studyStats =
+                old.studyStats.copy(
+                    totalTimeMin = stats.totalStudyMinutes,
+                    dailyGoalMin = old.studyStats.dailyGoalMin))
+
+    // Update profile
+    _userProfile.value = final
+    pushProfile(final)
+
+    // Emit level-up snackbar event
+    if (!result.summary.isEmpty) {
+      viewModelScope.launch {
+        _rewardEvents.emit(
+            LevelUpRewardUiEvent.RewardsGranted(newLevel = final.level, summary = result.summary))
+      }
+    }
+  }
 }

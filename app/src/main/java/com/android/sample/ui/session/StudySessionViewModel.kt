@@ -107,7 +107,7 @@ class StudySessionViewModel(
       // Unified stats: minutes + points + streak all handled centrally
       userStatsRepository.addStudyMinutes(POMODORO_MINUTES)
       userStatsRepository.addPoints(POINTS_PER_COMPLETED_POMODORO)
-        userStatsRepository.updateCoins(COINS_PER_COMPLETED_POMODORO)
+      userStatsRepository.updateCoins(COINS_PER_COMPLETED_POMODORO)
 
       // UI stats are updated by the collector in init.
       repository.saveCompletedSession(_uiState.value)

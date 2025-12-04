@@ -73,7 +73,6 @@ class LevelRewardEngine(private val config: LevelRewardConfig = LevelRewardConfi
             coinsGranted = totalCoins,
             accessoryIdsGranted = accessoriesGranted)
 
-
     return Result(finalProfile, summary)
   }
 }

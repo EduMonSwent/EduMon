@@ -14,16 +14,13 @@ data class LevelReward(
 data class GrantedRewardsSummary(
     val rewardedLevels: List<Int> = emptyList(),
     val coinsGranted: Int = 0,
-    val accessoryIdsGranted: List<String> = emptyList()) {
+    val accessoryIdsGranted: List<String> = emptyList()
+) {
   /**
    * Returns true when this summary represents “no rewards granted”. When all of these fields are
    * empty/zero, it means the level-up resulted in no actual rewards. UI components can use this to
    * avoid showing a reward snackbar in these cases.
    */
   val isEmpty: Boolean
-    get() =
-        rewardedLevels.isEmpty() &&
-            coinsGranted == 0 &&
-            accessoryIdsGranted.isEmpty()
-
+    get() = rewardedLevels.isEmpty() && coinsGranted == 0 && accessoryIdsGranted.isEmpty()
 }

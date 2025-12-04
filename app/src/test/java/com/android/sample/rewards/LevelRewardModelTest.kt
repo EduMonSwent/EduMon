@@ -28,25 +28,23 @@ class LevelRewardModelTest {
 
   @Test
   fun `summary with levels or accessories is not empty`() {
-    val summary1 = GrantedRewardsSummary(
-      rewardedLevels = listOf(2, 3)
-    )
+    val summary1 = GrantedRewardsSummary(rewardedLevels = listOf(2, 3))
     assertFalse(summary1.isEmpty)
 
-    val summary2 = GrantedRewardsSummary(
-      accessoryIdsGranted = listOf("hat")  // level 2 reward in new config
-    )
+    val summary2 =
+        GrantedRewardsSummary(
+            accessoryIdsGranted = listOf("hat") // level 2 reward in new config
+            )
     assertFalse(summary2.isEmpty)
   }
 
-
   @Test
   fun `level reward stores its fields correctly`() {
-    val reward = LevelReward(
-      level = 4,
-      coins = 8,                   // level * 2
-      accessoryIds = listOf("glasses")
-    )
+    val reward =
+        LevelReward(
+            level = 4,
+            coins = 8, // level * 2
+            accessoryIds = listOf("glasses"))
 
     assertEquals(4, reward.level)
     assertEquals(8, reward.coins)

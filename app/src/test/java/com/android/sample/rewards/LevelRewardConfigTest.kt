@@ -12,9 +12,9 @@ class LevelRewardConfigTest {
     val r2 = LevelRewardConfig.rewardForLevel(2)
     val r5 = LevelRewardConfig.rewardForLevel(5)
 
-    assertEquals(2, r1.coins)     // 1 * 2
-    assertEquals(4, r2.coins)     // 2 * 2
-    assertEquals(10, r5.coins)    // 5 * 2
+    assertEquals(2, r1.coins) // 1 * 2
+    assertEquals(4, r2.coins) // 2 * 2
+    assertEquals(10, r5.coins) // 5 * 2
   }
 
   @Test
