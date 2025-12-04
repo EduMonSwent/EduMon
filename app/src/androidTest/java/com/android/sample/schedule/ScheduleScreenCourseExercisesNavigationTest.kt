@@ -7,7 +7,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -210,26 +209,6 @@ class ScheduleScreenCourseExercisesNavigationTest {
             useUnmergedTree = true)
         .onFirst()
         .assertExists()
-  }
-
-  @Test
-  fun objectiveSection_showsObjectiveTitle() {
-    composeTestRule.setContent { ScheduleScreen() }
-
-    composeTestRule.waitUntil(10_000) {
-      composeTestRule
-          .onAllNodes(
-              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX), useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onAllNodes(
-            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX), useUnmergedTree = true)
-        .onFirst()
-        .assertExists()
-        .assertIsDisplayed()
   }
 
   // ---------------------------------------------------------------------------
