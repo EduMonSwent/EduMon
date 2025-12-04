@@ -340,17 +340,6 @@
     <!-- Units and labels -->
     <string name="stats_unit_minutes_short">m</string>
 
-    <string name="stats_day_6_days_ago">D-6</string>
-    <string name="stats_day_5_days_ago">D-5</string>
-    <string name="stats_day_4_days_ago">D-4</string>
-    <string name="stats_day_3_days_ago">D-3</string>
-    <string name="stats_day_2_days_ago">D-2</string>
-    <string name="stats_day_1_day_ago">D-1</string>
-    <string name="stats_day_today">Today</string>
-
-    <string name="stats_goal_per_day_format">Goal/day: %1$d%2$s</string>
-    <string name="stats_footer_7days">Study minutes per day (last 7 days)</string>
-
     <!-- Legend: subject + percentage + total time -->
     <string name="stats_legend_entry_with_time">%1$s — %2$d%% (%3$s)</string>
 
