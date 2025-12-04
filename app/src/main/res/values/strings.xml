@@ -352,6 +352,58 @@
     <string-array name="ics_keywords_exam">
         <item>Horaires examinés</item>
     </string-array>
+
+    <string name="study_session_subject_label">Subject</string>
+    <string name="study_session_new_subject_placeholder">New subject</string>
+    <string name="study_session_add_subject_button">Add</string>
+
+
+    <!-- Stats screen main title -->
+    <string name="stats_title_week">Your weekly statistics</string>
+
+    <!-- Sections -->
+    <string name="stats_section_subject_distribution">Time per subject</string>
+    <string name="stats_section_progress_7_days">7-day progression</string>
+
+    <!-- Summary cards -->
+    <string name="stats_summary_total_study">Total study</string>
+    <string name="stats_summary_completed_goals">Completed goals</string>
+    <string name="stats_summary_weekly_goal">Weekly goal</string>
+
+    <!-- Units and labels -->
+    <string name="stats_unit_minutes_short">m</string>
+
+    <!-- Legend: subject + percentage + total time -->
+    <string name="stats_legend_entry_with_time">%1$s — %2$d%% (%3$s)</string>
+
+    <!-- Encouragement messages -->
+    <string name="stats_encouragement_goal_reached">Goal reached ,keep it up!</string>
+    <string name="stats_encouragement_almost_there">You are almost there! One last push 🔥</string>
+    <string name="stats_encouragement_keep_going">Nice progress, keep going.</string>
+    <string name="stats_encouragement_good_start">Well done, every minute counts.</string>
+    <string name="stats_encouragement_lets_start">Let\'go! A few minutes today and you\'re on track </string>
+
+
+    <!-- Units -->
+    <string name="stats_unit_hours_short">h</string>
+
+    <!-- X-axis labels for last 7 days -->
+    <string name="stats_label_day_minus_6">D-6</string>
+    <string name="stats_label_day_minus_5">D-5</string>
+    <string name="stats_label_day_minus_4">D-4</string>
+    <string name="stats_label_day_minus_3">D-3</string>
+    <string name="stats_label_day_minus_2">D-2</string>
+    <string name="stats_label_day_minus_1">D-1</string>
+    <string name="stats_label_today">Today</string>
+
+    <!-- Caption under the bar chart -->
+    <string name="stats_bar_chart_caption">Study minutes per day (last 7 days)</string>
+
+    <!-- Goal line label -->
+    <string name="stats_goal_per_day_format">Goal/day: %1$d%2$s</string>
+
+
+
     <!-- Intro -->
     <string name="tap_to_start">Tap to Start</string>
     <string name="onboarding_default_player_name">Player</string>

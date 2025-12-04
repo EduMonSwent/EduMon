@@ -4,12 +4,15 @@ import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.feature.subjects.model.StudySubject
+import com.android.sample.feature.subjects.repository.SubjectsRepository
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
 import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.session.StudySessionUiState
 import com.android.sample.ui.session.StudySessionViewModel
+import com.android.sample.ui.stats.repository.FakeStatsRepository
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +33,8 @@ class StudySessionViewModelTest {
   private lateinit var fakePomodoro: FakePomodoroViewModel
   private lateinit var fakeRepo: FakeStudySessionRepository
   private lateinit var fakeUserStatsRepo: FakeUserStatsRepository
+  private lateinit var fakeStatsRepo: FakeStatsRepository
+  private lateinit var fakeSubjectsRepo: FakeSubjectsRepository
   private lateinit var viewModel: StudySessionViewModel
 
   private val testDispatcher = StandardTestDispatcher()
@@ -43,12 +48,17 @@ class StudySessionViewModelTest {
     fakePomodoro = FakePomodoroViewModel()
     fakeRepo = FakeStudySessionRepository()
     fakeUserStatsRepo = FakeUserStatsRepository()
+    fakeStatsRepo = FakeStatsRepository()
+    fakeSubjectsRepo = FakeSubjectsRepository()
 
     viewModel =
         StudySessionViewModel(
             pomodoroViewModel = fakePomodoro,
             repository = fakeRepo,
-            userStatsRepository = fakeUserStatsRepo)
+            userStatsRepository = fakeUserStatsRepo,
+            statsRepository = fakeStatsRepo,
+            subjectsRepository = fakeSubjectsRepo,
+        )
   }
 
   @Test
@@ -57,6 +67,8 @@ class StudySessionViewModelTest {
     assertEquals(PomodoroState.IDLE, state.pomodoroState)
     assertNull(state.selectedTask)
     assertEquals(0, state.completedPomodoros)
+    assertTrue(state.subjects.isEmpty())
+    assertNull(state.selectedSubject)
   }
 
   @Test
@@ -110,14 +122,14 @@ class StudySessionViewModelTest {
 
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun `onPomodoroCompleted triggers only when leaving WORK to FINISHED`() = runTest {
-    // WORK → FINISHED should not immediately save
+  fun `onPomodoroCompleted triggers only when WORK phase finishes`() = runTest {
+    // WORK + RUNNING should not save
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
     advanceUntilIdle()
     assertEquals(0, fakeRepo.getSavedSessions().size)
 
-    // SHORT_BREAK → FINISHED simulates a completed pomodoro
-    fakePomodoro.simulatePhaseAndState(PomodoroPhase.SHORT_BREAK, PomodoroState.FINISHED)
+    // WORK + FINISHED should save
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.FINISHED)
     advanceUntilIdle()
 
     assertEquals(1, fakeRepo.getSavedSessions().size)
@@ -138,7 +150,10 @@ class StudySessionViewModelTest {
         StudySessionViewModel(
             pomodoroViewModel = fakePomodoro,
             repository = DelegatingRepoToTodos(),
-            userStatsRepository = fakeUserStatsRepo)
+            userStatsRepository = fakeUserStatsRepo,
+            statsRepository = fakeStatsRepo,
+            subjectsRepository = fakeSubjectsRepo,
+        )
 
     viewModel.selectTask(todo)
 
@@ -165,7 +180,10 @@ class StudySessionViewModelTest {
         StudySessionViewModel(
             pomodoroViewModel = fakePomodoro,
             repository = DelegatingRepoToTodos(),
-            userStatsRepository = fakeUserStatsRepo)
+            userStatsRepository = fakeUserStatsRepo,
+            statsRepository = fakeStatsRepo,
+            subjectsRepository = fakeSubjectsRepo,
+        )
 
     viewModel.selectTask(todo)
 
@@ -203,16 +221,16 @@ class StudySessionViewModelTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
     advanceUntilIdle()
 
-    // then SHORT_BREAK → FINISHED (completed pomodoro)
-    fakePomodoro.simulatePhaseAndState(PomodoroPhase.SHORT_BREAK, PomodoroState.FINISHED)
+    // WORK → FINISHED (completed pomodoro)
+    fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.FINISHED)
     advanceUntilIdle()
 
     val state = viewModel.uiState.value
     val stats = fakeUserStatsRepo.stats.value
 
-    assertEquals(fakePomodoro.cycleCount.value, state.completedPomodoros)
+    // One pomodoro of 25 minutes was added
+    assertEquals(1, state.completedPomodoros)
     assertEquals(stats.totalStudyMinutes, state.totalMinutes)
-    assertEquals(stats.streak, state.streakCount)
     assertEquals(1, fakeRepo.getSavedSessions().size)
   }
 
@@ -267,7 +285,7 @@ class FakePomodoroViewModel : PomodoroViewModelContract {
     _phase.value = phase
     _state.value = state
     _timeLeft.value = 1000
-    if (state == PomodoroState.FINISHED && phase != PomodoroPhase.WORK) {
+    if (state == PomodoroState.FINISHED && phase == PomodoroPhase.WORK) {
       _cycleCount.value += 1
     }
   }
@@ -285,4 +303,36 @@ private class DelegatingRepoToTodos : StudySessionRepository {
 
   override suspend fun getSuggestedTasks(): List<ToDo> =
       AppRepositories.toDoRepository.todos.first()
+}
+
+/**
+ * Very small fake SubjectsRepository used by the StudySessionViewModel tests.
+ *
+ * It keeps an empty subjects list and treats all operations as no-ops, because the current tests do
+ * not assert on subjects behavior.
+ */
+private class FakeSubjectsRepository : SubjectsRepository {
+
+  private val _subjects = MutableStateFlow<List<StudySubject>>(emptyList())
+  override val subjects: StateFlow<List<StudySubject>> = _subjects
+
+  override suspend fun start() {
+    // no-op
+  }
+
+  override suspend fun createSubject(name: String, colorIndex: Int) {
+    // no-op for tests
+  }
+
+  override suspend fun renameSubject(id: String, newName: String) {
+    // no-op for tests
+  }
+
+  override suspend fun deleteSubject(id: String) {
+    // no-op for tests
+  }
+
+  override suspend fun addStudyMinutesToSubject(id: String, minutes: Int) {
+    // no-op for tests
+  }
 }

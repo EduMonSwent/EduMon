@@ -1,5 +1,7 @@
 package com.android.sample.ui.session
 
+// This code has been written partially using A.I (LLM).
+
 import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assert
@@ -13,25 +15,64 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.feature.subjects.model.StudySubject
+import com.android.sample.feature.subjects.repository.SubjectsRepository
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.session.components.SessionStatsPanel
 import com.android.sample.ui.session.components.SessionStatsPanelTestTags
+import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.theme.SampleAppTheme
 import java.time.LocalDate
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
 // Parts of this code were written using ChatGPT and AndroidStudio Gemini tool.
+
 private class RepoWithSuggestions(private val items: List<ToDo>) : StudySessionRepository {
   override suspend fun saveCompletedSession(session: StudySessionUiState) {
     /* no-op */
   }
 
   override suspend fun getSuggestedTasks(): List<ToDo> = items
+}
+
+/**
+ * Very small fake SubjectsRepository used by the StudySessionScreen tests.
+ *
+ * It keeps an empty subjects list and treats all operations as no-ops, because these UI tests do
+ * not assert on subjects behavior.
+ */
+private class FakeSubjectsRepository : SubjectsRepository {
+
+  private val _subjects = MutableStateFlow<List<StudySubject>>(emptyList())
+  override val subjects: StateFlow<List<StudySubject>> = _subjects
+
+  override suspend fun start() {
+    // no-op
+  }
+
+  override suspend fun createSubject(name: String, colorIndex: Int) {
+    // no-op for tests
+  }
+
+  override suspend fun renameSubject(id: String, newName: String) {
+    // no-op for tests
+  }
+
+  override suspend fun deleteSubject(id: String) {
+    // no-op for tests
+  }
+
+  override suspend fun addStudyMinutesToSubject(id: String, minutes: Int) {
+    // no-op for tests
+  }
 }
 
 class StudySessionScreenTest {
@@ -47,7 +88,14 @@ class StudySessionScreenTest {
                 dueDate = LocalDate.of(2025, 1, 1),
                 priority = Priority.LOW,
                 status = Status.TODO))
-    val vm = StudySessionViewModel(repository = RepoWithSuggestions(items))
+
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(items),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(),
+        )
 
     composeTestRule.setContent {
       SampleAppTheme {
@@ -55,7 +103,9 @@ class StudySessionScreenTest {
       }
     }
     composeTestRule.waitForIdle()
+
     composeTestRule.onNodeWithTag(StudySessionTestTags.TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).assertIsDisplayed()
     composeTestRule.onNodeWithTag(StudySessionTestTags.TASK_LIST).assertIsDisplayed()
     composeTestRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertIsDisplayed()
     composeTestRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertIsDisplayed()
@@ -63,15 +113,10 @@ class StudySessionScreenTest {
 
   @Test
   fun statsPanel_displaysValuesCorrectly() {
-    // Arrange
     composeTestRule.setContent {
-      SampleAppTheme { // or MaterialTheme { ... }
-        SessionStatsPanel(pomodoros = 3, totalMinutes = 75, streak = 5)
-      }
+      SampleAppTheme { SessionStatsPanel(pomodoros = 3, totalMinutes = 75, streak = 5) }
     }
     val context = ApplicationProvider.getApplicationContext<Context>()
-
-    // Assert each stat card displays correct text
 
     // Pomodoros
     composeTestRule
@@ -106,7 +151,6 @@ class StudySessionScreenTest {
 
   @Test
   fun suggestedTasksList_displaysTasksAndHandlesSelection() {
-    // Arrange: build ToDo items (titles are what the chips render)
     val tasks =
         listOf(
             ToDo(
@@ -125,7 +169,7 @@ class StudySessionScreenTest {
                 priority = Priority.HIGH,
                 status = Status.IN_PROGRESS))
 
-    var selected = tasks[1] // preselect "Task B"
+    var selected = tasks[1]
     var lastSelectedTitle: String? = selected.title
 
     composeTestRule.setContent {
@@ -140,16 +184,13 @@ class StudySessionScreenTest {
       }
     }
 
-    // Assert: all titles are shown
     composeTestRule.onNodeWithText("Task A").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task B").assertIsDisplayed()
     composeTestRule.onNodeWithText("Task C").assertIsDisplayed()
 
-    // Act: select "Task C"
     composeTestRule.onNodeWithText("Task C").performClick()
     composeTestRule.waitForIdle()
 
-    // Assert: callback received the new selection
     assertEquals("Task C", lastSelectedTitle)
   }
 
@@ -161,7 +202,15 @@ class StudySessionScreenTest {
             dueDate = LocalDate.of(2025, 1, 1),
             priority = Priority.MEDIUM,
             status = Status.TODO)
-    val vm = StudySessionViewModel(repository = RepoWithSuggestions(listOf(fakeTask)))
+
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(listOf(fakeTask)),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(),
+        )
+
     vm.selectTask(fakeTask)
 
     composeTestRule.setContent {
@@ -174,7 +223,6 @@ class StudySessionScreenTest {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val expectedText = context.getString(R.string.selected_task_txt) + " " + fakeTask.title
 
-    // Assert the selected-task text is shown
     composeTestRule
         .onNodeWithTag(StudySessionTestTags.SELECTED_TASK)
         .assertIsDisplayed()
@@ -184,25 +232,26 @@ class StudySessionScreenTest {
   @Test
   fun deepLinkEventId_preselectsTask() {
     val target =
-        com.android.sample.data.ToDo(
+        ToDo(
             title = "Deep Linked Task",
-            priority = com.android.sample.data.Priority.MEDIUM,
-            status = com.android.sample.data.Status.TODO,
-            dueDate = java.time.LocalDate.of(2025, 1, 10))
+            priority = Priority.MEDIUM,
+            status = Status.TODO,
+            dueDate = LocalDate.of(2025, 1, 10))
+
     val customRepo =
         object : com.android.sample.repositories.ToDoRepository {
           private val local = com.android.sample.repositories.ToDoRepositoryLocal()
           override val todos = local.todos
 
-          override suspend fun add(todo: com.android.sample.data.ToDo) = local.add(todo)
+          override suspend fun add(todo: ToDo) = local.add(todo)
 
-          override suspend fun update(todo: com.android.sample.data.ToDo) = local.update(todo)
+          override suspend fun update(todo: ToDo) = local.update(todo)
 
           override suspend fun remove(id: String) = local.remove(id)
 
           override suspend fun getById(id: String) = local.getById(id)
         }
-    // Injecter la tâche
+
     kotlinx.coroutines.runBlocking { customRepo.add(target) }
     com.android.sample.repositories.ToDoRepositoryProvider.repository = customRepo
 
@@ -212,9 +261,12 @@ class StudySessionScreenTest {
                 object : StudySessionRepository {
                   override suspend fun saveCompletedSession(session: StudySessionUiState) {}
 
-                  override suspend fun getSuggestedTasks(): List<com.android.sample.data.ToDo> =
-                      listOf(target)
-                })
+                  override suspend fun getSuggestedTasks(): List<ToDo> = listOf(target)
+                },
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(),
+        )
 
     composeTestRule.setContent {
       SampleAppTheme {
