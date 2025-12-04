@@ -1,44 +1,56 @@
-// app/src/test/java/com/android/sample/rewards/LevelRewardConfigTest.kt
 package com.android.sample.rewards
 
 import com.android.sample.feature.rewards.LevelRewardConfig
 import org.junit.Assert.*
 import org.junit.Test
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
 class LevelRewardConfigTest {
 
   @Test
-  fun `config contains rewards for defined levels`() {
-    // The exact levels are from LevelRewardConfig object
-    val reward1 = LevelRewardConfig.rewardForLevel(1)
-    val reward2 = LevelRewardConfig.rewardForLevel(2)
-    val reward3 = LevelRewardConfig.rewardForLevel(3)
-    val reward4 = LevelRewardConfig.rewardForLevel(4)
-    val reward5 = LevelRewardConfig.rewardForLevel(5)
+  fun `config returns correct coin amounts`() {
+    val r1 = LevelRewardConfig.rewardForLevel(1)
+    val r2 = LevelRewardConfig.rewardForLevel(2)
+    val r5 = LevelRewardConfig.rewardForLevel(5)
 
-    assertNotNull(reward1)
-    assertNotNull(reward2)
-    assertNotNull(reward3)
-    assertNotNull(reward4)
-    assertNotNull(reward5)
-
-    // Spot-check a couple of fields to ensure mapping is correct
-    assertEquals(50, reward1!!.coins)
-    assertTrue(reward1.accessoryIds.contains("badge"))
-
-    assertEquals(75, reward2!!.coins)
-    assertTrue(reward2.accessoryIds.contains("scarf"))
-    assertEquals(50, reward2.extraPoints)
-
-    assertEquals(100, reward3!!.coins)
-    assertTrue(reward3.accessoryIds.contains("boots"))
-    assertEquals(100, reward3.extraPoints)
+    assertEquals(2, r1.coins)     // 1 * 2
+    assertEquals(4, r2.coins)     // 2 * 2
+    assertEquals(10, r5.coins)    // 5 * 2
   }
 
   @Test
-  fun `config returns null for non existing level`() {
-    val reward = LevelRewardConfig.rewardForLevel(999)
-    assertNull(reward)
+  fun `config returns correct accessories for defined levels`() {
+    val r2 = LevelRewardConfig.rewardForLevel(2)
+    val r4 = LevelRewardConfig.rewardForLevel(4)
+    val r6 = LevelRewardConfig.rewardForLevel(6)
+    val r8 = LevelRewardConfig.rewardForLevel(8)
+    val r10 = LevelRewardConfig.rewardForLevel(10)
+    val r20 = LevelRewardConfig.rewardForLevel(20)
+
+    assertEquals(listOf("hat"), r2.accessoryIds)
+    assertEquals(listOf("glasses"), r4.accessoryIds)
+    assertEquals(listOf("scarf"), r6.accessoryIds)
+    assertEquals(listOf("cape"), r8.accessoryIds)
+    assertEquals(listOf("wings"), r10.accessoryIds)
+    assertEquals(listOf("aura"), r20.accessoryIds)
+  }
+
+  @Test
+  fun `undefined levels return empty accessory list`() {
+    val r1 = LevelRewardConfig.rewardForLevel(1)
+    val r3 = LevelRewardConfig.rewardForLevel(3)
+    val r7 = LevelRewardConfig.rewardForLevel(7)
+    val r999 = LevelRewardConfig.rewardForLevel(999)
+
+    assertTrue(r1.accessoryIds.isEmpty())
+    assertTrue(r3.accessoryIds.isEmpty())
+    assertTrue(r7.accessoryIds.isEmpty())
+    assertTrue(r999.accessoryIds.isEmpty())
+  }
+
+  @Test
+  fun `rewardForLevel never returns null`() {
+    assertNotNull(LevelRewardConfig.rewardForLevel(1))
+    assertNotNull(LevelRewardConfig.rewardForLevel(250))
+    assertNotNull(LevelRewardConfig.rewardForLevel(9999))
   }
 }

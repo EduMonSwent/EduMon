@@ -46,10 +46,6 @@ class LevelRewardEngine(private val config: LevelRewardConfig = LevelRewardConfi
         profile = profile.copy(coins = profile.coins + reward.coins)
         totalCoins += reward.coins
       }
-      if (reward.extraPoints != 0) {
-        profile = profile.copy(points = profile.points + reward.extraPoints)
-        extraPoints += reward.extraPoints
-      }
 
       if (reward.accessoryIds.isNotEmpty()) {
         // Accessories list is just a list of "slot:id" strings.
@@ -75,8 +71,8 @@ class LevelRewardEngine(private val config: LevelRewardConfig = LevelRewardConfi
         GrantedRewardsSummary(
             rewardedLevels = newlyRewardedLevels,
             coinsGranted = totalCoins,
-            accessoryIdsGranted = accessoriesGranted,
-            extraPointsGranted = extraPoints)
+            accessoryIdsGranted = accessoriesGranted)
+
 
     return Result(finalProfile, summary)
   }

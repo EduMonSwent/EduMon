@@ -43,7 +43,7 @@ data class UserProfile(
   companion object {
     const val DEFAULT_NAME = "Alex"
     const val DEFAULT_EMAIL = "alex@university.edu"
-    const val DEFAULT_LEVEL = 5
+    const val DEFAULT_LEVEL = 1
     const val DEFAULT_POINTS = 1250
     const val DEFAULT_COINS = 1000
     const val DEFAULT_STREAK = 7

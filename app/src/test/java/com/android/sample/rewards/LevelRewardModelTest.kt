@@ -16,48 +16,40 @@ class LevelRewardModelTest {
     assertTrue(summary.rewardedLevels.isEmpty())
     assertEquals(0, summary.coinsGranted)
     assertTrue(summary.accessoryIdsGranted.isEmpty())
-    assertEquals(0, summary.extraPointsGranted)
   }
 
   @Test
   fun `summary with coins is not empty`() {
-    val summary = GrantedRewardsSummary(coinsGranted = 100)
+    val summary = GrantedRewardsSummary(coinsGranted = 4) // e.g. level 2 → coins=4
 
     assertFalse(summary.isEmpty)
-    assertEquals(100, summary.coinsGranted)
+    assertEquals(4, summary.coinsGranted)
   }
 
   @Test
   fun `summary with levels or accessories is not empty`() {
-    val summary1 =
-        GrantedRewardsSummary(
-            rewardedLevels = listOf(2, 3),
-        )
+    val summary1 = GrantedRewardsSummary(
+      rewardedLevels = listOf(2, 3)
+    )
     assertFalse(summary1.isEmpty)
 
-    val summary2 =
-        GrantedRewardsSummary(
-            accessoryIdsGranted = listOf("badge"),
-        )
+    val summary2 = GrantedRewardsSummary(
+      accessoryIdsGranted = listOf("hat")  // level 2 reward in new config
+    )
     assertFalse(summary2.isEmpty)
   }
 
-  @Test
-  fun `summary with extra stats is not empty`() {
-    val summary = GrantedRewardsSummary(extraPointsGranted = 50)
-
-    assertFalse(summary.isEmpty)
-    assertEquals(50, summary.extraPointsGranted)
-  }
 
   @Test
   fun `level reward stores its fields correctly`() {
-    val reward =
-        LevelReward(level = 3, coins = 100, accessoryIds = listOf("boots"), extraPoints = 200)
+    val reward = LevelReward(
+      level = 4,
+      coins = 8,                   // level * 2
+      accessoryIds = listOf("glasses")
+    )
 
-    assertEquals(3, reward.level)
-    assertEquals(100, reward.coins)
-    assertEquals(listOf("boots"), reward.accessoryIds)
-    assertEquals(200, reward.extraPoints)
+    assertEquals(4, reward.level)
+    assertEquals(8, reward.coins)
+    assertEquals(listOf("glasses"), reward.accessoryIds)
   }
 }

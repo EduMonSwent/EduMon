@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 
 private const val POMODORO_MINUTES = 25
 private const val POINTS_PER_COMPLETED_POMODORO = 10
+private const val COINS_PER_COMPLETED_POMODORO = 2
 
 data class StudySessionUiState(
     val selectedTask: Task? = null,
@@ -106,6 +107,7 @@ class StudySessionViewModel(
       // Unified stats: minutes + points + streak all handled centrally
       userStatsRepository.addStudyMinutes(POMODORO_MINUTES)
       userStatsRepository.addPoints(POINTS_PER_COMPLETED_POMODORO)
+        userStatsRepository.updateCoins(COINS_PER_COMPLETED_POMODORO)
 
       // UI stats are updated by the collector in init.
       repository.saveCompletedSession(_uiState.value)

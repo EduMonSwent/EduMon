@@ -2,6 +2,7 @@ package com.android.sample.ui.profile
 
 // This code has been written partially using A.I (LLM).
 
+import LevelingConfig.levelForPoints
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -51,7 +52,9 @@ class ProfileViewModel(
   init {
     viewModelScope.launch {
       userStatsRepository.start()
-      userStatsRepository.stats.collect { stats -> _userStats.value = stats }
+      userStatsRepository.stats.collect { stats ->
+          _userStats.value = stats
+          syncProfileWithStats(stats)}
     }
   }
 
@@ -69,10 +72,6 @@ class ProfileViewModel(
           GlowGold,
           VioletSoft)
 
-  // Accessories catalog
-  companion object {
-    const val POINTS_PER_LEVEL: Int = 300
-  }
 
   // ----- Profil LOCAL uniquement -----
   // reward engine instance
@@ -80,6 +79,7 @@ class ProfileViewModel(
 
   private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
   val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
+    // Accessories catalog
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
@@ -219,11 +219,12 @@ class ProfileViewModel(
   fun addPoints(amount: Int) {
     if (amount <= 0) return
 
-    applyProfileWithPotentialRewards { current ->
-      val newPoints = (current.points + amount).coerceAtLeast(0)
-      val newLevel = computeLevelFromPoints(newPoints)
-      current.copy(points = newPoints, level = newLevel)
-    }
+      viewModelScope.launch {
+          // update STATS (source of truth)
+          userStatsRepository.addPoints(amount)
+
+          // Profile will update automatically via syncProfileWithStats()
+      }
   }
 
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
@@ -254,10 +255,8 @@ class ProfileViewModel(
     }
   }
 
-  private fun computeLevelFromPoints(points: Int): Int {
-    if (points <= 0) return 1
-    return 1 + (points / POINTS_PER_LEVEL)
-  }
+  private fun computeLevelFromPoints(points: Int): Int = levelForPoints(points)
+
 
   fun debugLevelUpForTests() {
     applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
@@ -266,4 +265,75 @@ class ProfileViewModel(
   fun debugNoLevelChangeForTests() {
     applyProfileWithPotentialRewards { current -> current.copy(points = current.points + 10) }
   }
+
+    private fun syncProfileWithStats(stats: UserStats) {
+        val old = _userProfile.value
+
+        val newPoints = stats.points
+        val computedLevel = computeLevelFromPoints(newPoints)
+
+        // If no level change → just sync fields and exit
+        if (computedLevel == old.level) {
+            val updated = old.copy(
+                points = newPoints,
+                coins = stats.coins,
+                streak = stats.streak,
+                studyStats = old.studyStats.copy(
+                    totalTimeMin = stats.totalStudyMinutes,
+                    dailyGoalMin = old.studyStats.dailyGoalMin
+                )
+            )
+            if (updated != old) {
+                _userProfile.value = updated
+                pushProfile(updated)
+            }
+            return
+        }
+
+        // ---- LEVEL UP DETECTED ----
+        val candidate = old.copy(
+            points = newPoints,
+            level = computedLevel
+        )
+
+        // Apply rewards
+        val result = rewardEngine.applyLevelUpRewards(old, candidate)
+        val rewardedProfile = result.updatedProfile
+
+        // If rewards include coins, push them to statsRepository
+        if (result.summary.coinsGranted > 0) {
+            viewModelScope.launch {
+                userStatsRepository.updateCoins(result.summary.coinsGranted)
+            }
+        }
+
+        // Final profile = reward result + FIRESTORE stats overlay
+        val final = rewardedProfile.copy(
+            coins = stats.coins + result.summary.coinsGranted,
+            streak = stats.streak,
+            studyStats = old.studyStats.copy(
+                totalTimeMin = stats.totalStudyMinutes,
+                dailyGoalMin = old.studyStats.dailyGoalMin
+            )
+        )
+
+        // Update profile
+        _userProfile.value = final
+        pushProfile(final)
+
+        // Emit level-up snackbar event
+        if (!result.summary.isEmpty) {
+            viewModelScope.launch {
+                _rewardEvents.emit(
+                    LevelUpRewardUiEvent.RewardsGranted(
+                        newLevel = final.level,
+                        summary = result.summary
+                    )
+                )
+            }
+        }
+    }
+
+
+
 }

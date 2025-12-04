@@ -58,7 +58,6 @@ class LevelRewardEngineTest {
     assertEquals(2, updated.level)
     assertEquals(75, summary.coinsGranted)
     assertTrue(summary.accessoryIdsGranted.contains("scarf"))
-    assertEquals(50, summary.extraPointsGranted)
 
     // Profile fields updated accordingly
     assertEquals(75, updated.coins)

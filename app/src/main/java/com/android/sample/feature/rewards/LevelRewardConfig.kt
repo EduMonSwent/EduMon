@@ -6,18 +6,25 @@ package com.android.sample.feature.rewards
  * Later, we can load this from remote config / Firestore instead of hardcoding it.
  */
 object LevelRewardConfig {
-  val rewardsByLevel: Map<Int, LevelReward> =
-      listOf(
-              LevelReward(level = 1, coins = 50, accessoryIds = listOf("badge"), extraPoints = 0),
-              LevelReward(level = 2, coins = 75, accessoryIds = listOf("scarf"), extraPoints = 50),
-              LevelReward(
-                  level = 3, coins = 100, accessoryIds = listOf("boots"), extraPoints = 100),
-              LevelReward(
-                  level = 4, coins = 150, accessoryIds = listOf("armor"), extraPoints = 150),
-              LevelReward(
-                  level = 5, coins = 200, accessoryIds = listOf("rocket"), extraPoints = 200),
-          )
-          .associateBy { it.level }
+    val accessoriesByLevel: Map<Int, List<String>> =
+        mapOf(
+            2 to listOf("hat"),
+            4 to listOf("glasses"),
+            6 to listOf("scarf"),
+            8 to listOf("cape"),
+            10 to listOf("wings"),
+            20 to listOf("aura")
+        )
 
-  fun rewardForLevel(level: Int): LevelReward? = rewardsByLevel[level]
+    private fun coinsForLevel (level: Int) : Int = level * 2
+
+    fun rewardForLevel(level: Int): LevelReward {
+        val accessories = accessoriesByLevel[level] ?: emptyList()
+        val coins = coinsForLevel(level)
+        return LevelReward(
+            level = level,
+            coins = coins,
+            accessoryIds = accessories
+        )
+    }
 }
