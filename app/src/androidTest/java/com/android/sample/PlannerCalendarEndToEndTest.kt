@@ -20,7 +20,6 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repos_providors.FakeRepositoriesProvider
@@ -154,13 +153,6 @@ class HomePlannerCalendarStudyEndToEndTest {
       }
     }
 
-    // ---------- 3) HOME -> CALENDAR ----------
-    composeRule
-        .onNodeWithTag(
-            HomeTestTags.bottomTag(AppDestination.Schedule.route), useUnmergedTree = true)
-        .assertExists()
-        .performClick()
-
     composeRule.waitForIdle()
     composeRule.mainClock.advanceTimeBy(500)
     composeRule.waitForIdle()
@@ -215,12 +207,6 @@ class HomePlannerCalendarStudyEndToEndTest {
     if (hasNodeWithTag(NavigationTestTags.GO_BACK_BUTTON, useUnmergedTree = true)) {
       composeRule
           .onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON, useUnmergedTree = true)
-          .assertExists()
-          .performClick()
-    } else {
-      // Fallback to bottom navigation Home (tab-based navigation)
-      composeRule
-          .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Home.route), useUnmergedTree = true)
           .assertExists()
           .performClick()
     }

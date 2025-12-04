@@ -17,7 +17,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repos_providors.FakeRepositoriesProvider
@@ -90,13 +89,6 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     ensureHomeChildVisible(HomeTestTags.CHIP_MOOD)
     ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
 
-    // 3) HOME -> CALENDAR VIA BOTTOM NAV
-    composeRule
-        .onNodeWithTag(
-            HomeTestTags.bottomTag(AppDestination.Schedule.route), useUnmergedTree = true)
-        .assertExists()
-        .performClick()
-
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(ScheduleScreenTestTags.ROOT),
         timeoutMillis = 20_000,
@@ -139,12 +131,6 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // Back to Home from Study
     goBackToHome()
 
-    // 5) HOME -> PROFILE VIA BOTTOM NAV
-    composeRule
-        .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Profile.route), useUnmergedTree = true)
-        .assertExists()
-        .performClick()
-
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(NavigationTestTags.TOP_BAR_TITLE),
         timeoutMillis = 20_000,
@@ -156,12 +142,6 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
 
     // Back to Home
     goBackToHome()
-
-    // 6) HOME -> GAMES VIA BOTTOM NAV, THEN BACK
-    composeRule
-        .onNodeWithTag(HomeTestTags.bottomTag(AppDestination.Games.route), useUnmergedTree = true)
-        .assertExists()
-        .performClick()
 
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(NavigationTestTags.TOP_BAR_TITLE),

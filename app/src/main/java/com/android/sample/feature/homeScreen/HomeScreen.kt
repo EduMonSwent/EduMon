@@ -53,8 +53,6 @@ object HomeTestTags {
   // Drawer & bottom bar items (use route so tests can be generic)
   fun drawerTag(route: String) = "drawer_$route"
 
-  fun bottomTag(route: String) = "bottom_$route"
-
   // Cards / chips / actions
   const val TODAY_SEE_ALL = "today_see_all"
   const val CHIP_OPEN_PLANNER = "chip_open_planner"
@@ -158,35 +156,6 @@ fun EduMonHomeScreen(
 }
 
 // ---------- Components ----------
-@Composable
-private fun BottomNavBar(onNavigate: (String) -> Unit) {
-  val items =
-      listOf(
-          AppDestination.Home,
-          AppDestination.Schedule,
-          AppDestination.Study,
-          AppDestination.Profile,
-          AppDestination.Games,
-      )
-  NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-    items.forEach { item ->
-      NavigationBarItem(
-          selected = item == AppDestination.Home,
-          onClick = { onNavigate(item.route) },
-          icon = { Icon(item.icon, contentDescription = item.label) },
-          label = { Text(item.label) },
-          modifier = Modifier.testTag(HomeTestTags.bottomTag(item.route)),
-          colors =
-              NavigationBarItemDefaults.colors(
-                  indicatorColor = MaterialTheme.colorScheme.surfaceVariant,
-                  selectedIconColor = MaterialTheme.colorScheme.primary,
-                  unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f),
-                  selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                  unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f),
-              ))
-    }
-  }
-}
 
 @Composable
 fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
