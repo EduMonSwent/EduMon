@@ -11,6 +11,8 @@ import com.android.sample.feature.schedule.repository.planner.FirestorePlannerRe
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.feature.schedule.repository.schedule.FirestoreScheduleRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.feature.subjects.repository.FirestoreSubjectsRepository
+import com.android.sample.feature.subjects.repository.SubjectsRepository
 import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
@@ -30,9 +32,6 @@ import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.android.sample.feature.subjects.repository.FirestoreSubjectsRepository
-import com.android.sample.feature.subjects.repository.SubjectsRepository
-
 
 /** Firebase-backed provider with LAZY init to prevent accidental Firebase loading. */
 object FirestoreRepositoriesProvider : RepositoriesProvider {
@@ -80,7 +79,6 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val subjectsRepository: SubjectsRepository by lazy {
     FirestoreSubjectsRepository(auth, db)
   }
-
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider

@@ -53,7 +53,6 @@ interface RepositoriesProvider {
   val flashcardsRepository: FlashcardsRepository
 
   val subjectsRepository: SubjectsRepository
-
 }
 
 /**

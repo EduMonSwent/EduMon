@@ -49,7 +49,6 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val profileRepository: ProfileRepository = FakeProfileRepository()
   override val flashcardsRepository: FlashcardsRepository = InMemoryFlashcardsRepository
   override val subjectsRepository: SubjectsRepository = FakeSubjectsRepository()
-
 }
 
 @Volatile var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider
