@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -75,6 +76,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.MainActivity
 import com.android.sample.R
 import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
@@ -205,7 +207,7 @@ fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
               Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatBar("❤️", 0.9f, StatBarHeart)
+                StatBar("❤", 0.9f, StatBarHeart)
                 StatBar("💡", 0.85f, StatBarLightbulb)
                 StatBar("⚡", 0.7f, StatBarLightning)
               }
@@ -564,10 +566,16 @@ fun SettingRow(
 
 @Composable
 fun AccountActionsSection() {
+  val context = LocalContext.current
+  val activity = context as? MainActivity
+
   Column(modifier = Modifier.padding(12.dp)) {
     ActionButton(stringResource(id = R.string.account_privacy)) {}
     ActionButton(stringResource(id = R.string.account_terms)) {}
-    ActionButton(stringResource(id = R.string.account_logout), textColor = Color.Red) {}
+    ActionButton(
+        stringResource(id = R.string.account_logout),
+        textColor = Color.Red,
+        onClick = { activity?.signOutAll() })
   }
 }
 
