@@ -342,6 +342,9 @@ jobs:
           disable-animations: true
           script: |
             set -e
+            
+            # Always remove any old install (signature may differ)
+            adb uninstall "$PACKAGE" || true
 
             # Install apks on device
             adb install -t "$APP_DEBUG_APK"
