@@ -11,6 +11,8 @@ import com.android.sample.feature.schedule.repository.planner.FirestorePlannerRe
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository as PlannerRepoForPlanner
 import com.android.sample.feature.schedule.repository.schedule.FirestoreScheduleRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.feature.subjects.repository.FirestoreSubjectsRepository
+import com.android.sample.feature.subjects.repository.SubjectsRepository
 import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
@@ -73,6 +75,10 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
 
   override val profileRepository: ProfileRepository by lazy { FakeProfileRepository() }
+
+  override val subjectsRepository: SubjectsRepository by lazy {
+    FirestoreSubjectsRepository(auth, db)
+  }
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider
