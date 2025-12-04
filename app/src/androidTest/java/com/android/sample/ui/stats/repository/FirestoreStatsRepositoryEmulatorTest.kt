@@ -1,5 +1,7 @@
 package com.android.sample.ui.stats.repository
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.util.FirebaseEmulator
 import com.google.android.gms.tasks.Tasks
@@ -19,6 +21,9 @@ class FirestoreStatsRepositoryEmulatorTest {
 
   @Before
   fun setUp() = runBlocking {
+    // Must be called before accessing auth/firestore (side-effect only)
+    FirebaseEmulator.connectIfRunning()
+
     assertTrue(
         "Firebase emulators not reachable (expected UI on 4000; firestore:8080, auth:9099). " +
             "Start with: firebase emulators:start --only firestore,auth",
@@ -36,6 +41,8 @@ class FirestoreStatsRepositoryEmulatorTest {
 
   @After
   fun tearDown() = runBlocking {
+    // Ensure emulator connection is initialized before checks/clears
+    FirebaseEmulator.connectIfRunning()
     if (FirebaseEmulator.isRunning) {
       FirebaseEmulator.clearFirestoreEmulator()
       FirebaseEmulator.clearAuthEmulator()
@@ -48,17 +55,16 @@ class FirestoreStatsRepositoryEmulatorTest {
     repo.refresh()
     val first = repo.stats.value
 
-    // Defaults defined in repository
-    assertEquals(5, first.totalTimeMin)
-    assertEquals(300, first.weeklyGoalMin)
-    assertEquals(10, first.completedGoals)
+    // Defaults defined in current FirestoreStatsRepository
+    assertEquals(0, first.totalTimeMin)
+    assertEquals(0, first.weeklyGoalMin)
+    assertEquals(0, first.completedGoals)
     assertEquals(7, first.progressByDayMin.size)
-    // Course map contains known keys
-    assertTrue(first.courseTimesMin.containsKey("Analyse I"))
+    assertTrue(first.courseTimesMin.isEmpty())
   }
 
   @Test
-  fun update_overwrites_stats_in_firestore_and_local_state() = runBlocking {
+  fun update_persists_in_firestore_and_is_read_back_on_refresh() = runBlocking {
     repo.refresh()
     val initial = repo.stats.value
 
@@ -69,51 +75,56 @@ class FirestoreStatsRepositoryEmulatorTest {
             weeklyGoalMin = 350,
             courseTimesMin = initial.courseTimesMin.toMutableMap().apply { put("New Course", 20) },
             progressByDayMin =
-                initial.progressByDayMin.mapIndexed { i, v -> if (i == 0) v + 10 else v })
+                initial.progressByDayMin.mapIndexed { index, value ->
+                  if (index == 0) value + 10 else value
+                })
 
+    // Write new stats
     repo.update(updated)
 
-    // Local state updated immediately
+    // Local state is updated immediately
     assertEquals(updated, repo.stats.value)
 
-    // Refresh enforces current defaults (by design), but Firestore merge may keep extra map keys.
+    // And a subsequent refresh re-reads the same values from Firestore
     repo.refresh()
     val now = repo.stats.value
-
-    // Scalars reset to defaults
-    assertEquals(initial.totalTimeMin, now.totalTimeMin)
-    assertEquals(initial.weeklyGoalMin, now.weeklyGoalMin)
-    assertEquals(initial.completedGoals, now.completedGoals)
-    assertEquals(initial.progressByDayMin, now.progressByDayMin)
-
-    // Map contains at least defaults and preserves the extra course key from the earlier update
-    assertTrue(now.courseTimesMin.keys.containsAll(initial.courseTimesMin.keys))
-    assertTrue(now.courseTimesMin.containsKey("New Course"))
+    assertEquals(updated, now)
   }
 
   @Test
-  fun refresh_replaces_with_new_defaults_when_changed() = runBlocking {
+  fun refresh_applies_external_changes_from_firestore_document() = runBlocking {
     // 1) Seed defaults
     repo.refresh()
     val defaults = repo.stats.value
 
-    // 2) Manually change Firestore document to simulate older/different defaults
+    // 2) Manually change the stats document in Firestore
     val uid = FirebaseEmulator.auth.currentUser!!.uid
-    val userDoc = FirebaseEmulator.firestore.collection("users").document(uid)
-    val payload =
-        mapOf(
-            "stats" to
-                mapOf(
-                    "totalTimeMin" to 0,
-                    "weeklyGoalMin" to 100,
-                    "completedGoals" to 0,
-                    "courseTimesMin" to emptyMap<String, Int>(),
-                    "progressByDayMin" to List(7) { 0 }))
-    Tasks.await(userDoc.set(payload, SetOptions.merge()))
+    val statsDoc =
+        FirebaseEmulator.firestore
+            .collection("users")
+            .document(uid)
+            .collection("stats")
+            .document("stats")
 
-    // 3) Next refresh should detect divergence and replace with current defaults
+    val external =
+        mapOf(
+            "totalTimeMin" to (defaults.totalTimeMin + 100),
+            "weeklyGoalMin" to 500,
+            "completedGoals" to 3,
+            "courseTimesMin" to mapOf("External Course" to 45),
+            "progressByDayMin" to List(7) { index -> if (index == 2) 30 else 0 },
+        )
+
+    Tasks.await(statsDoc.set(external, SetOptions.merge()))
+
+    // 3) Next refresh should read the modified document
     repo.refresh()
     val now = repo.stats.value
-    assertEquals(defaults, now)
+
+    assertEquals(external["totalTimeMin"], now.totalTimeMin)
+    assertEquals(external["weeklyGoalMin"], now.weeklyGoalMin)
+    assertEquals(external["completedGoals"], now.completedGoals)
+    assertEquals(7, now.progressByDayMin.size)
+    assertTrue(now.courseTimesMin.containsKey("External Course"))
   }
 }
