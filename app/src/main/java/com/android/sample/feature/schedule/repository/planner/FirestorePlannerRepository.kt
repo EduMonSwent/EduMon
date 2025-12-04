@@ -125,7 +125,6 @@ class FirestorePlannerRepository(
   }
 
   override suspend fun saveClass(classItem: Class): Result<Unit> {
-    println("DEBUG FIRESTORE SAVE CLASS: ${classItem.courseName} -> ${classItem.type}")
     val uid = auth.currentUser?.uid ?: return Result.failure(Exception("Not logged in"))
 
     return try {
