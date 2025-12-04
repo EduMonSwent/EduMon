@@ -114,7 +114,9 @@ private const val STREAK_PLURAL_THRESHOLD = 1
 private const val LEVEL_PROGRESS_ANIM_DURATION_MS = 600
 private const val LABEL_FONT_SIZE_SP = 12
 private const val VALUE_FONT_SIZE_SP = 11
-private val LEVEL_BAR_HEIGHT = 8.dp
+private const val SMALL_FONT_SIZE = 8
+
+private val LEVEL_BAR_HEIGHT = SMALL_FONT_SIZE.dp
 private val LEVEL_BAR_CORNER_RADIUS = 12.dp
 private val LABEL_ALPHA = 0.7f
 private val SPACING_SMALL = 4.dp
@@ -283,15 +285,15 @@ fun ProfileCard(user: UserProfile) {
               contentDescription = "EPFL Logo",
               modifier = Modifier.height(28.dp).width(60.dp))
         }
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Text(user.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextLight)
     Text(user.email, color = TextLight.copy(alpha = 0.7f), fontSize = 14.sp)
-    Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(SMALL_FONT_SIZE.dp)) {
       Badge(text = "Level ${user.level}", bg = AccentViolet)
       Badge(text = "${user.points} pts", bg = Color.White, textColor = AccentViolet)
     }
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     LevelProgressBar(level = user.level, points = user.points)
   }
 }
@@ -300,7 +302,7 @@ fun ProfileCard(user: UserProfile) {
 fun Badge(text: String, bg: Color, textColor: Color = Color.White) {
   Box(
       Modifier.background(bg, RoundedCornerShape(12.dp))
-          .padding(horizontal = 8.dp, vertical = 4.dp),
+          .padding(horizontal = SMALL_FONT_SIZE.dp, vertical = 4.dp),
       contentAlignment = Alignment.Center) {
         Text(text, color = textColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
       }
@@ -316,7 +318,7 @@ fun StatsCard(
         text = stringResource(id = R.string.stats_title),
         fontWeight = FontWeight.SemiBold,
         color = TextLight.copy(alpha = 0.8f))
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(SMALL_FONT_SIZE.dp))
 
     val streakUnit =
         if (stats.streak > STREAK_PLURAL_THRESHOLD) {
@@ -350,7 +352,7 @@ fun StatRow(icon: ImageVector, label: String, value: String) {
       verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically) {
           Icon(icon, contentDescription = null, tint = AccentViolet)
-          Spacer(modifier = Modifier.width(8.dp))
+          Spacer(modifier = Modifier.width(SMALL_FONT_SIZE.dp))
           Text(label, color = TextLight.copy(alpha = 0.9f))
         }
         Text(value, color = TextLight, fontWeight = FontWeight.Medium)
@@ -368,7 +370,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 
     // Accent base
     Text("Accent color", color = TextLight.copy(alpha = 0.7f), fontSize = 13.sp)
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
       viewModel.accentPalette.forEach { c ->
         val selected = user.avatarAccent == c.toArgb().toLong()
@@ -389,8 +391,8 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     }
 
     // Variations
-    Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(SMALL_FONT_SIZE.dp)) {
       AccentVariant.values().forEach { v ->
         FilterChip(
             selected = v == currentVariant,
@@ -417,7 +419,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
             text = { Text(title) })
       }
     }
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
 
     val user by viewModel.userProfile.collectAsState()
 
@@ -506,7 +508,7 @@ fun SettingsCard(
         stringResource(id = R.string.settings_title),
         color = TextLight.copy(alpha = 0.8f),
         fontWeight = FontWeight.SemiBold)
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(SMALL_FONT_SIZE.dp))
 
     // --- Location toggle ---
     SettingRow(
@@ -577,6 +579,8 @@ fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit
       }
 }
 
+private const val PROGRESS_TO_NEXT_LEVEL = "Progress to next level"
+
 @Composable
 fun LevelProgressBar(level: Int, points: Int) {
   val currentLevelBase = LevelingConfig.pointsForLevel(level)
@@ -593,14 +597,14 @@ fun LevelProgressBar(level: Int, points: Int) {
           label = "levelProgressAnim")
 
   Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-    Text(text = "Progress to next level", color = TextLight.copy(alpha = 0.7f), fontSize = 12.sp)
+    Text(text = PROGRESS_TO_NEXT_LEVEL, color = TextLight.copy(alpha = 0.7f), fontSize = 12.sp)
 
     Spacer(Modifier.height(4.dp))
 
     Box(
         modifier =
             Modifier.fillMaxWidth()
-                .height(8.dp)
+                .height(SMALL_FONT_SIZE.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(DarkCardItem)) {
           Box(
