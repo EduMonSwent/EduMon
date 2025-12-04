@@ -2,9 +2,9 @@ package com.android.sample.ui.profile
 
 // This code has been written partially using A.I (LLM).
 
+import LevelingConfig.levelForPoints
 import android.content.Context
 import android.net.Uri
-import LevelingConfig.levelForPoints
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
