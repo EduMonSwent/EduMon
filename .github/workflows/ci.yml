@@ -342,7 +342,9 @@ jobs:
           disable-animations: true
           script: |
             set -e
-
+            
+            adb uninstall com.android.sample || true
+            adb uninstall com.android.sample.test || true
             # Install apks on device
             adb install -t "$APP_DEBUG_APK"
             adb install "$APP_DEBUG_TEST_APK"
