@@ -6,6 +6,17 @@ import java.time.LocalTime
 
 /** This class was implemented with the help of ai (ChatGPT) */
 object IcsParser {
+  // --- ICS FIELD CONSTANTS (no magic strings) ---
+  private const val VEVENT_BEGIN = "BEGIN:VEVENT"
+  private const val VEVENT_END = "END:VEVENT"
+  private const val FIELD_SUMMARY = "SUMMARY:"
+  private const val FIELD_DTSTART = "DTSTART"
+  private const val FIELD_DTEND = "DTEND"
+  private const val FIELD_LOCATION = "LOCATION:"
+  private const val FIELD_DESCRIPTION = "DESCRIPTION:"
+  private const val FIELD_RRULE = "RRULE:"
+  private const val FIELD_CATEGORIES = "CATEGORIES:"
+
   data class IcsClass(
       val title: String,
       val date: LocalDate,
@@ -17,73 +28,78 @@ object IcsParser {
   )
 
   fun parse(input: InputStream): List<IcsClass> {
-    val rawLines = input.bufferedReader().readLines()
-
-    // Unfold ICS "folded" lines
-    val lines = mutableListOf<String>()
-    for (line in rawLines) {
-      if (line.startsWith(" ") || line.startsWith("\t")) {
-        if (lines.isNotEmpty()) {
-          lines[lines.lastIndex] += line.trimStart()
-        }
-      } else {
-        lines += line.trimEnd()
-      }
-    }
-
+    val lines = unfoldLines(input.bufferedReader().readLines())
     val events = mutableListOf<IcsClass>()
 
-    var title: String? = null
-    var dtStart: String? = null
-    var dtEnd: String? = null
-    var location: String? = null
-    var description: String? = null
-    var rrule: String? = null
-    var categories = mutableListOf<String>()
+    var state = EventState()
 
     for (line in lines) {
       when {
-        line.startsWith("BEGIN:VEVENT") -> {
-          title = null
-          dtStart = null
-          dtEnd = null
-          location = null
-          description = null
-          rrule = null
-          categories = mutableListOf()
-        }
-        line.startsWith("SUMMARY:") -> title = line.substringAfter("SUMMARY:").trim()
-        line.startsWith("DTSTART") -> dtStart = line.substringAfter(":").trim()
-        line.startsWith("DTEND") -> dtEnd = line.substringAfter(":").trim()
-        line.startsWith("LOCATION:") -> location = line.substringAfter("LOCATION:").trim()
-        line.startsWith("DESCRIPTION:") -> description = line.substringAfter("DESCRIPTION:").trim()
-        line.startsWith("RRULE:") -> rrule = line.substringAfter("RRULE:").trim()
-        line.startsWith("CATEGORIES:") -> {
-          val raw = line.removePrefix("CATEGORIES:").trim()
-          if (raw.isNotBlank()) {
-            categories.add(raw)
+        line.startsWith(VEVENT_BEGIN) -> state = resetEventState()
+        line.startsWith(VEVENT_END) -> {
+          val title = state.title
+          val start = state.dtStart
+          if (title != null && start != null) {
+            buildIcsClass(
+                    title = title,
+                    dtStart = start,
+                    dtEnd = state.dtEnd,
+                    location = state.location,
+                    description = state.description,
+                    categories = state.categories)
+                ?.let { base -> events += expandWeeklyIfNeeded(base, state.rrule) }
           }
         }
-        line.startsWith("END:VEVENT") -> {
-          if (title != null && dtStart != null) {
-            val base =
-                buildIcsClass(
-                    title = title!!,
-                    dtStart = dtStart!!,
-                    dtEnd = dtEnd,
-                    location = location,
-                    description = description,
-                    categories = categories)
-
-            if (base != null) {
-              val expanded = expandWeeklyIfNeeded(base, rrule)
-              events += expanded
-            }
-          }
-        }
+        else -> handleEventLine(line, state)
       }
     }
+
     return events
+  }
+
+  private fun unfoldLines(raw: List<String>): List<String> {
+    val result = mutableListOf<String>()
+    for (line in raw) {
+      if (line.startsWith(" ") || line.startsWith("\t")) {
+        if (result.isNotEmpty()) {
+          result[result.lastIndex] += line.trimStart()
+        }
+      } else {
+        result += line.trimEnd()
+      }
+    }
+    return result
+  }
+
+  private data class EventState(
+      var title: String? = null,
+      var dtStart: String? = null,
+      var dtEnd: String? = null,
+      var location: String? = null,
+      var description: String? = null,
+      var rrule: String? = null,
+      var categories: MutableList<String> = mutableListOf()
+  )
+
+  private fun resetEventState() = EventState()
+
+  private fun handleEventLine(line: String, state: EventState) {
+    when {
+      line.startsWith(FIELD_SUMMARY) -> state.title = line.substringAfter(FIELD_SUMMARY).trim()
+      line.startsWith(FIELD_DTSTART) -> state.dtStart = line.substringAfter(":").trim()
+      line.startsWith(FIELD_DTEND) -> state.dtEnd = line.substringAfter(":").trim()
+      line.startsWith(FIELD_LOCATION) -> state.location = line.substringAfter(FIELD_LOCATION).trim()
+      line.startsWith(FIELD_DESCRIPTION) ->
+          state.description = line.substringAfter(FIELD_DESCRIPTION).trim()
+      line.startsWith(FIELD_RRULE) -> state.rrule = line.substringAfter(FIELD_RRULE).trim()
+      line.startsWith(FIELD_CATEGORIES) -> {
+        line
+            .removePrefix(FIELD_CATEGORIES)
+            .trim()
+            .takeIf { it.isNotBlank() }
+            ?.let { state.categories.add(it) }
+      }
+    }
   }
 
   private fun buildIcsClass(

@@ -85,9 +85,6 @@ class ScheduleViewModel(
           val upcoming = deduped.filter { cls -> cls.endTime.isAfter(now) }
 
           val sorted = upcoming.sortedBy { it.startTime }
-
-          /*val allFinished =
-          sorted.isEmpty() || sorted.all { it.endTime.isBefore(LocalTime.now()) }*/
           val allFinished = deduped.all { cls -> cls.endTime.isBefore(now) }
 
           _uiState.update { it.copy(todayClasses = sorted, allClassesFinished = allFinished) }

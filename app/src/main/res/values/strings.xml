@@ -10,19 +10,9 @@
     <string name="no_activities_scheduled">No activities scheduled for today.</string>
     <string name="wellness_campus_life_title">Wellness &amp; Campus Life</string>
     <string name="wellness_campus_life_subtitle">Balance your studies with well-being!</string>
-    <string name="ai_recommendation_title">AI Study Assistant</string>
-    <string name="ai_recommendation_subtitle">Personalized Recommendation</string>
     <string name="start_studying_session">Start Studying Session</string>
-    <string name="ai_recommendation_footer">Based on your schedule and performance patterns</string>
     <string name="edumon_profile">Edumon Profile</string>
 
-    <!-- AI Recommendation Texts -->
-    <string name="ai_recommendation_none">There is no task to start!</string>
-    <string name="ai_recommendation_top">Based on your schedule, start with the following task:</string>
-    <string name="ai_recommendation_priority">as its priority is</string>
-    <string name="ai_recommendation_due_date">and it is due on</string>
-    <string name="ai_recommendation_in_progress">You already started it!</string>
-    <string name="ai_recommendation_calculus_example">Based on your schedule, start with the Calculus problem set (high priority, due tomorrow). Take a 10-minute break after 45 minutes.</string>
 
     <!-- Add Study Task Modal -->
     <string name="add_study_task_modal_title">Add Study Task</string>
