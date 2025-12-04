@@ -4,8 +4,7 @@ package com.android.sample.feature.rewards
 data class LevelReward(
     val level: Int,
     val coins: Int = 0,
-    val accessoryIds: List<String> = emptyList(),
-    val extraPoints: Int = 0
+    val accessoryIds: List<String> = emptyList()
 )
 
 /**
@@ -15,8 +14,7 @@ data class LevelReward(
 data class GrantedRewardsSummary(
     val rewardedLevels: List<Int> = emptyList(),
     val coinsGranted: Int = 0,
-    val accessoryIdsGranted: List<String> = emptyList(),
-    val extraPointsGranted: Int = 0
+    val accessoryIdsGranted: List<String> = emptyList()
 ) {
   /**
    * Returns true when this summary represents “no rewards granted”. When all of these fields are
@@ -24,9 +22,5 @@ data class GrantedRewardsSummary(
    * avoid showing a reward snackbar in these cases.
    */
   val isEmpty: Boolean
-    get() =
-        rewardedLevels.isEmpty() &&
-            coinsGranted == 0 &&
-            accessoryIdsGranted.isEmpty() &&
-            extraPointsGranted == 0
+    get() = rewardedLevels.isEmpty() && coinsGranted == 0 && accessoryIdsGranted.isEmpty()
 }

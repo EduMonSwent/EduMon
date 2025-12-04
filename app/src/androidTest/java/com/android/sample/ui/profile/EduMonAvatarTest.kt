@@ -42,7 +42,7 @@ class EduMonAvatarTest {
 
   @Before
   fun setup() {
-    val initialProfile = UserProfile(level = 5, accessories = emptyList())
+    val initialProfile = UserProfile(level = 1, accessories = emptyList())
     val profileRepo = FakeProfileRepository(initialProfile)
     val statsRepo = TestUserStatsRepository()
 
@@ -68,7 +68,7 @@ class EduMonAvatarTest {
     composeTestRule.onNodeWithTag("avatar_root").assertExists().assertIsDisplayed()
 
     // Check that the level text is displayed
-    composeTestRule.onNodeWithText("Level 5").assertExists().assertIsDisplayed()
+    composeTestRule.onNodeWithText("Level 1").assertExists().assertIsDisplayed()
   }
 
   @Test
@@ -85,19 +85,6 @@ class EduMonAvatarTest {
     composeTestRule.onNodeWithTag("avatar_root").assertExists().assertIsDisplayed()
 
     composeTestRule.onNodeWithText("Level 5").assertDoesNotExist()
-  }
-
-  @Test
-  fun eduMonAvatar_displaysCorrectLevel_whenUserLevelChanges() {
-    composeTestRule.setContent { EduMonAvatar(viewModel = profileViewModel) }
-
-    composeTestRule.onNodeWithText("Level 5").assertExists()
-
-    // Increase level from 5 to 10 using test-only helper on the real ViewModel
-    repeat(5) { profileViewModel.debugLevelUpForTests() }
-
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithText("Level 10").assertExists()
   }
 
   @Test

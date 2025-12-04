@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 
 private const val POMODORO_MINUTES = 25
 private const val POINTS_PER_COMPLETED_POMODORO = 10
+private const val COINS_PER_COMPLETED_POMODORO = 2
 private const val DAYS_IN_WEEK = 7
 private const val DEFAULT_SUBJECT_COLOR_INDEX = 0
 
@@ -133,6 +134,7 @@ class StudySessionViewModel(
       // Unified user stats: minutes + points + streak are handled centrally
       userStatsRepository.addStudyMinutes(POMODORO_MINUTES)
       userStatsRepository.addPoints(POINTS_PER_COMPLETED_POMODORO)
+      userStatsRepository.updateCoins(COINS_PER_COMPLETED_POMODORO)
 
       // Persist session snapshot if needed by the study-session feature
       repository.saveCompletedSession(_uiState.value)
