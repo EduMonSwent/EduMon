@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.sample.R
 import com.android.sample.data.Status
+import com.android.sample.feature.subjects.model.StudySubject
 import com.android.sample.repositories.ToDoRepositoryProvider
 import com.android.sample.session.ToDoBackedStudySessionRepository
 import com.android.sample.ui.pomodoro.PomodoroScreen
@@ -62,7 +63,6 @@ fun StudySessionScreen(
 ) {
   val uiState by viewModel.uiState.collectAsState()
 
-  // If a deep-linked eventId is provided, try to pre-select the corresponding task
   val scope = rememberCoroutineScope()
   androidx.compose.runtime.LaunchedEffect(eventId) {
     eventId?.let { id ->
@@ -79,117 +79,172 @@ fun StudySessionScreen(
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally) {
-          // --- Top Block
-          Column(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalAlignment = Alignment.CenterHorizontally,
-              verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                Text(
-                    text = stringResource(R.string.study_session_title),
-                    style =
-                        MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.testTag(StudySessionTestTags.TITLE))
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+      StudySessionTopContent(
+          uiState = uiState,
+          newSubjectName = newSubjectName,
+          onSubjectNameChange = setNewSubjectName,
+          onAddSubject = {
+            viewModel.createSubject(newSubjectName)
+            setNewSubjectName("")
+          },
+          onSelectSubject = viewModel::selectSubject, // StudySubject
+          onTaskSelected = viewModel::selectTask, // Task / ToDo
+          onStatusChange = viewModel::setSelectedTaskStatus,
+      )
 
-                // --- Subjects section ---
-                Column(
-                    modifier =
-                        Modifier.fillMaxWidth().testTag(StudySessionTestTags.SUBJECTS_SECTION)) {
-                      Text(
-                          text = stringResource(R.string.study_session_subject_label),
-                          style = MaterialTheme.typography.bodyMedium)
+      androidx.compose.material3.Card(
+          modifier = Modifier.fillMaxWidth().testTag(StudySessionTestTags.TIMER_SECTION),
+      ) {
+        PomodoroScreen(viewModel = pomodoroViewModel)
+      }
 
-                      Spacer(Modifier.height(SUBJECT_SECTION_SPACING_DP.dp))
+      SessionStatsPanel(
+          pomodoros = uiState.completedPomodoros,
+          totalMinutes = uiState.totalMinutes,
+          streak = uiState.streakCount,
+          modifier = Modifier.testTag(StudySessionTestTags.STATS_PANEL),
+      )
+    }
+  }
+}
 
-                      Row(
-                          modifier = Modifier.fillMaxWidth(),
-                          verticalAlignment = Alignment.CenterVertically,
-                      ) {
-                        OutlinedTextField(
-                            value = newSubjectName,
-                            onValueChange = { setNewSubjectName(it) },
-                            modifier = Modifier.weight(1f),
-                            label = {
-                              Text(
-                                  text =
-                                      stringResource(
-                                          R.string.study_session_new_subject_placeholder))
-                            })
-                        Spacer(Modifier.height(SUBJECT_TEXT_FIELD_HEIGHT_DP.dp))
-                        TextButton(
-                            onClick = {
-                              viewModel.createSubject(newSubjectName)
-                              setNewSubjectName("")
-                            }) {
-                              Text(text = stringResource(R.string.study_session_add_subject_button))
-                            }
-                      }
+@Composable
+private fun StudySessionTopContent(
+    uiState: StudySessionUiState,
+    newSubjectName: String,
+    onSubjectNameChange: (String) -> Unit,
+    onAddSubject: () -> Unit,
+    onSelectSubject: (StudySubject) -> Unit, // <-- FIXED
+    onTaskSelected: (Task) -> Unit,
+    onStatusChange: (Status) -> Unit,
+) {
+  Column(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(24.dp),
+  ) {
+    Text(
+        text = stringResource(R.string.study_session_title),
+        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+        modifier = Modifier.testTag(StudySessionTestTags.TITLE),
+    )
 
-                      Spacer(Modifier.height(SUBJECT_SECTION_SPACING_DP.dp))
+    SubjectsSection(
+        uiState = uiState,
+        newSubjectName = newSubjectName,
+        onSubjectNameChange = onSubjectNameChange,
+        onAddSubject = onAddSubject,
+        onSelectSubject = onSelectSubject, // StudySubject
+    )
 
-                      if (uiState.subjects.isNotEmpty()) {
-                        Row(
-                            horizontalArrangement =
-                                Arrangement.spacedBy(SUBJECT_CHIP_SPACING_DP.dp)) {
-                              uiState.subjects.forEach { subject ->
-                                AssistChip(
-                                    onClick = { viewModel.selectSubject(subject) },
-                                    label = { Text(subject.name) },
-                                    colors =
-                                        AssistChipDefaults.assistChipColors(
-                                            containerColor =
-                                                if (uiState.selectedSubject?.id == subject.id)
-                                                    MaterialTheme.colorScheme.primaryContainer
-                                                else MaterialTheme.colorScheme.surfaceVariant),
-                                )
-                              }
-                            }
-                      }
-                    }
+    SuggestedTasksList(
+        tasks = uiState.suggestedTasks,
+        selectedTask = uiState.selectedTask,
+        onTaskSelected = onTaskSelected,
+        modifier = Modifier.testTag(StudySessionTestTags.TASK_LIST),
+    )
 
-                // --- Suggested Tasks List ---
-                SuggestedTasksList(
-                    tasks = uiState.suggestedTasks,
-                    selectedTask = uiState.selectedTask,
-                    onTaskSelected = { viewModel.selectTask(it) },
-                    modifier = Modifier.testTag(StudySessionTestTags.TASK_LIST))
+    SelectedTaskSection(uiState = uiState, onStatusChange = onStatusChange)
+  }
+}
 
-                // --- Selected Task ---
-                uiState.selectedTask?.let { task ->
-                  Text(
-                      text = stringResource(R.string.selected_task_txt) + " " + task.title,
-                      style = MaterialTheme.typography.bodyLarge,
-                      modifier = Modifier.testTag(StudySessionTestTags.SELECTED_TASK))
-                  Spacer(Modifier.height(8.dp))
+@Composable
+private fun SubjectsSection(
+    uiState: StudySessionUiState,
+    newSubjectName: String,
+    onSubjectNameChange: (String) -> Unit,
+    onAddSubject: () -> Unit,
+    onSelectSubject: (StudySubject) -> Unit, // <-- FIXED
+) {
+  Column(
+      modifier = Modifier.fillMaxWidth().testTag(StudySessionTestTags.SUBJECTS_SECTION),
+  ) {
+    Text(
+        text = stringResource(R.string.study_session_subject_label),
+        style = MaterialTheme.typography.bodyMedium,
+    )
 
-                  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Status.values().forEach { status ->
-                      AssistChip(
-                          onClick = { viewModel.setSelectedTaskStatus(status) },
-                          label = { Text(status.name.replace('_', ' ')) },
-                          colors =
-                              AssistChipDefaults.assistChipColors(
-                                  containerColor =
-                                      if (task.status == status)
-                                          MaterialTheme.colorScheme.primaryContainer
-                                      else MaterialTheme.colorScheme.surfaceVariant))
-                    }
-                  }
-                }
-              }
+    Spacer(Modifier.height(SUBJECT_SECTION_SPACING_DP.dp))
 
-          // --- Pomodoro Timer Section ---
-          androidx.compose.material3.Card(
-              modifier = Modifier.fillMaxWidth().testTag(StudySessionTestTags.TIMER_SECTION)) {
-                PomodoroScreen(viewModel = pomodoroViewModel)
-              }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+      OutlinedTextField(
+          value = newSubjectName,
+          onValueChange = onSubjectNameChange,
+          modifier = Modifier.weight(1f),
+          label = {
+            Text(
+                text =
+                    stringResource(
+                        R.string.study_session_new_subject_placeholder,
+                    ),
+            )
+          },
+      )
+      Spacer(Modifier.height(SUBJECT_TEXT_FIELD_HEIGHT_DP.dp))
+      TextButton(onClick = onAddSubject) {
+        Text(text = stringResource(R.string.study_session_add_subject_button))
+      }
+    }
 
-          // --- Stats Panel ---
-          SessionStatsPanel(
-              pomodoros = uiState.completedPomodoros,
-              totalMinutes = uiState.totalMinutes,
-              streak = uiState.streakCount,
-              modifier = Modifier.testTag(StudySessionTestTags.STATS_PANEL))
+    Spacer(Modifier.height(SUBJECT_SECTION_SPACING_DP.dp))
+
+    if (uiState.subjects.isNotEmpty()) {
+      Row(horizontalArrangement = Arrangement.spacedBy(SUBJECT_CHIP_SPACING_DP.dp)) {
+        uiState.subjects.forEach { subject ->
+          AssistChip(
+              onClick = { onSelectSubject(subject) }, // passes StudySubject
+              label = { Text(subject.name) },
+              colors =
+                  AssistChipDefaults.assistChipColors(
+                      containerColor =
+                          if (uiState.selectedSubject?.id == subject.id) {
+                            MaterialTheme.colorScheme.primaryContainer
+                          } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                          },
+                  ),
+          )
         }
+      }
+    }
+  }
+}
+
+@Composable
+private fun SelectedTaskSection(
+    uiState: StudySessionUiState,
+    onStatusChange: (Status) -> Unit,
+) {
+  val task = uiState.selectedTask ?: return
+
+  Text(
+      text = stringResource(R.string.selected_task_txt) + " " + task.title,
+      style = MaterialTheme.typography.bodyLarge,
+      modifier = Modifier.testTag(StudySessionTestTags.SELECTED_TASK),
+  )
+
+  Spacer(Modifier.height(8.dp))
+
+  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Status.values().forEach { status ->
+      AssistChip(
+          onClick = { onStatusChange(status) },
+          label = { Text(status.name.replace('_', ' ')) },
+          colors =
+              AssistChipDefaults.assistChipColors(
+                  containerColor =
+                      if (task.status == status) {
+                        MaterialTheme.colorScheme.primaryContainer
+                      } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                      },
+              ),
+      )
+    }
   }
 }

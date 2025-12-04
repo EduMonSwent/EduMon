@@ -70,3 +70,11 @@ val IdleBlue = Color(0xFF2196F3) // Pour le mode "idle"
 val IndicatorRed = Color(0xFFFF5252)
 
 val GlowGold = Color(0xFFFFD700)
+
+// Pie chart slice colors
+val SlicePurple = Color(0xFF8B5CF6)
+val SliceGreen = Color(0xFF22C55E)
+val SliceOrange = Color(0xFFF59E0B)
+val SliceBlue = Color(0xFF3B82F6)
+val SliceRed = Color(0xFFE11D48)
+val SliceCyan = Color(0xFF06B6D4)

@@ -70,7 +70,7 @@ class FirestoreStatsRepository(
       statsDoc: com.google.firebase.firestore.DocumentReference,
   ) {
     val snap = statsDoc.get().await()
-    val raw = snap.data
+    val raw: Map<String, Any?> = snap.data?.toMap() ?: emptyMap()
 
     if (!snap.exists() || raw == null) {
       val defaults = defaultStats()

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.stringResource
@@ -30,6 +31,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.ui.stats.model.StudyStats
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
+import com.android.sample.ui.theme.SliceBlue
+import com.android.sample.ui.theme.SliceCyan
+import com.android.sample.ui.theme.SliceGreen
+import com.android.sample.ui.theme.SliceOrange
+import com.android.sample.ui.theme.SlicePurple
+import com.android.sample.ui.theme.SliceRed
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -215,12 +222,12 @@ private fun SummaryCard(title: String, value: String, modifier: Modifier = Modif
 // Existing palette
 private val SliceColors =
     listOf(
-        Color(0xFF8B5CF6),
-        Color(0xFF22C55E),
-        Color(0xFFF59E0B),
-        Color(0xFF3B82F6),
-        Color(0xFFE11D48),
-        Color(0xFF06B6D4),
+        SlicePurple,
+        SliceGreen,
+        SliceOrange,
+        SliceBlue,
+        SliceRed,
+        SliceCyan,
     )
 
 private fun buildColorMap(data: Map<String, Int>): Map<String, Color> {
@@ -316,124 +323,247 @@ private fun BarChart7Days(
     barColor: Color,
     gridColor: Color,
     axisColor: Color,
-    unitLabel: String,
+    unitLabel: String = "min",
     perDayGoal: Int? = null
 ) {
   val maxValRaw = (values.maxOrNull() ?: 0).coerceAtLeast(1)
   val step = niceStep(maxValRaw)
   val yMax = ((maxValRaw + step - 1) / step) * step
 
-  val labelsX =
-      listOf(
-          stringResource(R.string.stats_day_6_days_ago),
-          stringResource(R.string.stats_day_5_days_ago),
-          stringResource(R.string.stats_day_4_days_ago),
-          stringResource(R.string.stats_day_3_days_ago),
-          stringResource(R.string.stats_day_2_days_ago),
-          stringResource(R.string.stats_day_1_day_ago),
-          stringResource(R.string.stats_day_today),
-      )
+  val labelsX = listOf("J-6", "J-5", "J-4", "J-3", "J-2", "J-1", "Aujourd’hui")
   val todayIndex = values.lastIndex
-
-  // Precompute goal label text (must be outside Canvas)
-  val goalText: String? =
-      perDayGoal?.let { g -> stringResource(R.string.stats_goal_per_day_format, g, unitLabel) }
+  val goalColor = MaterialTheme.colorScheme.tertiary
 
   Column(modifier = modifier) {
-    val goalColor = MaterialTheme.colorScheme.tertiary
     Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
-      val leftPad = 36.dp.toPx()
-      val bottomPad = 18.dp.toPx()
-      val topPad = 8.dp.toPx()
+      val layout = createBarChartLayout()
 
-      val chartW = size.width - leftPad
-      val chartH = size.height - bottomPad - topPad
-      val origin = Offset(leftPad, size.height - bottomPad)
+      drawYAxisGrid(
+          yMax = yMax,
+          step = step,
+          gridColor = gridColor,
+          layout = layout,
+      )
 
-      val textPaint =
-          android.graphics.Paint().apply {
-            isAntiAlias = true
-            textSize = 11.dp.toPx()
-            color = android.graphics.Color.argb(180, 220, 225, 235)
-          }
-      val tickCount = (yMax / step)
-      for (i in 0..tickCount) {
-        val yVal = i * step
-        val y = origin.y - (yVal / yMax.toFloat()) * chartH
-        drawLine(
-            color = gridColor,
-            start = Offset(leftPad, y),
-            end = Offset(size.width, y),
-            strokeWidth = 1.dp.toPx())
+      drawBarsForValues(
+          values = values,
+          yMax = yMax,
+          barSpacing = barSpacing,
+          barColor = barColor,
+          gridColor = gridColor,
+          axisColor = axisColor,
+          unitLabel = unitLabel,
+          todayIndex = todayIndex,
+          layout = layout,
+      )
 
-        drawContext.canvas.nativeCanvas.drawText("$yVal", 6.dp.toPx(), y + 4.dp.toPx(), textPaint)
+      if (perDayGoal != null) {
+        drawGoalLine(
+            perDayGoal = perDayGoal,
+            yMax = yMax,
+            goalColor = goalColor,
+            unitLabel = unitLabel,
+            layout = layout,
+        )
       }
 
-      val n = values.size
-      val spacingPx = barSpacing.toPx()
-      val barWidth = (chartW - (spacingPx * (n + 1))) / n
-      values.forEachIndexed { i, v ->
-        val h = (v.coerceAtLeast(0) / yMax.toFloat()) * chartH
-        val left = leftPad + spacingPx + i * (barWidth + spacingPx)
-        val top = origin.y - h
-
-        drawRect(
-            color = gridColor,
-            topLeft = Offset(left, origin.y - chartH),
-            size = Size(barWidth, chartH))
-
-        drawRect(color = barColor, topLeft = Offset(left, top), size = Size(barWidth, h))
-
-        if (i == todayIndex) {
-          drawRect(
-              color = axisColor,
-              topLeft = Offset(left, origin.y - chartH),
-              size = Size(barWidth, chartH),
-              style = Stroke(width = 1.5.dp.toPx()))
-        }
-
-        if (v > 0) {
-          drawContext.canvas.nativeCanvas.drawText(
-              "${v}$unitLabel", left + barWidth / 2 - 12.dp.toPx(), top - 4.dp.toPx(), textPaint)
-        }
-      }
-
-      if (perDayGoal != null && goalText != null) {
-        val g = perDayGoal
-        val gy = origin.y - (g.coerceAtLeast(0) / yMax.toFloat()) * chartH
-        drawLine(
-            color = goalColor,
-            start = Offset(leftPad, gy),
-            end = Offset(size.width, gy),
-            strokeWidth = 2.dp.toPx())
-        drawContext.canvas.nativeCanvas.drawText(
-            goalText, size.width - 140.dp.toPx(), gy - 4.dp.toPx(), textPaint)
-      }
-
-      drawLine(
-          color = axisColor,
-          start = Offset(leftPad, origin.y),
-          end = Offset(size.width, origin.y),
-          strokeWidth = 1.dp.toPx())
+      drawBottomAxis(axisColor = axisColor, layout = layout)
     }
 
-    Spacer(Modifier.height(6.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-      labelsX.forEachIndexed { i, l ->
-        val tone = if (i == todayIndex) 1f else 0.7f
-        Text(
-            l,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = tone))
-      }
-    }
-
-    Spacer(Modifier.height(4.dp))
-    Text(
-        text = stringResource(R.string.stats_footer_7days),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+    BarChartDayLabels(labelsX = labelsX, todayIndex = todayIndex)
   }
+}
+
+// --- Helpers for BarChart7Days ---
+
+private data class BarChartLayout(
+    val leftPad: Float,
+    val bottomPad: Float,
+    val topPad: Float,
+    val chartWidth: Float,
+    val chartHeight: Float,
+    val origin: Offset,
+    val textPaint: android.graphics.Paint,
+)
+
+private fun DrawScope.createBarChartLayout(): BarChartLayout {
+  val leftPad = 36.dp.toPx()
+  val bottomPad = 18.dp.toPx()
+  val topPad = 8.dp.toPx()
+
+  val chartWidth = size.width - leftPad
+  val chartHeight = size.height - bottomPad - topPad
+  val origin = Offset(leftPad, size.height - bottomPad)
+
+  val paint =
+      android.graphics.Paint().apply {
+        isAntiAlias = true
+        textSize = 11.dp.toPx()
+        color = android.graphics.Color.argb(180, 220, 225, 235)
+      }
+
+  return BarChartLayout(
+      leftPad = leftPad,
+      bottomPad = bottomPad,
+      topPad = topPad,
+      chartWidth = chartWidth,
+      chartHeight = chartHeight,
+      origin = origin,
+      textPaint = paint,
+  )
+}
+
+private fun DrawScope.drawYAxisGrid(
+    yMax: Int,
+    step: Int,
+    gridColor: Color,
+    layout: BarChartLayout,
+) {
+  val tickCount = yMax / step
+  val leftPad = layout.leftPad
+  val origin = layout.origin
+  val chartHeight = layout.chartHeight
+
+  for (i in 0..tickCount) {
+    val yVal = i * step
+    val y = origin.y - (yVal / yMax.toFloat()) * chartHeight
+
+    drawLine(
+        color = gridColor,
+        start = Offset(leftPad, y),
+        end = Offset(size.width, y),
+        strokeWidth = 1.dp.toPx(),
+    )
+
+    drawContext.canvas.nativeCanvas.drawText(
+        "$yVal",
+        6.dp.toPx(),
+        y + 4.dp.toPx(),
+        layout.textPaint,
+    )
+  }
+}
+
+private fun DrawScope.drawBarsForValues(
+    values: List<Int>,
+    yMax: Int,
+    barSpacing: Dp,
+    barColor: Color,
+    gridColor: Color,
+    axisColor: Color,
+    unitLabel: String,
+    todayIndex: Int,
+    layout: BarChartLayout,
+) {
+  val n = values.size
+  if (n == 0) return
+
+  val spacingPx = barSpacing.toPx()
+  val barWidth = (layout.chartWidth - (spacingPx * (n + 1))) / n
+  val origin = layout.origin
+  val chartHeight = layout.chartHeight
+  val leftPad = layout.leftPad
+
+  values.forEachIndexed { index, value ->
+    val safeValue = value.coerceAtLeast(0)
+    val barHeight = (safeValue / yMax.toFloat()) * chartHeight
+    val left = leftPad + spacingPx + index * (barWidth + spacingPx)
+    val top = origin.y - barHeight
+
+    // Background column
+    drawRect(
+        color = gridColor,
+        topLeft = Offset(left, origin.y - chartHeight),
+        size = Size(barWidth, chartHeight),
+    )
+
+    // Actual bar
+    drawRect(
+        color = barColor,
+        topLeft = Offset(left, top),
+        size = Size(barWidth, barHeight),
+    )
+
+    if (index == todayIndex) {
+      drawRect(
+          color = axisColor,
+          topLeft = Offset(left, origin.y - chartHeight),
+          size = Size(barWidth, chartHeight),
+          style = Stroke(width = 1.5.dp.toPx()),
+      )
+    }
+
+    if (safeValue > 0) {
+      val labelX = left + barWidth / 2 - 12.dp.toPx()
+      val labelY = top - 4.dp.toPx()
+      drawContext.canvas.nativeCanvas.drawText(
+          "${safeValue}$unitLabel",
+          labelX,
+          labelY,
+          layout.textPaint,
+      )
+    }
+  }
+}
+
+private fun DrawScope.drawGoalLine(
+    perDayGoal: Int,
+    yMax: Int,
+    goalColor: Color,
+    unitLabel: String,
+    layout: BarChartLayout,
+) {
+  val origin = layout.origin
+  val chartHeight = layout.chartHeight
+  val leftPad = layout.leftPad
+
+  val clampedGoal = perDayGoal.coerceAtLeast(0)
+  val gy = origin.y - (clampedGoal / yMax.toFloat()) * chartHeight
+
+  drawLine(
+      color = goalColor,
+      start = Offset(leftPad, gy),
+      end = Offset(size.width, gy),
+      strokeWidth = 2.dp.toPx(),
+  )
+
+  drawContext.canvas.nativeCanvas.drawText(
+      "Objective per day: ${clampedGoal}$unitLabel",
+      size.width - 140.dp.toPx(),
+      gy - 4.dp.toPx(),
+      layout.textPaint,
+  )
+}
+
+private fun DrawScope.drawBottomAxis(axisColor: Color, layout: BarChartLayout) {
+  drawLine(
+      color = axisColor,
+      start = Offset(layout.leftPad, layout.origin.y),
+      end = Offset(size.width, layout.origin.y),
+      strokeWidth = 1.dp.toPx(),
+  )
+}
+
+@Composable
+private fun BarChartDayLabels(labelsX: List<String>, todayIndex: Int) {
+  Spacer(Modifier.height(6.dp))
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    labelsX.forEachIndexed { i, label ->
+      val tone = if (i == todayIndex) 1f else 0.7f
+      Text(
+          label,
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = tone),
+      )
+    }
+  }
+
+  Spacer(Modifier.height(4.dp))
+  Text(
+      "Study minutes per day (last seven days)",
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+  )
 }
 
 @Composable
