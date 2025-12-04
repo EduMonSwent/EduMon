@@ -5,8 +5,8 @@ object LevelingConfig {
   fun levelForPoints(points: Int): Int {
     if (points <= 0) return 1
 
-    val K = 20.0 // difficulty scaling: larger K = harder leveling
-    val level = sqrt(points / K)
+    val k = 20.0 // difficulty scaling: larger K = harder leveling
+    val level = sqrt(points / k)
 
     return level.toInt().coerceAtLeast(1)
   }

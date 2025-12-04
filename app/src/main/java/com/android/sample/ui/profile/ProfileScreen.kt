@@ -148,9 +148,7 @@ fun ProfileScreen(
             contentPadding = PaddingValues(vertical = SECTION_SPACING),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
               item { PetSection(viewModel = viewModel) }
-              ///////  DEBUG
-              item { DebugAddPointsButton(viewModel) }
-              //////    DEBUG
+
               item {
                 GlowCard {
                   Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
@@ -651,20 +649,4 @@ private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): Stri
       if (s.accessoryIdsGranted.size > 1) append("s")
     }
   }
-}
-
-@Composable
-fun DebugAddPointsButton(viewModel: ProfileViewModel) {
-  Box(
-      modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-      contentAlignment = Alignment.Center) {
-        androidx.compose.material3.Button(
-            onClick = { viewModel.addPoints(20) },
-            colors =
-                androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF673AB7), // purple
-                    contentColor = Color.White)) {
-              Text("⚡ Debug: +20 points")
-            }
-      }
 }

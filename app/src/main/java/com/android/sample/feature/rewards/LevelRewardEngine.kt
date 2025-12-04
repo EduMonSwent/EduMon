@@ -38,10 +38,9 @@ class LevelRewardEngine(private val config: LevelRewardConfig = LevelRewardConfi
     var profile = newProfile
     var totalCoins = 0
     val accessoriesGranted = mutableListOf<String>()
-    var extraPoints = 0
 
     newlyRewardedLevels.forEach { level ->
-      val reward = config.rewardForLevel(level) ?: return@forEach
+      val reward = config.rewardForLevel(level)
       if (reward.coins != 0) {
         profile = profile.copy(coins = profile.coins + reward.coins)
         totalCoins += reward.coins
