@@ -134,17 +134,6 @@ class HomeNavigationTests {
   }
 
   @Test
-  fun bottomBar_navigates_to_study_and_back() {
-    setContent()
-    rule.onNode(hasTestTag(HomeTestTags.bottomTag(AppDestination.Study.route))).performClick()
-    waitUntilRoute(AppDestination.Study.route)
-    assertRoute(AppDestination.Study.route)
-    assertTopBarTitle("Study")
-    tapBack()
-    assertRoute(AppDestination.Home.route)
-  }
-
-  @Test
   fun singleTop_prevents_duplicate_entries() {
     setContent()
     rule.runOnIdle {

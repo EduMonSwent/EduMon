@@ -43,7 +43,6 @@ import com.android.sample.screens.CreatureStatsCard
 import com.android.sample.ui.profile.EduMonAvatar
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.MidDarkCard
-import kotlinx.coroutines.launch
 
 private const val DAYS_PER_WEEK = 7
 
@@ -118,109 +117,43 @@ fun EduMonHomeScreen(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-  val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-  val scope = rememberCoroutineScope()
+  Column(
+      modifier
+          .fillMaxSize()
+          .verticalScroll(rememberScrollState())
+          .padding(horizontal = 16.dp, vertical = 8.dp),
+      verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CreatureHouseCard(
+            creatureResId = creatureResId,
+            level = state.creatureStats.level,
+            environmentResId = environmentResId,
+            overrideCreature = { EduMonAvatar(showLevelLabel = false) })
 
-  ModalNavigationDrawer(
-      drawerState = drawerState,
-      drawerContent = {
-        ModalDrawerSheet(
-            modifier = Modifier.verticalScroll(rememberScrollState()),
-            drawerContainerColor = MaterialTheme.colorScheme.surface,
-            drawerContentColor = MaterialTheme.colorScheme.onSurface) {
-              Spacer(Modifier.height(16.dp))
-              Text(
-                  text = "Edumon",
-                  style = MaterialTheme.typography.titleLarge,
-                  modifier = Modifier.padding(horizontal = 20.dp))
-              Text(
-                  text = "EPFL Companion",
-                  color = MaterialTheme.colorScheme.primary,
-                  modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp))
-              Spacer(Modifier.height(8.dp))
-              AppDestination.values().forEach { dest ->
-                NavigationDrawerItem(
-                    label = { Text(dest.label) },
-                    selected = dest == AppDestination.Home,
-                    onClick = { onNavigate(dest.route) },
-                    icon = { Icon(dest.icon, contentDescription = dest.label) },
-                    colors =
-                        NavigationDrawerItemDefaults.colors(
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurface,
-                            selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unselectedContainerColor = Color.Transparent,
-                            selectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unselectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    modifier =
-                        Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            .testTag(HomeTestTags.drawerTag(dest.route)))
-              }
-              Spacer(Modifier.height(8.dp))
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+              CreatureStatsCard(
+                  stats = state.creatureStats, modifier = Modifier.weight(1f).fillMaxHeight())
+              UserStatsCard(stats = state.userStats, modifier = Modifier.weight(1f).fillMaxHeight())
             }
-      }) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-              CenterAlignedTopAppBar(
-                  title = {},
-                  navigationIcon = {
-                    IconButton(
-                        onClick = { scope.launch { drawerState.open() } },
-                        modifier = Modifier.testTag(HomeTestTags.MENU_BUTTON)) {
-                          Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                        }
-                  },
-                  colors =
-                      TopAppBarDefaults.centerAlignedTopAppBarColors(
-                          containerColor = MaterialTheme.colorScheme.background,
-                          navigationIconContentColor = MaterialTheme.colorScheme.onSurface))
-            },
-            bottomBar = { BottomNavBar(onNavigate = onNavigate) }) { padding ->
-              Column(
-                  modifier
-                      .padding(padding)
-                      .fillMaxSize()
-                      .verticalScroll(rememberScrollState())
-                      .padding(horizontal = 16.dp, vertical = 8.dp),
-                  verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CreatureHouseCard(
-                        creatureResId = creatureResId,
-                        level = state.creatureStats.level,
-                        environmentResId = environmentResId,
-                        overrideCreature = { EduMonAvatar(showLevelLabel = false) })
 
-                    Row(
-                        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                          CreatureStatsCard(
-                              stats = state.creatureStats,
-                              modifier = Modifier.weight(1f).fillMaxHeight())
-                          UserStatsCard(
-                              stats = state.userStats,
-                              modifier = Modifier.weight(1f).fillMaxHeight())
-                        }
-                    AffirmationsAndRemindersCard(
-                        quote = state.quote,
-                        onOpenPlanner = { onNavigate(AppDestination.Schedule.route) },
-                        // NEW: quick entry point to Mood screen
-                        onOpenMood = { onNavigate(AppDestination.Mood.route) },
-                    )
+        AffirmationsAndRemindersCard(
+            quote = state.quote,
+            onOpenPlanner = { onNavigate(AppDestination.Schedule.route) },
+            onOpenMood = { onNavigate(AppDestination.Mood.route) },
+        )
 
-                    TodayTodosCard(
-                        todos = state.todos,
-                        onSeeAll = { onNavigate(AppDestination.Schedule.route) })
+        TodayTodosCard(
+            todos = state.todos, onSeeAll = { onNavigate(AppDestination.Schedule.route) })
 
-                    QuickActionsCard(
-                        onStudy = { onNavigate(AppDestination.Study.route) },
-                        onTakeBreak = { /* start break */},
-                        onExercise = { /* open exercise tips */},
-                        onSocial = { /* open social time */},
-                    )
-                    Spacer(Modifier.height(72.dp))
-                  }
-            }
+        QuickActionsCard(
+            onStudy = { onNavigate(AppDestination.Study.route) },
+            onTakeBreak = { /* start break */},
+            onExercise = { /* open exercise tips */},
+            onSocial = { /* open social time */},
+        )
+
+        Spacer(Modifier.height(72.dp))
       }
 }
 
