@@ -10,13 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,11 +23,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.R
 import com.android.sample.ui.stats.model.StudyStats
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
 import com.android.sample.ui.theme.AccentBlue
@@ -50,7 +46,8 @@ private const val GRID_ALPHA = 0.08f
 private const val AXIS_ALPHA = 0.2f
 private val DEFAULT_BAR_SPACING = 8.dp
 
-// --- Route: wires ViewModel and passes data to the pure UI ---
+// --- Route: ViewModel wiring -------------------------------------------------
+
 @Composable
 fun StatsRoute(viewModel: StatsViewModel = viewModel()) {
   val stats by viewModel.stats.collectAsState()
@@ -74,7 +71,8 @@ fun StatsRoute(viewModel: StatsViewModel = viewModel()) {
   )
 }
 
-// --- Pure UI screen: stateless except for local UI animations ---
+// --- Main screen -------------------------------------------------------------
+
 @Composable
 fun StatsScreen(
     stats: StudyStats,
@@ -97,7 +95,7 @@ fun StatsScreen(
               .padding(16.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            "Tes statistiques de la semaine",
+            text = stringResource(R.string.stats_title_week),
             style = MaterialTheme.typography.titleLarge,
             color = onSurf,
             fontWeight = FontWeight.Bold)
@@ -120,7 +118,10 @@ fun StatsScreen(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = cardBg)) {
               Column(Modifier.padding(16.dp)) {
-                Text("Répartition par cours", fontWeight = FontWeight.SemiBold, color = onSurf)
+                Text(
+                    text = stringResource(R.string.stats_section_subject_distribution),
+                    fontWeight = FontWeight.SemiBold,
+                    color = onSurf)
                 Spacer(Modifier.height(12.dp))
                 PieChart(
                     data = stats.courseTimesMin,
@@ -138,7 +139,10 @@ fun StatsScreen(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = cardBg)) {
               Column(Modifier.padding(16.dp)) {
-                Text("Progression sur 7 jours", fontWeight = FontWeight.SemiBold, color = onSurf)
+                Text(
+                    text = stringResource(R.string.stats_section_progress_7_days),
+                    fontWeight = FontWeight.SemiBold,
+                    color = onSurf)
                 Spacer(Modifier.height(12.dp))
                 BarChart7Days(
                     values = stats.progressByDayMin,
@@ -148,29 +152,18 @@ fun StatsScreen(
                             bar = MaterialTheme.colorScheme.primary,
                             grid = onSurf.copy(alpha = GRID_ALPHA),
                             axis = onSurf.copy(alpha = AXIS_ALPHA)),
-                    unitLabel = "m",
+                    unitLabel = stringResource(R.string.stats_unit_minutes_short),
                     perDayGoal = stats.weeklyGoalMin / DAYS_IN_WEEK)
               }
             }
 
         Spacer(Modifier.height(16.dp))
-        EncouragementCard(text = encouragement(stats), accent = MaterialTheme.colorScheme.primary)
+        EncouragementCard(
+            text = encouragementText(stats), accent = MaterialTheme.colorScheme.primary)
       }
 }
 
-// --- UI helpers & drawing utilities ---
-
-private fun encouragement(stats: StudyStats): String {
-  val ratio =
-      if (stats.weeklyGoalMin == 0) 0f else stats.totalTimeMin.toFloat() / stats.weeklyGoalMin
-  return when {
-    ratio >= 1f -> "Objectif atteint 💪 Continue sur ta lancée !"
-    ratio >= 0.75f -> "Tu y es presque ! Un dernier effort 🔥"
-    ratio >= 0.5f -> "Belle progression, continue comme ça "
-    stats.totalTimeMin > 0 -> "Bien joué, chaque minute compte 🙌"
-    else -> "C’est parti ! Quelques minutes aujourd’hui et tu seras lancé 🚀"
-  }
-}
+// --- Header / summary helpers ------------------------------------------------
 
 @Composable
 private fun ScenarioSelector(titles: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
@@ -200,16 +193,16 @@ private fun ScenarioSelector(titles: List<String>, selectedIndex: Int, onSelect:
 private fun SummaryRow(totalTimeMin: Int, completedGoals: Int, weeklyGoalMin: Int) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
     SummaryCard(
-        title = "Total d’étude",
-        value = formatMinutes(totalTimeMin),
+        title = stringResource(R.string.stats_summary_total_study),
+        value = formatMinutesLabel(totalTimeMin),
         modifier = Modifier.weight(1f))
     SummaryCard(
-        title = "Objectifs faits",
+        title = stringResource(R.string.stats_summary_completed_goals),
         value = completedGoals.toString(),
         modifier = Modifier.weight(1f))
     SummaryCard(
-        title = "Objectif semaine",
-        value = formatMinutes(weeklyGoalMin),
+        title = stringResource(R.string.stats_summary_weekly_goal),
+        value = formatMinutesLabel(weeklyGoalMin),
         modifier = Modifier.weight(1f))
   }
 }
@@ -228,7 +221,8 @@ private fun SummaryCard(title: String, value: String, modifier: Modifier = Modif
   }
 }
 
-// Use theme colors, no hardcoded Color(...)
+// --- Colors for pie chart (from theme, no hardcoded Color(...)) --------------
+
 private val SliceColors =
     listOf(
         EventViolet,
@@ -244,6 +238,8 @@ private fun buildColorMap(data: Map<String, Int>): Map<String, Color> {
   data.keys.forEachIndexed { idx, label -> map[label] = SliceColors[idx % SliceColors.size] }
   return map
 }
+
+// --- Pie chart ---------------------------------------------------------------
 
 @Composable
 private fun PieChart(
@@ -283,13 +279,17 @@ private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
         .sortedByDescending { it.value }
         .forEach { (label, value) ->
           val pct = (value * 100f / total).roundToInt()
+          val formattedTime = formatMinutesLabel(value)
+          val line =
+              stringResource(R.string.stats_legend_entry_with_time, label, pct, formattedTime)
+
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(10.dp)
                     .background(colors[label] ?: Color.LightGray, RoundedCornerShape(2.dp)))
             Spacer(Modifier.width(8.dp))
             Text(
-                "$label — $pct%",
+                line,
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis)
@@ -297,6 +297,8 @@ private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
         }
   }
 }
+
+// --- Bar chart utilities -----------------------------------------------------
 
 private fun niceStep(maxVal: Int, ticks: Int = 4): Int {
   if (maxVal <= 0) return 10
@@ -313,14 +315,12 @@ private fun niceStep(maxVal: Int, ticks: Int = 4): Int {
   return (niceBase * 10f.pow(pow)).toInt().coerceAtLeast(1)
 }
 
-// ---------------- BAR CHART (refactored for Sonar) ----------------
-
 @Composable
 private fun BarChart7Days(
     values: List<Int>,
     modifier: Modifier = Modifier,
     colors: BarColors,
-    unitLabel: String = "min",
+    unitLabel: String,
     perDayGoal: Int? = null,
     barSpacing: Dp = DEFAULT_BAR_SPACING,
 ) {
@@ -328,9 +328,21 @@ private fun BarChart7Days(
   val step = niceStep(maxValRaw)
   val yMax = ((maxValRaw + step - 1) / step) * step
 
-  val labelsX = listOf("J-6", "J-5", "J-4", "J-3", "J-2", "J-1", "Aujourd’hui")
+  val labelsX =
+      listOf(
+          stringResource(R.string.stats_label_day_minus_6),
+          stringResource(R.string.stats_label_day_minus_5),
+          stringResource(R.string.stats_label_day_minus_4),
+          stringResource(R.string.stats_label_day_minus_3),
+          stringResource(R.string.stats_label_day_minus_2),
+          stringResource(R.string.stats_label_day_minus_1),
+          stringResource(R.string.stats_label_today),
+      )
   val todayIndex = values.lastIndex
   val goalColor = MaterialTheme.colorScheme.tertiary
+
+  val goalLabel: String? =
+      perDayGoal?.let { stringResource(R.string.stats_goal_per_day_format, it, unitLabel) }
 
   Column(modifier = modifier) {
     Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
@@ -354,12 +366,12 @@ private fun BarChart7Days(
               layout = layout,
           ))
 
-      if (perDayGoal != null) {
+      if (perDayGoal != null && goalLabel != null) {
         drawGoalLine(
             perDayGoal = perDayGoal,
             yMax = yMax,
             goalColor = goalColor,
-            unitLabel = unitLabel,
+            goalLabel = goalLabel,
             layout = layout,
         )
       }
@@ -371,6 +383,8 @@ private fun BarChart7Days(
   }
 }
 
+// layout + parameter holders (all private so we do not expose internal types)
+
 private data class BarChartLayout(
     val leftPad: Float,
     val bottomPad: Float,
@@ -381,7 +395,6 @@ private data class BarChartLayout(
     val textPaint: android.graphics.Paint,
 )
 
-// make these private so they do not expose BarChartLayout outside the file
 private data class BarColors(
     val bar: Color,
     val grid: Color,
@@ -397,6 +410,8 @@ private data class BarDrawingParams(
     val colors: BarColors,
     val layout: BarChartLayout,
 )
+
+// --- DrawScope helpers -------------------------------------------------------
 
 private fun DrawScope.createBarChartLayout(): BarChartLayout {
   val leftPad = 36.dp.toPx()
@@ -516,7 +531,7 @@ private fun DrawScope.drawGoalLine(
     perDayGoal: Int,
     yMax: Int,
     goalColor: Color,
-    unitLabel: String,
+    goalLabel: String,
     layout: BarChartLayout,
 ) {
   val origin = layout.origin
@@ -534,7 +549,7 @@ private fun DrawScope.drawGoalLine(
   )
 
   drawContext.canvas.nativeCanvas.drawText(
-      "Objectif/jour: ${clampedGoal}$unitLabel",
+      goalLabel,
       size.width - 140.dp.toPx(),
       gy - 4.dp.toPx(),
       layout.textPaint,
@@ -565,9 +580,36 @@ private fun BarChartDayLabels(labelsX: List<String>, todayIndex: Int) {
 
   Spacer(Modifier.height(4.dp))
   Text(
-      "Minutes d’étude par jour (7 derniers jours)",
+      text = stringResource(R.string.stats_bar_chart_caption),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+}
+
+// --- Encouragement + formatting ----------------------------------------------
+
+@Composable
+private fun encouragementText(stats: StudyStats): String {
+  val ratio =
+      if (stats.weeklyGoalMin == 0) 0f else stats.totalTimeMin.toFloat() / stats.weeklyGoalMin
+
+  val resId =
+      when {
+        ratio >= 1f -> R.string.stats_encouragement_goal_reached
+        ratio >= 0.75f -> R.string.stats_encouragement_almost_there
+        ratio >= 0.5f -> R.string.stats_encouragement_keep_going
+        stats.totalTimeMin > 0 -> R.string.stats_encouragement_good_start
+        else -> R.string.stats_encouragement_lets_start
+      }
+  return stringResource(resId)
+}
+
+@Composable
+private fun formatMinutesLabel(totalMin: Int): String {
+  val minutesLabel = stringResource(R.string.stats_unit_minutes_short)
+  val hoursLabel = stringResource(R.string.stats_unit_hours_short)
+  val h = totalTimeHours(totalMin)
+  val m = totalMin % 60
+  return if (h > 0) "${h}$hoursLabel ${m}$minutesLabel" else "${m}$minutesLabel"
 }
 
 @Composable
@@ -581,12 +623,6 @@ private fun EncouragementCard(text: String, accent: Color) {
           Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
         }
   }
-}
-
-private fun formatMinutes(totalMin: Int): String {
-  val h = totalTimeHours(totalMin)
-  val m = totalMin % 60
-  return if (h > 0) "${h}h ${m}m" else "${m}m"
 }
 
 private fun totalTimeHours(min: Int) = min / 60
