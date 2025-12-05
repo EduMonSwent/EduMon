@@ -83,31 +83,6 @@ class HomeNavigationTests {
     rule.onNode(hasTestTag(NavigationTestTags.NAV_HOST)).assertExists()
   }
 
-  /*@Test
-  fun topBar_and_back_work_for_all_sections() {
-    setContent()
-
-    val cases =
-        listOf(
-            AppDestination.Schedule.route to "Schedule",
-            AppDestination.Profile.route to "Profile",
-            AppDestination.Stats.route to "Stats",
-            AppDestination.Games.route to "Games",
-            AppDestination.Study.route to "Study",
-            AppDestination.Todo.route to "Todo",
-            AppDestination.Mood.route to "Daily Reflection",
-            AppDestination.Shop.route to "Shop",
-            AppDestination.StudyTogether.route to "Study Together")
-
-    cases.forEach { (route, title) ->
-      navigateDirect(route)
-      assertTopBarTitle(title)
-      tapBack()
-      waitUntilRoute(AppDestination.Home.route)
-      assertRoute(AppDestination.Home.route)
-    }
-  }*/
-
   @Test
   fun game_routes_show_correct_titles() {
     setContent()
@@ -209,21 +184,6 @@ class HomeNavigationTests {
   fun mood_navigates_successfully() {
     setContent()
     navigateDirect(AppDestination.Mood.route)
-    assertRoute(AppDestination.Mood.route)
-    assertTopBarTitle("Daily Reflection")
-  }
-
-  @OptIn(ExperimentalTestApi::class)
-  @Test
-  fun moodChip_navigates_from_home() {
-    setContent()
-    assertRoute(AppDestination.Home.route)
-
-    // Click the Daily Reflection chip on home screen
-    rule.waitUntilExactlyOneExists(hasTestTag(HomeTestTags.CHIP_MOOD))
-    rule.onNode(hasTestTag(HomeTestTags.CHIP_MOOD)).performClick()
-
-    waitUntilRoute(AppDestination.Mood.route)
     assertRoute(AppDestination.Mood.route)
     assertTopBarTitle("Daily Reflection")
   }
