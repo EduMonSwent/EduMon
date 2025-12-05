@@ -7,7 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,8 +29,7 @@ class MainActivity : ComponentActivity() {
 
   private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
-  @OptIn(ExperimentalMaterial3Api::class)
-  override fun onCreate(savedInstanceState: Bundle?) {
+  override fun onCreate(savedInstanceState: Bundle?) { // <-- @OptIn removed
     super.onCreate(savedInstanceState)
 
     // Capture the intent data (deep link) if present
@@ -65,41 +64,32 @@ class MainActivity : ComponentActivity() {
           onDispose { auth.removeAuthStateListener(l) }
         }
 
-        Scaffold(
-            topBar = {
-              CenterAlignedTopAppBar(
-                  title = { Text(if (user == null) "EduMon — Connection " else "") },
-                  actions = {
-                    if (user != null) {
-                      TextButton(onClick = { signOutAll() }) { Text("Logout") }
-                    }
-                  })
-            }) { padding ->
-              Box(Modifier.fillMaxSize().padding(padding)) {
-                NavHost(
-                    navController = nav, startDestination = if (user == null) "login" else "app") {
-                      composable("login") {
-                        LoginScreen(
-                            onLoggedIn = {
-                              nav.navigate("app") {
-                                popUpTo("login") { inclusive = true }
-                                launchSingleTop = true
-                              }
-                            })
+        // ⬇ Scaffold without topBar
+        Scaffold { padding ->
+          Box(Modifier.fillMaxSize().padding(padding)) {
+            NavHost(navController = nav, startDestination = if (user == null) "login" else "app") {
+              composable("login") {
+                LoginScreen(
+                    onLoggedIn = {
+                      nav.navigate("app") {
+                        popUpTo("login") { inclusive = true }
+                        launchSingleTop = true
                       }
+                    })
+              }
 
-                      composable("app") {
-                        LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
-                        EduMonNavHost(startDestination = startRoute)
-                      }
-                    }
+              composable("app") {
+                LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
+                EduMonNavHost(startDestination = startRoute)
               }
             }
+          }
+        }
       }
     }
   }
 
-  private fun signOutAll() {
+  fun signOutAll() {
     val gso =
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))

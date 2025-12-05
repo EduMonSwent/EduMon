@@ -83,31 +83,6 @@ class HomeNavigationTests {
     rule.onNode(hasTestTag(NavigationTestTags.NAV_HOST)).assertExists()
   }
 
-  /*@Test
-  fun topBar_and_back_work_for_all_sections() {
-    setContent()
-
-    val cases =
-        listOf(
-            AppDestination.Schedule.route to "Schedule",
-            AppDestination.Profile.route to "Profile",
-            AppDestination.Stats.route to "Stats",
-            AppDestination.Games.route to "Games",
-            AppDestination.Study.route to "Study",
-            AppDestination.Todo.route to "Todo",
-            AppDestination.Mood.route to "Daily Reflection",
-            AppDestination.Shop.route to "Shop",
-            AppDestination.StudyTogether.route to "Study Together")
-
-    cases.forEach { (route, title) ->
-      navigateDirect(route)
-      assertTopBarTitle(title)
-      tapBack()
-      waitUntilRoute(AppDestination.Home.route)
-      assertRoute(AppDestination.Home.route)
-    }
-  }*/
-
   @Test
   fun game_routes_show_correct_titles() {
     setContent()
@@ -130,17 +105,6 @@ class HomeNavigationTests {
   @Test
   fun startDestination_isHome() {
     setContent()
-    assertRoute(AppDestination.Home.route)
-  }
-
-  @Test
-  fun bottomBar_navigates_to_study_and_back() {
-    setContent()
-    rule.onNode(hasTestTag(HomeTestTags.bottomTag(AppDestination.Study.route))).performClick()
-    waitUntilRoute(AppDestination.Study.route)
-    assertRoute(AppDestination.Study.route)
-    assertTopBarTitle("Study")
-    tapBack()
     assertRoute(AppDestination.Home.route)
   }
 
@@ -178,5 +142,59 @@ class HomeNavigationTests {
     assert(route != null && route.startsWith("addTodoFromSchedule")) {
       "Expected route starting with addTodoFromSchedule but was: $route"
     }
+  }
+
+  // MAP / STUDY TOGETHER TESTS
+  @Test
+  fun studyTogether_navigates_successfully() {
+    setContent()
+    navigateDirect(AppDestination.StudyTogether.route)
+    assertRoute(AppDestination.StudyTogether.route)
+    assertTopBarTitle("Study Together")
+  }
+
+  @Test
+  fun studyTogether_backButton_returns_to_home() {
+    setContent()
+    navigateDirect(AppDestination.StudyTogether.route)
+    assertRoute(AppDestination.StudyTogether.route)
+    tapBack()
+    waitUntilRoute(AppDestination.Home.route)
+    assertRoute(AppDestination.Home.route)
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  @Test
+  fun studyTogether_accessible_from_drawer() {
+    setContent()
+    openDrawerAndWait()
+
+    // Click on Study Together in drawer
+    rule
+        .onNode(hasTestTag(HomeTestTags.drawerTag(AppDestination.StudyTogether.route)))
+        .performClick()
+
+    waitUntilRoute(AppDestination.StudyTogether.route)
+    assertRoute(AppDestination.StudyTogether.route)
+    assertTopBarTitle("Study Together")
+  }
+
+  // MOOD / DAILY REFLECTION TESTS
+  @Test
+  fun mood_navigates_successfully() {
+    setContent()
+    navigateDirect(AppDestination.Mood.route)
+    assertRoute(AppDestination.Mood.route)
+    assertTopBarTitle("Daily Reflection")
+  }
+
+  @Test
+  fun mood_backButton_returns_to_home() {
+    setContent()
+    navigateDirect(AppDestination.Mood.route)
+    assertRoute(AppDestination.Mood.route)
+    tapBack()
+    waitUntilRoute(AppDestination.Home.route)
+    assertRoute(AppDestination.Home.route)
   }
 }

@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasProgressBarRangeInfo
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -16,12 +17,15 @@ import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
-import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.EduMonHomeScreen
+import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.feature.homeScreen.HomeUiState
+import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.repos_providors.FakeRepositoriesProvider
+import com.android.sample.ui.theme.EduMonTheme
 import java.time.LocalDate
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,28 +35,18 @@ class HomeScreenTest {
 
   @get:Rule val composeRule = createComposeRule()
 
-  private class FakeUserStatsRepository(initial: UserStats = UserStats()) : UserStatsRepository {
-    private val _stats = MutableStateFlow(initial)
-    override val stats: StateFlow<UserStats> = _stats
+  private var originalRepositories = AppRepositories
 
-    override suspend fun start() {}
+  @Before
+  fun setUp() {
+    // Use fake repositories so we never hit real Firebase-based UserStatsRepository
+    originalRepositories = AppRepositories
+    AppRepositories = FakeRepositoriesProvider
+  }
 
-    override suspend fun addStudyMinutes(extraMinutes: Int) {
-      _stats.value =
-          _stats.value.copy(totalStudyMinutes = _stats.value.totalStudyMinutes + extraMinutes)
-    }
-
-    override suspend fun updateCoins(delta: Int) {
-      _stats.value = _stats.value.copy(coins = _stats.value.coins + delta)
-    }
-
-    override suspend fun setWeeklyGoal(goalMinutes: Int) {
-      _stats.value = _stats.value.copy(weeklyGoal = goalMinutes)
-    }
-
-    override suspend fun addPoints(delta: Int) {
-      _stats.value = _stats.value.copy(points = _stats.value.points + delta)
-    }
+  @After
+  fun tearDown() {
+    AppRepositories = originalRepositories
   }
 
   private fun setHomeContent(quote: String = "Keep going.", onNavigate: (String) -> Unit = {}) {
@@ -130,11 +124,29 @@ class HomeScreenTest {
 
   @Test
   fun drawer_opens_viaMenuButton() {
-    setHomeContent()
+    // Drawer is now owned by EduMonNavHost (not EduMonHomeScreen directly)
+    composeRule.setContent { EduMonTheme { EduMonNavHost() } }
 
-    composeRule.onNodeWithContentDescription("Menu").performClick()
-    composeRule.onNodeWithText("EPFL Companion").assertIsDisplayed()
+    // Wait for the Home menu button to appear
+    composeRule.waitUntil(timeoutMillis = 20_000) {
+      runCatching {
+            composeRule
+                .onAllNodes(hasTestTag(HomeTestTags.MENU_BUTTON), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+          }
+          .getOrNull()
+          ?.isNotEmpty() == true
+    }
+
+    // Open the drawer
+    composeRule
+        .onNode(hasTestTag(HomeTestTags.MENU_BUTTON), useUnmergedTree = true)
+        .assertIsDisplayed()
+        .performClick()
+
+    // Drawer content (from EduMonDrawerContent)
     composeRule.onNodeWithText("Edumon").assertIsDisplayed()
+    composeRule.onNodeWithText("EPFL Companion").assertIsDisplayed()
   }
 
   @Test
