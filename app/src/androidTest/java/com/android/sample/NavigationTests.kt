@@ -168,4 +168,73 @@ class HomeNavigationTests {
       "Expected route starting with addTodoFromSchedule but was: $route"
     }
   }
+
+  // MAP / STUDY TOGETHER TESTS
+  @Test
+  fun studyTogether_navigates_successfully() {
+    setContent()
+    navigateDirect(AppDestination.StudyTogether.route)
+    assertRoute(AppDestination.StudyTogether.route)
+    assertTopBarTitle("Study Together")
+  }
+
+  @Test
+  fun studyTogether_backButton_returns_to_home() {
+    setContent()
+    navigateDirect(AppDestination.StudyTogether.route)
+    assertRoute(AppDestination.StudyTogether.route)
+    tapBack()
+    waitUntilRoute(AppDestination.Home.route)
+    assertRoute(AppDestination.Home.route)
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  @Test
+  fun studyTogether_accessible_from_drawer() {
+    setContent()
+    openDrawerAndWait()
+
+    // Click on Study Together in drawer
+    rule
+        .onNode(hasTestTag(HomeTestTags.drawerTag(AppDestination.StudyTogether.route)))
+        .performClick()
+
+    waitUntilRoute(AppDestination.StudyTogether.route)
+    assertRoute(AppDestination.StudyTogether.route)
+    assertTopBarTitle("Study Together")
+  }
+
+  // MOOD / DAILY REFLECTION TESTS
+  @Test
+  fun mood_navigates_successfully() {
+    setContent()
+    navigateDirect(AppDestination.Mood.route)
+    assertRoute(AppDestination.Mood.route)
+    assertTopBarTitle("Daily Reflection")
+  }
+
+  @OptIn(ExperimentalTestApi::class)
+  @Test
+  fun moodChip_navigates_from_home() {
+    setContent()
+    assertRoute(AppDestination.Home.route)
+
+    // Click the Daily Reflection chip on home screen
+    rule.waitUntilExactlyOneExists(hasTestTag(HomeTestTags.CHIP_MOOD))
+    rule.onNode(hasTestTag(HomeTestTags.CHIP_MOOD)).performClick()
+
+    waitUntilRoute(AppDestination.Mood.route)
+    assertRoute(AppDestination.Mood.route)
+    assertTopBarTitle("Daily Reflection")
+  }
+
+  @Test
+  fun mood_backButton_returns_to_home() {
+    setContent()
+    navigateDirect(AppDestination.Mood.route)
+    assertRoute(AppDestination.Mood.route)
+    tapBack()
+    waitUntilRoute(AppDestination.Home.route)
+    assertRoute(AppDestination.Home.route)
+  }
 }
