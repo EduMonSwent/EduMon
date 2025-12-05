@@ -155,6 +155,7 @@ fun ClassAttendanceModal(
                     ClassType.LECTURE -> stringResource(R.string.did_you_review_lecture)
                     ClassType.EXERCISE -> stringResource(R.string.did_you_finish_exercise)
                     ClassType.LAB -> stringResource(R.string.did_you_finish_lab)
+                    ClassType.PROJECT -> stringResource(R.string.did_you_finish_task_project)
                   },
               color = TextLight,
               fontWeight = FontWeight.SemiBold,

@@ -17,6 +17,7 @@ import com.android.sample.repositories.ToDoRepository
 import com.android.sample.ui.schedule.AdaptivePlanner
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -35,7 +36,8 @@ data class ScheduleUiState(
     val showAddTaskModal: Boolean = false,
     val showAttendanceModal: Boolean = false,
     val selectedClass: Class? = null,
-    val todos: List<ToDo> = emptyList()
+    val todos: List<ToDo> = emptyList(),
+    val allClassesFinished: Boolean = false
 )
 
 class ScheduleViewModel(
@@ -71,18 +73,22 @@ class ScheduleViewModel(
 
   private fun observePlannerData() {
     viewModelScope.launch {
-      _uiState.update { it.copy(isLoading = true) }
-
-      // Collect today's classes
       launch {
-        plannerRepository
-            .getTodayClassesFlow()
-            .catch { e ->
-              _uiState.update { it.copy(errorMessage = e.localizedMessage, isLoading = false) }
-            }
-            .collect { classes ->
-              _uiState.update { it.copy(todayClasses = classes, isLoading = false) }
-            }
+        plannerRepository.getTodayClassesFlow().collect { classes ->
+          val now = LocalTime.now()
+
+          val deduped =
+              classes
+                  .groupBy { Triple(it.courseName, it.startTime, it.endTime) }
+                  .map { (_, group) -> group.first() }
+
+          val upcoming = deduped.filter { cls -> cls.endTime.isAfter(now) }
+
+          val sorted = upcoming.sortedBy { it.startTime }
+          val allFinished = deduped.all { cls -> cls.endTime.isBefore(now) }
+
+          _uiState.update { it.copy(todayClasses = sorted, allClassesFinished = allFinished) }
+        }
       }
 
       // Collect attendance records

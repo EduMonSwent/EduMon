@@ -123,6 +123,21 @@ class FirestorePlannerRepository(
       Result.failure(e)
     }
   }
+
+  override suspend fun saveClass(classItem: Class): Result<Unit> {
+    val uid = auth.currentUser?.uid ?: return Result.failure(Exception("Not logged in"))
+
+    return try {
+      userPlannerClassesRef(uid)
+          .document(classItem.id)
+          .set(classItem.toFirestoreMap(), SetOptions.merge())
+          .await()
+
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Result.failure(e)
+    }
+  }
 }
 
 /* ---------- Mapping helpers ---------- */
@@ -182,3 +197,12 @@ private fun ClassAttendance.toFirestoreMap(): Map<String, Any?> =
         "attendance" to attendance.name,
         "completion" to completion.name,
         "timestamp" to timestamp.toEpochMilli())
+
+private fun Class.toFirestoreMap(): Map<String, Any?> =
+    mapOf(
+        "courseName" to courseName,
+        "startTime" to startTime.toString(),
+        "endTime" to endTime.toString(),
+        "type" to type.name,
+        "location" to location,
+        "instructor" to instructor)

@@ -169,4 +169,31 @@ class FirestoreScheduleRepositoryEmulatorTest {
     assertEquals(1, nextWeekEvents.size)
     assertEquals("Move Me", nextWeekEvents[0].title)
   }
+
+  @Test
+  fun importEvents_writes_multiple_events_and_listens_them() = runBlocking {
+    val today = LocalDate.now()
+
+    val events =
+        listOf(
+            ScheduleEvent(
+                title = "Class A",
+                date = today,
+                time = LocalTime.of(8, 0),
+                kind = EventKind.CLASS_LECTURE,
+                sourceTag = SourceTag.Class),
+            ScheduleEvent(
+                title = "Class B",
+                date = today,
+                time = LocalTime.of(14, 0),
+                kind = EventKind.CLASS_LAB,
+                sourceTag = SourceTag.Class))
+
+    repo.importEvents(events)
+
+    awaitEventsCount(2)
+
+    val titles = repo.events.value.map { it.title }
+    assertEquals(listOf("Class A", "Class B"), titles)
+  }
 }

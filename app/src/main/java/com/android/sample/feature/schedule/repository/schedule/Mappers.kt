@@ -15,6 +15,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.util.Locale
 
+/** This class was implemented with the help of ai (ChatGPT) */
 object StudyItemMapper {
 
   fun toScheduleEvent(item: StudyItem, res: Resources): ScheduleEvent {
@@ -156,6 +157,7 @@ object ClassMapper {
           ClassType.LECTURE -> EventKind.CLASS_LECTURE
           ClassType.EXERCISE -> EventKind.CLASS_EXERCISE
           ClassType.LAB -> EventKind.CLASS_LAB
+          ClassType.PROJECT -> EventKind.PROJECT
         }
 
     val durationMinutes =

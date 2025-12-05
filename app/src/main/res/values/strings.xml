@@ -10,19 +10,9 @@
     <string name="no_activities_scheduled">No activities scheduled for today.</string>
     <string name="wellness_campus_life_title">Wellness &amp; Campus Life</string>
     <string name="wellness_campus_life_subtitle">Balance your studies with well-being!</string>
-    <string name="ai_recommendation_title">AI Study Assistant</string>
-    <string name="ai_recommendation_subtitle">Personalized Recommendation</string>
     <string name="start_studying_session">Start Studying Session</string>
-    <string name="ai_recommendation_footer">Based on your schedule and performance patterns</string>
     <string name="edumon_profile">Edumon Profile</string>
 
-    <!-- AI Recommendation Texts -->
-    <string name="ai_recommendation_none">There is no task to start!</string>
-    <string name="ai_recommendation_top">Based on your schedule, start with the following task:</string>
-    <string name="ai_recommendation_priority">as its priority is</string>
-    <string name="ai_recommendation_due_date">and it is due on</string>
-    <string name="ai_recommendation_in_progress">You already started it!</string>
-    <string name="ai_recommendation_calculus_example">Based on your schedule, start with the Calculus problem set (high priority, due tomorrow). Take a 10-minute break after 45 minutes.</string>
 
     <!-- Add Study Task Modal -->
     <string name="add_study_task_modal_title">Add Study Task</string>
@@ -46,6 +36,7 @@
     <string name="details">Details</string>
     <string name="lecture_type">Lecture</string>
     <string name="exercise_type">Exercise</string>
+    <string name="project_type">Project</string>
     <string name="lab_type">Lab</string>
 
     <!-- Class Attendance Modal -->
@@ -54,6 +45,7 @@
     <string name="did_you_review_lecture">Did you finish reviewing today’s lecture materials?</string>
     <string name="did_you_finish_exercise">Did you finish the exercise?</string>
     <string name="did_you_finish_lab">Did you finish the lab?</string>
+    <string name="did_you_finish_task_project">Did you finish the assigned task in the project?</string>
     <string name="cancel">Cancel</string>
 
     <!-- Wellness Event Item -->
@@ -145,6 +137,7 @@
     <string name="account_terms">Terms of Service</string>
     <string name="account_logout">Logout</string>
     <string name="google_maps_key">AIzaSyDb-3cRCYlIT-TUVnCqgvfw_gPUQi3rd38</string>
+    <string name="import_timetable">Import timetable (.ics)</string>
 
     <string name="user_mode_text">🧠 You’re in %1$s</string>
     <string name="study_mode">Study Mode</string>
@@ -254,6 +247,7 @@
     <string name="classes_label">Classes</string>
     <string name="no_classes_today">No classes scheduled today</string>
     <string name="wellness_events_label">Wellness Events</string>
+    <string name="finished_classes">Great job! 🎉 You\'ve finished all your classes for today!</string>
 
     <!-- Class row -->
     <string name="class_title_fmt">%1$s (%2$s)</string>
@@ -320,6 +314,35 @@
     <string name="edumon_content_description">EduMon character</string>
     <string name="level_label">Level %1$d</string>
 
+    <!-- ICS Keywords -->
+    <string-array name="ics_keywords_exercise">
+        <item>exerc</item>
+        <item>exercise</item>
+        <item>exercises</item>
+        <item>exercice</item>
+    </string-array>
+
+    <string-array name="ics_keywords_lab">
+        <item>lab</item>
+        <item>labo</item>
+        <item>laboratory</item>
+    </string-array>
+
+    <string-array name="ics_keywords_project">
+        <item>proj</item>
+        <item>project</item>
+        <item>projet</item>
+    </string-array>
+
+    <string-array name="ics_keywords_lecture">
+        <item>cours</item>
+        <item>course</item>
+        <item>lecture</item>
+    </string-array>
+
+    <string-array name="ics_keywords_exam">
+        <item>Horaires examinés</item>
+    </string-array>
 
     <string name="study_session_subject_label">Subject</string>
     <string name="study_session_new_subject_placeholder">New subject</string>

@@ -26,7 +26,8 @@ data class Class(
 enum class ClassType {
   LECTURE,
   EXERCISE,
-  LAB
+  LAB,
+  PROJECT
 }
 
 data class ClassAttendance(

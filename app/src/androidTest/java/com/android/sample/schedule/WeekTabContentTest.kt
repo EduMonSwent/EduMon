@@ -81,6 +81,12 @@ class WeekTabContentAllAndroidTest {
 
     override suspend fun getEventsForWeek(startDate: LocalDate) =
         getEventsBetween(startDate, startDate.plusDays(6))
+
+    override suspend fun importEvents(events: List<ScheduleEvent>) {
+      val current = _events.value.toMutableList()
+      current.addAll(events)
+      _events.value = current
+    }
   }
 
   private fun buildVm(): ScheduleViewModel {

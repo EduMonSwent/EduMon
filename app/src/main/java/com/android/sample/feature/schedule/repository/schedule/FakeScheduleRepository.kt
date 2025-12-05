@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
+ * This class was implemented with the help of ai (ChatGPT)
+ *
  * Simple in-memory implementation of ScheduleRepository, similar in spirit to
  * FakeObjectivesRepository.
  *
@@ -62,5 +64,11 @@ object FakeScheduleRepository : ScheduleRepository {
   override suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent> {
     val endDate = startDate.plusDays(6)
     return getEventsBetween(startDate, endDate)
+  }
+
+  override suspend fun importEvents(events: List<ScheduleEvent>) {
+    val current = _events.value.toMutableList()
+    current.addAll(events)
+    _events.value = current
   }
 }
