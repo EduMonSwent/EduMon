@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import com.android.sample.ui.shop.ShopScreen
 import com.android.sample.ui.stats.StatsRoute
 import com.android.sample.ui.todo.AddToDoScreen
 import com.android.sample.ui.todo.TodoNavHostInThisFile
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /** Stable tags used by UI tests */
@@ -66,9 +66,7 @@ private fun EduMonDrawerContent(
     onDestinationClick: (String) -> Unit,
 ) {
   ModalDrawerSheet(
-      modifier =
-          Modifier.fillMaxHeight() // 🔴 this makes it span the full screen height
-              .verticalScroll(rememberScrollState()),
+      modifier = Modifier.fillMaxHeight().verticalScroll(rememberScrollState()),
       drawerContainerColor = MaterialTheme.colorScheme.surface,
       drawerContentColor = MaterialTheme.colorScheme.onSurface) {
         Spacer(Modifier.height(16.dp))
@@ -105,6 +103,36 @@ private fun EduMonDrawerContent(
         }
 
         Spacer(Modifier.height(8.dp))
+      }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScreenWithTopBar(
+    title: String,
+    drawerState: DrawerState,
+    scope: CoroutineScope,
+    onBack: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+  Scaffold(
+      topBar = {
+        TopAppBar(
+            title = { Text(title, modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE)) },
+            navigationIcon = {
+              IconButton(
+                  onClick = onBack,
+                  modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                  }
+            },
+            actions = {
+              IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                Icon(Icons.Outlined.Menu, contentDescription = "Menu")
+              }
+            })
+      }) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) { content() }
       }
 }
 
@@ -151,8 +179,7 @@ fun EduMonNavHost(
                           navigationIcon = {
                             IconButton(
                                 onClick = { scope.launch { drawerState.open() } },
-                                modifier =
-                                    Modifier.testTag(HomeTestTags.MENU_BUTTON)) { // same test tag
+                                modifier = Modifier.testTag(HomeTestTags.MENU_BUTTON)) {
                                   Icon(Icons.Outlined.Menu, contentDescription = "Menu")
                                 }
                           })
@@ -168,78 +195,35 @@ fun EduMonNavHost(
 
               // PROFILE
               composable(AppDestination.Profile.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Profile",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) {
-                        ProfileScreen(
-                            onOpenNotifications = { nav.navigate("notifications") },
-                            onOpenFocusMode = { nav.navigate("focus_mode") })
-                      }
+                ScreenWithTopBar(
+                    title = "Profile",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      ProfileScreen(
+                          onOpenNotifications = { nav.navigate("notifications") },
+                          onOpenFocusMode = { nav.navigate("focus_mode") })
                     }
               }
 
-              // Schedule
+              // SCHEDULE
               composable(AppDestination.Schedule.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Schedule",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                ScreenWithTopBar(
+                    title = "Schedule",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      ScheduleScreen(
+                          onAddTodoClicked = { date ->
+                            nav.navigate("addTodoFromSchedule/$date") { launchSingleTop = true }
                           },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) {
-                        ScheduleScreen(
-                            onAddTodoClicked = { date ->
-                              nav.navigate("addTodoFromSchedule/$date") { launchSingleTop = true }
-                            },
-                            onOpenTodo = { _ ->
-                              nav.navigateSingleTopTo(AppDestination.Todo.route)
-                            })
-                      }
+                          onOpenTodo = { _ -> nav.navigateSingleTopTo(AppDestination.Todo.route) })
                     }
               }
 
               composable(
                   route = "addTodoFromSchedule/{date}",
                   arguments = listOf(navArgument("date") { type = NavType.StringType })) {
-                      backStackEntry ->
                     AddToDoScreen(
                         onBack = {
                           nav.popBackStack(route = AppDestination.Schedule.route, inclusive = false)
@@ -248,206 +232,80 @@ fun EduMonNavHost(
 
               // STATS
               composable(AppDestination.Stats.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Stats",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { StatsRoute() }
+                ScreenWithTopBar(
+                    title = "Stats",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      StatsRoute()
                     }
               }
 
               // GAMES (hub)
               composable(AppDestination.Games.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Games",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { GamesScreen(nav) }
+                ScreenWithTopBar(
+                    title = "Games",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      GamesScreen(nav)
                     }
               }
 
               // Individual games
               composable(GameRoutes.Memory) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Memory Game",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { MemoryGameScreen() }
+                ScreenWithTopBar(
+                    title = "Memory Game",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      MemoryGameScreen()
                     }
               }
 
               composable(GameRoutes.Reaction) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Reaction Test",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { ReactionGameScreen() }
+                ScreenWithTopBar(
+                    title = "Reaction Test",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      ReactionGameScreen()
                     }
               }
 
               composable(GameRoutes.Focus) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Focus Breathing",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { FocusBreathingScreen() }
+                ScreenWithTopBar(
+                    title = "Focus Breathing",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      FocusBreathingScreen()
                     }
               }
 
               composable(GameRoutes.Runner) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "EduMon Runner",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { FlappyEduMonScreen() }
+                ScreenWithTopBar(
+                    title = "EduMon Runner",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      FlappyEduMonScreen()
                     }
               }
 
               // STUDY SESSION
               composable(AppDestination.Study.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Study",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                  val popped = nav.popBackStack()
-                                  if (!popped) {
-                                    nav.navigateSingleTopTo(AppDestination.Home.route)
-                                  }
-                                },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { StudySessionScreen() }
+                ScreenWithTopBar(
+                    title = "Study",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = {
+                      val popped = nav.popBackStack()
+                      if (!popped) {
+                        nav.navigateSingleTopTo(AppDestination.Home.route)
+                      }
+                    }) {
+                      StudySessionScreen()
                     }
               }
 
@@ -457,217 +315,90 @@ fun EduMonNavHost(
                   arguments = listOf(navArgument("eventId") { type = NavType.StringType })) {
                       backStackEntry ->
                     val eventId = backStackEntry.arguments?.getString("eventId")
-                    Scaffold(
-                        topBar = {
-                          TopAppBar(
-                              title = {
-                                Text(
-                                    "Study",
-                                    modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                              },
-                              navigationIcon = {
-                                IconButton(
-                                    onClick = {
-                                      val popped = nav.popBackStack()
-                                      if (!popped) {
-                                        nav.navigateSingleTopTo(AppDestination.Home.route)
-                                      }
-                                    },
-                                    modifier =
-                                        Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                      Icon(
-                                          Icons.AutoMirrored.Outlined.ArrowBack,
-                                          contentDescription = "Back")
-                                    }
-                              },
-                              actions = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                  Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                                }
-                              })
-                        }) { padding ->
-                          Box(Modifier.fillMaxSize().padding(padding)) {
-                            StudySessionScreen(eventId)
+                    ScreenWithTopBar(
+                        title = "Study",
+                        drawerState = drawerState,
+                        scope = scope,
+                        onBack = {
+                          val popped = nav.popBackStack()
+                          if (!popped) {
+                            nav.navigateSingleTopTo(AppDestination.Home.route)
                           }
+                        }) {
+                          StudySessionScreen(eventId)
                         }
                   }
 
               // FLASHCARDS
               composable(AppDestination.Flashcards.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Study",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { FlashcardsApp() }
+                ScreenWithTopBar(
+                    title = "Study",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      FlashcardsApp()
                     }
               }
 
-              // Todos list
+              // TODOS LIST
               composable(AppDestination.Todo.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Todo",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { TodoNavHostInThisFile() }
+                ScreenWithTopBar(
+                    title = "Todo",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      TodoNavHostInThisFile()
                     }
               }
 
-              // 👉 MOOD (Daily Reflection)
+              // MOOD (Daily Reflection)
               composable(AppDestination.Mood.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Daily Reflection",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { MoodLoggingRoute() }
+                ScreenWithTopBar(
+                    title = "Daily Reflection",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      MoodLoggingRoute()
                     }
               }
 
               // STUDY TOGETHER
               composable(AppDestination.StudyTogether.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Study Together",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { StudyTogetherScreen() }
+                ScreenWithTopBar(
+                    title = "Study Together",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      StudyTogetherScreen()
                     }
               }
 
               // SHOP
               composable(AppDestination.Shop.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Shop",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { ShopScreen() }
+                ScreenWithTopBar(
+                    title = "Shop",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      ShopScreen()
                     }
               }
 
+              // Notifications keeps its own internal top bar callbacks
               composable("notifications") {
                 NotificationsScreen(
                     onBack = { nav.popBackStack() },
                     onGoHome = { nav.navigateSingleTopTo(AppDestination.Home.route) })
               }
 
+              // FOCUS MODE
               composable("focus_mode") {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Focus Mode",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { nav.popBackStack() },
-                                modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                                  Icon(
-                                      Icons.AutoMirrored.Outlined.ArrowBack,
-                                      contentDescription = "Back")
-                                }
-                          },
-                          actions = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                              Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                            }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) { FocusModeScreen() }
+                ScreenWithTopBar(
+                    title = "Focus Mode",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { nav.popBackStack() }) {
+                      FocusModeScreen()
                     }
               }
             }
