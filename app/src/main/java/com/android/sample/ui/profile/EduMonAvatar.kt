@@ -1,9 +1,11 @@
 package com.android.sample.ui.profile
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +21,6 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.AccessorySlot
-import com.android.sample.ui.theme.TextLight
 import com.android.sample.ui.theme.UiValues
 
 @Composable
@@ -28,10 +29,14 @@ fun EduMonAvatar(
     viewModel: ProfileViewModel = viewModel(),
     showLevelLabel: Boolean = true,
     avatarSize: Dp = UiValues.AvatarSize,
+    @DrawableRes avatarResId: Int = R.drawable.edumon,
+    /** Optional override for the aura/background gradient around EduMon. */
+    auraColors: List<Color>? = null,
 ) {
   val user by viewModel.userProfile.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
   val accessories = user.accessories
+  val colorScheme = MaterialTheme.colorScheme
 
   val equipped =
       remember(accessories) {
@@ -43,6 +48,9 @@ fun EduMonAvatar(
             .toMap()
       }
 
+  val effectiveAuraColors =
+      auraColors ?: listOf(accent.copy(alpha = UiValues.AuraAlpha), Color.Transparent)
+
   Column(
       modifier = modifier,
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -52,18 +60,15 @@ fun EduMonAvatar(
                 Modifier.size(avatarSize * UiValues.AvatarScale)
                     .clip(RoundedCornerShape(UiValues.AvatarCornerRadius)),
             contentAlignment = Alignment.Center) {
+              // Aura / environment
               Box(
                   modifier =
                       Modifier.fillMaxSize()
-                          .background(
-                              Brush.radialGradient(
-                                  colors =
-                                      listOf(
-                                          accent.copy(alpha = UiValues.AuraAlpha),
-                                          Color.Transparent))))
+                          .background(Brush.radialGradient(colors = effectiveAuraColors)))
 
+              // Base EduMon sprite (configurable)
               Image(
-                  painter = painterResource(id = R.drawable.edumon),
+                  painter = painterResource(id = avatarResId),
                   contentDescription = stringResource(id = R.string.edumon_content_description),
                   modifier = Modifier.size(avatarSize).zIndex(UiValues.ZBase))
 
@@ -88,7 +93,7 @@ fun EduMonAvatar(
           Spacer(Modifier.height(UiValues.AvatarLevelSpacing))
           Text(
               text = stringResource(R.string.level_label, user.level),
-              color = TextLight,
+              color = colorScheme.onBackground,
               fontWeight = FontWeight.SemiBold,
               fontSize = UiValues.LevelTextSize)
         }
