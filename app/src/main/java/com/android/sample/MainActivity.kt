@@ -20,7 +20,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.sample.ui.login.LoginScreen
+import com.android.sample.ui.onBoarding.EduMonOnboardingScreen
 import com.android.sample.ui.theme.EduMonTheme
+import com.android.sample.ui.theme.EdumonAppearance
+import com.android.sample.ui.theme.EdumonAppearances
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -29,7 +32,7 @@ class MainActivity : ComponentActivity() {
 
   private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
-  override fun onCreate(savedInstanceState: Bundle?) { // <-- @OptIn removed
+  override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     // Capture the intent data (deep link) if present
@@ -44,27 +47,39 @@ class MainActivity : ComponentActivity() {
         } else com.android.sample.feature.homeScreen.AppDestination.Home.route to null
 
     setContent {
-      EduMonTheme {
-        val nav = rememberNavController()
-        var user by remember { mutableStateOf(auth.currentUser) }
-        val scope = rememberCoroutineScope()
+      val nav = rememberNavController()
+      var user by remember { mutableStateOf(auth.currentUser) }
+      val scope = rememberCoroutineScope()
 
-        DisposableEffect(Unit) {
-          val l =
-              FirebaseAuth.AuthStateListener { fa ->
-                val u = fa.currentUser
-                val goTo = if (u == null) "login" else "app"
-                user = u
-                nav.navigate(goTo) {
-                  popUpTo(nav.graph.startDestinationId) { inclusive = true }
-                  launchSingleTop = true
-                }
+      // Global appearance (theme + sprite + environment)
+      var appearance by remember { mutableStateOf<EdumonAppearance>(EdumonAppearances.Default) }
+      var hasCompletedOnboarding by remember { mutableStateOf(false) }
+
+      // React to Firebase auth state
+      DisposableEffect(Unit) {
+        val listener =
+            FirebaseAuth.AuthStateListener { fa ->
+              val u = fa.currentUser
+              user = u
+
+              // If user logs out, reset onboarding + theme
+              if (u == null) {
+                hasCompletedOnboarding = false
+                appearance = EdumonAppearances.Default
               }
-          auth.addAuthStateListener(l)
-          onDispose { auth.removeAuthStateListener(l) }
-        }
 
-        // ⬇ Scaffold without topBar
+              val targetRoute = if (u == null) "login" else "app"
+              nav.navigate(targetRoute) {
+                popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                launchSingleTop = true
+              }
+            }
+
+        auth.addAuthStateListener(listener)
+        onDispose { auth.removeAuthStateListener(listener) }
+      }
+
+      EduMonTheme(appearance = appearance) {
         Scaffold { padding ->
           Box(Modifier.fillMaxSize().padding(padding)) {
             NavHost(navController = nav, startDestination = if (user == null) "login" else "app") {
@@ -79,8 +94,30 @@ class MainActivity : ComponentActivity() {
               }
 
               composable("app") {
-                LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
-                EduMonNavHost(startDestination = startRoute)
+                // Keep any side-effects you need on user change
+                LaunchedEffect(user?.uid) {
+                  user?.let {
+                    try {
+                      // placeholder for any user-specific loading
+                    } catch (_: Exception) {}
+                  }
+                }
+
+                if (!hasCompletedOnboarding) {
+                  // Show onboarding until a starter is chosen
+                  EduMonOnboardingScreen(
+                      onOnboardingFinished = { _, starterId ->
+                        val chosenAppearance = EdumonAppearances.fromStarterId(starterId)
+                        appearance = chosenAppearance
+                        hasCompletedOnboarding = true
+                      })
+                } else {
+                  // Main app, themed according to the chosen Edumon
+                  EduMonNavHost(
+                      startDestination = startRoute,
+                      creatureResId = appearance.creatureResId,
+                      environmentResId = appearance.environmentResId)
+                }
               }
             }
           }

@@ -141,7 +141,9 @@ private fun ScreenWithTopBar(
 fun EduMonNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = AppDestination.Home.route
+    startDestination: String = AppDestination.Home.route,
+    creatureResId: Int = R.drawable.edumon,
+    environmentResId: Int = R.drawable.home,
 ) {
   val nav = navController
 
@@ -186,8 +188,8 @@ fun EduMonNavHost(
                     }) { padding ->
                       Box(Modifier.fillMaxSize().padding(padding)) {
                         EduMonHomeRoute(
-                            creatureResId = R.drawable.edumon,
-                            environmentResId = R.drawable.home,
+                            creatureResId = creatureResId,
+                            environmentResId = environmentResId,
                             onNavigate = { route -> nav.navigateSingleTopTo(route) })
                       }
                     }
@@ -202,7 +204,9 @@ fun EduMonNavHost(
                     onBack = { nav.popBackStack() }) {
                       ProfileScreen(
                           onOpenNotifications = { nav.navigate("notifications") },
-                          onOpenFocusMode = { nav.navigate("focus_mode") })
+                          onOpenFocusMode = { nav.navigate("focus_mode") },
+                          avatarResId = creatureResId, // 👈 use chosen Edumon here
+                      )
                     }
               }
 
@@ -217,7 +221,11 @@ fun EduMonNavHost(
                           onAddTodoClicked = { date ->
                             nav.navigate("addTodoFromSchedule/$date") { launchSingleTop = true }
                           },
-                          onOpenTodo = { _ -> nav.navigateSingleTopTo(AppDestination.Todo.route) })
+                          onOpenTodo = { _ -> nav.navigateSingleTopTo(AppDestination.Todo.route) },
+                          avatarResId = creatureResId, // already dynamic
+                          environmentResId =
+                              environmentResId, // 👈 pass appearance.environmentResId
+                      )
                     }
               }
 
@@ -283,13 +291,16 @@ fun EduMonNavHost(
                     }
               }
 
+              // Runner
               composable(GameRoutes.Runner) {
                 ScreenWithTopBar(
                     title = "EduMon Runner",
                     drawerState = drawerState,
                     scope = scope,
                     onBack = { nav.popBackStack() }) {
-                      FlappyEduMonScreen()
+                      FlappyEduMonScreen(
+                          avatarResId = creatureResId, // 👈 use the selected Edumon
+                      )
                     }
               }
 
