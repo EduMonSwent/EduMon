@@ -1,5 +1,6 @@
 package com.android.sample.ui.profile
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -46,6 +47,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -57,6 +59,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -84,16 +87,7 @@ import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
-import com.android.sample.ui.theme.*
-import com.android.sample.ui.theme.AccentBlue
-import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.DarkCardItem
-import com.android.sample.ui.theme.DarkDivider
-import com.android.sample.ui.theme.MidDarkCard
-import com.android.sample.ui.theme.StatBarHeart
-import com.android.sample.ui.theme.StatBarLightbulb
-import com.android.sample.ui.theme.StatBarLightning
-import com.android.sample.ui.theme.TextLight
+import com.android.sample.ui.theme.UiValues
 
 object ProfileScreenTestTags {
   const val PROFILE_SCREEN = "profileScreen"
@@ -111,7 +105,6 @@ object ProfileScreenTestTags {
 private val CARD_CORNER_RADIUS = 16.dp
 private val SECTION_SPACING = 16.dp
 private val SCREEN_PADDING = 60.dp
-private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
 private const val STREAK_PLURAL_THRESHOLD = 1
 private const val LEVEL_PROGRESS_ANIM_DURATION_MS = 600
 private const val LABEL_FONT_SIZE_SP = 12
@@ -127,14 +120,17 @@ private val SPACING_SMALL = 4.dp
 fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(),
     onOpenFocusMode: () -> Unit = {},
-    onOpenNotifications: () -> Unit = {}
+    onOpenNotifications: () -> Unit = {},
+    @DrawableRes avatarResId: Int = R.drawable.edumon,
+    /** Optional override for the pet background behind EduMon in the header section. */
+    petBackgroundBrush: Brush? = null,
 ) {
   val user by viewModel.userProfile.collectAsState()
   val stats by viewModel.userStats.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
   val variant by viewModel.accentVariantFlow.collectAsState()
-
   val snackbarHostState = remember { SnackbarHostState() }
+  val colorScheme = MaterialTheme.colorScheme
 
   LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
@@ -144,14 +140,20 @@ fun ProfileScreen(
         LazyColumn(
             modifier =
                 Modifier.fillMaxSize()
-                    .background(Brush.verticalGradient(GRADIENT_COLORS))
+                    .background(
+                        Brush.verticalGradient(listOf(colorScheme.background, colorScheme.surface)))
                     .padding(bottom = SCREEN_PADDING)
                     .padding(innerPadding)
                     .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
             horizontalAlignment = Alignment.CenterHorizontally,
             contentPadding = PaddingValues(vertical = SECTION_SPACING),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
-              item { PetSection(viewModel = viewModel) }
+              item {
+                PetSection(
+                    viewModel = viewModel,
+                    avatarResId = avatarResId,
+                    backgroundBrush = petBackgroundBrush)
+              }
 
               item {
                 GlowCard {
@@ -194,12 +196,21 @@ fun ProfileScreen(
 }
 
 @Composable
-fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
+fun PetSection(
+    viewModel: ProfileViewModel,
+    modifier: Modifier = Modifier,
+    @DrawableRes avatarResId: Int = R.drawable.edumon,
+    backgroundBrush: Brush? = null,
+) {
+  val colorScheme = MaterialTheme.colorScheme
+  val defaultBrush =
+      Brush.verticalGradient(listOf(colorScheme.surfaceVariant, colorScheme.background))
+
   Box(
       modifier =
           modifier
               .fillMaxWidth()
-              .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
+              .background(backgroundBrush ?: defaultBrush)
               .padding(vertical = 20.dp, horizontal = 16.dp)
               .testTag(ProfileScreenTestTags.PET_SECTION)) {
         Row(
@@ -207,9 +218,9 @@ fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
               Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatBar("❤", 0.9f, StatBarHeart)
-                StatBar("💡", 0.85f, StatBarLightbulb)
-                StatBar("⚡", 0.7f, StatBarLightning)
+                StatBar("❤", 0.9f, colorScheme.tertiary)
+                StatBar("💡", 0.85f, colorScheme.primary)
+                StatBar("⚡", 0.7f, colorScheme.secondary)
               }
 
               Column(
@@ -218,7 +229,8 @@ fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
                     EduMonAvatar(
                         viewModel = viewModel,
                         showLevelLabel = true,
-                        avatarSize = UiValues.AvatarSize)
+                        avatarSize = UiValues.AvatarSize,
+                        avatarResId = avatarResId)
                   }
             }
       }
@@ -226,22 +238,31 @@ fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
 
 @Composable
 fun StatBar(icon: String, percent: Float, color: Color) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Row(verticalAlignment = Alignment.CenterVertically) {
     Text(icon, fontSize = 16.sp)
     Spacer(Modifier.width(4.dp))
-    Box(Modifier.width(70.dp).height(10.dp).background(DarkCardItem, RoundedCornerShape(10.dp))) {
-      Box(
-          Modifier.fillMaxSize()
-              .width(70.dp * percent)
-              .background(color, RoundedCornerShape(10.dp)))
-    }
+    Box(
+        Modifier.width(70.dp)
+            .height(10.dp)
+            .background(colorScheme.surfaceVariant, RoundedCornerShape(10.dp))) {
+          Box(
+              Modifier.fillMaxHeight()
+                  .width(70.dp * percent)
+                  .background(color, RoundedCornerShape(10.dp)))
+        }
     Spacer(Modifier.width(4.dp))
-    Text("${(percent * 100).toInt()}%", color = TextLight.copy(alpha = 0.8f), fontSize = 12.sp)
+    Text(
+        "${(percent * 100).toInt()}%",
+        color = colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        fontSize = 12.sp)
   }
 }
 
 @Composable
 fun GlowCard(content: @Composable () -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
   val glow by
       rememberInfiniteTransition(label = "glow")
           .animateFloat(
@@ -256,28 +277,31 @@ fun GlowCard(content: @Composable () -> Unit) {
           Modifier.fillMaxWidth(0.9f)
               .shadow(
                   elevation = 16.dp,
-                  ambientColor = AccentViolet.copy(alpha = glow),
-                  spotColor = AccentViolet.copy(alpha = glow),
+                  ambientColor = colorScheme.primary.copy(alpha = glow),
+                  spotColor = colorScheme.primary.copy(alpha = glow),
                   shape = RoundedCornerShape(CARD_CORNER_RADIUS)),
       shape = RoundedCornerShape(CARD_CORNER_RADIUS),
-      colors = CardDefaults.cardColors(containerColor = MidDarkCard)) {
+      colors = CardDefaults.cardColors(containerColor = colorScheme.surface)) {
         content()
       }
 }
 
 @Composable
 fun ProfileCard(user: UserProfile) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()) {
           Box(
-              Modifier.size(70.dp).background(AccentViolet, shape = RoundedCornerShape(50.dp)),
+              Modifier.size(70.dp)
+                  .background(colorScheme.primary, shape = RoundedCornerShape(50.dp)),
               contentAlignment = Alignment.Center) {
                 Text(
                     user.name.take(2).uppercase(),
-                    color = Color.White,
+                    color = colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp)
               }
@@ -288,12 +312,13 @@ fun ProfileCard(user: UserProfile) {
               modifier = Modifier.height(28.dp).width(60.dp))
         }
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
-    Text(user.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextLight)
-    Text(user.email, color = TextLight.copy(alpha = 0.7f), fontSize = 14.sp)
+    Text(user.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colorScheme.onSurface)
+    Text(user.email, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f), fontSize = 14.sp)
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(SMALL_FONT_SIZE.dp)) {
-      Badge(text = "Level ${user.level}", bg = AccentViolet)
-      Badge(text = "${user.points} pts", bg = Color.White, textColor = AccentViolet)
+      Badge(
+          text = "Level ${user.level}", bg = colorScheme.primary, textColor = colorScheme.onPrimary)
+      Badge(text = "${user.points} pts", bg = colorScheme.surface, textColor = colorScheme.primary)
     }
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     LevelProgressBar(level = user.level, points = user.points)
@@ -301,7 +326,7 @@ fun ProfileCard(user: UserProfile) {
 }
 
 @Composable
-fun Badge(text: String, bg: Color, textColor: Color = Color.White) {
+fun Badge(text: String, bg: Color, textColor: Color) {
   Box(
       Modifier.background(bg, RoundedCornerShape(12.dp))
           .padding(horizontal = SMALL_FONT_SIZE.dp, vertical = 4.dp),
@@ -315,11 +340,13 @@ fun StatsCard(
     profile: UserProfile,
     stats: UserStats,
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
         text = stringResource(id = R.string.stats_title),
         fontWeight = FontWeight.SemiBold,
-        color = TextLight.copy(alpha = 0.8f))
+        color = colorScheme.onSurface.copy(alpha = 0.8f))
     Spacer(modifier = Modifier.height(SMALL_FONT_SIZE.dp))
 
     val streakUnit =
@@ -348,16 +375,18 @@ fun StatsCard(
 
 @Composable
 fun StatRow(icon: ImageVector, label: String, value: String) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Icon(icon, contentDescription = null, tint = AccentViolet)
+          Icon(icon, contentDescription = null, tint = colorScheme.primary)
           Spacer(modifier = Modifier.width(SMALL_FONT_SIZE.dp))
-          Text(label, color = TextLight.copy(alpha = 0.9f))
+          Text(label, color = colorScheme.onSurface.copy(alpha = 0.9f))
         }
-        Text(value, color = TextLight, fontWeight = FontWeight.Medium)
+        Text(value, color = colorScheme.onSurface, fontWeight = FontWeight.Medium)
       }
 }
 
@@ -365,26 +394,29 @@ fun StatRow(icon: ImageVector, label: String, value: String) {
 fun CustomizePetSection(viewModel: ProfileViewModel) {
   val user by viewModel.userProfile.collectAsState()
   val currentVariant by viewModel.accentVariantFlow.collectAsState()
+  val colorScheme = MaterialTheme.colorScheme
 
   Column(Modifier.padding(16.dp)) {
-    Text("Customize Buddy", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
+    Text(
+        "Customize Buddy",
+        color = colorScheme.onSurface.copy(alpha = 0.8f),
+        fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(12.dp))
 
     // Accent base
-    Text("Accent color", color = TextLight.copy(alpha = 0.7f), fontSize = 13.sp)
+    Text("Accent color", color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f), fontSize = 13.sp)
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
       viewModel.accentPalette.forEach { c ->
         val selected = user.avatarAccent == c.toArgb().toLong()
+        val borderColor =
+            if (selected) colorScheme.onPrimary else colorScheme.onSurface.copy(alpha = 0.25f)
         Box(
             modifier =
                 Modifier.size(32.dp)
                     .clip(CircleShape)
                     .background(c)
-                    .border(
-                        if (selected) 3.dp else 1.dp,
-                        if (selected) Color.White else Color.White.copy(alpha = 0.25f),
-                        CircleShape)
+                    .border(if (selected) 3.dp else 1.dp, borderColor, CircleShape)
                     .clickable { viewModel.setAvatarAccent(c) },
             contentAlignment = Alignment.Center) {
               if (selected) Icon(Icons.Outlined.Check, null, tint = Color.White)
@@ -407,10 +439,13 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     Spacer(Modifier.height(20.dp))
 
     // Inventory
-    Text("Inventory", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
+    Text(
+        "Inventory",
+        color = colorScheme.onSurface.copy(alpha = 0.8f),
+        fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(10.dp))
 
-    var selectedTab by remember { androidx.compose.runtime.mutableStateOf(AccessorySlot.HEAD) }
+    var selectedTab by remember { mutableStateOf(AccessorySlot.HEAD) }
     val tabs = AccessorySlot.values()
     TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
       tabs.forEach { slot ->
@@ -423,12 +458,15 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     }
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
 
-    val user by viewModel.userProfile.collectAsState()
+    val userProfile by viewModel.userProfile.collectAsState()
 
     val slotItems =
-        remember(user, selectedTab) { viewModel.accessoryCatalog.filter { it.slot == selectedTab } }
+        remember(userProfile, selectedTab) {
+          viewModel.accessoryCatalog.filter { it.slot == selectedTab }
+        }
 
-    val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
+    val equippedId =
+        remember(userProfile.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
 
     AccessoriesGrid(
         items = slotItems,
@@ -439,6 +477,8 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 
 @Composable
 fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (String) -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
   LazyVerticalGrid(
       columns = GridCells.Adaptive(minSize = 96.dp),
       modifier = Modifier.fillMaxWidth().height(200.dp),
@@ -447,19 +487,19 @@ fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (
           val on = selectedId == item.id || (selectedId == null && item.id == "none")
           val rarityStroke =
               when (item.rarity) {
-                Rarity.COMMON -> Color.White.copy(alpha = 0.25f)
-                Rarity.RARE -> AccentBlue
-                Rarity.EPIC -> AccentViolet
-                Rarity.LEGENDARY -> Color(0xFFFFC107)
+                Rarity.COMMON -> colorScheme.outlineVariant
+                Rarity.RARE -> colorScheme.secondary
+                Rarity.EPIC -> colorScheme.primary
+                Rarity.LEGENDARY -> colorScheme.tertiary
               }
-          val stroke = if (on) rarityStroke else Color.White.copy(alpha = 0.25f)
+          val stroke = if (on) rarityStroke else colorScheme.onSurface.copy(alpha = 0.25f)
 
           Card(
               shape = RoundedCornerShape(16.dp),
               colors =
                   CardDefaults.cardColors(
                       containerColor =
-                          if (on) stroke.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.06f)),
+                          if (on) stroke.copy(alpha = 0.16f) else colorScheme.surfaceVariant),
               modifier =
                   Modifier.padding(6.dp)
                       .fillMaxWidth()
@@ -488,7 +528,7 @@ fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (
                   }
                   Text(
                       item.label,
-                      color = TextLight,
+                      color = colorScheme.onSurface,
                       fontSize = 12.sp,
                       modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp))
                 }
@@ -505,10 +545,12 @@ fun SettingsCard(
     onOpenNotifications: () -> Unit,
     onEnterFocusMode: () -> Unit
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
         stringResource(id = R.string.settings_title),
-        color = TextLight.copy(alpha = 0.8f),
+        color = colorScheme.onSurface.copy(alpha = 0.8f),
         fontWeight = FontWeight.SemiBold)
     Spacer(modifier = Modifier.height(SMALL_FONT_SIZE.dp))
 
@@ -520,7 +562,7 @@ fun SettingsCard(
         onToggleLocation,
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
 
-    Divider(color = DarkDivider)
+    Divider(color = colorScheme.outlineVariant)
 
     // --- Focus mode toggle ---
     SettingRow(
@@ -552,13 +594,15 @@ fun SettingRow(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
         Column {
-          Text(title, color = TextLight)
-          Text(desc, color = TextLight.copy(alpha = 0.6f), fontSize = 12.sp)
+          Text(title, color = colorScheme.onSurface)
+          Text(desc, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = 12.sp)
         }
         Switch(checked = value, onCheckedChange = { onToggle() }, modifier = modifier)
       }
@@ -568,19 +612,22 @@ fun SettingRow(
 fun AccountActionsSection() {
   val context = LocalContext.current
   val activity = context as? MainActivity
+  val colorScheme = MaterialTheme.colorScheme
 
   Column(modifier = Modifier.padding(12.dp)) {
-    ActionButton(stringResource(id = R.string.account_privacy)) {}
-    ActionButton(stringResource(id = R.string.account_terms)) {}
     ActionButton(
-        stringResource(id = R.string.account_logout),
-        textColor = Color.Red,
+        text = stringResource(id = R.string.account_privacy), textColor = colorScheme.primary) {}
+    ActionButton(
+        text = stringResource(id = R.string.account_terms), textColor = colorScheme.primary) {}
+    ActionButton(
+        text = stringResource(id = R.string.account_logout),
+        textColor = colorScheme.error,
         onClick = { activity?.signOutAll() })
   }
 }
 
 @Composable
-fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit = {}) {
+fun ActionButton(text: String, textColor: Color, onClick: () -> Unit = {}) {
   androidx.compose.material3.TextButton(
       onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(text, color = textColor, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
@@ -591,6 +638,8 @@ private const val PROGRESS_TO_NEXT_LEVEL = "Progress to next level"
 
 @Composable
 fun LevelProgressBar(level: Int, points: Int) {
+  val colorScheme = MaterialTheme.colorScheme
+
   val currentLevelBase = LevelingConfig.pointsForLevel(level)
   val nextLevelBase = LevelingConfig.pointsForLevel(level + 1)
 
@@ -601,25 +650,28 @@ fun LevelProgressBar(level: Int, points: Int) {
   val animatedFraction by
       animateFloatAsState(
           targetValue = targetFraction,
-          animationSpec = tween(durationMillis = 600),
+          animationSpec = tween(durationMillis = LEVEL_PROGRESS_ANIM_DURATION_MS),
           label = "levelProgressAnim")
 
   Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-    Text(text = PROGRESS_TO_NEXT_LEVEL, color = TextLight.copy(alpha = 0.7f), fontSize = 12.sp)
+    Text(
+        text = PROGRESS_TO_NEXT_LEVEL,
+        color = colorScheme.onSurfaceVariant.copy(alpha = LABEL_ALPHA),
+        fontSize = LABEL_FONT_SIZE_SP.sp)
 
     Spacer(Modifier.height(4.dp))
 
     Box(
         modifier =
             Modifier.fillMaxWidth()
-                .height(SMALL_FONT_SIZE.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(DarkCardItem)) {
+                .height(LEVEL_BAR_HEIGHT)
+                .clip(RoundedCornerShape(LEVEL_BAR_CORNER_RADIUS))
+                .background(colorScheme.surfaceVariant)) {
           Box(
               modifier =
                   Modifier.fillMaxWidth(animatedFraction.coerceIn(0f, 1f))
                       .fillMaxHeight()
-                      .background(AccentViolet))
+                      .background(colorScheme.primary))
         }
 
     Spacer(Modifier.height(4.dp))
@@ -628,8 +680,8 @@ fun LevelProgressBar(level: Int, points: Int) {
 
     Text(
         text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
-        color = TextLight.copy(alpha = 0.7f),
-        fontSize = 11.sp)
+        color = colorScheme.onSurfaceVariant.copy(alpha = LABEL_ALPHA),
+        fontSize = VALUE_FONT_SIZE_SP.sp)
   }
 }
 
@@ -650,6 +702,7 @@ private fun LevelUpRewardSnackbarHandler(
     }
   }
 }
+
 /** Builds a human-readable message summarizing the granted rewards. */
 private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): String {
   val s = event.summary

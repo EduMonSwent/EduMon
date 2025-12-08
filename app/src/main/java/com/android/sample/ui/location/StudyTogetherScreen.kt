@@ -6,6 +6,7 @@ import android.content.ContentValues.TAG
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -50,10 +51,6 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.repos_providors.AppRepositories
-import com.android.sample.ui.theme.BreakYellow
-import com.android.sample.ui.theme.IdleBlue
-import com.android.sample.ui.theme.IndicatorRed
-import com.android.sample.ui.theme.StudyGreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationCallback
@@ -160,8 +157,6 @@ private data class TodoMarker(
     val deadlineText: String,
 )
 
-/* ---------- Main Screen Entry Point ---------- */
-
 @OptIn(
     ExperimentalPermissionsApi::class,
     ExperimentalMaterial3Api::class,
@@ -173,6 +168,7 @@ fun StudyTogetherScreen(
     showMap: Boolean = true,
     chooseLocation: Boolean = false,
     chosenLocation: LatLng = DEFAULT_LOCATION,
+    @DrawableRes userEdumonResId: Int = R.drawable.edumon, // <- overridable user sprite
 ) {
   val permissions =
       rememberMultiplePermissionsState(
@@ -186,25 +182,21 @@ fun StudyTogetherScreen(
 
   val permissionsAlreadyGranted = remember { permissions.allPermissionsGranted }
 
-  // Request permissions if not already granted
   RequestLocationPermissions(
       permissionsAlreadyGranted = permissionsAlreadyGranted,
       requestPermissions = { permissions.launchMultiplePermissionRequest() })
 
-  // Track user location with continuous updates
   TrackUserLocation(
       permissionsGranted = permissions.allPermissionsGranted,
       chooseLocation = chooseLocation,
       chosenLocation = chosenLocation,
       onLocationUpdate = viewModel::consumeLocation)
 
-  // Handle and display error messages
   HandleErrorMessages(
       errorMessage = uiState.errorMessage,
       snackbarHostState = snackbarHostState,
       onErrorConsumed = viewModel::consumeError)
 
-  // Animate camera to follow user location
   val cameraPosition = rememberCameraPositionState()
   AnimateCameraToUser(
       userLatLng = uiState.effectiveUserLatLng, cameraPositionState = cameraPosition)
@@ -237,12 +229,10 @@ fun StudyTogetherScreen(
       snackbarHostState = snackbarHostState,
       addFriendUiState = addFriendUiState,
       actions = actions,
+      userEdumonResId = userEdumonResId,
   )
 }
 
-/* ---------- Permission & Location Side Effects ---------- */
-
-/** Request location permissions if not already granted */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun RequestLocationPermissions(
@@ -256,7 +246,6 @@ private fun RequestLocationPermissions(
   }
 }
 
-/** Set up continuous location tracking with real-time updates */
 @SuppressLint("MissingPermission")
 @Composable
 private fun TrackUserLocation(
@@ -271,7 +260,6 @@ private fun TrackUserLocation(
     if (permissionsGranted) {
       val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
-      // First, get last known location for immediate display
       fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
         val actualLoc = loc?.let { it.latitude to it.longitude }
         resolveLocationCoordinates(chooseLocation, chosenLocation, actualLoc)?.let { (lat, lng) ->
@@ -279,13 +267,10 @@ private fun TrackUserLocation(
         }
       }
 
-      // Then set up continuous location updates
       val locationRequest =
-          LocationRequest.Builder(
-                  Priority.PRIORITY_HIGH_ACCURACY, 10000L // Update every 10 seconds
-                  )
+          LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000L)
               .apply {
-                setMinUpdateIntervalMillis(5000L) // But no more than every 5 seconds
+                setMinUpdateIntervalMillis(5000L)
                 setMaxUpdateDelayMillis(15000L)
               }
               .build()
@@ -301,11 +286,9 @@ private fun TrackUserLocation(
             }
           }
 
-      // Start receiving location updates
       fusedLocationClient.requestLocationUpdates(
           locationRequest, locationCallback, android.os.Looper.getMainLooper())
 
-      // Clean up when effect leaves composition
       try {
         kotlinx.coroutines.awaitCancellation()
       } finally {
@@ -315,7 +298,6 @@ private fun TrackUserLocation(
   }
 }
 
-/** Handle error messages from ViewModel, converting resource IDs to strings */
 @Composable
 private fun HandleErrorMessages(
     errorMessage: String?,
@@ -326,14 +308,12 @@ private fun HandleErrorMessages(
 
   LaunchedEffect(errorMessage) {
     errorMessage?.let { raw ->
-      // If the message looks like an Int (e.g. "2131755344"),
-      // treat it as a string resource ID coming from `require { R.string.… }`.
       val msg =
           raw.toIntOrNull()?.let { resId ->
             try {
               context.getString(resId)
             } catch (_: Throwable) {
-              raw // fallback if it's not a valid string resource
+              raw
             }
           } ?: raw
 
@@ -343,15 +323,13 @@ private fun HandleErrorMessages(
   }
 }
 
-/** Animate camera to follow user location changes */
 @Composable
 private fun AnimateCameraToUser(userLatLng: LatLng, cameraPositionState: CameraPositionState) {
   LaunchedEffect(userLatLng) {
-    cameraPositionState.safeAnimateTo(userLatLng, zoom = 16f, durationMs = 600)
+    cameraPositionState.safeAnimateTo(
+        userLatLng, zoom = DEFAULT_MAP_ZOOM, durationMs = CAMERA_ANIMATION_DURATION_MS)
   }
 }
-
-/* ---------- Main screen layout (reduced complexity) ---------- */
 
 @Composable
 private fun StudyTogetherContent(
@@ -362,6 +340,7 @@ private fun StudyTogetherContent(
     snackbarHostState: SnackbarHostState,
     addFriendUiState: AddFriendUiState,
     actions: StudyTogetherActions,
+    @DrawableRes userEdumonResId: Int,
 ) {
   val showAddDialog = addFriendUiState.showDialog
   val friendUidInput = addFriendUiState.friendUidInput
@@ -377,9 +356,9 @@ private fun StudyTogetherContent(
                 uiState = uiState,
                 onUserSelected = actions.onUserSelected,
                 onFriendSelected = actions.onFriendSelected,
+                userMarkerResId = userEdumonResId,
                 modifier = Modifier.matchParentSize())
           } else {
-            // Simple stub so layout stays similar in tests
             Box(
                 modifier =
                     Modifier.matchParentSize()
@@ -387,17 +366,15 @@ private fun StudyTogetherContent(
                         .testTag(TAG_MAP_STUB))
           }
 
-          // On-campus indicator (only show after location is initialized)
           if (uiState.isLocationInitialized) {
             OnCampusIndicator(
                 modifier =
                     Modifier.align(Alignment.TopCenter)
                         .padding(top = PADDING_TOP_INDICATOR_DP.dp)
                         .testTag(ON_CAMPUS),
-                uiState.isOnCampus)
+                onCampus = uiState.isOnCampus)
           }
 
-          // Compact friends dropdown
           EdumonFriendsDropdown(
               friends = uiState.friends,
               onPick = actions.onFriendSelected,
@@ -406,18 +383,13 @@ private fun StudyTogetherContent(
                       .padding(PADDING_STANDARD_DP.dp, top = PADDING_TOP_FRIENDS_BUTTON_DP.dp)
                       .testTag(TAG_BTN_FRIENDS))
 
-          // Bottom info cards (user / friend status)
           BottomSelectionPanel(
               isUserSelected = uiState.isUserSelected,
               selectedFriend = uiState.selectedFriend,
           )
 
-          // Add friend FAB
-          AddFriendFab(
-              onClick = actions.onAddFriendFabClick,
-          )
+          AddFriendFab(onClick = actions.onAddFriendFabClick)
 
-          // Dialog to add friend by UID
           if (showAddDialog) {
             AddFriendDialog(
                 friendUid = friendUidInput,
@@ -429,8 +401,6 @@ private fun StudyTogetherContent(
       }
 }
 
-/* ---------- Map (user + friends) ---------- */
-
 @Composable
 private fun StudyMap(
     cameraPositionState: CameraPositionState,
@@ -438,20 +408,19 @@ private fun StudyMap(
     uiState: StudyTogetherUiState,
     onUserSelected: () -> Unit,
     onFriendSelected: (FriendStatus) -> Unit,
+    @DrawableRes userMarkerResId: Int,
     modifier: Modifier = Modifier,
 ) {
   val userLatLng = uiState.effectiveUserLatLng
   val friends = uiState.friends
   val context = LocalContext.current
 
-  // --- ToDo markers state + loading from repository ---
   val todoRepo = remember { AppRepositories.toDoRepository }
   val okHttpClient = remember { OkHttpClient() }
   val locationRepo = remember { NominatimLocationRepository(okHttpClient) }
 
   var todoMarkers by remember { mutableStateOf<List<TodoMarker>>(emptyList()) }
 
-  // Collect todos and geocode their locations on a background dispatcher (inside repo)
   LaunchedEffect(todoRepo) {
     todoRepo.todos.collectLatest { todos ->
       val markers = mutableListOf<TodoMarker>()
@@ -484,7 +453,6 @@ private fun StudyMap(
     }
   }
 
-  // One MarkerState per friend id (prevents association crash)
   val markerStates = remember { mutableStateMapOf<String, MarkerState>() }
   LaunchedEffect(friends) {
     val ids = friends.map { it.id }.toSet()
@@ -496,11 +464,11 @@ private fun StudyMap(
       cameraPositionState = cameraPositionState,
       properties =
           MapProperties(mapType = MapType.NORMAL, isMyLocationEnabled = permissionsGranted)) {
-        // --- User marker (BitmapDescriptorFactory only used *inside* GoogleMap) ---
-        val userIcon = remember {
-          BitmapDescriptorFactory.fromBitmap(
-              loadDrawableAsBitmap(context, R.drawable.edumon, sizeDp = USER_MARKER_SIZE_DP))
-        }
+        val userIcon =
+            remember(userMarkerResId) {
+              BitmapDescriptorFactory.fromBitmap(
+                  loadDrawableAsBitmap(context, userMarkerResId, sizeDp = USER_MARKER_SIZE_DP))
+            }
         val userMarkerState = remember { MarkerState(position = userLatLng) }
         LaunchedEffect(userLatLng) { userMarkerState.position = userLatLng }
 
@@ -515,7 +483,6 @@ private fun StudyMap(
               true
             })
 
-        // --- To-Do markers ---
         val todoIcon = remember {
           BitmapDescriptorFactory.fromBitmap(
               loadDrawableAsBitmap(context, R.drawable.marker, sizeDp = TODO_MARKER_SIZE_DP))
@@ -530,7 +497,6 @@ private fun StudyMap(
           )
         }
 
-        // --- Friend markers ---
         val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }
 
         friendsDistinct.forEach { friend ->
@@ -558,8 +524,6 @@ private fun StudyMap(
       }
 }
 
-/* ---------- Bottom selection panel (cards) ---------- */
-
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun BoxScope.BottomSelectionPanel(
@@ -581,8 +545,6 @@ private fun BoxScope.BottomSelectionPanel(
         }
       }
 }
-
-/* ---------- Add friend FAB + dialog ---------- */
 
 @Composable
 private fun BoxScope.AddFriendFab(onClick: () -> Unit) {
@@ -624,8 +586,6 @@ private fun AddFriendDialog(
       dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
-/* ---------- Friends dropdown (compact “edumon” row) ---------- */
-
 @Composable
 private fun EdumonFriendsDropdown(
     friends: List<FriendStatus>,
@@ -636,16 +596,14 @@ private fun EdumonFriendsDropdown(
   var expanded by remember { mutableStateOf(false) }
 
   Box(modifier = modifier) {
-    // Top pill (same style as campus indicator card)
     FilledTonalButton(
         onClick = { expanded = !expanded },
         contentPadding =
             PaddingValues(horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
         modifier = Modifier.defaultMinSize(minHeight = MIN_BUTTON_HEIGHT_DP.dp),
-        shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP), // full pill
+        shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
         colors =
             ButtonDefaults.filledTonalButtonColors(
-                // Use the same color as your campus indicator card
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = ALPHA_SURFACE_HIGH),
                 contentColor = MaterialTheme.colorScheme.onSurface,
             )) {
@@ -657,12 +615,11 @@ private fun EdumonFriendsDropdown(
           Text("$label (${friends.size})")
         }
 
-    // Our own "dropdown", drawn as a Card → only one background, fully rounded
     if (expanded) {
       Card(
           modifier =
               Modifier.align(Alignment.TopStart)
-                  .padding(top = PADDING_TOP_DROPDOWN_DP.dp) // show under the pill
+                  .padding(top = PADDING_TOP_DROPDOWN_DP.dp)
                   .widthIn(min = MIN_DROPDOWN_WIDTH_DP.dp, max = MAX_DROPDOWN_WIDTH_DP.dp),
           shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
           colors =
@@ -739,70 +696,57 @@ private fun FriendDropdownRow(
 
 @Composable
 private fun OnCampusIndicator(modifier: Modifier = Modifier, onCampus: Boolean) {
+  val colorScheme = MaterialTheme.colorScheme
+  val statusColor = if (onCampus) colorScheme.tertiary else colorScheme.error
+  val label = if (onCampus) "On EPFL campus" else "Outside of EPFL campus"
+
   Card(
       modifier = modifier,
       shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
       colors =
           CardDefaults.cardColors(
-              containerColor = MaterialTheme.colorScheme.surface.copy(alpha = ALPHA_SURFACE_HIGH)),
+              containerColor = colorScheme.surface.copy(alpha = ALPHA_SURFACE_HIGH)),
       elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
-        if (onCampus) {
-          Row(
-              modifier =
-                  Modifier.padding(
-                      horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
-              verticalAlignment = Alignment.CenterVertically) {
-                // Green dot
-                Box(
-                    modifier =
-                        Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
-                            .clip(CircleShape)
-                            .background(StudyGreen))
-                Spacer(Modifier.width(SPACING_SMALL_DP.dp))
-                Text(text = "On EPFL campus", style = MaterialTheme.typography.labelLarge)
-              }
-        } else {
-          Row(
-              modifier =
-                  Modifier.padding(
-                      horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
-              verticalAlignment = Alignment.CenterVertically) {
-                // Green dot
-                Box(
-                    modifier =
-                        Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
-                            .clip(CircleShape)
-                            .background(IndicatorRed))
-                Spacer(Modifier.width(SPACING_SMALL_DP.dp))
-                Text(text = "Outside of EPFL campus", style = MaterialTheme.typography.labelLarge)
-              }
-        }
+        Row(
+            modifier =
+                Modifier.padding(
+                    horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+              Box(
+                  modifier =
+                      Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
+                          .clip(CircleShape)
+                          .background(statusColor))
+              Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+              Text(text = label, style = MaterialTheme.typography.labelLarge)
+            }
       }
 }
 
 @Composable
 private fun StatusChip(mode: FriendMode) {
-  val (label, bg) =
+  val colorScheme = MaterialTheme.colorScheme
+  val (label, baseColor) =
       when (mode) {
-        FriendMode.STUDY -> "Studying" to StudyGreen
-        FriendMode.BREAK -> "Break" to BreakYellow
-        FriendMode.IDLE -> "Idle" to IdleBlue
+        FriendMode.STUDY -> "Studying" to colorScheme.tertiary
+        FriendMode.BREAK -> "Break" to colorScheme.secondary
+        FriendMode.IDLE -> "Idle" to colorScheme.primary
       }
 
   Box(
       modifier =
           Modifier.clip(RoundedCornerShape(CORNER_RADIUS_PILL_DP))
-              .background(bg.copy(alpha = ALPHA_STATUS_CHIP_BG))
+              .background(baseColor.copy(alpha = ALPHA_STATUS_CHIP_BG))
               .padding(horizontal = ICON_SIZE_MEDIUM_DP.dp, vertical = PADDING_SMALL_DP.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Box(modifier = Modifier.size(ICON_SIZE_SMALL_DP.dp).clip(CircleShape).background(bg))
+          Box(
+              modifier =
+                  Modifier.size(ICON_SIZE_SMALL_DP.dp).clip(CircleShape).background(baseColor))
           Spacer(Modifier.width(SPACING_TINY_DP.dp))
           Text(text = label, style = MaterialTheme.typography.labelMedium)
         }
       }
 }
-
-/* ---------- Info cards ---------- */
 
 @Composable
 fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
@@ -833,8 +777,6 @@ fun FriendInfoCard(name: String, mode: FriendMode, modifier: Modifier = Modifier
       }
 }
 
-/* -------------------- helpers -------------------- */
-
 private fun edumonFor(friendId: String): Int {
   val all = intArrayOf(R.drawable.edumon1, R.drawable.edumon2, R.drawable.edumon3)
   val idx = abs(friendId.hashCode()) % all.size
@@ -862,7 +804,6 @@ private suspend fun CameraPositionState.safeAnimateTo(
   }
 }
 
-// Helper to persist last location for background polling worker
 internal fun persistLastLocation(ctx: Context, lat: Double, lon: Double) {
   ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
       .edit()

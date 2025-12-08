@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -21,10 +20,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.feature.schedule.viewmodel.CalendarViewModel
-import com.android.sample.ui.theme.BackgroundDark
-import com.android.sample.ui.theme.BackgroundGradientEnd
-import com.android.sample.ui.theme.DarkBlue
-import com.android.sample.ui.theme.PurplePrimary
 
 object CalendarScreenTestTags {
   const val MENU_BUTTON = "menuButton"
@@ -44,10 +39,14 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
   val isMonthView by vm.isMonthView.collectAsState()
   val allTasks by vm.allTasks.collectAsState()
 
+  val colorScheme = MaterialTheme.colorScheme
+
   Box(
       modifier =
           Modifier.fillMaxSize()
-              .background(Brush.verticalGradient(listOf(BackgroundDark, BackgroundGradientEnd)))
+              .background(
+                  Brush.verticalGradient(
+                      listOf(colorScheme.background, colorScheme.surfaceVariant)))
               .padding(horizontal = 20.dp, vertical = 24.dp)) {
         Column(
             modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -58,12 +57,12 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
                   horizontalArrangement = Arrangement.Start) {
                     FloatingActionButton(
                         onClick = { /* TODO: open side menu */},
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        containerColor = colorScheme.primaryContainer,
                         modifier = Modifier.testTag(CalendarScreenTestTags.MENU_BUTTON)) {
                           Icon(
                               imageVector = Icons.Default.KeyboardArrowLeft,
                               contentDescription = "Menu",
-                              tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                              tint = colorScheme.onPrimaryContainer)
                         }
                   }
 
@@ -80,11 +79,11 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
                           text = stringResource(R.string.calendar_title),
                           fontSize = 30.sp,
                           fontWeight = FontWeight.Bold,
-                          color = MaterialTheme.colorScheme.primary)
+                          color = colorScheme.primary)
                       Text(
                           text = stringResource(R.string.calendar_subtitle),
                           style = MaterialTheme.typography.bodyMedium,
-                          color = MaterialTheme.colorScheme.onSurfaceVariant)
+                          color = colorScheme.onSurfaceVariant)
                     }
 
                     FilledTonalButton(
@@ -92,7 +91,8 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
                         shape = RoundedCornerShape(10.dp),
                         colors =
                             ButtonDefaults.filledTonalButtonColors(
-                                containerColor = PurplePrimary, contentColor = Color.White),
+                                containerColor = colorScheme.secondaryContainer,
+                                contentColor = colorScheme.onSecondaryContainer),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                         modifier = Modifier.testTag(CalendarScreenTestTags.VIEW_TOGGLE_BUTTON)) {
                           Text(if (isMonthView) "Month" else "Week")
@@ -105,10 +105,12 @@ fun CalendarScreen(vm: CalendarViewModel = viewModel()) {
                           .shadow(8.dp, RoundedCornerShape(24.dp))
                           .border(
                               width = 1.dp,
-                              color = PurplePrimary,
+                              color = colorScheme.primary,
                               shape = RoundedCornerShape(24.dp))
                           .testTag(CalendarScreenTestTags.CALENDAR_CARD),
-                  colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.85f)),
+                  colors =
+                      CardDefaults.cardColors(
+                          containerColor = colorScheme.surfaceVariant.copy(alpha = 0.85f)),
                   shape = RoundedCornerShape(24.dp)) {
                     if (isMonthView) {
                       MonthGrid(
