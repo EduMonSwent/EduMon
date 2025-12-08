@@ -1,5 +1,6 @@
 package com.android.sample.ui.schedule
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -30,9 +31,6 @@ import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.planner.PetHeader
-import com.android.sample.ui.theme.BackgroundDark
-import com.android.sample.ui.theme.BackgroundGradientEnd
-import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -49,7 +47,25 @@ object ScheduleScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (String) -> Unit = {}) {
+fun ScheduleScreen(
+    onAddTodoClicked: (LocalDate) -> Unit = {},
+    onOpenTodo: (String) -> Unit = {},
+    @DrawableRes avatarResId: Int = R.drawable.edumon,
+    petBackgroundBrush: Brush? = null,
+    @DrawableRes environmentResId: Int = R.drawable.home, // 👈 NEW: environment
+    level: Int = 5,
+) {
+  val colorScheme = MaterialTheme.colorScheme
+
+  // Header background: if caller doesn’t override, use theme-based gradient
+  val headerBrush =
+      petBackgroundBrush
+          ?: Brush.verticalGradient(
+              listOf(
+                  colorScheme.primaryContainer,
+                  colorScheme.background,
+              ))
+
   // Repos
   val resources = LocalContext.current.resources
   val repositories = remember { AppRepositories }
@@ -87,20 +103,31 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
   val weekStart = vm.startOfWeek(state.selectedDate)
   val weekTodos = state.todos.filter { it.dueDate in weekStart..weekStart.plusDays(6) }
 
-  // Extracted — greatly reduces complexity
   ScheduleSideEffects(
-      vm = vm, snackbarHostState = snackbarHostState, currentTab = currentTab, state = state)
+      vm = vm,
+      snackbarHostState = snackbarHostState,
+      currentTab = currentTab,
+      state = state,
+  )
 
   Scaffold(
       snackbarHost = { SnackbarHost(snackbarHostState) },
       floatingActionButton = {
         ScheduleFab(
-            currentTab = currentTab, state = state, vm = vm, onAddTodoClicked = onAddTodoClicked)
+            currentTab = currentTab,
+            state = state,
+            vm = vm,
+            onAddTodoClicked = onAddTodoClicked,
+        )
       },
       containerColor = Color.Transparent,
       modifier =
           Modifier.background(
-              Brush.verticalGradient(listOf(BackgroundDark, BackgroundGradientEnd)))) { padding ->
+              Brush.verticalGradient(
+                  listOf(
+                      colorScheme.background,
+                      colorScheme.surface,
+                  )))) { padding ->
         Column(
             modifier =
                 Modifier.fillMaxSize()
@@ -108,8 +135,15 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .testTag(ScheduleScreenTestTags.ROOT),
             horizontalAlignment = Alignment.CenterHorizontally) {
-              PetHeader(level = 5)
+              PetHeader(
+                  level = level,
+                  avatarResId = avatarResId, // 👈 sprite from caller
+                  backgroundBrush = headerBrush, // 👈 theme colors
+                  environmentResId = environmentResId // 👈 environment from caller
+                  )
+
               Spacer(Modifier.height(8.dp))
+
               Box(Modifier.testTag(ScheduleScreenTestTags.TAB_ROW)) {
                 ThemedTabRow(
                     selected = currentTab.ordinal,
@@ -118,17 +152,21 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
                         listOf(
                             stringResource(R.string.tab_day),
                             stringResource(R.string.tab_week),
-                            stringResource(R.string.tab_month)))
+                            stringResource(R.string.tab_month),
+                        ))
               }
 
               Spacer(Modifier.height(8.dp))
 
               if (state.isAdjustingPlan) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(4.dp))
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().height(4.dp),
+                    color = colorScheme.primary,
+                    trackColor = colorScheme.surfaceVariant,
+                )
                 Spacer(Modifier.height(8.dp))
               }
 
-              // Extracted content — major complexity reduction
               ScheduleMainContent(
                   currentTab = currentTab,
                   vm = vm,
@@ -137,11 +175,11 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
                   allTasks = allTasks,
                   weekTodos = weekTodos,
                   onOpenTodo = onOpenTodo,
-                  onSelectObjective = { activeObjective = it })
+                  onSelectObjective = { activeObjective = it },
+              )
             }
       }
 
-  // Course details modal (unchanged logic)
   activeObjective?.let { obj ->
     CourseExercisesRoute(
         objective = obj,
@@ -180,7 +218,8 @@ private fun ScheduleMainContent(
                   onSelectObjective(nav.objective)
                 }
               },
-              onTodoClicked = onOpenTodo)
+              onTodoClicked = onOpenTodo,
+          )
         }
     ScheduleTab.WEEK ->
         Box(Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_WEEK)) {
@@ -190,7 +229,8 @@ private fun ScheduleMainContent(
               allTasks = allTasks,
               selectedDate = state.selectedDate,
               weekTodos = weekTodos,
-              onTodoClicked = onOpenTodo)
+              onTodoClicked = onOpenTodo,
+          )
         }
     ScheduleTab.MONTH ->
         Box(Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_MONTH)) {
@@ -213,6 +253,8 @@ private fun ScheduleFab(
     vm: ScheduleViewModel,
     onAddTodoClicked: (LocalDate) -> Unit
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   if (currentTab == ScheduleTab.DAY || currentTab == ScheduleTab.WEEK) {
     FloatingActionButton(
         modifier = Modifier.testTag(ScheduleScreenTestTags.FAB_ADD),
@@ -225,10 +267,11 @@ private fun ScheduleFab(
               }
           onAddTodoClicked(date)
         },
-        containerColor = PurplePrimary,
-        contentColor = Color.White) {
-          Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_event))
-        }
+        containerColor = colorScheme.primary,
+        contentColor = colorScheme.onPrimary,
+    ) {
+      Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_event))
+    }
   }
 }
 

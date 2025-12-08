@@ -1,5 +1,6 @@
 package com.android.sample.screens
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -31,13 +32,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.sample.R
 import com.android.sample.data.CreatureStats
 
 @Composable
 fun CreatureHouseCard(
-    creatureResId: Int,
+    @DrawableRes creatureResId: Int = R.drawable.edumon, // ✅ default sprite
     level: Int,
-    environmentResId: Int,
+    @DrawableRes environmentResId: Int = R.drawable.bg_pyrmon, // ✅ default env
     modifier: Modifier = Modifier,
     overrideCreature: (@Composable () -> Unit)? = null,
 ) {
@@ -109,12 +111,14 @@ fun CreatureSprite(resId: Int, modifier: Modifier = Modifier, size: Dp = 120.dp)
                   repeatMode = RepeatMode.Reverse),
           label = "glow")
 
+  val glowColor = MaterialTheme.colorScheme.primary
+
   Box(modifier.size(size + 40.dp), contentAlignment = Alignment.Center) {
     Canvas(modifier = Modifier.fillMaxSize()) {
       drawCircle(
           brush =
               Brush.radialGradient(
-                  0f to Color(0xFFA26BF2).copy(alpha = glowAlpha), 1f to Color.Transparent),
+                  0f to glowColor.copy(alpha = glowAlpha), 1f to Color.Transparent),
           radius = (size.value * 0.9f) * density,
           center = center)
     }

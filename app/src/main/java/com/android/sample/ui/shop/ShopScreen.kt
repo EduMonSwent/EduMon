@@ -1,6 +1,12 @@
 package com.android.sample.ui.shop
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,21 +22,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.sample.ui.theme.*
 import kotlin.random.Random
 import kotlinx.coroutines.launch
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this  file.
+// The assistance of an AI tool (ChatGPT) was solicited in writing this file.
+
 @Composable
 fun ShopScreen(viewModel: ShopViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
   val userCoins by viewModel.userCoins.collectAsState()
@@ -49,12 +56,12 @@ fun ShopScreen(viewModel: ShopViewModel = androidx.lifecycle.viewmodel.compose.v
             onBuy = { item, triggerSuccess, triggerFail ->
               val success = viewModel.buyItem(item)
               if (success) {
-                triggerSuccess() // ✨ animation
+                triggerSuccess()
                 coroutineScope.launch {
                   snackbarHostState.showSnackbar("🎉 You purchased ${item.name}!")
                 }
               } else {
-                triggerFail() // ❌ shake
+                triggerFail()
                 coroutineScope.launch {
                   snackbarHostState.showSnackbar("❌ Not enough coins to buy ${item.name}")
                 }
@@ -70,6 +77,8 @@ fun ShopContent(
     onBuy: (CosmeticItem, () -> Unit, () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   val glowAlpha by
       rememberInfiniteTransition()
           .animateFloat(
@@ -84,27 +93,28 @@ fun ShopContent(
       modifier =
           modifier
               .fillMaxSize()
-              .background(Brush.verticalGradient(listOf(BackgroundDark, Color(0xFF181830))))
+              .background(
+                  Brush.verticalGradient(listOf(colorScheme.background, colorScheme.surface)))
               .padding(16.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "EduMon Shop",
             fontWeight = FontWeight.Bold,
-            color = AccentViolet,
+            color = colorScheme.primary,
             fontSize = 26.sp)
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // --- Coin Balance ---
         Card(
-            colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
             shape = RoundedCornerShape(20.dp),
             modifier =
                 Modifier.fillMaxWidth(0.9f)
                     .shadow(
                         elevation = 8.dp,
-                        spotColor = AccentViolet.copy(alpha = glowAlpha),
-                        ambientColor = AccentViolet.copy(alpha = glowAlpha),
+                        spotColor = colorScheme.primary.copy(alpha = glowAlpha),
+                        ambientColor = colorScheme.primary.copy(alpha = glowAlpha),
                         shape = RoundedCornerShape(20.dp))) {
               Row(
                   modifier = Modifier.padding(16.dp),
@@ -112,19 +122,19 @@ fun ShopContent(
                   verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Your Coins",
-                        color = TextLight.copy(alpha = 0.8f),
+                        color = colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                         fontWeight = FontWeight.Medium,
                         fontSize = 16.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                       Icon(
                           imageVector = Icons.Outlined.AttachMoney,
                           contentDescription = "Coin Icon",
-                          tint = AccentViolet,
+                          tint = colorScheme.primary,
                           modifier = Modifier.size(22.dp))
                       Spacer(modifier = Modifier.width(6.dp))
                       Text(
                           text = "$userCoins",
-                          color = TextLight,
+                          color = colorScheme.onSurface,
                           fontWeight = FontWeight.Bold,
                           fontSize = 18.sp)
                     }
@@ -148,6 +158,8 @@ fun ShopContent(
 
 @Composable
 fun ShopItemCard(item: CosmeticItem, onBuy: ((() -> Unit), (() -> Unit)) -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
   var scale by remember { mutableStateOf(1f) }
   var particles by remember { mutableStateOf(emptyList<Offset>()) }
 
@@ -162,7 +174,7 @@ fun ShopItemCard(item: CosmeticItem, onBuy: ((() -> Unit), (() -> Unit)) -> Unit
                   repeatMode = RepeatMode.Reverse))
 
   Card(
-      colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+      colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
       shape = RoundedCornerShape(18.dp),
       modifier =
           Modifier.fillMaxWidth()
@@ -176,21 +188,19 @@ fun ShopItemCard(item: CosmeticItem, onBuy: ((() -> Unit), (() -> Unit)) -> Unit
               .clickable(enabled = !item.owned) {
                 onBuy(
                     {
-                      // 🎉 succès → scale + particules
                       scale = 1.1f
                       particles = generateParticles()
                     },
-                    {
-                      // ❌ échec → petit shake rouge
-                      scale = 0.95f
-                    })
+                    { scale = 0.95f })
               }) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-          // 🌟 Particles
+          // Particles
           Canvas(modifier = Modifier.matchParentSize()) {
             particles.forEach { p ->
               drawCircle(
-                  color = AccentViolet.copy(alpha = Random.nextFloat()), radius = 4f, center = p)
+                  color = colorScheme.primary.copy(alpha = Random.nextFloat()),
+                  radius = 4f,
+                  center = p)
             }
           }
 
@@ -208,13 +218,13 @@ fun ShopItemCard(item: CosmeticItem, onBuy: ((() -> Unit), (() -> Unit)) -> Unit
                     text = item.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = TextLight,
+                    color = colorScheme.onSurface,
                     textAlign = TextAlign.Center)
 
                 if (item.owned) {
                   Text(
                       text = "Owned",
-                      color = AccentViolet.copy(alpha = 0.7f),
+                      color = colorScheme.primary.copy(alpha = 0.7f),
                       fontWeight = FontWeight.Medium,
                       fontSize = 13.sp)
                 } else {
@@ -228,15 +238,17 @@ fun ShopItemCard(item: CosmeticItem, onBuy: ((() -> Unit), (() -> Unit)) -> Unit
                             { scale = 0.95f })
                       },
                       shape = RoundedCornerShape(10.dp),
-                      colors = ButtonDefaults.buttonColors(containerColor = AccentViolet),
+                      colors =
+                          ButtonDefaults.buttonColors(
+                              containerColor = colorScheme.primary,
+                              contentColor = colorScheme.onPrimary),
                       modifier = Modifier.fillMaxWidth()) {
                         Icon(
                             imageVector = Icons.Outlined.AttachMoney,
                             contentDescription = "Coin Icon",
-                            tint = Color.White,
                             modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("${item.price}", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("${item.price}", fontWeight = FontWeight.Bold)
                       }
                 }
               }
