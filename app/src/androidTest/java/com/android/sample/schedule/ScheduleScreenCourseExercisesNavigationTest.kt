@@ -34,8 +34,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Simplified tests for ScheduleScreen that verify basic rendering and interactions without relying
- * on complex navigation timing.
+ * Tests for ScheduleScreen verifying:
+ * - Basic rendering and tab navigation
+ * - Objectives section display (requires scrolling)
+ * - Navigation to CourseExercises screen
+ * - CourseExercises interactions (tabs, back, complete)
  */
 @RunWith(AndroidJUnit4::class)
 class ScheduleScreenCourseExercisesNavigationTest {
@@ -142,7 +145,7 @@ class ScheduleScreenCourseExercisesNavigationTest {
   }
 
   @Test
-  fun scheduleScreen_initialState_isOnDayTab() {
+  fun scheduleScreen_defaultTab_isDay() {
     composeTestRule.setContent { ScheduleScreen() }
 
     composeTestRule.waitUntil(10_000) {
@@ -193,6 +196,7 @@ class ScheduleScreenCourseExercisesNavigationTest {
   @Test
   fun objectiveWithStartButton_exists() {
     composeTestRule.setContent { ScheduleScreen() }
+    composeTestRule.waitForIdle()
 
     composeTestRule.waitUntil(10_000) {
       composeTestRule
@@ -216,9 +220,10 @@ class ScheduleScreenCourseExercisesNavigationTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  fun scheduleScreen_canSwitchToWeekTab() {
+  fun scheduleScreen_canSwitchBackToDayTab() {
     composeTestRule.setContent { ScheduleScreen() }
 
+    // First, switch to Week tab
     composeTestRule.onAllNodesWithText("Week")[0].performClick()
 
     composeTestRule.waitUntil(10_000) {
@@ -228,14 +233,8 @@ class ScheduleScreenCourseExercisesNavigationTest {
           .isNotEmpty()
     }
 
-    composeTestRule
-        .onNodeWithTag(ScheduleScreenTestTags.CONTENT_WEEK, useUnmergedTree = true)
-        .assertExists()
-  }
-
-  @Test
-  fun scheduleScreen_switchBetweenTabs_maintainsState() {
-    composeTestRule.setContent { ScheduleScreen() }
+    // Now switch back to Day tab
+    composeTestRule.onAllNodesWithText("Day")[0].performClick()
 
     composeTestRule.waitUntil(10_000) {
       composeTestRule
@@ -244,11 +243,31 @@ class ScheduleScreenCourseExercisesNavigationTest {
           .isNotEmpty()
     }
 
+    composeTestRule
+        .onNodeWithTag(ScheduleScreenTestTags.CONTENT_DAY, useUnmergedTree = true)
+        .assertExists()
+  }
+
+  // ========== Objectives Section Tests (requires scrolling) ==========
+
+  @Test
+  fun scheduleScreen_switchBetweenTabs_maintainsState() {
+    composeTestRule.setContent { ScheduleScreen() }
+
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).performScrollTo()
+
     composeTestRule.onAllNodesWithText("Week")[0].performClick()
     composeTestRule.onAllNodesWithText("Day")[0].performClick()
 
     composeTestRule
-        .onNodeWithTag(ScheduleScreenTestTags.CONTENT_DAY, useUnmergedTree = true)
+        .onNodeWithTag(
+            WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + 0, useUnmergedTree = true)
         .assertExists()
   }
 
@@ -259,6 +278,7 @@ class ScheduleScreenCourseExercisesNavigationTest {
   @Test
   fun clickingStartButton_showsCourseExercisesScreen() {
     composeTestRule.setContent { ScheduleScreen() }
+    composeTestRule.waitForIdle()
 
     composeTestRule.waitUntil(10_000) {
       composeTestRule
@@ -289,6 +309,8 @@ class ScheduleScreenCourseExercisesNavigationTest {
         .onNodeWithTag(CourseExercisesTestTags.SCREEN, useUnmergedTree = true)
         .assertExists()
   }
+
+  // ========== CourseExercises Screen Tests ==========
 
   @Test
   fun courseExercises_displaysObjectiveDetails() {
@@ -329,6 +351,7 @@ class ScheduleScreenCourseExercisesNavigationTest {
   @Test
   fun courseExercises_backButton_returnsToSchedule() {
     composeTestRule.setContent { ScheduleScreen() }
+    composeTestRule.waitForIdle()
 
     composeTestRule.waitUntil(10_000) {
       composeTestRule
@@ -364,14 +387,12 @@ class ScheduleScreenCourseExercisesNavigationTest {
 
     composeTestRule.waitUntil(15_000) {
       composeTestRule
-          .onAllNodesWithTag(ScheduleScreenTestTags.ROOT, useUnmergedTree = true)
+          .onAllNodesWithTag(ScheduleScreenTestTags.ROOT)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    composeTestRule
-        .onNodeWithTag(ScheduleScreenTestTags.ROOT, useUnmergedTree = true)
-        .assertExists()
+    composeTestRule.onNodeWithTag(ScheduleScreenTestTags.ROOT).assertExists()
   }
 
   @Test
@@ -412,7 +433,7 @@ class ScheduleScreenCourseExercisesNavigationTest {
 
     composeTestRule.waitUntil(15_000) {
       composeTestRule
-          .onAllNodesWithTag(ScheduleScreenTestTags.ROOT, useUnmergedTree = true)
+          .onAllNodesWithTag(ScheduleScreenTestTags.ROOT)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
@@ -454,7 +475,7 @@ class ScheduleScreenCourseExercisesNavigationTest {
 
     composeTestRule.waitUntil(15_000) {
       composeTestRule
-          .onAllNodesWithTag(CourseExercisesTestTags.TAB_ROW, useUnmergedTree = true)
+          .onAllNodesWithTag(CourseExercisesTestTags.SCREEN, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
