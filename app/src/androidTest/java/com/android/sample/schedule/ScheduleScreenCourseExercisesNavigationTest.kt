@@ -223,11 +223,22 @@ class ScheduleScreenCourseExercisesNavigationTest {
   fun scheduleScreen_canSwitchBackToDayTab() {
     composeTestRule.setContent { ScheduleScreen() }
 
+    // First, switch to Week tab
     composeTestRule.onAllNodesWithText("Week")[0].performClick()
 
     composeTestRule.waitUntil(10_000) {
       composeTestRule
           .onAllNodesWithTag(ScheduleScreenTestTags.CONTENT_WEEK, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    // Now switch back to Day tab
+    composeTestRule.onAllNodesWithText("Day")[0].performClick()
+
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodesWithTag(ScheduleScreenTestTags.CONTENT_DAY, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
