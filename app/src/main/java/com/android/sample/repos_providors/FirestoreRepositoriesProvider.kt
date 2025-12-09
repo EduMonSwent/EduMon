@@ -17,7 +17,6 @@ import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository

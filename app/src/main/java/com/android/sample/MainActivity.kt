@@ -50,65 +50,52 @@ class MainActivity : ComponentActivity() {
     setContent {
       EduMonTheme {
         // Si déjà connecté, aller directement à APP
-        val initialScreen = if (auth.currentUser != null) {
-          Log.d("MainActivity", "User already logged in: ${auth.currentUser?.uid}")
-          AppScreen.APP
-        } else {
-          Log.d("MainActivity", "No user, showing TapToStart")
-          AppScreen.TAP_TO_START
-        }
+        val initialScreen =
+            if (auth.currentUser != null) {
+              Log.d("MainActivity", "User already logged in: ${auth.currentUser?.uid}")
+              AppScreen.APP
+            } else {
+              Log.d("MainActivity", "No user, showing TapToStart")
+              AppScreen.TAP_TO_START
+            }
 
         var currentScreen by remember { mutableStateOf(initialScreen) }
         val scope = rememberCoroutineScope()
         val activity = this@MainActivity
 
         Scaffold { padding ->
-          Box(
-            Modifier
-              .fillMaxSize()
-              .padding(padding)
-          ) {
+          Box(Modifier.fillMaxSize().padding(padding)) {
             when (currentScreen) {
               AppScreen.TAP_TO_START -> {
                 LoginTapToStartScreen(
-                  onTap = {
-                    currentScreen = AppScreen.LOGGING_IN
-                    scope.launch {
-                      val success = performGoogleSignIn(activity)
-                      Log.d("MainActivity", "SignIn result: $success")
-                      currentScreen = if (success) AppScreen.APP else AppScreen.TAP_TO_START
-                    }
-                  }
-                )
+                    onTap = {
+                      currentScreen = AppScreen.LOGGING_IN
+                      scope.launch {
+                        val success = performGoogleSignIn(activity)
+                        Log.d("MainActivity", "SignIn result: $success")
+                        currentScreen = if (success) AppScreen.APP else AppScreen.TAP_TO_START
+                      }
+                    })
               }
-
               AppScreen.LOGGING_IN -> {
                 // Vidéo en background pendant le choix du compte Google
                 Box(modifier = Modifier.fillMaxSize()) {
                   LoopingVideoBackgroundFromAssets(
-                    assetFileName = "onboarding_background_epfl.mp4",
-                    modifier = Modifier.fillMaxSize()
-                  )
+                      assetFileName = "onboarding_background_epfl.mp4",
+                      modifier = Modifier.fillMaxSize())
 
                   // Indicateur de chargement par-dessus
-                  Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                  ) {
-                    CircularProgressIndicator(
-                      color = MaterialTheme.colorScheme.primary
-                    )
+                  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                   }
                 }
               }
-
               AppScreen.APP -> {
                 EduMonNavHost(
-                  onSignOut = {
-                    signOutAll()
-                    currentScreen = AppScreen.TAP_TO_START
-                  }
-                )
+                    onSignOut = {
+                      signOutAll()
+                      currentScreen = AppScreen.TAP_TO_START
+                    })
               }
             }
           }
@@ -121,13 +108,10 @@ class MainActivity : ComponentActivity() {
     return try {
       val credentialManager = CredentialManager.create(activity)
 
-      val googleIdOption = GetSignInWithGoogleOption.Builder(
-        getString(R.string.default_web_client_id)
-      ).build()
+      val googleIdOption =
+          GetSignInWithGoogleOption.Builder(getString(R.string.default_web_client_id)).build()
 
-      val request = GetCredentialRequest.Builder()
-        .addCredentialOption(googleIdOption)
-        .build()
+      val request = GetCredentialRequest.Builder().addCredentialOption(googleIdOption).build()
 
       val result = credentialManager.getCredential(activity, request)
       val credential = result.credential
@@ -148,13 +132,12 @@ class MainActivity : ComponentActivity() {
 
   fun signOutAll() {
     Log.d("MainActivity", "SignOut")
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-      .requestIdToken(getString(R.string.default_web_client_id))
-      .requestEmail()
-      .build()
+    val gso =
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
     val googleClient = GoogleSignIn.getClient(this, gso)
-    googleClient.revokeAccess().addOnCompleteListener {
-      auth.signOut()
-    }
+    googleClient.revokeAccess().addOnCompleteListener { auth.signOut() }
   }
 }

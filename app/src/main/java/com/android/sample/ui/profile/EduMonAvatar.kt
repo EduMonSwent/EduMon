@@ -37,71 +37,70 @@ fun EduMonAvatar(
     showLevelLabel: Boolean = true,
     avatarSize: Dp = UiValues.AvatarSize,
 ) {
-    val user by viewModel.userProfile.collectAsState()
-    val accent by viewModel.accentEffective.collectAsState()
-    val accessories = user.accessories
+  val user by viewModel.userProfile.collectAsState()
+  val accent by viewModel.accentEffective.collectAsState()
+  val accessories = user.accessories
 
-    val equipped =
-        remember(accessories) {
-            accessories
-                .mapNotNull {
-                    val parts = it.split(":")
-                    if (parts.size == 2) parts[0] to parts[1] else null
-                }
-                .toMap()
-        }
+  val equipped =
+      remember(accessories) {
+        accessories
+            .mapNotNull {
+              val parts = it.split(":")
+              if (parts.size == 2) parts[0] to parts[1] else null
+            }
+            .toMap()
+      }
 
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center) {
+  Column(
+      modifier = modifier,
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
         Box(
             modifier =
                 Modifier.size(avatarSize * UiValues.AvatarScale)
                     .clip(RoundedCornerShape(UiValues.AvatarCornerRadius)),
             contentAlignment = Alignment.Center) {
-            Box(
-                modifier =
-                    Modifier
-                        .background(
-                            Brush.radialGradient(
-                                colors =
-                                    listOf(
-                                        accent.copy(alpha = UiValues.AuraAlpha),
-                                        Color.Transparent)))
-                        .size(avatarSize * UiValues.AvatarScale))
+              Box(
+                  modifier =
+                      Modifier.background(
+                              Brush.radialGradient(
+                                  colors =
+                                      listOf(
+                                          accent.copy(alpha = UiValues.AuraAlpha),
+                                          Color.Transparent)))
+                          .size(avatarSize * UiValues.AvatarScale))
 
-            val starterRes = viewModel.starterDrawable()
+              val starterRes = viewModel.starterDrawable()
 
-            Image(
-                painter = painterResource(id = starterRes),
-                contentDescription = stringResource(id = R.string.edumon_content_description),
-                modifier = Modifier.size(avatarSize).zIndex(UiValues.ZBase))
+              Image(
+                  painter = painterResource(id = starterRes),
+                  contentDescription = stringResource(id = R.string.edumon_content_description),
+                  modifier = Modifier.size(avatarSize).zIndex(UiValues.ZBase))
 
-            @Composable
-            fun DrawAccessory(slot: AccessorySlot, z: Float) {
+              @Composable
+              fun DrawAccessory(slot: AccessorySlot, z: Float) {
                 val id = equipped[slot.name.lowercase()] ?: return
                 val res = viewModel.accessoryResId(slot, id)
                 if (res != 0) {
-                    Image(
-                        painter = painterResource(res),
-                        contentDescription = null,
-                        modifier = Modifier.size(avatarSize).zIndex(z))
+                  Image(
+                      painter = painterResource(res),
+                      contentDescription = null,
+                      modifier = Modifier.size(avatarSize).zIndex(z))
                 }
+              }
+
+              DrawAccessory(AccessorySlot.BACK, UiValues.ZBack)
+              DrawAccessory(AccessorySlot.TORSO, UiValues.ZTorso)
+              DrawAccessory(AccessorySlot.HEAD, UiValues.ZHead)
             }
 
-            DrawAccessory(AccessorySlot.BACK, UiValues.ZBack)
-            DrawAccessory(AccessorySlot.TORSO, UiValues.ZTorso)
-            DrawAccessory(AccessorySlot.HEAD, UiValues.ZHead)
-        }
-
         if (showLevelLabel) {
-            Spacer(Modifier.height(UiValues.AvatarLevelSpacing))
-            Text(
-                text = stringResource(R.string.level_label, user.level),
-                color = TextLight,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = UiValues.LevelTextSize)
+          Spacer(Modifier.height(UiValues.AvatarLevelSpacing))
+          Text(
+              text = stringResource(R.string.level_label, user.level),
+              color = TextLight,
+              fontWeight = FontWeight.SemiBold,
+              fontSize = UiValues.LevelTextSize)
         }
-    }
+      }
 }
