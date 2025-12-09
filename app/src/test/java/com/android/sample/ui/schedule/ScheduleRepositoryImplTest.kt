@@ -12,6 +12,7 @@ import com.android.sample.feature.schedule.data.schedule.SourceTag
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import com.android.sample.feature.schedule.repository.planner.FakePlannerRepository // your CLASSES
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepositoryImpl
+import com.android.sample.repos_providors.FakeRepositoriesProvider
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,29 @@ class ScheduleRepositoryImplTest {
       runTest(dispatcher) {
         val today = LocalDate.now()
 
-        // Seed TASKS (8:00 and 10:00)
+        // --- Seed CLASS EVENTS into FakeRepositoriesProvider.scheduleRepository ---
+        FakeRepositoriesProvider.scheduleRepository.importEvents(
+            listOf(
+                ScheduleEvent(
+                    title = "Algorithms",
+                    date = today,
+                    time = LocalTime.of(9, 0),
+                    kind = EventKind.CLASS_LECTURE,
+                    sourceTag = SourceTag.Class),
+                ScheduleEvent(
+                    title = "Data Structures",
+                    date = today,
+                    time = LocalTime.of(11, 0),
+                    kind = EventKind.CLASS_LECTURE,
+                    sourceTag = SourceTag.Class),
+                ScheduleEvent(
+                    title = "Networks",
+                    date = today,
+                    time = LocalTime.of(14, 0),
+                    kind = EventKind.CLASS_LECTURE,
+                    sourceTag = SourceTag.Class)))
+
+        // --- Seed TASKS (8:00 and 10:00) ---
         tasksRepo.emitTasks(
             listOf(
                 StudyItem(
@@ -83,10 +106,11 @@ class ScheduleRepositoryImplTest {
                     time = LocalTime.of(10, 0),
                     priority = Priority.MEDIUM,
                     type = TaskType.STUDY)))
-        // classesRepo already emits [Algorithms 9:00, Data Structures 11:00, Networks 14:00]
+
         advanceUntilIdle()
 
         val titlesInOrder = repo.events.value.map { it.title }
+
         assertEquals(listOf("T0", "Algorithms", "T1", "Data Structures", "Networks"), titlesInOrder)
       }
 

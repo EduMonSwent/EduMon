@@ -15,6 +15,9 @@ import com.android.sample.feature.schedule.data.schedule.SourceTag
 import com.android.sample.feature.schedule.repository.planner.FakePlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
@@ -54,11 +57,14 @@ class ScheduleViewModelTest {
     fakePlannerRepo = FakePlannerRepository() // your provided fake
     resources = ApplicationProvider.getApplicationContext<android.content.Context>().resources
     fakeToDoRepo = FakeToDoRepository()
+    mockkStatic(LocalTime::class)
+    every { LocalTime.now() } returns LocalTime.of(7, 0)
     vm = ScheduleViewModel(fakeScheduleRepo, fakePlannerRepo, resources, fakeToDoRepo)
   }
 
   @After
   fun tearDown() {
+    unmockkStatic(LocalTime::class)
     Dispatchers.resetMain()
   }
 
@@ -70,7 +76,7 @@ class ScheduleViewModelTest {
     assertEquals(
         listOf("Algorithms", "Data Structures", "Networks"), s.todayClasses.map(Class::courseName))
     assertTrue(s.attendanceRecords.isEmpty())
-    assertFalse(s.isLoading)
+    assertFalse(s.allClassesFinished)
     assertNull(s.errorMessage)
   }
 
@@ -313,5 +319,11 @@ class ScheduleViewModelTest {
 
     override suspend fun getEventsForWeek(startDate: LocalDate): List<ScheduleEvent> =
         getEventsBetween(startDate, startDate.plusDays(6))
+
+    override suspend fun importEvents(events: List<ScheduleEvent>) {
+      val current = _events.value.toMutableList()
+      current.addAll(events)
+      _events.value = current
+    }
   }
 }

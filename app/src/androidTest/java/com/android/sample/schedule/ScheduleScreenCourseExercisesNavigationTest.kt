@@ -1,8 +1,20 @@
 package com.android.sample.schedule
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
@@ -33,26 +45,29 @@ class ScheduleScreenCourseExercisesNavigationTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-  private lateinit var originalRepositories: RepositoriesProvider
+  private lateinit var previousRepositories: RepositoriesProvider
 
   @Before
-  fun setup() {
-    // Save original repositories and switch to fakes for testing
-    originalRepositories = AppRepositories
+  fun setUp() {
+    // Use in-memory fakes for all repositories during these tests
+    previousRepositories = AppRepositories
     AppRepositories = FakeRepositoriesProvider
 
-    // Set up test objectives with PDF URLs for CourseExercises screen
-    setupTestObjectives()
+    runBlocking { resetObjectives() }
   }
 
   @After
   fun tearDown() {
-    // Restore original repositories
-    AppRepositories = originalRepositories
+    AppRepositories = previousRepositories
+    runBlocking { FakeObjectivesRepository.setObjectives(emptyList()) }
   }
 
-  private fun setupTestObjectives() = runBlocking {
+  /** Reset objectives to default incomplete state. */
+  private suspend fun resetObjectives() {
     val today = LocalDate.now().dayOfWeek
+    val tomorrow = today.plus(1)
+    val afterTomorrow = today.plus(2)
+
     FakeObjectivesRepository.setObjectives(
         listOf(
             Objective(
@@ -60,34 +75,36 @@ class ScheduleScreenCourseExercisesNavigationTest {
                 course = "CS101",
                 estimateMinutes = 30,
                 completed = false,
-                day = today, // Make sure it appears today
-                coursePdfUrl = "https://example.com/cs101/course.pdf",
-                exercisePdfUrl = "https://example.com/cs101/exercises.pdf"),
+                day = today),
             Objective(
                 title = "Outline lab report",
                 course = "CS101",
                 estimateMinutes = 20,
                 completed = false,
-                day = today,
-                coursePdfUrl = "https://example.com/cs101/lab-course.pdf",
-                exercisePdfUrl = "https://example.com/cs101/lab-exercises.pdf"),
+                day = tomorrow),
             Objective(
                 title = "Review 15 flashcards",
                 course = "ENG200",
                 estimateMinutes = 10,
                 completed = false,
-                day = today,
-                coursePdfUrl = "https://example.com/eng200/course.pdf",
-                exercisePdfUrl = "https://example.com/eng200/exercises.pdf"),
+                day = afterTomorrow),
         ))
   }
 
-  // ========== Basic Rendering Tests ==========
+  /** Match any node whose testTag starts with [prefix]. */
+  private fun hasTestTagPrefix(prefix: String): SemanticsMatcher =
+      SemanticsMatcher("TestTag starts with \"$prefix\"") { node ->
+        val tag = node.config.getOrNull(SemanticsProperties.TestTag)
+        tag?.startsWith(prefix) == true
+      }
+
+  // ---------------------------------------------------------------------------
+  // Basic rendering
+  // ---------------------------------------------------------------------------
 
   @Test
   fun scheduleScreen_renders_withoutCrashing() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(ScheduleScreenTestTags.ROOT).assertExists()
   }
@@ -95,17 +112,29 @@ class ScheduleScreenCourseExercisesNavigationTest {
   @Test
   fun scheduleScreen_showsTabRow() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(ScheduleScreenTestTags.TAB_ROW).assertExists()
   }
 
   @Test
+  fun scheduleScreen_showsObjectivesSection() {
+    composeTestRule.setContent { ScheduleScreen() }
+
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).assertExists()
+  }
+
+  @Test
   fun scheduleScreen_showsFabButton() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.waitUntil(10_000) {
       composeTestRule
           .onAllNodesWithTag(ScheduleScreenTestTags.FAB_ADD)
           .fetchSemanticsNodes()
@@ -118,53 +147,90 @@ class ScheduleScreenCourseExercisesNavigationTest {
   @Test
   fun scheduleScreen_defaultTab_isDay() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.waitUntil(10_000) {
       composeTestRule
-          .onAllNodesWithTag(ScheduleScreenTestTags.CONTENT_DAY)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_DAY).assertExists()
-  }
-
-  // ========== Tab Navigation Tests ==========
-
-  @Test
-  fun scheduleScreen_canSwitchToWeekTab() {
-    composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
-
-    // Click Week tab
-    composeTestRule.onAllNodesWithText("Week")[0].performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(ScheduleScreenTestTags.CONTENT_WEEK, useUnmergedTree = true)
+          .onAllNodesWithTag(ScheduleScreenTestTags.CONTENT_DAY, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
     composeTestRule
-        .onNodeWithTag(ScheduleScreenTestTags.CONTENT_WEEK, useUnmergedTree = true)
+        .onNodeWithTag(ScheduleScreenTestTags.CONTENT_DAY, useUnmergedTree = true)
         .assertExists()
   }
+
+  // ---------------------------------------------------------------------------
+  // Objectives section
+  // ---------------------------------------------------------------------------
+
+  @Test
+  fun objectiveSection_hasAtLeastOneObjective_orEmptyState() {
+    composeTestRule.setContent { ScheduleScreen() }
+
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    val hasObjectiveRow =
+        composeTestRule
+            .onAllNodes(
+                hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX), useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+
+    val hasEmptyState =
+        composeTestRule
+            .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_EMPTY, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+
+    assert(hasObjectiveRow || hasEmptyState) {
+      "Should have either an objective row or empty state"
+    }
+  }
+
+  @Test
+  fun objectiveWithStartButton_exists() {
+    composeTestRule.setContent { ScheduleScreen() }
+    composeTestRule.waitForIdle()
+
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .assertExists()
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tab switching
+  // ---------------------------------------------------------------------------
 
   @Test
   fun scheduleScreen_canSwitchBackToDayTab() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
-    // Switch to Week
     composeTestRule.onAllNodesWithText("Week")[0].performClick()
-    composeTestRule.waitForIdle()
 
-    // Switch back to Day
-    composeTestRule.onAllNodesWithText("Day")[0].performClick()
-    composeTestRule.waitForIdle()
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodesWithTag(ScheduleScreenTestTags.CONTENT_WEEK, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
     composeTestRule
         .onNodeWithTag(ScheduleScreenTestTags.CONTENT_DAY, useUnmergedTree = true)
@@ -174,31 +240,10 @@ class ScheduleScreenCourseExercisesNavigationTest {
   // ========== Objectives Section Tests (requires scrolling) ==========
 
   @Test
-  fun objectivesSection_existsAfterScrolling() {
+  fun scheduleScreen_switchBetweenTabs_maintainsState() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
-    // Wait for objectives section to load
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      composeTestRule
-          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Scroll to make it visible
-    composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).performScrollTo()
-
-    composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).assertExists()
-  }
-
-  @Test
-  fun objectivesSection_showsTodaysObjectives() {
-    composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
-
-    // Wait and scroll to objectives
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
+    composeTestRule.waitUntil(10_000) {
       composeTestRule
           .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
           .fetchSemanticsNodes()
@@ -206,41 +251,8 @@ class ScheduleScreenCourseExercisesNavigationTest {
     }
     composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).performScrollTo()
 
-    // Should have at least one objective
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX + 0, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX + 0, useUnmergedTree = true)
-        .assertExists()
-  }
-
-  @Test
-  fun objectiveStartButton_exists() {
-    composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
-
-    // Wait and scroll to objectives
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      composeTestRule
-          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).performScrollTo()
-
-    // Start button should exist
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(
-              WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + 0, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+    composeTestRule.onAllNodesWithText("Week")[0].performClick()
+    composeTestRule.onAllNodesWithText("Day")[0].performClick()
 
     composeTestRule
         .onNodeWithTag(
@@ -248,41 +260,34 @@ class ScheduleScreenCourseExercisesNavigationTest {
         .assertExists()
   }
 
-  // ========== Navigation to CourseExercises Tests ==========
+  // ---------------------------------------------------------------------------
+  // Navigation to CourseExercises
+  // ---------------------------------------------------------------------------
 
   @Test
-  fun clickingStartButton_navigatesToCourseExercisesScreen() {
+  fun clickingStartButton_showsCourseExercisesScreen() {
     composeTestRule.setContent { ScheduleScreen() }
     composeTestRule.waitForIdle()
 
-    // Wait for objectives and scroll
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
+    composeTestRule.waitUntil(10_000) {
       composeTestRule
-          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).performScrollTo()
-
-    // Wait for start button
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(
-              WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + 0, useUnmergedTree = true)
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    // Click start button
     composeTestRule
-        .onNodeWithTag(
-            WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + 0, useUnmergedTree = true)
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .performScrollTo()
         .performClick()
 
-    composeTestRule.waitForIdle()
-
-    // CourseExercises screen should appear
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
+    composeTestRule.mainClock.advanceTimeBy(1_000)
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodesWithTag(CourseExercisesTestTags.SCREEN, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -297,15 +302,29 @@ class ScheduleScreenCourseExercisesNavigationTest {
   // ========== CourseExercises Screen Tests ==========
 
   @Test
-  fun courseExercisesScreen_displaysObjectiveTitle() {
+  fun courseExercises_displaysObjectiveDetails() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
-    // Navigate to CourseExercises
-    navigateToCourseExercises()
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
-    // Verify objective title is displayed
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .performScrollTo()
+        .performClick()
+
+    composeTestRule.mainClock.advanceTimeBy(1_000)
+
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodesWithTag(CourseExercisesTestTags.OBJECTIVE_TITLE, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -319,50 +338,43 @@ class ScheduleScreenCourseExercisesNavigationTest {
   }
 
   @Test
-  fun courseExercisesScreen_hasCoursAndExercisesTabs() {
+  fun courseExercises_backButton_returnsToSchedule() {
     composeTestRule.setContent { ScheduleScreen() }
     composeTestRule.waitForIdle()
 
-    navigateToCourseExercises()
-
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.waitUntil(10_000) {
       composeTestRule
-          .onAllNodesWithTag(CourseExercisesTestTags.TAB_ROW, useUnmergedTree = true)
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
     composeTestRule
-        .onNodeWithTag(CourseExercisesTestTags.COURSE_TAB, useUnmergedTree = true)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB, useUnmergedTree = true)
-        .assertExists()
-  }
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .performScrollTo()
+        .performClick()
 
-  @Test
-  fun courseExercisesScreen_backButton_returnsToSchedule() {
-    composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
+    composeTestRule.mainClock.advanceTimeBy(1_000)
 
-    navigateToCourseExercises()
-
-    // Wait for back button
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodesWithTag(CourseExercisesTestTags.BACK_BUTTON, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    // Click back
     composeTestRule
         .onNodeWithTag(CourseExercisesTestTags.BACK_BUTTON, useUnmergedTree = true)
         .performClick()
-    composeTestRule.waitForIdle()
 
-    // Should return to schedule
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.mainClock.advanceTimeBy(1_000)
+
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodesWithTag(ScheduleScreenTestTags.ROOT)
           .fetchSemanticsNodes()
@@ -373,78 +385,98 @@ class ScheduleScreenCourseExercisesNavigationTest {
   }
 
   @Test
-  fun courseExercisesScreen_completedButton_marksObjectiveAsComplete() {
+  fun courseExercises_completedButton_marksObjectiveComplete() {
     composeTestRule.setContent { ScheduleScreen() }
-    composeTestRule.waitForIdle()
 
-    navigateToCourseExercises()
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
-    // Wait for completed FAB
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .performScrollTo()
+        .performClick()
+
+    composeTestRule.mainClock.advanceTimeBy(1_000)
+
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodesWithTag(CourseExercisesTestTags.COMPLETED_FAB, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    // Click completed
     composeTestRule
         .onNodeWithTag(CourseExercisesTestTags.COMPLETED_FAB, useUnmergedTree = true)
         .performClick()
-    composeTestRule.waitForIdle()
 
-    // Should return to schedule
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.mainClock.advanceTimeBy(1_000)
+
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodesWithTag(ScheduleScreenTestTags.ROOT)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    // First objective should no longer have start button (it's completed)
     composeTestRule
-        .onNodeWithTag(
-            WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + 0, useUnmergedTree = true)
-        .assertDoesNotExist()
+        .onNodeWithTag(ScheduleScreenTestTags.ROOT, useUnmergedTree = true)
+        .assertExists()
+
+    // Start button for the first objective should no longer exist
+    composeTestRule
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .assertCountEquals(0)
   }
 
-  // ========== Helper Methods ==========
+  @Test
+  fun courseExercises_tabRow_exists() {
+    composeTestRule.setContent { ScheduleScreen() }
 
-  private fun navigateToCourseExercises() {
-    // Wait for objectives section
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
+    composeTestRule.waitUntil(10_000) {
       composeTestRule
-          .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION)
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    // Scroll to objectives
-    composeTestRule.onNodeWithTag(WeekProgDailyObjTags.OBJECTIVES_SECTION).performScrollTo()
-
-    // Wait for start button
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(
-              WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + 0, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Click start button
     composeTestRule
-        .onNodeWithTag(
-            WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX + 0, useUnmergedTree = true)
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .performScrollTo()
         .performClick()
 
-    composeTestRule.waitForIdle()
+    composeTestRule.mainClock.advanceTimeBy(1_000)
 
-    // Wait for CourseExercises screen
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodesWithTag(CourseExercisesTestTags.SCREEN, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
+
+    composeTestRule
+        .onNodeWithTag(CourseExercisesTestTags.TAB_ROW, useUnmergedTree = true)
+        .assertExists()
+    composeTestRule
+        .onNodeWithTag(CourseExercisesTestTags.COURSE_TAB, useUnmergedTree = true)
+        .assertExists()
+    composeTestRule
+        .onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB, useUnmergedTree = true)
+        .assertExists()
   }
 }

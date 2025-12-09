@@ -16,12 +16,17 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.R
 import com.android.sample.feature.weeks.ui.WeekProgDailyObjTags
+import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.repos_providors.FakeRepositoriesProvider
 import com.android.sample.ui.calendar.CalendarScreenTestTags
 import com.android.sample.ui.schedule.ScheduleScreen
+import com.android.sample.ui.schedule.ScheduleScreenTestTags
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import junit.framework.TestCase.assertEquals
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,6 +35,20 @@ import org.junit.runner.RunWith
 class ScheduleScreenAllAndroidTest {
 
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+
+  private var originalRepositories = AppRepositories
+
+  @Before
+  fun setUp() {
+    // Use fake repositories so ScheduleScreen never touches real Firebase / network
+    originalRepositories = AppRepositories
+    AppRepositories = FakeRepositoriesProvider
+  }
+
+  @After
+  fun tearDown() {
+    AppRepositories = originalRepositories
+  }
 
   private fun fabMatcher(ctx: ComponentActivity): SemanticsMatcher {
     val label = ctx.getString(R.string.add_event)
@@ -141,12 +160,12 @@ class ScheduleScreenAllAndroidTest {
 
     rule.waitUntil(timeoutMillis = 5000) {
       rule
-          .onAllNodesWithTag("WeekContent", useUnmergedTree = true)
+          .onAllNodesWithTag(ScheduleScreenTestTags.CONTENT_WEEK, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    rule.onNodeWithTag("WeekContent", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_WEEK, useUnmergedTree = true).assertExists()
     rule.onNodeWithTag(CalendarScreenTestTags.CALENDAR_CARD, useUnmergedTree = true).assertExists()
     rule.onNodeWithTag(WeekProgDailyObjTags.WEEK_DOTS_ROW, useUnmergedTree = true).assertExists()
   }

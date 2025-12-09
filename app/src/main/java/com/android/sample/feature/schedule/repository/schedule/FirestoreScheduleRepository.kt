@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 
 /**
- * Firestore-backed implementation of the unified ScheduleRepository.
+ * This class was implemented with the help of ai (ChatGPT) Firestore-backed implementation of the
+ * unified ScheduleRepository.
  *
  * Events are stored under: /users/{uid}/schedule/{eventId}
  * - Real-time sync via snapshot listeners
@@ -116,6 +117,18 @@ class FirestoreScheduleRepository(
     val endDate = startDate.plusDays(6)
     return getEventsBetween(startDate, endDate)
   }
+
+  override suspend fun importEvents(events: List<ScheduleEvent>) {
+    val uid = auth.currentUser?.uid ?: return
+    val col = userScheduleCollection(uid)
+
+    events.forEach { event ->
+      val id = if (event.id.isBlank()) col.document().id else event.id
+      val eventWithId = event.copy(id = id)
+
+      col.document(id).set(eventWithId.toFirestoreMap(), SetOptions.merge()).await()
+    }
+  }
 }
 
 /* ---------- Firestore mapping helpers ---------- */
@@ -133,7 +146,7 @@ private fun ScheduleEvent.toFirestoreMap(): Map<String, Any?> =
         "courseCode" to courseCode,
         "location" to location,
         "sourceTag" to sourceTag.name,
-    )
+        "categories" to categories)
 
 private fun DocumentSnapshot.toScheduleEvent(): ScheduleEvent? {
   val title = getString("title") ?: return null
@@ -161,6 +174,7 @@ private fun DocumentSnapshot.toScheduleEvent(): ScheduleEvent? {
   val sourceTagName = getString("sourceTag") ?: SourceTag.Task.name
   val sourceTag =
       kotlin.runCatching { SourceTag.valueOf(sourceTagName) }.getOrNull() ?: SourceTag.Task
+  val categories = get("categories") as? List<String> ?: emptyList()
 
   return ScheduleEvent(
       id = id, // Firestore doc id
@@ -174,5 +188,6 @@ private fun DocumentSnapshot.toScheduleEvent(): ScheduleEvent? {
       priority = priority,
       courseCode = courseCode,
       location = location,
-      sourceTag = sourceTag)
+      sourceTag = sourceTag,
+      categories = categories)
 }

@@ -1,5 +1,7 @@
 package com.android.sample.ui.stats.viewmodel
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
@@ -38,10 +40,11 @@ class StatsViewModel(
   fun syncCompletedGoalsFromObjectives() {
     viewModelScope.launch {
       if (Firebase.auth.currentUser == null) return@launch
-      val current = repo.stats.value
-      val base = current
+
+      val base = repo.stats.value
       val objs = objectivesRepo.getObjectives()
       val completed = objs.count { it.completed }
+
       repo.update(base.copy(completedGoals = completed))
     }
   }

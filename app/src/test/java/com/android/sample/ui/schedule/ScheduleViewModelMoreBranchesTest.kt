@@ -106,6 +106,10 @@ class ScheduleViewModelMoreBranchesTest {
 
     override suspend fun getEventsForWeek(startDate: LocalDate) =
         getEventsBetween(startDate, startDate.plusDays(6))
+
+    override suspend fun importEvents(events: List<ScheduleEvent>) {
+      TODO("Not yet implemented")
+    }
   }
 
   private class FakePlannerRepo : PlannerRepository() {

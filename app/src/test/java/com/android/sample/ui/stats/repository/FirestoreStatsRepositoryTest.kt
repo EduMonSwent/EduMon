@@ -1,37 +1,71 @@
+// app/src/test/java/com/android/sample/ui/stats/repository/FirestoreStatsRepositoryTest.kt
 package com.android.sample.ui.stats.repository
 
+// Parts of this code have been written using an LLM.
+
 import com.android.sample.ui.stats.model.StudyStats
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.LinkedHashMap
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class FirestoreStatsRepositoryTest {
 
+  private lateinit var auth: FirebaseAuth
+  private lateinit var firestore: FirebaseFirestore
+  private lateinit var user: FirebaseUser
+  private lateinit var usersCollection: CollectionReference
+  private lateinit var userDoc: DocumentReference
+  private lateinit var statsCollection: CollectionReference
+  private lateinit var statsDoc: DocumentReference
+
+  @Before
+  fun setup() {
+    auth = mock()
+    firestore = mock()
+    user = mock()
+    usersCollection = mock()
+    userDoc = mock()
+    statsCollection = mock()
+    statsDoc = mock()
+
+    whenever(user.uid).thenReturn("test-uid")
+
+    whenever(firestore.collection("users")).thenReturn(usersCollection)
+    whenever(usersCollection.document("test-uid")).thenReturn(userDoc)
+    whenever(userDoc.collection("stats")).thenReturn(statsCollection)
+    whenever(statsCollection.document("stats")).thenReturn(statsDoc)
+  }
+
   private fun repoWithNoUser(): FirestoreStatsRepository {
-    val db: FirebaseFirestore = mock()
-    val auth: FirebaseAuth = mock()
-    // Unsigned path -> currentUser == null (so repo never touches Firestore)
     whenever(auth.currentUser).thenReturn(null)
-    return FirestoreStatsRepository(db, auth)
+    return FirestoreStatsRepository(firestore, auth)
+  }
+
+  private fun repoWithUser(): FirestoreStatsRepository {
+    whenever(auth.currentUser).thenReturn(user)
+    return FirestoreStatsRepository(firestore, auth)
   }
 
   private fun defaultStats(): StudyStats =
       StudyStats(
-          totalTimeMin = 5,
-          courseTimesMin =
-              linkedMapOf(
-                  "Analyse I" to 60,
-                  "Algèbre linéaire" to 45,
-                  "Physique mécanique" to 25,
-                  "AICC I" to 15),
-          completedGoals = 10,
-          progressByDayMin = listOf(0, 25, 30, 15, 50, 20, 5),
-          weeklyGoalMin = 300)
+          totalTimeMin = 0,
+          courseTimesMin = linkedMapOf(),
+          completedGoals = 0,
+          progressByDayMin = listOf(0, 0, 0, 0, 0, 0, 0),
+          weeklyGoalMin = 0)
 
   @Test
   fun titles_are_fixed() {
@@ -42,8 +76,21 @@ class FirestoreStatsRepositoryTest {
   @Test
   fun loadScenario_anyIndex_sets_selectedIndex_to_zero() {
     val repo = repoWithNoUser()
-    // Pick any index; repo always switches to the single scenario (0)
     repo.loadScenario(3)
+    assertEquals(0, repo.selectedIndex.value)
+  }
+
+  @Test
+  fun loadScenario_negative_index_sets_to_zero() {
+    val repo = repoWithNoUser()
+    repo.loadScenario(-5)
+    assertEquals(0, repo.selectedIndex.value)
+  }
+
+  @Test
+  fun loadScenario_zero_index_sets_to_zero() {
+    val repo = repoWithNoUser()
+    repo.loadScenario(0)
     assertEquals(0, repo.selectedIndex.value)
   }
 
@@ -51,11 +98,9 @@ class FirestoreStatsRepositoryTest {
   fun initial_stats_are_defaults_and_refresh_unsigned_is_noop() = runBlocking {
     val repo = repoWithNoUser()
 
-    // Initial value in StateFlow is defaultStats()
     val expected = defaultStats()
     assertEquals(expected, repo.stats.value)
 
-    // refresh() returns early when unsigned; stats remain unchanged
     repo.refresh()
     assertEquals(expected, repo.stats.value)
   }
@@ -65,7 +110,6 @@ class FirestoreStatsRepositoryTest {
     val repo = repoWithNoUser()
 
     val before = repo.stats.value
-    // Propose a completely different payload
     val updated =
         StudyStats(
             totalTimeMin = 999,
@@ -78,12 +122,116 @@ class FirestoreStatsRepositoryTest {
                 },
             progressByDayMin = listOf(1, 2, 3, 4, 5, 6, 7))
 
-    // Because there is no user, update() returns early and does NOT mutate _stats
     repo.update(updated)
 
     val after = repo.stats.value
     assertEquals(before, after)
-    // and still equals to defaults
     assertEquals(defaultStats(), after)
+  }
+
+  @Test
+  fun refresh_with_user_creates_default_doc_if_not_exists() = runBlocking {
+    val repo = repoWithUser()
+
+    val snapshot: DocumentSnapshot = mock()
+    val getTask: Task<DocumentSnapshot> = Tasks.forResult(snapshot)
+
+    whenever(statsDoc.get()).thenReturn(getTask)
+    whenever(snapshot.exists()).thenReturn(false)
+    whenever(snapshot.data).thenReturn(null)
+    whenever(statsDoc.set(any<Map<String, Any>>(), any())).thenReturn(Tasks.forResult(null))
+
+    repo.refresh()
+
+    val stats = repo.stats.value
+    assertEquals(defaultStats(), stats)
+  }
+
+  @Test
+  fun refresh_with_existing_doc_loads_stats() = runBlocking {
+    val repo = repoWithUser()
+
+    val snapshot: DocumentSnapshot = mock()
+    val getTask: Task<DocumentSnapshot> = Tasks.forResult(snapshot)
+
+    val dataMap =
+        mapOf(
+            "totalTimeMin" to 120,
+            "weeklyGoalMin" to 300,
+            "completedGoals" to 5,
+            "courseTimesMin" to mapOf("Math" to 60, "Physics" to 60),
+            "progressByDayMin" to listOf(10, 20, 30, 15, 25, 10, 10))
+
+    whenever(statsDoc.get()).thenReturn(getTask)
+    whenever(snapshot.exists()).thenReturn(true)
+    whenever(snapshot.data).thenReturn(dataMap)
+    whenever(statsDoc.set(any<Map<String, Any>>(), any())).thenReturn(Tasks.forResult(null))
+
+    repo.refresh()
+
+    val stats = repo.stats.value
+    assertEquals(120, stats.totalTimeMin)
+    assertEquals(300, stats.weeklyGoalMin)
+    assertEquals(5, stats.completedGoals)
+    assertEquals(2, stats.courseTimesMin.size)
+    assertEquals(60, stats.courseTimesMin["Math"])
+  }
+
+  @Test
+  fun update_with_user_persists_to_firestore() = runBlocking {
+    val repo = repoWithUser()
+
+    whenever(statsDoc.set(any<Map<String, Any>>(), any())).thenReturn(Tasks.forResult(null))
+
+    val newStats =
+        StudyStats(
+            totalTimeMin = 150,
+            weeklyGoalMin = 400,
+            completedGoals = 7,
+            courseTimesMin = linkedMapOf("CS" to 90, "Math" to 60),
+            progressByDayMin = listOf(20, 25, 30, 20, 15, 20, 20))
+
+    repo.update(newStats)
+
+    assertEquals(newStats, repo.stats.value)
+  }
+
+  @Test
+  fun mapToStats_handles_null_map() = runBlocking {
+    val repo = repoWithUser()
+
+    val snapshot: DocumentSnapshot = mock()
+    val getTask: Task<DocumentSnapshot> = Tasks.forResult(snapshot)
+
+    whenever(statsDoc.get()).thenReturn(getTask)
+    whenever(snapshot.exists()).thenReturn(true)
+    whenever(snapshot.data).thenReturn(null)
+    whenever(statsDoc.set(any<Map<String, Any>>(), any())).thenReturn(Tasks.forResult(null))
+
+    repo.refresh()
+
+    assertEquals(defaultStats(), repo.stats.value)
+  }
+
+  @Test
+  fun mapToStats_handles_missing_fields() = runBlocking {
+    val repo = repoWithUser()
+
+    val snapshot: DocumentSnapshot = mock()
+    val getTask: Task<DocumentSnapshot> = Tasks.forResult(snapshot)
+
+    val incompleteMap = mapOf("totalTimeMin" to 50)
+
+    whenever(statsDoc.get()).thenReturn(getTask)
+    whenever(snapshot.exists()).thenReturn(true)
+    whenever(snapshot.data).thenReturn(incompleteMap)
+    whenever(statsDoc.set(any<Map<String, Any>>(), any())).thenReturn(Tasks.forResult(null))
+
+    repo.refresh()
+
+    val stats = repo.stats.value
+    assertEquals(50, stats.totalTimeMin)
+    assertEquals(0, stats.weeklyGoalMin)
+    assertEquals(0, stats.completedGoals)
   }
 }
