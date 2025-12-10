@@ -13,6 +13,7 @@ class IcsImporter(private val plannerRepository: PlannerRepository, context: Con
   private val matcher = KeywordMatcher(context)
 
   suspend fun importFromStream(stream: InputStream) {
+    val classesToSave = mutableListOf<Class>()
     plannerRepository.clearClasses()
     val classes = IcsParser.parse(stream)
     val groupedClasses = classes.groupBy { CourseIdentity(it.title, it.start, it.end, it.location) }
@@ -33,8 +34,9 @@ class IcsImporter(private val plannerRepository: PlannerRepository, context: Con
               location = c.location ?: "",
               instructor = extractInstructor(representative.description),
               daysOfWeek = daysOfWeek)
-      plannerRepository.saveClass(classItem)
+      classesToSave.add(classItem)
     }
+    plannerRepository.saveClasses(classesToSave)
   }
 
   private fun mapClassType(c: IcsParser.IcsClass): ClassType {

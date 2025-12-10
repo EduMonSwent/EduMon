@@ -8,10 +8,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -21,16 +29,13 @@ class MainActivity : ComponentActivity() {
 
   private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
-  override fun onCreate(savedInstanceState: Bundle?) {
+  override fun onCreate(savedInstanceState: Bundle?) { // <-- @OptIn removed
     super.onCreate(savedInstanceState)
 
-    // ⭐ SIGN IN BEFORE ANY UI OR REPOSITORY INITIALIZATION
-    if (auth.currentUser == null) {
-      auth.signInAnonymously()
-    }
-
-    // Deep link handling
+    // Capture the intent data (deep link) if present
     val startUri: Uri? = intent?.data
+
+    // Compute start destination based on deep link
     val (startRoute, _) =
         if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
           val id = startUri.pathSegments.firstOrNull()
@@ -41,12 +46,40 @@ class MainActivity : ComponentActivity() {
     setContent {
       EduMonTheme {
         val nav = rememberNavController()
+        var user by remember { mutableStateOf(auth.currentUser) }
+        val scope = rememberCoroutineScope()
 
+        DisposableEffect(Unit) {
+          val l =
+              FirebaseAuth.AuthStateListener { fa ->
+                val u = fa.currentUser
+                val goTo = if (u == null) "login" else "app"
+                user = u
+                nav.navigate(goTo) {
+                  popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                  launchSingleTop = true
+                }
+              }
+          auth.addAuthStateListener(l)
+          onDispose { auth.removeAuthStateListener(l) }
+        }
+
+        // ⬇ Scaffold without topBar
         Scaffold { padding ->
           Box(Modifier.fillMaxSize().padding(padding)) {
-            NavHost(navController = nav, startDestination = "app") {
+            NavHost(navController = nav, startDestination = if (user == null) "login" else "app") {
+              composable("login") {
+                LoginScreen(
+                    onLoggedIn = {
+                      nav.navigate("app") {
+                        popUpTo("login") { inclusive = true }
+                        launchSingleTop = true
+                      }
+                    })
+              }
+
               composable("app") {
-                // auth is already guaranteed non-null here
+                LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
                 EduMonNavHost(startDestination = startRoute)
               }
             }

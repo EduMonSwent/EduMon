@@ -2,6 +2,10 @@ package com.android.sample.schedule
 
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -46,8 +50,7 @@ class WeekTabContentAllAndroidTest {
 
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
-  // ---------- Simple in-memory fakes ----------
-
+  // ... (Fakes and Helpers unchanged) ...
   private class InMemoryScheduleRepo(initial: List<ScheduleEvent> = emptyList()) :
       ScheduleRepository {
     private val _events = MutableStateFlow(initial)
@@ -302,12 +305,14 @@ class WeekTabContentAllAndroidTest {
     val weekStart = vm.startOfWeek(selected)
 
     rule.setContent {
-      WeekTabContent(
-          vm = vm,
-          objectivesVm = objectivesVm,
-          allTasks = tasksForWeek(selected),
-          selectedDate = selected,
-          weekTodos = emptyList())
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        WeekTabContent(
+            vm = vm,
+            objectivesVm = objectivesVm,
+            allTasks = tasksForWeek(selected),
+            selectedDate = selected,
+            weekTodos = emptyList())
+      }
     }
 
     val ctx = rule.activity
@@ -328,17 +333,19 @@ class WeekTabContentAllAndroidTest {
     val filteredWeekTodos = allWeekTodos.filter { it.dueDate in weekStart..weekStart.plusDays(6) }
 
     rule.setContent {
-      WeekTabContent(
-          vm = vm,
-          objectivesVm = objectivesVm,
-          allTasks = tasksForWeek(selected),
-          selectedDate = selected,
-          weekTodos = filteredWeekTodos)
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        WeekTabContent(
+            vm = vm,
+            objectivesVm = objectivesVm,
+            allTasks = tasksForWeek(selected),
+            selectedDate = selected,
+            weekTodos = filteredWeekTodos)
+      }
     }
 
     // Both inside-week todos should be visible; outside-week one is not passed in
-    rule.onNodeWithText("Week todo 1", substring = false).assertIsDisplayed()
-    rule.onNodeWithText("Week todo 2", substring = false).assertIsDisplayed()
+    rule.onNodeWithText("Week todo 1", substring = false).performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText("Week todo 2", substring = false).performScrollTo().assertIsDisplayed()
     rule.onNodeWithText("Outside week todo", substring = false).assertDoesNotExist()
   }
 
