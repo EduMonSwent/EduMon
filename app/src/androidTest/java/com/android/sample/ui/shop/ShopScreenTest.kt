@@ -40,7 +40,7 @@ class ShopScreenTest {
   fun shopItemTriggersSuccessAndFailCallbacks() {
     var successTriggered = false
     var failTriggered = false
-    val testItem = CosmeticItem("1", "Cool Shades", 500, R.drawable.cosmetic_glasses, owned = false)
+    val testItem = CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
       ShopItemCard(
@@ -66,7 +66,7 @@ class ShopScreenTest {
   // --- Owned item displays "Owned" text ---
   @Test
   fun ownedItemDisplaysOwnedText() {
-    val item = CosmeticItem("1", "Red Scarf", 300, R.drawable.cosmetic_scarf, owned = true)
+    val item = CosmeticItem("1", "Red Scarf", 300, R.drawable.shop_cosmetic_scarf, owned = true)
 
     composeTestRule.setContent { ShopItemCard(item = item, onBuy = { _, _ -> }) }
 
@@ -113,9 +113,9 @@ class ShopScreenTest {
   // --- Helper for sample items ---
   private fun sampleItems(): List<CosmeticItem> =
       listOf(
-          CosmeticItem("1", "Cool Shades", 500, R.drawable.cosmetic_glasses),
-          CosmeticItem("2", "Wizard Hat", 800, R.drawable.cosmetic_hat),
-          CosmeticItem("3", "Red Scarf", 300, R.drawable.cosmetic_scarf))
+          CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses),
+          CosmeticItem("2", "Wizard Hat", 800, R.drawable.shop_cosmetic_hat),
+          CosmeticItem("3", "Red Scarf", 300, R.drawable.shop_cosmetic_scarf))
 }
 
 /**
@@ -126,6 +126,6 @@ data class FakeShopViewModel(val success: Boolean) {
   val userCoins = 1500
   val items =
       listOf(
-          CosmeticItem("1", "Cool Shades", 500, R.drawable.cosmetic_glasses),
-          CosmeticItem("2", "Wizard Hat", 800, R.drawable.cosmetic_hat))
+          CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses),
+          CosmeticItem("2", "Wizard Hat", 800, R.drawable.shop_cosmetic_hat))
 }
