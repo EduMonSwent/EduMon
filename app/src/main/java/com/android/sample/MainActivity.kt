@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.content.edit
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -31,6 +32,19 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) { // <-- @OptIn removed
     super.onCreate(savedInstanceState)
+
+    // Start campus entry polling (enabled by default)
+    val prefs = getSharedPreferences("notifications", MODE_PRIVATE)
+
+    // Set to true on first launch if not already configured
+    if (!prefs.contains("campus_entry_enabled")) {
+      prefs.edit { putBoolean("campus_entry_enabled", true) }
+    }
+
+    val campusEnabled = prefs.getBoolean("campus_entry_enabled", true)
+    if (campusEnabled) {
+      com.android.sample.data.notifications.CampusEntryPollWorker.startChain(this)
+    }
 
     // Capture the intent data (deep link) if present
     val startUri: Uri? = intent?.data

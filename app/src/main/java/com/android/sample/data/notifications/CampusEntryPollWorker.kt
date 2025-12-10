@@ -221,7 +221,8 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
             .setContentTitle(ctx.getString(R.string.campus_entry_title))
             .setContentText(ctx.getString(R.string.campus_entry_text))
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH) // Changed from DEFAULT to HIGH
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
             .build()
 
     NotificationManagerCompat.from(ctx).notify(NotificationUtils.ID_CAMPUS_ENTRY, notification)
