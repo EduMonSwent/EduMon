@@ -248,29 +248,31 @@ class WeekTabContentAllAndroidTest {
     val selected = LocalDate.of(2025, 5, 7)
 
     rule.setContent {
-      WeekTabContent(
-          vm = vm,
-          objectivesVm = objectivesVm,
-          allTasks = tasksForWeek(selected),
-          selectedDate = selected,
-          weekTodos = emptyList())
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        WeekTabContent(
+            vm = vm,
+            objectivesVm = objectivesVm,
+            allTasks = tasksForWeek(selected),
+            selectedDate = selected,
+            weekTodos = emptyList())
+      }
     }
 
     // header
     val upcoming = rule.activity.getString(R.string.upcoming_events)
-    rule.onNodeWithText(upcoming).assertIsDisplayed()
+    rule.onNodeWithText(upcoming).performScrollTo().assertIsDisplayed()
 
     // inside-week items visible
-    rule.onAllNodesWithText("Linear Algebra review").onFirst().assertIsDisplayed()
-    rule.onAllNodesWithText("Part-time shift").onFirst().assertIsDisplayed()
-    rule.onAllNodesWithText("Gym with Sam").onFirst().assertIsDisplayed()
+    rule.onAllNodesWithText("Linear Algebra review").onFirst().performScrollTo().assertIsDisplayed()
+    rule.onAllNodesWithText("Part-time shift").onFirst().performScrollTo().assertIsDisplayed()
+    rule.onAllNodesWithText("Gym with Sam").onFirst().performScrollTo().assertIsDisplayed()
 
     // outside-week item not shown
     rule.onNodeWithText("Outside week task").assertDoesNotExist()
 
     // add button is there
     val addEvent = rule.activity.getString(R.string.add_event)
-    rule.onNodeWithText(addEvent).assertIsDisplayed()
+    rule.onNodeWithText(addEvent).performScrollTo().assertIsDisplayed()
   }
 
   @Test
