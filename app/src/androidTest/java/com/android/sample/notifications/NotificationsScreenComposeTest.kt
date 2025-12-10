@@ -45,6 +45,10 @@ class NotificationsScreenComposeTest {
     private val _streakEnabled = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val streakEnabled: kotlinx.coroutines.flow.StateFlow<Boolean> = _streakEnabled
 
+    private val _friendStudyModeEnabled = kotlinx.coroutines.flow.MutableStateFlow(false)
+    override val friendStudyModeEnabled: kotlinx.coroutines.flow.StateFlow<Boolean> =
+        _friendStudyModeEnabled
+
     private val _campusEntryEnabled = kotlinx.coroutines.flow.MutableStateFlow(false)
 
     // spy flag
@@ -91,6 +95,10 @@ class NotificationsScreenComposeTest {
 
     override fun setTaskNotificationsEnabled(ctx: android.content.Context, on: Boolean) {
       _taskNotificationsEnabled.value = on
+    }
+
+    override fun setFriendStudyModeEnabled(ctx: android.content.Context, on: Boolean) {
+      _friendStudyModeEnabled.value = on
     }
 
     override fun startObservingSchedule(ctx: android.content.Context) {
