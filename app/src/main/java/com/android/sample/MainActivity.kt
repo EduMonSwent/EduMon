@@ -1,5 +1,7 @@
 package com.android.sample
 
+// This code has been written partially using A.I (LLM).
+
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,27 +11,30 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.android.sample.feature.homeScreen.AppDestination
+import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.theme.EduMonTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
   private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
-  override fun onCreate(savedInstanceState: Bundle?) { // <-- @OptIn removed
+  override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     // Capture the intent data (deep link) if present
@@ -39,32 +44,35 @@ class MainActivity : ComponentActivity() {
     val (startRoute, _) =
         if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
           val id = startUri.pathSegments.firstOrNull()
-          if (!id.isNullOrEmpty()) "study/$id" to id
-          else com.android.sample.feature.homeScreen.AppDestination.Home.route to null
-        } else com.android.sample.feature.homeScreen.AppDestination.Home.route to null
+          if (!id.isNullOrEmpty()) {
+            "study/$id" to id
+          } else {
+            AppDestination.Home.route to null
+          }
+        } else {
+          AppDestination.Home.route to null
+        }
 
     setContent {
       EduMonTheme {
         val nav = rememberNavController()
         var user by remember { mutableStateOf(auth.currentUser) }
-        val scope = rememberCoroutineScope()
 
         DisposableEffect(Unit) {
-          val l =
+          val listener =
               FirebaseAuth.AuthStateListener { fa ->
-                val u = fa.currentUser
-                val goTo = if (u == null) "login" else "app"
-                user = u
-                nav.navigate(goTo) {
+                val currentUser = fa.currentUser
+                val destination = if (currentUser == null) "login" else "app"
+                user = currentUser
+                nav.navigate(destination) {
                   popUpTo(nav.graph.startDestinationId) { inclusive = true }
                   launchSingleTop = true
                 }
               }
-          auth.addAuthStateListener(l)
-          onDispose { auth.removeAuthStateListener(l) }
+          auth.addAuthStateListener(listener)
+          onDispose { auth.removeAuthStateListener(listener) }
         }
 
-        // ⬇ Scaffold without topBar
         Scaffold { padding ->
           Box(Modifier.fillMaxSize().padding(padding)) {
             NavHost(navController = nav, startDestination = if (user == null) "login" else "app") {
@@ -79,7 +87,15 @@ class MainActivity : ComponentActivity() {
               }
 
               composable("app") {
-                LaunchedEffect(user?.uid) { user?.let { try {} catch (_: Exception) {} } }
+                val currentUser = user
+
+                // Sync Firebase user into profile whenever uid changes
+                androidx.compose.runtime.LaunchedEffect(currentUser?.uid) {
+                  val firebaseUser = currentUser ?: return@LaunchedEffect
+                  syncProfileFromAuthData(
+                      displayName = firebaseUser.displayName, email = firebaseUser.email)
+                }
+
                 EduMonNavHost(startDestination = startRoute)
               }
             }
@@ -87,6 +103,29 @@ class MainActivity : ComponentActivity() {
         }
       }
     }
+  }
+
+  /**
+   * Syncs the profile repository from auth data.
+   *
+   * This is internal so androidTest can call it directly inside runBlocking.
+   */
+  internal suspend fun syncProfileFromAuthData(displayName: String?, email: String?) {
+    val repo = ProfileRepositoryProvider.repository
+    val currentProfile = repo.profile.value
+
+    val resolvedName = displayName?.takeIf { it.isNotBlank() } ?: currentProfile.name
+    val resolvedEmail = email?.takeIf { it.isNotBlank() } ?: currentProfile.email
+
+    val updatedProfile = currentProfile.copy(name = resolvedName, email = resolvedEmail)
+
+    runCatching { repo.updateProfile(updatedProfile) }
+  }
+
+  // Optional helper if you still want to call it with FirebaseUser from non-coroutine code
+  fun syncProfileWithFirebaseUser(user: FirebaseUser?) {
+    if (user == null) return
+    lifecycleScope.launch { syncProfileFromAuthData(user.displayName, user.email) }
   }
 
   fun signOutAll() {
