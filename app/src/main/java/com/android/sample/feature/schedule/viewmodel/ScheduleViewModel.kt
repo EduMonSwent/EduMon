@@ -76,16 +76,18 @@ class ScheduleViewModel(
       launch {
         plannerRepository.getTodayClassesFlow().collect { classes ->
           val now = LocalTime.now()
+          val todayDay = LocalDate.now().dayOfWeek
+          val todayClasses = classes.filter { it.daysOfWeek.contains(todayDay) }
 
           val deduped =
-              classes
+              todayClasses
                   .groupBy { Triple(it.courseName, it.startTime, it.endTime) }
                   .map { (_, group) -> group.first() }
 
           val upcoming = deduped.filter { cls -> cls.endTime.isAfter(now) }
 
           val sorted = upcoming.sortedBy { it.startTime }
-          val allFinished = deduped.all { cls -> cls.endTime.isBefore(now) }
+          val allFinished = deduped.isNotEmpty() && deduped.all { cls -> cls.endTime.isBefore(now) }
 
           _uiState.update { it.copy(todayClasses = sorted, allClassesFinished = allFinished) }
         }
