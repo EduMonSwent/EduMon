@@ -227,6 +227,8 @@ class ProfileScreenTest {
     composeRule.onNodeWithText("0%").assertExists()
   }
 
+  // ========== NEW: ProfileCard Tests with Real Name/Email/Initials ==========
+
   @Test
   fun profileCardDisplaysAllInfo() {
     val user =
@@ -238,8 +240,85 @@ class ProfileScreenTest {
     composeRule.onNodeWithText("john.doe@epfl.ch").assertExists()
     composeRule.onNodeWithText("Level 10").assertExists()
     composeRule.onNodeWithText("500 pts").assertExists()
-    composeRule.onNodeWithText("JO").assertExists() // Initials
+    composeRule.onNodeWithText("JD").assertExists() // Initials
   }
+
+  @Test
+  fun profileCard_displays_correct_initials_for_two_word_name() {
+    val user = UserProfile(name = "Jane Smith", email = "jane@example.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    composeRule.onNodeWithText("JS").assertExists()
+    composeRule.onNodeWithText("Jane Smith").assertExists()
+    composeRule.onNodeWithText("jane@example.com").assertExists()
+  }
+
+  @Test
+  fun profileCard_displays_correct_initials_for_single_name() {
+    val user = UserProfile(name = "Madonna Ariana", email = "madonna@example.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    // Single name should take first 2 letters
+    composeRule.onNodeWithText("MA").assertExists()
+    composeRule.onNodeWithText("Madonna").assertExists()
+  }
+
+  @Test
+  fun profileCard_displays_correct_initials_for_three_word_name() {
+    val user = UserProfile(name = "Mary Jane Watson", email = "mary@example.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    // Should take first letter of first two words
+    composeRule.onNodeWithText("MJ").assertExists()
+    composeRule.onNodeWithText("Mary Jane Watson").assertExists()
+  }
+
+  @Test
+  fun profileCard_handles_lowercase_names() {
+    val user = UserProfile(name = "john smith", email = "john@example.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    // Should uppercase initials
+    composeRule.onNodeWithText("JS").assertExists()
+  }
+
+  @Test
+  fun profileCard_handles_names_with_extra_spaces() {
+    val user = UserProfile(name = "Alice  Bob  Charlie", email = "alice@example.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    // Should handle multiple spaces and take first two words
+    composeRule.onNodeWithText("AB").assertExists()
+  }
+
+  @Test
+  fun profileCard_handles_hyphenated_names() {
+    val user = UserProfile(name = "Jean-Pierre Dubois", email = "jp@example.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    // Should take first letter of each word (hyphenated counts as one word)
+    composeRule.onNodeWithText("JD").assertExists()
+  }
+
+  @Test
+  fun profileCard_handles_empty_name_gracefully() {
+    val user = UserProfile(name = "", email = "user@example.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    // Should display empty name without crashing
+    composeRule.onNodeWithText("user@example.com").assertExists()
+  }
+
+  @Test
+  fun profileCard_displays_google_email_format() {
+    val user = UserProfile(name = "Test User", email = "testuser123@gmail.com")
+    composeRule.setContent { ProfileCard(user) }
+
+    composeRule.onNodeWithText("testuser123@gmail.com").assertExists()
+    composeRule.onNodeWithText("TU").assertExists()
+  }
+
+  // ========== End of New Tests ==========
 
   @Test
   fun statsCardDisplaysAllStats() {
