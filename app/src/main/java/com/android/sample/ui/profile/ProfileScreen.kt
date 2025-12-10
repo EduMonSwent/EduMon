@@ -280,6 +280,15 @@ fun GlowCard(content: @Composable () -> Unit) {
 
 @Composable
 fun ProfileCard(user: UserProfile) {
+  // Extract initials from the user's name
+  val initials =
+      user.name
+          .split(" ")
+          .filter { it.isNotBlank() }
+          .take(2)
+          .joinToString("") { it.first().uppercase() }
+          .ifEmpty { user.name.take(2).uppercase() }
+
   Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -288,11 +297,7 @@ fun ProfileCard(user: UserProfile) {
           Box(
               Modifier.size(70.dp).background(AccentViolet, shape = RoundedCornerShape(50.dp)),
               contentAlignment = Alignment.Center) {
-                Text(
-                    user.name.take(2).uppercase(),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp)
+                Text(initials, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
               }
           Spacer(Modifier.width(20.dp))
           Image(

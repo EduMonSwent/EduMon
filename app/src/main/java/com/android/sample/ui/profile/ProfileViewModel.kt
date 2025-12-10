@@ -82,11 +82,9 @@ class ProfileViewModel(
       listOf(
           AccentViolet,
           AccentBlue,
-          AccentMint,
           EventColorSports,
           AccentMagenta,
           PurplePrimary,
-          AccentBlue,
           AccentMint,
           GlowGold,
           VioletSoft)
