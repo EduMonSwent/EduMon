@@ -35,14 +35,14 @@ class ShopViewModelTest {
   private lateinit var itemsFlow: MutableStateFlow<List<CosmeticItem>>
   private val testDispatcher = StandardTestDispatcher()
 
-  private fun defaultCosmetics() = listOf(
-      CosmeticItem("glasses", "Cool Shades", 200, R.drawable.shop_cosmetic_glasses),
-      CosmeticItem("hat", "Wizard Hat", 200, R.drawable.shop_cosmetic_hat),
-      CosmeticItem("scarf", "Red Scarf", 200, R.drawable.shop_cosmetic_scarf),
-      CosmeticItem("wings", "Cyber Wings", 200, R.drawable.shop_cosmetic_wings),
-      CosmeticItem("aura", "Epic Aura", 1500, R.drawable.shop_cosmetic_aura),
-      CosmeticItem("cape", "Hero Cape", 200, R.drawable.shop_cosmetic_cape)
-  )
+  private fun defaultCosmetics() =
+      listOf(
+          CosmeticItem("glasses", "Cool Shades", 200, R.drawable.shop_cosmetic_glasses),
+          CosmeticItem("hat", "Wizard Hat", 200, R.drawable.shop_cosmetic_hat),
+          CosmeticItem("scarf", "Red Scarf", 200, R.drawable.shop_cosmetic_scarf),
+          CosmeticItem("wings", "Cyber Wings", 200, R.drawable.shop_cosmetic_wings),
+          CosmeticItem("aura", "Epic Aura", 1500, R.drawable.shop_cosmetic_aura),
+          CosmeticItem("cape", "Hero Cape", 200, R.drawable.shop_cosmetic_cape))
 
   @Before
   fun setup() {
@@ -64,13 +64,13 @@ class ShopViewModelTest {
     shopRepository = mockk(relaxed = true)
     every { shopRepository.items } returns itemsFlow
     coEvery { shopRepository.refreshOwnedStatus() } returns Unit
-    coEvery { shopRepository.purchaseItem(any()) } answers {
-      val itemId = firstArg<String>()
-      itemsFlow.value = itemsFlow.value.map {
-        if (it.id == itemId) it.copy(owned = true) else it
-      }
-      true
-    }
+    coEvery { shopRepository.purchaseItem(any()) } answers
+        {
+          val itemId = firstArg<String>()
+          itemsFlow.value =
+              itemsFlow.value.map { if (it.id == itemId) it.copy(owned = true) else it }
+          true
+        }
 
     viewModel = ShopViewModel(profileRepository, shopRepository)
   }

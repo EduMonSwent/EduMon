@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 // The assistance of an AI tool (ChatGPT) was solicited in writing this file.
 
 /**
- * ViewModel for the Shop screen.
- * Manages cosmetic items and purchase logic with Firebase persistence.
+ * ViewModel for the Shop screen. Manages cosmetic items and purchase logic with Firebase
+ * persistence.
  */
 class ShopViewModel(
     private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
@@ -41,6 +41,7 @@ class ShopViewModel(
 
   /**
    * Attempts to purchase an item.
+   *
    * @param item The cosmetic item to purchase.
    * @return true if purchase was successful, false otherwise.
    */
@@ -60,4 +61,3 @@ class ShopViewModel(
     return true
   }
 }
-

@@ -264,4 +264,3 @@ class FakeShopRepositoryTest {
     assertEquals(3, thirdCheck.size)
   }
 }
-

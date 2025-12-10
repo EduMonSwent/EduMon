@@ -378,4 +378,3 @@ class FirestoreShopRepositoryEmulatorTest {
     assertTrue(user2OwnedIds.isEmpty())
   }
 }
-

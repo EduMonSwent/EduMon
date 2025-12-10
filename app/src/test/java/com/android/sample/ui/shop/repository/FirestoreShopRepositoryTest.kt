@@ -9,8 +9,8 @@ import org.junit.Test
 /**
  * Unit tests for FirestoreShopRepository.
  *
- * Note: Tests involving Firebase async operations (Tasks.await()) are complex to mock
- * and are better tested in FirestoreShopRepositoryEmulatorTest with real Firebase.
+ * Note: Tests involving Firebase async operations (Tasks.await()) are complex to mock and are
+ * better tested in FirestoreShopRepositoryEmulatorTest with real Firebase.
  *
  * These tests focus on static methods and simple validations.
  */
@@ -101,4 +101,3 @@ class FirestoreShopRepositoryTest {
     assertEquals("All item names should be unique", names.size, names.toSet().size)
   }
 }
-

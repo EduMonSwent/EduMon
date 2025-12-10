@@ -82,9 +82,7 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
     FirestoreSubjectsRepository(auth, db)
   }
 
-  override val shopRepository: ShopRepository by lazy {
-    FirestoreShopRepository(db, auth)
-  }
+  override val shopRepository: ShopRepository by lazy { FirestoreShopRepository(db, auth) }
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider

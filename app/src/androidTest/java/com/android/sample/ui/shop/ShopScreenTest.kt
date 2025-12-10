@@ -40,7 +40,8 @@ class ShopScreenTest {
   fun shopItemTriggersSuccessAndFailCallbacks() {
     var successTriggered = false
     var failTriggered = false
-    val testItem = CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
+    val testItem =
+        CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
       ShopItemCard(
