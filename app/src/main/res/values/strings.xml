@@ -310,6 +310,15 @@
     <string name="campus_entry_toggle_title">Campus entry notifications</string>
     <string name="campus_entry_toggle_subtitle">Notify when you arrive on campus (every entry)</string>
 
+    <!-- Friend Study Mode Notifications -->
+    <string name="friend_study_mode_title">Friend started studying</string>
+    <string name="friend_study_mode_single">%1$s is now studying</string>
+    <string name="friend_study_mode_two">%1$s and %2$s are now studying</string>
+    <string name="friend_study_mode_multiple">%1$s and %2$d others are now studying</string>
+    <string name="friend_study_mode_toggle_title">Friend study notifications</string>
+    <string name="friend_study_mode_toggle_subtitle">Notify when friends start studying</string>
+    <string name="friend_study_mode_desc">Get notified when your friends enter study mode to join them</string>
+
     <!-- Background Location Permission -->
     <string name="edumon_content_description">EduMon character</string>
     <string name="level_label">Level %1$d</string>

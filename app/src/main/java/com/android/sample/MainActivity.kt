@@ -37,6 +37,14 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
+    // Start friend study mode polling chain if user enabled (stored in notifications prefs)
+    val friendStudyModeEnabled =
+        getSharedPreferences("notifications", MODE_PRIVATE)
+            .getBoolean("friend_study_mode_enabled", false)
+    if (friendStudyModeEnabled) {
+      com.android.sample.data.notifications.FriendStudyModeWorker.startChain(this)
+    }
+
     // Capture the intent data (deep link) if present
     val startUri: Uri? = intent?.data
 
