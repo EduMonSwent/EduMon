@@ -2,6 +2,8 @@ package com.android.sample.ui.schedule
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -34,7 +36,6 @@ import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
 import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
-import java.time.YearMonth
 
 /** This class was implemented with the help of ai (ChatGPT) */
 object ScheduleScreenTestTags {
@@ -104,6 +105,7 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
         Column(
             modifier =
                 Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(padding)
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .testTag(ScheduleScreenTestTags.ROOT),
@@ -170,7 +172,7 @@ private fun ScheduleMainContent(
 ) {
   when (currentTab) {
     ScheduleTab.DAY ->
-        Box(Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_DAY)) {
+        Box(Modifier.testTag(ScheduleScreenTestTags.CONTENT_DAY)) {
           DayTabContent(
               vm = vm,
               state = state,
@@ -183,7 +185,7 @@ private fun ScheduleMainContent(
               onTodoClicked = onOpenTodo)
         }
     ScheduleTab.WEEK ->
-        Box(Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_WEEK)) {
+        Box(Modifier.testTag(ScheduleScreenTestTags.CONTENT_WEEK)) {
           WeekTabContent(
               vm = vm,
               objectivesVm = objectivesVm,
@@ -193,11 +195,12 @@ private fun ScheduleMainContent(
               onTodoClicked = onOpenTodo)
         }
     ScheduleTab.MONTH ->
-        Box(Modifier.fillMaxSize().testTag(ScheduleScreenTestTags.CONTENT_MONTH)) {
+        Box(Modifier.testTag(ScheduleScreenTestTags.CONTENT_MONTH)) {
           MonthTabContent(
               allTasks = allTasks,
               selectedDate = state.selectedDate,
-              currentMonth = YearMonth.from(state.selectedDate),
+              // currentMonth = YearMonth.from(state.selectedDate),
+              currentMonth = state.currentDisplayMonth,
               onPreviousMonthClick = { vm.onPreviousMonthWeekClicked() },
               onNextMonthClick = { vm.onNextMonthWeekClicked() },
               onDateSelected = { vm.onDateSelected(it) },

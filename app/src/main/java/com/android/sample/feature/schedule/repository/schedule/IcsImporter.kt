@@ -13,11 +13,15 @@ class IcsImporter(private val plannerRepository: PlannerRepository, context: Con
   private val matcher = KeywordMatcher(context)
 
   suspend fun importFromStream(stream: InputStream) {
+    plannerRepository.clearClasses()
     val classes = IcsParser.parse(stream)
+    val groupedClasses = classes.groupBy { CourseIdentity(it.title, it.start, it.end, it.location) }
 
-    for (c in classes) {
+    for ((c, events) in groupedClasses) {
+      val representative = events.first()
       // Skip exam events
-      if (matcher.isExam(c.categories)) continue
+      if (matcher.isExam(representative.categories)) continue
+      val daysOfWeek = events.map { it.date.dayOfWeek }.distinct()
 
       val classItem =
           Class(
@@ -25,9 +29,10 @@ class IcsImporter(private val plannerRepository: PlannerRepository, context: Con
               courseName = c.title.trim(),
               startTime = c.start ?: LocalTime.NOON,
               endTime = c.end ?: c.start?.plusHours(1) ?: LocalTime.NOON.plusHours(1),
-              type = mapClassType(c),
+              type = mapClassType(representative),
               location = c.location ?: "",
-              instructor = extractInstructor(c.description))
+              instructor = extractInstructor(representative.description),
+              daysOfWeek = daysOfWeek)
       plannerRepository.saveClass(classItem)
     }
   }
@@ -43,6 +48,13 @@ class IcsImporter(private val plannerRepository: PlannerRepository, context: Con
       else -> ClassType.LECTURE
     }
   }
+
+  private data class CourseIdentity(
+      val title: String,
+      val start: LocalTime?,
+      val end: LocalTime?,
+      val location: String?
+  )
 
   private fun extractInstructor(description: String?): String {
     if (description.isNullOrBlank()) return ""
