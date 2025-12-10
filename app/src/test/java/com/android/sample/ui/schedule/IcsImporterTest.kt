@@ -14,6 +14,7 @@ import io.mockk.slot
 import java.io.ByteArrayInputStream
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -30,27 +31,22 @@ class IcsImporterTest {
     resources = mockk()
     plannerRepository = mockk(relaxed = true)
 
-    // Mock the Context resources required by KeywordMatcher
     every { context.resources } returns resources
 
-    // Define keywords to match the logic in KeywordMatcher
-    // These mocks ensure matcher.isExercise(), isLecture(), etc., return true/false correctly
+    // Mock keywords
     every { resources.getStringArray(R.array.ics_keywords_exercise) } returns
-        arrayOf("exercise", "problem set")
-    every { resources.getStringArray(R.array.ics_keywords_lab) } returns
-        arrayOf("lab", "laboratory")
+        arrayOf("exercise", "tp")
+    every { resources.getStringArray(R.array.ics_keywords_lab) } returns arrayOf("lab")
     every { resources.getStringArray(R.array.ics_keywords_project) } returns arrayOf("project")
     every { resources.getStringArray(R.array.ics_keywords_lecture) } returns
-        arrayOf("lecture", "course", "theory")
-    every { resources.getStringArray(R.array.ics_keywords_exam) } returns
-        arrayOf("exam", "midterm", "final")
+        arrayOf("lecture", "course")
+    every { resources.getStringArray(R.array.ics_keywords_exam) } returns arrayOf("exam")
 
     importer = IcsImporter(plannerRepository, context)
   }
 
   @Test
   fun `maps exercise class type`() = runBlocking {
-    // GIVEN an ICS stream with "Exercise" in the summary
     val ics =
         """
             BEGIN:VCALENDAR
@@ -63,24 +59,18 @@ class IcsImporterTest {
         """
             .trimIndent()
 
-    // Capture the list passed to saveClasses
     val slot = slot<List<Class>>()
     coEvery { plannerRepository.saveClasses(capture(slot)) } returns Result.success(Unit)
 
-    // WHEN
     importer.importFromStream(ByteArrayInputStream(ics.toByteArray()))
 
-    // THEN
     val saved = slot.captured
-    assertEquals("Should import 1 class", 1, saved.size)
-    // Verify type mapping logic: 'Exercise' keyword -> ClassType.EXERCISE
+    assertEquals(1, saved.size)
     assertEquals(ClassType.EXERCISE, saved[0].type)
   }
 
   @Test
   fun `lecture event is imported correctly`() = runBlocking {
-    // GIVEN an ICS stream with typical lecture details
-    // Note: New logic uses the description directly as instructor
     val ics =
         """
             BEGIN:VCALENDAR
@@ -98,21 +88,17 @@ class IcsImporterTest {
     val slot = slot<List<Class>>()
     coEvery { plannerRepository.saveClasses(capture(slot)) } returns Result.success(Unit)
 
-    // WHEN
     importer.importFromStream(ByteArrayInputStream(ics.toByteArray()))
 
-    // THEN
     val saved = slot.captured.first()
     assertEquals("Physics Lecture", saved.courseName)
     assertEquals("Room A", saved.location)
     assertEquals(ClassType.LECTURE, saved.type)
-    // Verify instructor matches the description directly (per your new code)
     assertEquals("Prof. Einstein", saved.instructor)
   }
 
   @Test
   fun `blank instructor yields empty string`() = runBlocking {
-    // GIVEN an ICS with no DESCRIPTION field
     val ics =
         """
             BEGIN:VCALENDAR
@@ -127,11 +113,33 @@ class IcsImporterTest {
     val slot = slot<List<Class>>()
     coEvery { plannerRepository.saveClasses(capture(slot)) } returns Result.success(Unit)
 
-    // WHEN
     importer.importFromStream(ByteArrayInputStream(ics.toByteArray()))
 
-    // THEN
     val saved = slot.captured.first()
     assertEquals("", saved.instructor)
+  }
+
+  @Test
+  fun `exam event is skipped`() = runBlocking {
+    val ics =
+        """
+            BEGIN:VCALENDAR
+            BEGIN:VEVENT
+            SUMMARY:Final Exam
+            DTSTART:20250105T090000
+            CATEGORIES:EXAM
+            END:VEVENT
+            END:VCALENDAR
+        """
+            .trimIndent()
+
+    val slot = slot<List<Class>>()
+    coEvery { plannerRepository.saveClasses(capture(slot)) } returns Result.success(Unit)
+
+    importer.importFromStream(ByteArrayInputStream(ics.toByteArray()))
+
+    // Should save an empty list
+    val saved = slot.captured
+    assertTrue("Exam event should be skipped", saved.isEmpty())
   }
 }
