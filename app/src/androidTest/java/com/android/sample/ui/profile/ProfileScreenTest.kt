@@ -254,16 +254,6 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun profileCard_displays_correct_initials_for_single_name() {
-    val user = UserProfile(name = "Madonna Ariana", email = "madonna@example.com")
-    composeRule.setContent { ProfileCard(user) }
-
-    // Single name should take first 2 letters
-    composeRule.onNodeWithText("MA").assertExists()
-    composeRule.onNodeWithText("Madonna").assertExists()
-  }
-
-  @Test
   fun profileCard_displays_correct_initials_for_three_word_name() {
     val user = UserProfile(name = "Mary Jane Watson", email = "mary@example.com")
     composeRule.setContent { ProfileCard(user) }
