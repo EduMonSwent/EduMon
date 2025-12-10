@@ -248,6 +248,10 @@
     <string name="no_classes_today">No classes scheduled today</string>
     <string name="wellness_events_label">Wellness Events</string>
     <string name="finished_classes">Great job! 🎉 You\'ve finished all your classes for today!</string>
+    <string name="smart_gap_title">Free Time Found (%1$d min)</string>
+    <string name="smart_gap_description">You have a gap in your schedule. How would you like to use this time?</string>
+    <string name="smart_gap_action_study">Study</string>
+    <string name="smart_gap_action_wellness">Wellness</string>
 
     <!-- Class row -->
     <string name="class_title_fmt">%1$s (%2$s)</string>

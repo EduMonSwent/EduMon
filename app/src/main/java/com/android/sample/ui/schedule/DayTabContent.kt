@@ -15,14 +15,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +46,12 @@ import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
 import com.android.sample.feature.schedule.data.planner.ClassType
 import com.android.sample.feature.schedule.data.planner.CompletionStatus
+import com.android.sample.feature.schedule.data.planner.DayScheduleItem
+import com.android.sample.feature.schedule.data.planner.ScheduleClassItem
+import com.android.sample.feature.schedule.data.planner.ScheduleEventItem
+import com.android.sample.feature.schedule.data.planner.ScheduleGapItem
 import com.android.sample.feature.schedule.data.planner.WellnessEventType
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.ui.DailyObjectivesSection
@@ -51,6 +67,7 @@ import com.android.sample.ui.theme.Pink
 import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.StatBarLightbulb
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /** This class was implemented with the help of ai (chatgbt) */
@@ -62,7 +79,7 @@ fun DayTabContent(
     onObjectiveNavigation: (ObjectiveNavigation) -> Unit = {},
     onTodoClicked: (String) -> Unit = {}
 ) {
-  // Attendance modal (wired to VM state)
+  // 1. Attendance modal (wired to VM state)
   if (state.showAttendanceModal && state.selectedClass != null) {
     val initial = state.attendanceRecords.firstOrNull { it.classId == state.selectedClass.id }
     ClassAttendanceModal(
@@ -74,6 +91,39 @@ fun DayTabContent(
           vm.saveClassAttendance(state.selectedClass, attendance, completion)
         })
   }
+  // 2. Gap Step 1: Study or Relax?
+  if (state.showGapOptionsModal && state.selectedGap != null) {
+    AlertDialog(
+        onDismissRequest = { vm.onDismissGapModal() },
+        title = { Text("Free Time Found (${state.selectedGap.durationMinutes} min)") },
+        text = { Text("How would you like to use this time?") },
+        confirmButton = {
+          Button(onClick = { vm.onGapTypeSelected(isStudy = true) }) { Text("Study") }
+        },
+        dismissButton = {
+          // Renamed from Wellness to Relax as requested
+          TextButton(onClick = { vm.onGapTypeSelected(isStudy = false) }) { Text("Relax") }
+        })
+  }
+  // 3. Gap Step 2: Specific Propositions (The "Dialect")
+  if (state.showGapPropositionsModal && state.selectedGap != null) {
+    AlertDialog(
+        onDismissRequest = { vm.onDismissGapModal() },
+        title = { Text("Suggestions") },
+        text = {
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.gapPropositions.forEach { prop ->
+              OutlinedButton(
+                  onClick = { vm.onGapPropositionClicked(prop) },
+                  modifier = Modifier.fillMaxWidth()) {
+                    Text(prop)
+                  }
+            }
+          }
+        },
+        confirmButton = {}, // Clicking an option is the confirm action
+        dismissButton = { TextButton(onClick = { vm.onDismissGapModal() }) { Text("Cancel") } })
+  }
 
   Column(
       modifier = Modifier.fillMaxSize().padding(bottom = Dimensions.bottomBarPadding),
@@ -81,7 +131,7 @@ fun DayTabContent(
         val today = LocalDate.now()
         val dayTodos = state.todos.filter { it.dueDate == today }
         TodayCard(
-            classes = state.todayClasses,
+            classes = state.todaySchedule,
             attendance = state.attendanceRecords,
             objectivesVm = objectivesVm,
             onClassClick = { vm.onClassClicked(it) },
@@ -89,6 +139,9 @@ fun DayTabContent(
             todos = dayTodos,
             onTodoClicked = onTodoClicked,
             allClassesFinished = state.allClassesFinished,
+            onGapClick = { vm.onGapClicked(it) },
+            onEventClick = { vm.onScheduleEventClicked(it) },
+            onEventDelete = { vm.onDeleteScheduleEvent(it) },
             modifier = Modifier.fillMaxWidth())
       }
 }
@@ -97,10 +150,13 @@ fun DayTabContent(
 
 @Composable
 private fun TodayCard(
-    classes: List<Class>,
+    classes: List<DayScheduleItem>,
     attendance: List<ClassAttendance>,
     objectivesVm: ObjectivesViewModel,
     onClassClick: (Class) -> Unit,
+    onGapClick: (ScheduleGapItem) -> Unit,
+    onEventClick: (ScheduleEvent) -> Unit,
+    onEventDelete: (ScheduleEvent) -> Unit,
     onObjectiveNavigate: (ObjectiveNavigation) -> Unit,
     todos: List<ToDo>,
     onTodoClicked: (String) -> Unit,
@@ -128,46 +184,40 @@ private fun TodayCard(
               stringResource(R.string.classes_label),
               style =
                   MaterialTheme.typography.titleMedium.copy(
-                      fontSize = 18.sp,
-                      fontWeight = FontWeight.SemiBold,
-                      color = MaterialTheme.colorScheme.onSurface),
+                      fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
               modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
         }) {
-          when {
-            (classes.isEmpty() && !allClassesFinished) -> {
-              Text(
-                  stringResource(R.string.no_classes_today),
-                  color = cs.onSurface.copy(alpha = 0.7f),
-                  modifier = modifier.fillMaxWidth())
-            }
-            (allClassesFinished) -> {
-              Box(
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .padding(top = Dimensions.spacingMedium)
-                          .clip(RoundedCornerShape(Dimensions.spacingLarge))
-                          .background(CustomGreen.copy(alpha = 0.15f))
-                          .padding(Dimensions.spacingLarge),
-                  contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.finished_classes),
-                        color = CustomGreen,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold)
-                  }
-            }
-            else -> {
-              Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                classes.forEachIndexed { idx, c ->
+          if (classes.isEmpty() && !allClassesFinished) {
+            Text(
+                stringResource(R.string.no_classes_today),
+                color = cs.onSurface.copy(alpha = 0.7f),
+                modifier = modifier.fillMaxWidth())
+          }
+
+          // Render the mixed list
+          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            classes.forEachIndexed { idx, item ->
+              when (item) {
+                is ScheduleClassItem -> {
+                  val c = item.classData
                   val record = attendance.firstOrNull { it.classId == c.id }
                   CompactClassRow(
                       clazz = c,
                       record = record,
                       modifier = Modifier.fillMaxWidth().clickable { onClassClick(c) })
-                  if (idx != classes.lastIndex) {
-                    HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
-                  }
                 }
+                is ScheduleGapItem -> {
+                  GapItemRow(gap = item, onClick = { onGapClick(item) })
+                }
+                is ScheduleEventItem -> {
+                  EventItemRow(
+                      event = item.eventData,
+                      onClick = { onEventClick(item.eventData) },
+                      onDelete = { onEventDelete(item.eventData) })
+                }
+              }
+              if (idx != classes.lastIndex) {
+                HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
               }
             }
           }
@@ -382,4 +432,93 @@ private fun CompactClassRow(clazz: Class, record: ClassAttendance?, modifier: Mo
           }
     }
   }
+}
+
+@Composable
+private fun GapItemRow(gap: ScheduleGapItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+  val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+
+  // Dashed border or light background to indicate "open slot"
+  Box(
+      modifier =
+          modifier
+              .fillMaxWidth()
+              .height(50.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .border(
+                  1.dp,
+                  Color.Gray.copy(alpha = 0.5f),
+                  RoundedCornerShape(
+                      12
+                          .dp)) // Dashed effect requires simpler custom modifier usually, plain
+                                // border is fine
+              .background(Color.Transparent)
+              .clickable { onClick() }
+              .padding(horizontal = 12.dp),
+      contentAlignment = Alignment.CenterStart) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+              Column {
+                Text(
+                    text = "Free Time (${gap.durationMinutes} min)",
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary))
+                Text(
+                    text = "${gap.start.format(timeFmt)} - ${gap.end.format(timeFmt)}",
+                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
+              }
+
+              Icon(
+                  imageVector = Icons.Default.Add,
+                  contentDescription = "Add activity",
+                  tint = MaterialTheme.colorScheme.primary)
+            }
+      }
+}
+
+@Composable
+private fun EventItemRow(event: ScheduleEvent, onClick: () -> Unit, onDelete: () -> Unit) {
+  val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+  Box(
+      modifier =
+          Modifier.fillMaxWidth()
+              .height(50.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(PurplePrimary.copy(alpha = 0.15f))
+              .clickable { onClick() }
+              .padding(start = 12.dp, end = 4.dp),
+      contentAlignment = Alignment.CenterStart) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+              Column {
+                Text(
+                    text = event.title,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold, color = PurplePrimary))
+                val start = event.time ?: LocalTime.MIN
+                val end = start.plusMinutes((event.durationMinutes ?: 60).toLong())
+                Text(
+                    text = "${start.format(timeFmt)} - ${end.format(timeFmt)}",
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(0.6f)))
+              }
+
+              // "Extreme right" button to remove the event
+              IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Remove event",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp))
+              }
+            }
+      }
 }

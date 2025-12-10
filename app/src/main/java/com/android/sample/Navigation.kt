@@ -217,7 +217,8 @@ fun EduMonNavHost(
                           onAddTodoClicked = { date ->
                             nav.navigate("addTodoFromSchedule/$date") { launchSingleTop = true }
                           },
-                          onOpenTodo = { _ -> nav.navigateSingleTopTo(AppDestination.Todo.route) })
+                          onOpenTodo = { _ -> nav.navigateSingleTopTo(AppDestination.Todo.route) },
+                          onNavigateTo = { route -> nav.navigateSingleTopTo(route) })
                     }
               }
 
