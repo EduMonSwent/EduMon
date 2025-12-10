@@ -85,13 +85,8 @@ class MorePlannerRepositoryTest {
 
   @Test
   fun `base implementation stubs return expected results`() = runBlocking {
-    // saveClass returns Failure("Not implemented")
-    val dummyClass = Class("id", "Name", LocalTime.now(), LocalTime.now(), ClassType.LECTURE)
-    val saveRes = repo.saveClass(dummyClass)
-    assertTrue(saveRes.isFailure)
-    assertEquals("Not implemented", saveRes.exceptionOrNull()?.message)
-
     // saveClasses returns Success(Unit)
+    val dummyClass = Class("id", "Name", LocalTime.now(), LocalTime.now(), ClassType.LECTURE)
     val saveListRes = repo.saveClasses(listOf(dummyClass))
     assertTrue(saveListRes.isSuccess)
 

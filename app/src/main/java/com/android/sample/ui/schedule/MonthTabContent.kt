@@ -53,7 +53,7 @@ fun MonthTabContent(
 
   Column(
       modifier = Modifier.fillMaxSize().testTag(MONTH_TAB_CONTENT),
-      verticalArrangement = Arrangement.spacedBy(16.dp),
+      verticalArrangement = Arrangement.spacedBy(Dimensions.spacingLarge),
   ) {
     // ONE AND ONLY big frame — like WeekTabContent
     SectionBox(title = null, header = null) {
@@ -62,13 +62,13 @@ fun MonthTabContent(
       CalendarHeader(
           title = headerTitle, onPrevClick = onPreviousMonthClick, onNextClick = onNextMonthClick)
 
-      Spacer(Modifier.height(8.dp))
+      Spacer(Modifier.height(Dimensions.spacingSmall))
 
       // ───────────── Card with MonthGrid ─────────────
       Card(
           modifier =
               Modifier.fillMaxWidth()
-                  .shadow(8.dp, RoundedCornerShape(24.dp))
+                  .shadow(Dimensions.spacingSmall, RoundedCornerShape(24.dp))
                   .testTag(CalendarScreenTestTags.CALENDAR_CARD),
           colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.85f)),
           shape = RoundedCornerShape(24.dp)) {
@@ -76,7 +76,9 @@ fun MonthTabContent(
                 modifier =
                     Modifier.fillMaxWidth()
                         .heightIn(min = 260.dp, max = 420.dp)
-                        .padding(horizontal = 8.dp, vertical = 6.dp)) {
+                        .padding(
+                            horizontal = Dimensions.spacingSmall,
+                            vertical = Dimensions.spacingXSmall)) {
                   MonthGrid(
                       currentMonth = currentMonth,
                       selectedDate = selectedDate,
@@ -85,7 +87,7 @@ fun MonthTabContent(
                 }
           }
 
-      Spacer(Modifier.height(16.dp))
+      Spacer(Modifier.height(Dimensions.spacingLarge))
 
       // ───────────── Most important this month (HIGH priority only) ─────────────
       val monthStart = currentMonth.atDay(1)
@@ -116,29 +118,32 @@ fun MonthTabContent(
             } else {
               Column(modifier = Modifier.fillMaxWidth()) {
                 highPriorityMonthTasks.forEach { task ->
-                  Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                  Row(
+                      modifier =
+                          Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingXSmall)) {
 
-                    // small colored bar on the left
-                    Box(
-                        modifier =
-                            Modifier.width(5.dp)
-                                .height(32.dp)
-                                .background(cs.primary, RoundedCornerShape(999.dp)))
+                        // small colored bar on the left
+                        Box(
+                            modifier =
+                                Modifier.width(5.dp)
+                                    .height(32.dp)
+                                    .background(cs.primary, RoundedCornerShape(999.dp)))
 
-                    Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(10.dp))
 
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                      Text(
-                          text = task.title,
-                          style =
-                              MaterialTheme.typography.bodyMedium.copy(
-                                  fontWeight = FontWeight.SemiBold, color = cs.onSurface))
-                      Text(
-                          text = task.date.toString(), // format later if you want
-                          style =
-                              MaterialTheme.typography.labelSmall.copy(color = cs.onSurfaceVariant))
-                    }
-                  }
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                          Text(
+                              text = task.title,
+                              style =
+                                  MaterialTheme.typography.bodyMedium.copy(
+                                      fontWeight = FontWeight.SemiBold, color = cs.onSurface))
+                          Text(
+                              text = task.date.toString(), // format later if you want
+                              style =
+                                  MaterialTheme.typography.labelSmall.copy(
+                                      color = cs.onSurfaceVariant))
+                        }
+                      }
                 }
               }
             }

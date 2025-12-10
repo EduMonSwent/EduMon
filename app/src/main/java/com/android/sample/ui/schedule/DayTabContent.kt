@@ -76,8 +76,8 @@ fun DayTabContent(
   }
 
   Column(
-      modifier = Modifier.fillMaxSize().padding(bottom = 96.dp),
-      verticalArrangement = Arrangement.spacedBy(16.dp)) {
+      modifier = Modifier.fillMaxSize().padding(bottom = Dimensions.bottomBarPadding),
+      verticalArrangement = Arrangement.spacedBy(Dimensions.spacingLarge)) {
         val today = LocalDate.now()
         val dayTodos = state.todos.filter { it.dueDate == today }
         TodayCard(
@@ -118,8 +118,8 @@ private fun TodayCard(
         style =
             MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold, fontSize = 20.sp, color = cs.onSurface),
-        modifier = Modifier.padding(bottom = 6.dp))
-    Spacer(Modifier.height(12.dp))
+        modifier = Modifier.padding(bottom = Dimensions.spacingXSmall))
+    Spacer(Modifier.height(Dimensions.spacingMedium))
 
     // ---- Classes section (card inside card) ----
     SectionBox(
@@ -131,7 +131,7 @@ private fun TodayCard(
                       fontSize = 18.sp,
                       fontWeight = FontWeight.SemiBold,
                       color = MaterialTheme.colorScheme.onSurface),
-              modifier = Modifier.padding(bottom = 8.dp))
+              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
         }) {
           when {
             (classes.isEmpty() && !allClassesFinished) -> {
@@ -144,10 +144,10 @@ private fun TodayCard(
               Box(
                   modifier =
                       Modifier.fillMaxWidth()
-                          .padding(top = 12.dp)
-                          .clip(RoundedCornerShape(16.dp))
+                          .padding(top = Dimensions.spacingMedium)
+                          .clip(RoundedCornerShape(Dimensions.spacingLarge))
                           .background(CustomGreen.copy(alpha = 0.15f))
-                          .padding(16.dp),
+                          .padding(Dimensions.spacingLarge),
                   contentAlignment = Alignment.Center) {
                     Text(
                         text = stringResource(R.string.finished_classes),
@@ -201,7 +201,7 @@ private fun TodayCard(
               fontSize = 18.sp,
               fontWeight = FontWeight.SemiBold,
               color = cs.onSurface,
-              modifier = Modifier.padding(bottom = 8.dp))
+              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
         }) {
           if (todos.isEmpty()) {
             Text(
@@ -209,13 +209,13 @@ private fun TodayCard(
                 color = cs.onSurface.copy(alpha = 0.7f),
                 modifier = modifier.fillMaxWidth())
           } else {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXSmall)) {
               todos.forEach { todo ->
                 Row(
                     modifier =
-                        Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable {
-                          onTodoClicked(todo.id)
-                        }) {
+                        Modifier.fillMaxWidth()
+                            .padding(vertical = Dimensions.spacingXSmall)
+                            .clickable { onTodoClicked(todo.id) }) {
                       Box(
                           modifier =
                               Modifier.width(5.dp)
@@ -251,7 +251,7 @@ private fun TodayCard(
               style =
                   MaterialTheme.typography.titleMedium.copy(
                       fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
-              modifier = Modifier.padding(bottom = 8.dp))
+              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
         }) {
           Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             WellnessEventItem(
@@ -326,7 +326,8 @@ private fun CompactClassRow(clazz: Class, record: ClassAttendance?, modifier: Mo
 
     if (record != null) {
       Column(
-          horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          horizontalAlignment = Alignment.End,
+          verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)) {
             // Attendance
             val attColor =
                 when (record.attendance) {
@@ -339,8 +340,8 @@ private fun CompactClassRow(clazz: Class, record: ClassAttendance?, modifier: Mo
                   painterResource(R.drawable.ic_check_circle),
                   null,
                   tint = attColor,
-                  modifier = Modifier.size(16.dp))
-              Spacer(Modifier.width(6.dp))
+                  modifier = Modifier.size(Dimensions.spacingLarge))
+              Spacer(Modifier.width(Dimensions.spacingXSmall))
               Text(
                   text =
                       when (record.attendance) {
@@ -365,8 +366,8 @@ private fun CompactClassRow(clazz: Class, record: ClassAttendance?, modifier: Mo
                   painterResource(R.drawable.ic_done_all),
                   null,
                   tint = compColor,
-                  modifier = Modifier.size(16.dp))
-              Spacer(Modifier.width(6.dp))
+                  modifier = Modifier.size(Dimensions.spacingLarge))
+              Spacer(Modifier.width(Dimensions.spacingXSmall))
               Text(
                   text =
                       when (record.completion) {

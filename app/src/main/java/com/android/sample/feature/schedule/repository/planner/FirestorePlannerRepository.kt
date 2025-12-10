@@ -125,21 +125,6 @@ class FirestorePlannerRepository(
     }
   }
 
-  override suspend fun saveClass(classItem: Class): Result<Unit> {
-    val uid = auth.currentUser?.uid ?: return Result.failure(Exception("Not logged in"))
-
-    return try {
-      userPlannerClassesRef(uid)
-          .document(classItem.id)
-          .set(classItem.toFirestoreMap(), SetOptions.merge())
-          .await()
-
-      Result.success(Unit)
-    } catch (e: Exception) {
-      Result.failure(e)
-    }
-  }
-
   override suspend fun saveClasses(classes: List<Class>): Result<Unit> {
     val uid = auth.currentUser?.uid ?: return Result.failure(Exception("Not logged in"))
 

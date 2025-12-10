@@ -1,9 +1,7 @@
 package com.android.sample.planner
 
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
-import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
-import com.android.sample.feature.schedule.data.planner.ClassType
 import com.android.sample.feature.schedule.data.planner.CompletionStatus
 import com.android.sample.feature.schedule.repository.planner.FirestorePlannerRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -11,7 +9,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import io.mockk.every
 import io.mockk.mockk
 import java.time.LocalDate
-import java.time.LocalTime
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -81,9 +78,8 @@ class FirestorePlannerRepositoryUnitTest {
   @Test
   fun `when user is NOT signed in, saveClass returns failure`() = runBlocking {
     every { auth.currentUser } returns null
-    val cls = Class("x", "Test", LocalTime.now(), LocalTime.now(), ClassType.LAB)
 
-    val result = repo.saveClass(cls)
+    val result = repo.saveClasses(emptyList())
 
     assertTrue(result.isFailure)
     assertEquals("Not logged in", result.exceptionOrNull()?.message)

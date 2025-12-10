@@ -348,7 +348,7 @@ class FirestorePlannerRepositoryEmulatorTest {
             location = "LAB-X",
             instructor = "Prof. Turing")
 
-    val result = repo.saveClass(classItem)
+    val result = repo.saveClasses(listOf(classItem))
     assertTrue("saveClass() should succeed", result.isSuccess)
 
     // Snapshot listener needs a moment to update
