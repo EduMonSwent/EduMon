@@ -449,9 +449,8 @@ private fun GapItemRow(gap: ScheduleGapItem, onClick: () -> Unit, modifier: Modi
                   1.dp,
                   Color.Gray.copy(alpha = 0.5f),
                   RoundedCornerShape(
-                      12
-                          .dp)) // Dashed effect requires simpler custom modifier usually, plain
-                                // border is fine
+                      12.dp)) // Dashed effect requires simpler custom modifier usually, plain
+              // border is fine
               .background(Color.Transparent)
               .clickable { onClick() }
               .padding(horizontal = 12.dp),
