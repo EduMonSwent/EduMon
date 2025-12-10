@@ -30,6 +30,7 @@ import com.android.sample.data.AccessorySlot
 import com.android.sample.ui.theme.TextLight
 import com.android.sample.ui.theme.UiValues
 
+// This code has been written partially using A.I (LLM).
 @Composable
 fun EduMonAvatar(
     modifier: Modifier = Modifier,

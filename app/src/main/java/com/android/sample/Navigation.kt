@@ -50,7 +50,6 @@ import androidx.navigation.navArgument
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.feature.homeScreen.HomeTestTags
-import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.flashcards.FlashcardsApp
 import com.android.sample.ui.focus.FocusModeScreen
@@ -112,52 +111,72 @@ private fun EduMonDrawerContent(
             label = { Text("Home") },
             selected = currentRoute == AppDestination.Home.route,
             onClick = { onDestinationClick(AppDestination.Home.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Home.route)))
         NavigationDrawerItem(
             label = { Text("Profile") },
             selected = currentRoute == AppDestination.Profile.route,
             onClick = { onDestinationClick(AppDestination.Profile.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Profile.route)))
         NavigationDrawerItem(
             label = { Text("Schedule") },
             selected = currentRoute == AppDestination.Schedule.route,
             onClick = { onDestinationClick(AppDestination.Schedule.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Schedule.route)))
         NavigationDrawerItem(
             label = { Text("Stats") },
             selected = currentRoute == AppDestination.Stats.route,
             onClick = { onDestinationClick(AppDestination.Stats.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Stats.route)))
         NavigationDrawerItem(
             label = { Text("Games") },
             selected = currentRoute == AppDestination.Games.route,
             onClick = { onDestinationClick(AppDestination.Games.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Games.route)))
         NavigationDrawerItem(
             label = { Text("Flashcards") },
             selected = currentRoute == AppDestination.Flashcards.route,
             onClick = { onDestinationClick(AppDestination.Flashcards.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Flashcards.route)))
         NavigationDrawerItem(
             label = { Text("Todo") },
             selected = currentRoute == AppDestination.Todo.route,
             onClick = { onDestinationClick(AppDestination.Todo.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Todo.route)))
         NavigationDrawerItem(
             label = { Text("Daily Reflection") },
             selected = currentRoute == AppDestination.Mood.route,
             onClick = { onDestinationClick(AppDestination.Mood.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Mood.route)))
         NavigationDrawerItem(
             label = { Text("Study Together") },
             selected = currentRoute == AppDestination.StudyTogether.route,
             onClick = { onDestinationClick(AppDestination.StudyTogether.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.StudyTogether.route)))
         NavigationDrawerItem(
             label = { Text("Shop") },
             selected = currentRoute == AppDestination.Shop.route,
             onClick = { onDestinationClick(AppDestination.Shop.route) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding))
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Shop.route)))
       }
 }
 
@@ -204,12 +223,7 @@ fun EduMonNavHost(
   val userProfile by profileViewModel.userProfile.collectAsState()
 
   val repo = AppRepositories.profileRepository
-  val isLoaded =
-      if (repo is FirestoreProfileRepository) {
-        repo.isLoaded.collectAsState().value
-      } else {
-        true
-      }
+  val isLoaded by repo.isLoaded.collectAsState()
 
   var hasDecided by remember { mutableStateOf(false) }
   var needsOnboarding by remember { mutableStateOf(false) }
@@ -233,7 +247,7 @@ fun EduMonNavHost(
     return
   }
 
-  val actualStartDestination = if (needsOnboarding) "onboarding" else AppDestination.Home.route
+  val actualStartDestination = if (needsOnboarding) "onboarding" else startDestination
 
   val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
   val scope = rememberCoroutineScope()
@@ -386,7 +400,7 @@ fun EduMonNavHost(
 
               composable(GameRoutes.Runner) {
                 ScreenWithTopBar(
-                    title = "Flappy EduMon",
+                    title = "EduMon Runner",
                     drawerState = drawerState,
                     scope = scope,
                     onBack = { navController.popBackStack() }) {
@@ -471,6 +485,22 @@ fun EduMonNavHost(
                           StudySessionScreen()
                         }
                   }
+
+              composable(AppDestination.Study.route) {
+                ScreenWithTopBar(
+                    title = "Study",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = {
+                      if (!navController.popBackStack()) {
+                        navController.navigate(AppDestination.Home.route) {
+                          popUpTo(0) { inclusive = true }
+                        }
+                      }
+                    }) {
+                      StudySessionScreen()
+                    }
+              }
             }
       }
 }

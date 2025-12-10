@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// This code has been written partially using A.I (LLM).
 class ProfileViewModel(
     private val profileRepository: ProfileRepository = AppRepositories.profileRepository,
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
@@ -63,7 +64,6 @@ class ProfileViewModel(
     }
 
     viewModelScope.launch {
-      // Attendre que le profil soit chargé avant de sync avec les stats
       if (profileRepository is FirestoreProfileRepository) {
         profileRepository.isLoaded.first { it }
       }
@@ -234,7 +234,7 @@ class ProfileViewModel(
 
     val updated = _userProfile.value.copy(starterId = starterId)
     _userProfile.value = updated
-    profileLoaded = true // On considère que c'est maintenant valide
+    profileLoaded = true
 
     viewModelScope.launch {
       try {
@@ -266,7 +266,7 @@ class ProfileViewModel(
   }
 
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
-    // Ne pas sauvegarder si le profil n'a pas encore été chargé
+
     if (!profileLoaded) {
       Log.d("ProfileViewModel", "pushProfile: skipped (profile not loaded yet)")
       return
@@ -313,7 +313,7 @@ class ProfileViewModel(
   }
 
   fun syncProfileWithStats(stats: UserStats) {
-    // Ne pas sync si le profil n'a pas encore été chargé
+
     if (!profileLoaded) {
       Log.d("ProfileViewModel", "syncProfileWithStats: skipped (profile not loaded yet)")
       return

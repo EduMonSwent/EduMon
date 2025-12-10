@@ -98,6 +98,7 @@ import com.android.sample.ui.theme.StatBarLightning
 import com.android.sample.ui.theme.TextLight
 import com.android.sample.ui.theme.UiValues
 
+// This code has been written partially using A.I (LLM).
 object ProfileScreenTestTags {
   const val PROFILE_SCREEN = "profileScreen"
   const val PET_SECTION = "petSection"

@@ -19,7 +19,7 @@ class FirestoreProfileRepository(
   override val profile: StateFlow<UserProfile> = _profile
 
   private val _isLoaded = MutableStateFlow(false)
-  val isLoaded: StateFlow<Boolean> = _isLoaded
+  override val isLoaded: StateFlow<Boolean> = _isLoaded
 
   private var listenerRegistration: ListenerRegistration? = null
   private var currentListeningUid: String? = null
@@ -114,7 +114,6 @@ class FirestoreProfileRepository(
     _profile.value = newProfile
 
     try {
-
       db.collection("users").document(uid).set(newProfile, SetOptions.merge()).await()
       Log.d("FirestoreProfileRepo", "=== SAVE SUCCESS ===")
     } catch (e: Exception) {

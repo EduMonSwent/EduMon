@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.media3.common.util.UnstableApi
 
+// This code has been written partially using A.I (LLM).
 @UnstableApi
 @Composable
 fun EduMonOnboardingScreen(onOnboardingFinished: (userName: String, starterId: String) -> Unit) {
