@@ -24,6 +24,8 @@ import com.android.sample.session.ToDoBackedStudySessionRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository
 import com.android.sample.ui.location.FakeFriendRepository
+import com.android.sample.ui.shop.repository.FakeShopRepository
+import com.android.sample.ui.shop.repository.ShopRepository
 import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 
@@ -49,6 +51,7 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val profileRepository: ProfileRepository = FakeProfileRepository()
   override val flashcardsRepository: FlashcardsRepository = InMemoryFlashcardsRepository
   override val subjectsRepository: SubjectsRepository = FakeSubjectsRepository()
+  override val shopRepository: ShopRepository = FakeShopRepository()
 }
 
 @Volatile var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider
