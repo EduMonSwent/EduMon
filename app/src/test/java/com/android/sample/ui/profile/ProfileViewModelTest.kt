@@ -57,13 +57,13 @@ class ProfileViewModelTest {
       started = true
     }
 
-    override suspend fun addStudyMinutes(extraMinutes: Int) {
-      if (extraMinutes <= 0) return
+    override suspend fun addStudyMinutes(minutes: Int) {
+      if (minutes <= 0) return
       val current = _stats.value
       _stats.value =
           current.copy(
-              totalStudyMinutes = current.totalStudyMinutes + extraMinutes,
-              todayStudyMinutes = current.todayStudyMinutes + extraMinutes,
+              totalStudyMinutes = current.totalStudyMinutes + minutes,
+              todayStudyMinutes = current.todayStudyMinutes + minutes,
           )
     }
 
@@ -74,9 +74,9 @@ class ProfileViewModelTest {
       _stats.value = current.copy(coins = (current.coins + delta).coerceAtLeast(0))
     }
 
-    override suspend fun setWeeklyGoal(goalMinutes: Int) {
+    override suspend fun setWeeklyGoal(minutes: Int) {
       val current = _stats.value
-      _stats.value = current.copy(weeklyGoal = goalMinutes.coerceAtLeast(0))
+      _stats.value = current.copy(weeklyGoal = minutes.coerceAtLeast(0))
     }
 
     override suspend fun addPoints(delta: Int) {
@@ -229,6 +229,7 @@ class ProfileViewModelTest {
             object : ProfileRepository {
               private val state = MutableStateFlow(ownedProfile)
               override val profile: StateFlow<UserProfile> = state
+              override val isLoaded: StateFlow<Boolean> = MutableStateFlow(true)
 
               override suspend fun updateProfile(newProfile: UserProfile) {
                 state.value = newProfile
