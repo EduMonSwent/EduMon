@@ -91,6 +91,37 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /* ---------- SHOP ITEMS (shared across all users) ---------- */
+    match /shopItems/{itemId} {
+      // Anyone signed in can read shop items
+      allow read: if signedIn();
+
+      // Only allow creation/updates through backend/admin
+      // The repository seeds defaults if empty, which requires write access in emulator
+      // For production, you may want to restrict this further or use admin SDK
+      allow create, update: if signedIn();
+
+      // Shop items should never be deleted by users
+      allow delete: if false;
+    }
+
+    /* ---------- USER OWNED COSMETICS (user-specific purchases) ---------- */
+    // Already covered by /users/{uid}/{document=**} but made explicit for clarity
+    match /users/{uid}/ownedCosmetics/{itemId} {
+      // Only the owner can read their purchases
+      allow read: if isOwner(uid);
+
+      // Only the owner can purchase items (create documents)
+      // Verify the itemId matches the document ID
+      allow create: if isOwner(uid) && request.resource.data.itemId == itemId;
+
+      // Purchases cannot be modified once created
+      allow update: if false;
+
+      // Purchases cannot be deleted (no refunds!)
+      allow delete: if false;
+    }
+
     /* ---------- Catch-all deny ---------- */
     match /{document=**} {
       allow read, write: if false;

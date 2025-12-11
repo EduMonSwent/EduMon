@@ -27,6 +27,8 @@ import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.location.FriendRepository
 import com.android.sample.ui.location.ProfilesFriendRepository
+import com.android.sample.ui.shop.repository.FirestoreShopRepository
+import com.android.sample.ui.shop.repository.ShopRepository
 import com.android.sample.ui.stats.repository.FirestoreStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.ktx.auth
@@ -79,6 +81,8 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val subjectsRepository: SubjectsRepository by lazy {
     FirestoreSubjectsRepository(auth, db)
   }
+
+  override val shopRepository: ShopRepository by lazy { FirestoreShopRepository(db, auth) }
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider
