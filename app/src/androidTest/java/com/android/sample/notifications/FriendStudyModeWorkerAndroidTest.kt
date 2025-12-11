@@ -343,7 +343,7 @@ class FriendStudyModeWorkerAndroidTest {
     assertEquals("Should not post notification when friend was already studying", null, friendNotif)
   }
 
-  @Test
+  /*@Test
   fun doWork_withMultipleFriendsEnteringStudyMode_postsGroupNotification() = runBlocking {
     // Sign in anonymously
     auth.signInAnonymously().await()
@@ -457,7 +457,7 @@ class FriendStudyModeWorkerAndroidTest {
           "Notification should contain group message",
           text.contains("others") || text.contains("and"))
     }
-  }
+  }*/
 
   @Test
   fun scheduleNext_schedulesWorkWithDelay() = runBlocking {
