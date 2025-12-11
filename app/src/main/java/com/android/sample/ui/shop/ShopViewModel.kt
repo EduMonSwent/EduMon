@@ -5,8 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.R
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
-import com.android.sample.repos_providors.AppRepositories
-import com.android.sample.ui.shop.repository.ShopRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,8 +34,7 @@ sealed class PurchaseResult {
 }
 
 class ShopViewModel(
-    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
-    private val shopRepository: ShopRepository = AppRepositories.shopRepository
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository
 ) : ViewModel() {
 
   // User's coin balance
@@ -61,6 +58,23 @@ class ShopViewModel(
   // Loading state during purchase
   private val _isPurchasing = MutableStateFlow(false)
   val isPurchasing: StateFlow<Boolean> = _isPurchasing.asStateFlow()
+
+  init {
+    // Observe profile changes and update items' owned status from accessories list
+    viewModelScope.launch {
+      profileRepository.profile.collect { profile ->
+        val ownedItemIds =
+            profile.accessories
+                .filter { it.startsWith("owned:") }
+                .map { it.removePrefix("owned:") }
+                .toSet()
+
+        _items.update { currentItems ->
+          currentItems.map { item -> item.copy(owned = ownedItemIds.contains(item.id)) }
+        }
+      }
+    }
+  }
 
   /** Updates network availability status. Should be called from UI when network state changes. */
   fun setNetworkStatus(isOnline: Boolean) {

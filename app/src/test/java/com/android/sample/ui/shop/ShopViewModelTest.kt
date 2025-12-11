@@ -3,7 +3,6 @@ package com.android.sample.ui.shop
 import com.android.sample.R
 import com.android.sample.data.UserProfile
 import com.android.sample.profile.ProfileRepository
-import com.android.sample.ui.shop.repository.ShopRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,20 +28,9 @@ import org.junit.Test
 class ShopViewModelTest {
 
   private lateinit var profileRepository: ProfileRepository
-  private lateinit var shopRepository: ShopRepository
   private lateinit var viewModel: ShopViewModel
   private lateinit var profileFlow: MutableStateFlow<UserProfile>
-  private lateinit var itemsFlow: MutableStateFlow<List<CosmeticItem>>
   private val testDispatcher = StandardTestDispatcher()
-
-  private fun defaultCosmetics() =
-      listOf(
-          CosmeticItem("glasses", "Cool Shades", 200, R.drawable.shop_cosmetic_glasses),
-          CosmeticItem("hat", "Wizard Hat", 200, R.drawable.shop_cosmetic_hat),
-          CosmeticItem("scarf", "Red Scarf", 200, R.drawable.shop_cosmetic_scarf),
-          CosmeticItem("wings", "Cyber Wings", 200, R.drawable.shop_cosmetic_wings),
-          CosmeticItem("aura", "Epic Aura", 1500, R.drawable.shop_cosmetic_aura),
-          CosmeticItem("cape", "Hero Cape", 200, R.drawable.shop_cosmetic_cape))
 
   @Before
   fun setup() {
@@ -54,25 +42,12 @@ class ShopViewModelTest {
             name = "Test User", email = "test@example.com", coins = 1000, accessories = emptyList())
 
     profileFlow = MutableStateFlow(initialProfile)
-    itemsFlow = MutableStateFlow(defaultCosmetics())
 
     // Mock ProfileRepository
     profileRepository = mockk(relaxed = true)
     every { profileRepository.profile } returns profileFlow
 
-    // Mock ShopRepository
-    shopRepository = mockk(relaxed = true)
-    every { shopRepository.items } returns itemsFlow
-    coEvery { shopRepository.refreshOwnedStatus() } returns Unit
-    coEvery { shopRepository.purchaseItem(any()) } answers
-        {
-          val itemId = firstArg<String>()
-          itemsFlow.value =
-              itemsFlow.value.map { if (it.id == itemId) it.copy(owned = true) else it }
-          true
-        }
-
-    viewModel = ShopViewModel(profileRepository, shopRepository)
+    viewModel = ShopViewModel(profileRepository)
   }
 
   @After
@@ -114,9 +89,8 @@ class ShopViewModelTest {
   }
 
   @Test
-  fun `items should contain all initial cosmetics`() = runTest {
+  fun `items should contain all initial cosmetics`() {
     // When
-    testDispatcher.scheduler.advanceUntilIdle()
     val items = viewModel.items.value
 
     // Then
@@ -130,9 +104,8 @@ class ShopViewModelTest {
   }
 
   @Test
-  fun `items should have correct drawable resources`() = runTest {
+  fun `items should have correct drawable resources`() {
     // When
-    testDispatcher.scheduler.advanceUntilIdle()
     val items = viewModel.items.value
 
     // Then
@@ -156,8 +129,10 @@ class ShopViewModelTest {
 
     // Then
     assertTrue(result)
-    coVerify { profileRepository.updateProfile(match { it.coins == 800 }) }
-    coVerify { shopRepository.purchaseItem("glasses") }
+    coVerify {
+      profileRepository.updateProfile(
+          match { it.coins == 800 && it.accessories.contains("owned:glasses") })
+    }
   }
 
   @Test
@@ -180,7 +155,7 @@ class ShopViewModelTest {
   }
 
   @Test
-  fun `buyItem should call shopRepository purchaseItem`() = runTest {
+  fun `buyItem should add item to accessories list`() = runTest {
     // Given
     coEvery { profileRepository.updateProfile(any()) } returns Unit
     val item = viewModel.items.value.find { it.id == "hat" }!!
@@ -190,7 +165,25 @@ class ShopViewModelTest {
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Then
-    coVerify { shopRepository.purchaseItem("hat") }
+    coVerify { profileRepository.updateProfile(match { it.accessories == listOf("owned:hat") }) }
+  }
+
+  @Test
+  fun `buyItem should append to existing accessories`() = runTest {
+    // Given
+    profileFlow.value = profileFlow.value.copy(accessories = listOf("owned:glasses"))
+    coEvery { profileRepository.updateProfile(any()) } returns Unit
+    val item = viewModel.items.value.find { it.id == "hat" }!!
+
+    // When
+    viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Then
+    coVerify {
+      profileRepository.updateProfile(
+          match { it.accessories == listOf("owned:glasses", "owned:hat") })
+    }
   }
 
   @Test
@@ -222,7 +215,6 @@ class ShopViewModelTest {
     // Then
     assertFalse(result)
     coVerify(exactly = 0) { profileRepository.updateProfile(any()) }
-    coVerify(exactly = 0) { shopRepository.purchaseItem(any()) }
   }
 
   @Test
@@ -237,7 +229,6 @@ class ShopViewModelTest {
     // Then
     assertFalse(result)
     coVerify(exactly = 0) { profileRepository.updateProfile(any()) }
-    coVerify(exactly = 0) { shopRepository.purchaseItem(any()) }
   }
 
   @Test
@@ -266,7 +257,10 @@ class ShopViewModelTest {
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Then
-    coVerify(exactly = 0) { shopRepository.purchaseItem(any()) }
+    val itemsAfter = viewModel.items.value
+    assertEquals(6, itemsAfter.size)
+    assertFalse(
+        itemsAfter.find { it.id == "glasses" }!!.owned) // Still not owned in the actual list
   }
 
   @Test
@@ -282,8 +276,10 @@ class ShopViewModelTest {
 
     // Then
     assertTrue(result)
-    coVerify { profileRepository.updateProfile(match { it.coins == 0 }) }
-    coVerify { shopRepository.purchaseItem("aura") }
+    coVerify {
+      profileRepository.updateProfile(
+          match { it.coins == 0 && it.accessories.contains("owned:aura") })
+    }
   }
 
   @Test
@@ -307,7 +303,7 @@ class ShopViewModelTest {
   }
 
   @Test
-  fun `multiple purchases should work correctly`() = runTest {
+  fun `multiple purchases should accumulate accessories correctly`() = runTest {
     // Given
     coEvery { profileRepository.updateProfile(any()) } answers
         {
@@ -325,17 +321,10 @@ class ShopViewModelTest {
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Then
-    coVerify { shopRepository.purchaseItem("glasses") }
-    coVerify { shopRepository.purchaseItem("hat") }
-  }
-
-  @Test
-  fun `init should refresh owned status from repository`() = runTest {
-    // When - viewModel is created in setup
-    testDispatcher.scheduler.advanceUntilIdle()
-
-    // Then
-    coVerify { shopRepository.refreshOwnedStatus() }
+    coVerify {
+      profileRepository.updateProfile(match { it.accessories.contains("owned:glasses") })
+      profileRepository.updateProfile(match { it.accessories.contains("owned:hat") })
+    }
   }
 
   @Test
