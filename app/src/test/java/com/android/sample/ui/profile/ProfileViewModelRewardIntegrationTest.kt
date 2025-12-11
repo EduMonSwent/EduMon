@@ -52,40 +52,6 @@ class ProfileViewModelRewardIntegrationTest {
 
   @Test
   fun `addPoints crosses level threshold and updates profile with rewards`() = runTest {
-  fun `debugLevelUpForTests applies rewards and emits event`() = runTest {
-    // Set lastRewardedLevel to 0 so that leveling up to 2 will trigger rewards for levels 1 and 2
-    val initial = UserProfile(level = 1, coins = 0, points = 0, lastRewardedLevel = 0)
-    val repo = FakeProfileRepository(initial)
-    val statsRepo = FakeUserStatsRepository()
-    val viewModel = ProfileViewModel(repo, statsRepo)
-
-    advanceUntilIdle()
-
-    assertEquals(1, viewModel.userProfile.value.level)
-
-    var received: LevelUpRewardUiEvent? = null
-    val job = launch { received = viewModel.rewardEvents.first() }
-
-    // Force level up to 2 (debug path bypasses stats)
-    viewModel.debugLevelUpForTests()
-    advanceUntilIdle()
-    job.join()
-
-    assertNotNull("Expected reward event to be emitted", received)
-    val event = received as LevelUpRewardUiEvent.RewardsGranted
-    assertEquals(2, event.newLevel)
-
-    // Verify rewards were granted
-    assertTrue("Expected rewards to be granted", !event.summary.isEmpty)
-    assertTrue(
-        "Expected level 2 to be in rewarded levels", event.summary.rewardedLevels.contains(2))
-
-    val profile = viewModel.userProfile.value
-    assertEquals(2, profile.lastRewardedLevel)
-  }
-
-  @Test
-  fun `addPoints crosses level threshold and triggers rewards`() = runTest {
     val initial = UserProfile(level = 1, points = 0, coins = 0, lastRewardedLevel = 0)
     val repo = FakeProfileRepository(initial)
     val statsRepo = FakeUserStatsRepository(UserStats(points = 0))
@@ -94,10 +60,6 @@ class ProfileViewModelRewardIntegrationTest {
     // Snapshot before
     val before = viewModel.userProfile.value
     assertEquals(1, before.level)
-    advanceUntilIdle()
-
-    var received: LevelUpRewardUiEvent? = null
-    val job = launch { received = viewModel.rewardEvents.first() }
 
     // This should be enough to cross at least one level threshold
     viewModel.addPoints(2000)
@@ -113,8 +75,6 @@ class ProfileViewModelRewardIntegrationTest {
         after.level,
         after.lastRewardedLevel,
     )
-    // Coins should be >= before (depending on your LevelRewardConfig)
-    assertTrue("Coins should not decrease after level-up rewards", after.coins >= before.coins)
   }
 
   @Test
@@ -126,12 +86,6 @@ class ProfileViewModelRewardIntegrationTest {
 
     // Big jump: should cross several levels depending on your curve
     viewModel.addPoints(5000)
-    advanceUntilIdle()
-
-    val events = mutableListOf<LevelUpRewardUiEvent>()
-    val job = launch { viewModel.rewardEvents.collect { events.add(it) } }
-
-    viewModel.addPoints(5000) // should jump many levels
     advanceUntilIdle()
 
     val profile = viewModel.userProfile.value

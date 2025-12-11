@@ -69,9 +69,6 @@ class ProfileViewModel(
   val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
   // ----- Startup synchronization flags -----
-  private var baselineLevel: Int? = null
-
-  // Use global state shared across instances
   private var startupCompleted: Boolean
     get() = globalStartupComplete
     set(value) {
@@ -90,37 +87,14 @@ class ProfileViewModel(
       globalLastProcessedCoins = value
     }
 
-  // Track if we just did a level up to suppress stat gain toasts
-  // Must be global to work across multiple instances
   private var justLeveledUp: Boolean
     get() = globalJustLeveledUp
     set(value) {
       globalJustLeveledUp = value
-  // Flag pour savoir si le profil a été chargé depuis Firestore
+    }
+
+  // Flag to know if profile has been loaded from Firestore
   private var profileLoaded = false
-
-  init {
-    viewModelScope.launch {
-      profileRepository.profile.collect { profile ->
-        Log.d("ProfileViewModel", "Profile from repo: starterId='${profile.starterId}'")
-        _userProfile.value = profile
-        profileLoaded = true
-      }
-    }
-
-    viewModelScope.launch {
-      if (profileRepository is FirestoreProfileRepository) {
-        profileRepository.isLoaded.first { it }
-      }
-
-      userStatsRepository.start()
-      userStatsRepository.stats.collect { stats ->
-        _userStats.value = stats
-        if (profileLoaded) {
-          syncProfileWithStats(stats)
-        }
-      }
-    }
 
   // ----- Reward engine -----
   private val rewardEngine = LevelRewardEngine()
@@ -144,41 +118,36 @@ class ProfileViewModel(
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
 
   init {
+    Log.d("ProfileViewModel", "=== ProfileViewModel INIT ===")
 
+    // Collect profile from repository
     viewModelScope.launch {
-      userStatsRepository.start()
-
-      profileRepository.profile.collect { remote ->
-        val local = _userProfile.value
-
-        if (remote.level < local.level) {
-          return@collect
-        }
-
-        val corrected =
-            if (remote.lastRewardedLevel < remote.level) {
-              remote.copy(lastRewardedLevel = remote.level)
-            } else {
-              remote
-            }
-
-        _userProfile.value = corrected
+      profileRepository.profile.collect { profile ->
+        Log.d("ProfileViewModel", "Profile from repo: starterId='${profile.starterId}'")
+        _userProfile.value = profile
+        profileLoaded = true
       }
     }
 
+    // Wait for Firestore to load, then start stats collection
     viewModelScope.launch {
+      if (profileRepository is FirestoreProfileRepository) {
+        Log.d("ProfileViewModel", "Waiting for Firestore profile to load...")
+        profileRepository.isLoaded.first { it }
+        Log.d("ProfileViewModel", "Firestore profile loaded")
+      }
+
+      userStatsRepository.start()
       userStatsRepository.stats.collect { stats ->
         _userStats.value = stats
-        syncProfileWithStats(stats)
+        if (profileLoaded) {
+          syncProfileWithStats(stats)
+        }
       }
     }
   }
 
   // ----- Accessory Management -----
-  private val rewardEngine = LevelRewardEngine()
-
-  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
-  val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
@@ -298,7 +267,8 @@ class ProfileViewModel(
 
   fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
 
-  // ----- Points and Coins Management -----
+  // ----- Starter Selection -----
+
   fun setStarter(starterId: String) {
     if (starterId.isBlank()) {
       Log.w("ProfileViewModel", "setStarter: blank id ignored")
@@ -330,6 +300,8 @@ class ProfileViewModel(
     }
   }
 
+  // ----- Points and Coins Management -----
+
   fun addCoins(amount: Int) {
     if (amount <= 0) return
     viewModelScope.launch { userStatsRepository.updateCoins(amount) }
@@ -346,27 +318,17 @@ class ProfileViewModel(
 
   fun syncProfileWithStats(stats: UserStats) {
     globalSyncCount++
-  private fun pushProfile(updated: UserProfile = _userProfile.value) {
 
     if (!profileLoaded) {
-      Log.d("ProfileViewModel", "pushProfile: skipped (profile not loaded yet)")
+      Log.d("ProfileViewModel", "syncProfileWithStats: skipped (profile not loaded yet)")
       return
     }
-
-    viewModelScope.launch {
-      try {
-        profileRepository.updateProfile(updated)
-        Log.d("ProfileViewModel", "pushProfile: saved")
-      } catch (e: Exception) {
-        Log.e("ProfileViewModel", "pushProfile failed", e)
-      }
-    }
-  }
 
     val old = _userProfile.value
     val newPoints = stats.points
     val computed = computeLevelFromPoints(newPoints)
 
+    // First sync - establish baseline
     if (!startupCompleted) {
       val initial =
           old.copy(
@@ -383,12 +345,11 @@ class ProfileViewModel(
       _userProfile.value = initial
       pushProfile(initial)
 
-      baselineLevel = computed
       startupCompleted = true
-      // Set baseline immediately on first sync
       lastProcessedPoints = newPoints
       lastProcessedCoins = stats.coins
 
+      Log.d("ProfileViewModel", "Baseline set: level=$computed, points=$newPoints")
       return
     }
 
@@ -400,22 +361,9 @@ class ProfileViewModel(
 
     // NO LEVEL CHANGE
     if (safeNewLevel == old.level) {
-      // Update tracking variables
       lastProcessedPoints = newPoints
       lastProcessedCoins = stats.coins
 
-  fun syncProfileWithStats(stats: UserStats) {
-
-    if (!profileLoaded) {
-      Log.d("ProfileViewModel", "syncProfileWithStats: skipped (profile not loaded yet)")
-      return
-    }
-
-    val old = _userProfile.value
-    val newPoints = stats.points
-    val computedLevel = computeLevelFromPoints(newPoints)
-
-    if (computedLevel == old.level) {
       val updated =
           old.copy(
               points = newPoints,
@@ -447,7 +395,6 @@ class ProfileViewModel(
     justLeveledUp = true
 
     val candidate = old.copy(points = newPoints, level = safeNewLevel)
-    val candidate = old.copy(points = newPoints, level = computedLevel)
     val result = rewardEngine.applyLevelUpRewards(old, candidate)
     val rewarded = result.updatedProfile
 
@@ -457,7 +404,6 @@ class ProfileViewModel(
     }
 
     // Update tracking - include ALL coins (Pomodoro + level rewards)
-    // This way the NEXT sync won't show them again
     lastProcessedPoints = newPoints
     lastProcessedCoins = stats.coins + result.summary.coinsGranted
 
@@ -473,12 +419,10 @@ class ProfileViewModel(
     _userProfile.value = final
     pushProfile(final)
 
-    // Only show level-up toast (which includes level rewards)
-    // Don't show stat gain toast because it would mix Pomodoro + level rewards confusingly
+    // Only show level-up event after initial syncs
     if (!result.summary.isEmpty && globalSyncCount > 2) {
       val event =
           LevelUpRewardUiEvent.RewardsGranted(newLevel = safeNewLevel, summary = result.summary)
-    if (!result.summary.isEmpty) {
       viewModelScope.launch {
         _rewardEvents.emit(event)
         ToastNotifier.showLevelUpEvent(event)
@@ -494,7 +438,19 @@ class ProfileViewModel(
   }
 
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
-    viewModelScope.launch { runCatching { profileRepository.updateProfile(updated) } }
+    if (!profileLoaded) {
+      Log.d("ProfileViewModel", "pushProfile: skipped (profile not loaded yet)")
+      return
+    }
+
+    viewModelScope.launch {
+      try {
+        profileRepository.updateProfile(updated)
+        Log.d("ProfileViewModel", "pushProfile: saved")
+      } catch (e: Exception) {
+        Log.e("ProfileViewModel", "pushProfile failed", e)
+      }
+    }
   }
 
   // ----- ICS Import -----
