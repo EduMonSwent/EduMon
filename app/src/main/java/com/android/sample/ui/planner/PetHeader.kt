@@ -13,11 +13,11 @@ import com.android.sample.ui.profile.EduMonAvatar
 
 @Composable
 fun PetHeader(
+    modifier: Modifier = Modifier,
     level: Int,
     @DrawableRes avatarResId: Int = R.drawable.edumon,
     @DrawableRes environmentResId: Int = R.drawable.home, // ✅ neutral default
     backgroundBrush: Brush? = null,
-    modifier: Modifier = Modifier,
 ) {
   // Optional extra background (if you want a gradient behind the card)
   val outerModifier =

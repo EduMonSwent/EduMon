@@ -83,10 +83,10 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
 // ---------- Route (hooks up VM to UI) ----------
 @Composable
 fun EduMonHomeRoute(
+    modifier: Modifier = Modifier,
     @DrawableRes creatureResId: Int = R.drawable.edumon,
     @DrawableRes environmentResId: Int = R.drawable.bg_pyrmon,
     onNavigate: (String) -> Unit,
-    modifier: Modifier = Modifier,
     vm: HomeViewModel = viewModel(),
 ) {
   val state by vm.uiState.collectAsState()

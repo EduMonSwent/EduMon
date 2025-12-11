@@ -37,10 +37,10 @@ import com.android.sample.data.CreatureStats
 
 @Composable
 fun CreatureHouseCard(
-    @DrawableRes creatureResId: Int = R.drawable.edumon, // ✅ default sprite
-    level: Int,
-    @DrawableRes environmentResId: Int = R.drawable.bg_pyrmon, // ✅ default env
     modifier: Modifier = Modifier,
+    @DrawableRes creatureResId: Int = R.drawable.edumon,
+    level: Int,
+    @DrawableRes environmentResId: Int = R.drawable.bg_pyrmon,
     overrideCreature: (@Composable () -> Unit)? = null,
 ) {
   Surface(
