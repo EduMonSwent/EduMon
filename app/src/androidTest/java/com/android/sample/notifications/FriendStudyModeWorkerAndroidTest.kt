@@ -231,9 +231,6 @@ class FriendStudyModeWorkerAndroidTest {
         .putString(friendId, FriendMode.IDLE.name)
         .apply()
 
-    // Give Firestore time to propagate the writes and trigger snapshot listeners
-    Thread.sleep(3000)
-
     // Run worker
     val request =
         OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
@@ -315,9 +312,6 @@ class FriendStudyModeWorkerAndroidTest {
         .edit()
         .putString(friendId, FriendMode.STUDY.name)
         .apply()
-
-    // Give Firestore time to propagate the writes and trigger snapshot listeners
-    Thread.sleep(3000)
 
     // Run worker
     val request =
@@ -424,10 +418,6 @@ class FriendStudyModeWorkerAndroidTest {
     prefs.putString(friend2Id, FriendMode.IDLE.name)
     prefs.putString(friend3Id, FriendMode.IDLE.name)
     prefs.apply()
-
-    // Give Firestore time to propagate the writes and trigger snapshot listeners
-    // Increased delay for slower test environments
-    Thread.sleep(3000)
 
     // Run worker
     val request =
@@ -572,9 +562,6 @@ class FriendStudyModeWorkerAndroidTest {
                 "latitude" to 46.5202,
                 "longitude" to 6.5652))
         .await()
-
-    // Give Firestore time to propagate
-    Thread.sleep(2000)
 
     // Run worker
     val request =
