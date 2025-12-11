@@ -71,6 +71,13 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /** This class was implemented with the help of ai (chatgbt) */
+data class ScheduleActions(
+    val onClassClick: (Class) -> Unit,
+    val onGapClick: (ScheduleGapItem) -> Unit,
+    val onEventClick: (ScheduleEvent) -> Unit,
+    val onEventDelete: (ScheduleEvent) -> Unit
+)
+
 @Composable
 fun DayTabContent(
     vm: ScheduleViewModel,
@@ -188,10 +195,12 @@ private fun TodayCard(
     ClassesSection(
         classes = classes,
         attendance = attendance,
-        onClassClick = onClassClick,
-        onGapClick = onGapClick,
-        onEventClick = onEventClick,
-        onEventDelete = onEventDelete,
+        actions =
+            ScheduleActions(
+                onClassClick = onClassClick,
+                onGapClick = onGapClick,
+                onEventClick = onEventClick,
+                onEventDelete = onEventDelete),
         allClassesFinished = allClassesFinished,
         modifier = modifier)
 
@@ -224,10 +233,7 @@ private fun TodayCard(
 private fun ClassesSection(
     classes: List<DayScheduleItem>,
     attendance: List<ClassAttendance>,
-    onClassClick: (Class) -> Unit,
-    onGapClick: (ScheduleGapItem) -> Unit,
-    onEventClick: (ScheduleEvent) -> Unit,
-    onEventDelete: (ScheduleEvent) -> Unit,
+    actions: ScheduleActions,
     allClassesFinished: Boolean,
     modifier: Modifier
 ) {
@@ -258,16 +264,16 @@ private fun ClassesSection(
                 CompactClassRow(
                     clazz = c,
                     record = record,
-                    modifier = Modifier.fillMaxWidth().clickable { onClassClick(c) })
+                    modifier = Modifier.fillMaxWidth().clickable { actions.onClassClick(c) })
               }
               is ScheduleGapItem -> {
-                GapItemRow(gap = item, onClick = { onGapClick(item) })
+                GapItemRow(gap = item, onClick = { actions.onGapClick(item) })
               }
               is ScheduleEventItem -> {
                 EventItemRow(
                     event = item.eventData,
-                    onClick = { onEventClick(item.eventData) },
-                    onDelete = { onEventDelete(item.eventData) })
+                    onClick = { actions.onEventClick(item.eventData) },
+                    onDelete = { actions.onEventDelete(item.eventData) })
               }
             }
 
