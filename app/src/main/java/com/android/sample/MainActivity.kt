@@ -49,7 +49,6 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       EduMonTheme {
-        // Si déjà connecté, aller directement à APP
         val initialScreen =
             if (auth.currentUser != null) {
               Log.d("MainActivity", "User already logged in: ${auth.currentUser?.uid}")
@@ -78,13 +77,12 @@ class MainActivity : ComponentActivity() {
                     })
               }
               AppScreen.LOGGING_IN -> {
-                // Vidéo en background pendant le choix du compte Google
+
                 Box(modifier = Modifier.fillMaxSize()) {
                   LoopingVideoBackgroundFromAssets(
                       assetFileName = "onboarding_background_epfl.mp4",
                       modifier = Modifier.fillMaxSize())
 
-                  // Indicateur de chargement par-dessus
                   Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                   }
