@@ -25,6 +25,22 @@ import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
 import com.android.sample.ui.theme.EduMonTheme
 
+// UI text constants
+private const val CONTENT_DESC_BACK = "Back"
+private const val LABEL_MARK_COMPLETED = "Mark as completed"
+private const val LABEL_COURSE = "Course"
+private const val LABEL_EXERCISES = "Exercises"
+private const val TITLE_COURSE_PDF = "Course PDF"
+private const val TITLE_EXERCISES_PDF = "Exercises PDF"
+private const val ACTION_OPEN_COURSE = "Open course"
+private const val ACTION_OPEN_EXERCISES = "Open exercises"
+private const val TIP_MESSAGE =
+    "Tip: you can come back and continue later. Once you feel done, tap \"Mark as completed\"."
+private const val LABEL_TODAYS_OBJECTIVE = "Today's objective"
+private const val LABEL_MIN_FOCUS = " min focus"
+private const val NO_PDF_AVAILABLE = "No PDF available"
+private const val UNAVAILABLE = "Unavailable"
+
 /**
  * Route-level composable that wraps the screen in EdumonTheme. You can call this from your nav
  * graph / ScheduleScreen later.
@@ -34,9 +50,9 @@ fun CourseExercisesRoute(
     objective: Objective,
     coursePdfLabel: String,
     exercisesPdfLabel: String,
+    coursePdfUrl: String = "",
+    exercisePdfUrl: String = "",
     onBack: () -> Unit,
-    onOpenCoursePdf: () -> Unit,
-    onOpenExercisesPdf: () -> Unit,
     onCompleted: () -> Unit,
 ) {
   EduMonTheme {
@@ -44,9 +60,9 @@ fun CourseExercisesRoute(
         objective = objective,
         coursePdfLabel = coursePdfLabel,
         exercisesPdfLabel = exercisesPdfLabel,
+        coursePdfUrl = coursePdfUrl,
+        exercisePdfUrl = exercisePdfUrl,
         onBack = onBack,
-        onOpenCoursePdf = onOpenCoursePdf,
-        onOpenExercisesPdf = onOpenExercisesPdf,
         onCompleted = onCompleted,
     )
   }
@@ -62,12 +78,13 @@ private fun CourseExercisesScreen(
     objective: Objective,
     coursePdfLabel: String,
     exercisesPdfLabel: String,
+    coursePdfUrl: String = "",
+    exercisePdfUrl: String = "",
     onBack: () -> Unit,
-    onOpenCoursePdf: () -> Unit,
-    onOpenExercisesPdf: () -> Unit,
     onCompleted: () -> Unit,
 ) {
   val cs = MaterialTheme.colorScheme
+  val context = androidx.compose.ui.platform.LocalContext.current
   var selectedTab by remember { mutableIntStateOf(0) } // 0 = Course, 1 = Exercises
 
   Scaffold(
@@ -97,7 +114,7 @@ private fun CourseExercisesScreen(
               IconButton(
                   onClick = onBack,
                   modifier = Modifier.testTag(CourseExercisesTestTags.BACK_BUTTON)) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.Default.ArrowBack, contentDescription = CONTENT_DESC_BACK)
                   }
             })
       },
@@ -105,7 +122,7 @@ private fun CourseExercisesScreen(
         ExtendedFloatingActionButton(
             onClick = onCompleted,
             icon = { Icon(Icons.Default.Check, contentDescription = null) },
-            text = { Text("Mark as completed") },
+            text = { Text(LABEL_MARK_COMPLETED) },
             modifier = Modifier.testTag(CourseExercisesTestTags.COMPLETED_FAB))
       },
       containerColor = Color.Transparent,
@@ -134,7 +151,7 @@ private fun CourseExercisesScreen(
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("Course") },
+                        text = { Text(LABEL_COURSE) },
                         icon = {
                           Icon(imageVector = Icons.Default.LibraryBooks, contentDescription = null)
                         },
@@ -142,7 +159,7 @@ private fun CourseExercisesScreen(
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("Exercises") },
+                        text = { Text(LABEL_EXERCISES) },
                         icon = {
                           Icon(imageVector = Icons.Default.Description, contentDescription = null)
                         },
@@ -154,25 +171,33 @@ private fun CourseExercisesScreen(
               when (selectedTab) {
                 0 ->
                     PdfCard(
-                        title = "Course PDF",
+                        title = TITLE_COURSE_PDF,
                         description = coursePdfLabel,
-                        primaryActionLabel = "Open course",
-                        onClick = onOpenCoursePdf,
+                        primaryActionLabel = ACTION_OPEN_COURSE,
+                        pdfUrl = coursePdfUrl,
+                        onClick = {
+                          // Only called when coursePdfUrl.isNotBlank() (card is disabled otherwise)
+                          com.android.sample.core.helpers.PdfHelper.openPdf(context, coursePdfUrl)
+                        },
                         cardTag = CourseExercisesTestTags.COURSE_PDF_CARD)
                 1 ->
                     PdfCard(
-                        title = "Exercises PDF",
+                        title = TITLE_EXERCISES_PDF,
                         description = exercisesPdfLabel,
-                        primaryActionLabel = "Open exercises",
-                        onClick = onOpenExercisesPdf,
+                        primaryActionLabel = ACTION_OPEN_EXERCISES,
+                        pdfUrl = exercisePdfUrl,
+                        onClick = {
+                          // Only called when exercisePdfUrl.isNotBlank() (card is disabled
+                          // otherwise)
+                          com.android.sample.core.helpers.PdfHelper.openPdf(context, exercisePdfUrl)
+                        },
                         cardTag = CourseExercisesTestTags.EXERCISES_PDF_CARD)
               }
 
               Spacer(Modifier.height(24.dp))
 
               Text(
-                  text =
-                      "Tip: you can come back and continue later. Once you feel done, tap \"Mark as completed\".",
+                  text = TIP_MESSAGE,
                   style = MaterialTheme.typography.bodySmall,
                   color = cs.onSurfaceVariant,
                   modifier = Modifier.testTag(CourseExercisesTestTags.TIP_TEXT))
@@ -191,7 +216,7 @@ private fun ObjectiveHeaderCard(objective: Objective) {
           // Left: time + course code
           Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Today’s objective",
+                text = LABEL_TODAYS_OBJECTIVE,
                 style = MaterialTheme.typography.labelMedium,
                 color = cs.primary)
             Spacer(Modifier.height(4.dp))
@@ -210,7 +235,7 @@ private fun ObjectiveHeaderCard(objective: Objective) {
               Spacer(Modifier.height(6.dp))
               AssistChip(
                   onClick = {},
-                  label = { Text("${objective.estimateMinutes} min focus") },
+                  label = { Text("${objective.estimateMinutes}$LABEL_MIN_FOCUS") },
                   modifier = Modifier.testTag(CourseExercisesTestTags.ESTIMATE_CHIP))
             }
           }
@@ -227,51 +252,80 @@ private fun PdfCard(
     title: String,
     description: String,
     primaryActionLabel: String,
+    pdfUrl: String = "",
     onClick: () -> Unit,
     cardTag: String = CourseExercisesTestTags.PDF_CARD,
 ) {
-  val cs = MaterialTheme.colorScheme
+  val hasPdf = pdfUrl.isNotBlank()
+
   Surface(
       shape = RoundedCornerShape(24.dp),
       tonalElevation = 6.dp,
-      modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).testTag(cardTag)) {
+      modifier =
+          Modifier.fillMaxWidth().clickable(enabled = hasPdf, onClick = onClick).testTag(cardTag)) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-          Box(
-              modifier =
-                  Modifier.size(52.dp)
-                      .clip(RoundedCornerShape(16.dp))
-                      .background(cs.primary.copy(alpha = 0.12f)),
-              contentAlignment = Alignment.Center) {
-                Icon(imageVector = Icons.Default.Description, contentDescription = null)
-              }
-
+          PdfIconBox(hasPdf = hasPdf)
           Spacer(Modifier.width(16.dp))
-
-          Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.testTag(CourseExercisesTestTags.PDF_TITLE))
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = cs.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.testTag(CourseExercisesTestTags.PDF_DESCRIPTION))
-          }
-
+          PdfCardContent(title = title, description = description, hasPdf = hasPdf)
           Spacer(Modifier.width(12.dp))
-
-          TextButton(
-              onClick = onClick,
-              modifier = Modifier.testTag(CourseExercisesTestTags.PDF_OPEN_BUTTON)) {
-                Text(primaryActionLabel)
-              }
+          PdfActionButton(
+              hasPdf = hasPdf, primaryActionLabel = primaryActionLabel, onClick = onClick)
         }
+      }
+}
+
+/** Icon box for PDF card - displays document icon with appropriate styling based on availability */
+@Composable
+private fun PdfIconBox(hasPdf: Boolean) {
+  val cs = MaterialTheme.colorScheme
+  val backgroundColor =
+      if (hasPdf) cs.primary.copy(alpha = 0.12f) else cs.onSurface.copy(alpha = 0.05f)
+  val iconTint = if (hasPdf) cs.primary else cs.onSurface.copy(alpha = 0.3f)
+
+  Box(
+      modifier = Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(backgroundColor),
+      contentAlignment = Alignment.Center) {
+        Icon(imageVector = Icons.Default.Description, contentDescription = null, tint = iconTint)
+      }
+}
+
+/** Content section of PDF card - displays title and description with appropriate styling */
+@Composable
+private fun RowScope.PdfCardContent(title: String, description: String, hasPdf: Boolean) {
+  val cs = MaterialTheme.colorScheme
+  val titleColor = if (hasPdf) cs.onSurface else cs.onSurface.copy(alpha = 0.5f)
+  val descriptionText = if (hasPdf) description else NO_PDF_AVAILABLE
+  val descriptionAlpha = if (hasPdf) 1f else 0.5f
+
+  Column(modifier = Modifier.weight(1f)) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = titleColor,
+        modifier = Modifier.testTag(CourseExercisesTestTags.PDF_TITLE))
+    Spacer(Modifier.height(4.dp))
+    Text(
+        text = descriptionText,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = descriptionAlpha),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.testTag(CourseExercisesTestTags.PDF_DESCRIPTION))
+  }
+}
+
+/** Action button for PDF card - opens PDF or shows unavailable state */
+@Composable
+private fun PdfActionButton(hasPdf: Boolean, primaryActionLabel: String, onClick: () -> Unit) {
+  val buttonText = if (hasPdf) primaryActionLabel else UNAVAILABLE
+
+  TextButton(
+      onClick = onClick,
+      enabled = hasPdf,
+      modifier = Modifier.testTag(CourseExercisesTestTags.PDF_OPEN_BUTTON)) {
+        Text(buttonText)
       }
 }

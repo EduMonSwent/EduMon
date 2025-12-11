@@ -289,6 +289,14 @@ fun GlowCard(content: @Composable () -> Unit) {
 @Composable
 fun ProfileCard(user: UserProfile) {
   val colorScheme = MaterialTheme.colorScheme
+  // Extract initials from the user's name
+  val initials =
+      user.name
+          .split(" ")
+          .filter { it.isNotBlank() }
+          .take(2)
+          .joinToString("") { it.first().uppercase() }
+          .ifEmpty { user.name.take(2).uppercase() }
 
   Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     Row(
@@ -299,11 +307,7 @@ fun ProfileCard(user: UserProfile) {
               Modifier.size(70.dp)
                   .background(colorScheme.primary, shape = RoundedCornerShape(50.dp)),
               contentAlignment = Alignment.Center) {
-                Text(
-                    user.name.take(2).uppercase(),
-                    color = colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp)
+                Text(initials, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
               }
           Spacer(Modifier.width(20.dp))
           Image(
