@@ -326,4 +326,147 @@ class ShopViewModelTest {
       profileRepository.updateProfile(match { it.accessories.contains("owned:hat") })
     }
   }
+
+  @Test
+  fun `buyItem should return false when offline`() = runTest {
+    // Given
+    viewModel.setNetworkStatus(false)
+    val item = viewModel.items.value.find { it.id == "glasses" }!!
+
+    // When
+    val result = viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Then
+    assertFalse(result)
+    coVerify(exactly = 0) { profileRepository.updateProfile(any()) }
+  }
+
+  @Test
+  fun `buyItem should set NoConnection result when offline`() = runTest {
+    // Given
+    viewModel.setNetworkStatus(false)
+    val item = viewModel.items.value.find { it.id == "glasses" }!!
+
+    // When
+    viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Then
+    assertTrue(viewModel.lastPurchaseResult.value is PurchaseResult.NoConnection)
+  }
+
+  @Test
+  fun `buyItem should work after coming back online`() = runTest {
+    // Given
+    coEvery { profileRepository.updateProfile(any()) } returns Unit
+    viewModel.setNetworkStatus(false)
+    val item = viewModel.items.value.find { it.id == "glasses" }!!
+
+    // When offline - should fail
+    val offlineResult = viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+    assertFalse(offlineResult)
+
+    // Clear result and come back online
+    viewModel.clearPurchaseResult()
+    viewModel.setNetworkStatus(true)
+
+    // When online - should succeed
+    val onlineResult = viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Then
+    assertTrue(onlineResult)
+    coVerify { profileRepository.updateProfile(any()) }
+  }
+
+  @Test
+  fun `setNetworkStatus should update isOnline state`() = runTest {
+    // Given - default is online
+    assertTrue(viewModel.isOnline.value)
+
+    // When
+    viewModel.setNetworkStatus(false)
+
+    // Then
+    assertFalse(viewModel.isOnline.value)
+
+    // When
+    viewModel.setNetworkStatus(true)
+
+    // Then
+    assertTrue(viewModel.isOnline.value)
+  }
+
+  @Test
+  fun `clearPurchaseResult should reset lastPurchaseResult to null`() = runTest {
+    // Given
+    viewModel.setNetworkStatus(false)
+    val item = viewModel.items.value.find { it.id == "glasses" }!!
+    viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+    assertTrue(viewModel.lastPurchaseResult.value != null)
+
+    // When
+    viewModel.clearPurchaseResult()
+
+    // Then
+    assertEquals(null, viewModel.lastPurchaseResult.value)
+  }
+
+  @Test
+  fun `buyItem should set InsufficientCoins result when not enough coins`() = runTest {
+    // Given
+    profileFlow.value = profileFlow.value.copy(coins = 50)
+    val item = viewModel.items.value.find { it.id == "glasses" }!!
+
+    // When
+    viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Then
+    val result = viewModel.lastPurchaseResult.value
+    assertTrue(result is PurchaseResult.InsufficientCoins)
+    assertEquals("Cool Shades", (result as PurchaseResult.InsufficientCoins).itemName)
+  }
+
+  @Test
+  fun `buyItem should set AlreadyOwned result when item owned`() = runTest {
+    // Given
+    coEvery { profileRepository.updateProfile(any()) } returns Unit
+    val item = viewModel.items.value.find { it.id == "glasses" }!!
+
+    // Buy the item first
+    viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+    viewModel.clearPurchaseResult()
+
+    // Try to buy again - get the updated item from the list
+    val ownedItem = viewModel.items.value.find { it.id == "glasses" }!!
+
+    // When
+    viewModel.buyItem(ownedItem)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Then
+    val result = viewModel.lastPurchaseResult.value
+    assertTrue(result is PurchaseResult.AlreadyOwned)
+  }
+
+  @Test
+  fun `buyItem should set Success result on successful purchase`() = runTest {
+    // Given
+    coEvery { profileRepository.updateProfile(any()) } returns Unit
+    val item = viewModel.items.value.find { it.id == "glasses" }!!
+
+    // When
+    viewModel.buyItem(item)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Then
+    val result = viewModel.lastPurchaseResult.value
+    assertTrue(result is PurchaseResult.Success)
+    assertEquals("Cool Shades", (result as PurchaseResult.Success).itemName)
+  }
 }
