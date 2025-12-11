@@ -15,14 +15,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +46,12 @@ import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
 import com.android.sample.feature.schedule.data.planner.ClassType
 import com.android.sample.feature.schedule.data.planner.CompletionStatus
+import com.android.sample.feature.schedule.data.planner.DayScheduleItem
+import com.android.sample.feature.schedule.data.planner.ScheduleClassItem
+import com.android.sample.feature.schedule.data.planner.ScheduleEventItem
+import com.android.sample.feature.schedule.data.planner.ScheduleGapItem
 import com.android.sample.feature.schedule.data.planner.WellnessEventType
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.ui.DailyObjectivesSection
@@ -51,9 +67,17 @@ import com.android.sample.ui.theme.Pink
 import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.StatBarLightbulb
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /** This class was implemented with the help of ai (chatgbt) */
+data class ScheduleActions(
+    val onClassClick: (Class) -> Unit,
+    val onGapClick: (ScheduleGapItem) -> Unit,
+    val onEventClick: (ScheduleEvent) -> Unit,
+    val onEventDelete: (ScheduleEvent) -> Unit
+)
+
 @Composable
 fun DayTabContent(
     vm: ScheduleViewModel,
@@ -62,7 +86,7 @@ fun DayTabContent(
     onObjectiveNavigation: (ObjectiveNavigation) -> Unit = {},
     onTodoClicked: (String) -> Unit = {}
 ) {
-  // Attendance modal (wired to VM state)
+  // 1. Attendance modal (wired to VM state)
   if (state.showAttendanceModal && state.selectedClass != null) {
     val initial = state.attendanceRecords.firstOrNull { it.classId == state.selectedClass.id }
     ClassAttendanceModal(
@@ -74,6 +98,46 @@ fun DayTabContent(
           vm.saveClassAttendance(state.selectedClass, attendance, completion)
         })
   }
+  // 2. Gap Step 1: Study or Relax?
+  if (state.showGapOptionsModal && state.selectedGap != null) {
+    AlertDialog(
+        onDismissRequest = { vm.onDismissGapModal() },
+        title = {
+          Text(stringResource(R.string.smart_gap_modal_title, state.selectedGap.durationMinutes))
+        },
+        text = { Text(stringResource(R.string.smart_gap_modal_text)) },
+        confirmButton = {
+          Button(onClick = { vm.onGapTypeSelected(true) }) {
+            Text(stringResource(R.string.smart_gap_action_study))
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { vm.onGapTypeSelected(false) }) {
+            Text(stringResource(R.string.smart_gap_action_relax))
+          }
+        })
+  }
+  // 3. Gap Step 2: Specific Propositions (The "Dialect")
+  if (state.showGapPropositionsModal && state.selectedGap != null) {
+    AlertDialog(
+        onDismissRequest = { vm.onDismissGapModal() },
+        title = { Text(stringResource(R.string.smart_gap_suggestions_title)) },
+        text = {
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.gapPropositions.forEach { prop ->
+              OutlinedButton(
+                  onClick = { vm.onGapPropositionClicked(prop) },
+                  modifier = Modifier.fillMaxWidth()) {
+                    Text(prop)
+                  }
+            }
+          }
+        },
+        confirmButton = {}, // Clicking an option is the confirm action
+        dismissButton = {
+          TextButton(onClick = { vm.onDismissGapModal() }) { Text(stringResource(R.string.cancel)) }
+        })
+  }
 
   Column(
       modifier = Modifier.fillMaxSize().padding(bottom = Dimensions.bottomBarPadding),
@@ -81,7 +145,7 @@ fun DayTabContent(
         val today = LocalDate.now()
         val dayTodos = state.todos.filter { it.dueDate == today }
         TodayCard(
-            classes = state.todayClasses,
+            classes = state.todaySchedule,
             attendance = state.attendanceRecords,
             objectivesVm = objectivesVm,
             onClassClick = { vm.onClassClicked(it) },
@@ -89,6 +153,9 @@ fun DayTabContent(
             todos = dayTodos,
             onTodoClicked = onTodoClicked,
             allClassesFinished = state.allClassesFinished,
+            onGapClick = { vm.onGapClicked(it) },
+            onEventClick = { vm.onScheduleEventClicked(it) },
+            onEventDelete = { vm.onDeleteScheduleEvent(it) },
             modifier = Modifier.fillMaxWidth())
       }
 }
@@ -97,10 +164,13 @@ fun DayTabContent(
 
 @Composable
 private fun TodayCard(
-    classes: List<Class>,
+    classes: List<DayScheduleItem>,
     attendance: List<ClassAttendance>,
     objectivesVm: ObjectivesViewModel,
     onClassClick: (Class) -> Unit,
+    onGapClick: (ScheduleGapItem) -> Unit,
+    onEventClick: (ScheduleEvent) -> Unit,
+    onEventDelete: (ScheduleEvent) -> Unit,
     onObjectiveNavigate: (ObjectiveNavigation) -> Unit,
     todos: List<ToDo>,
     onTodoClicked: (String) -> Unit,
@@ -112,6 +182,7 @@ private fun TodayCard(
   val dateText = DateTimeFormatter.ofPattern("EEEE, MMM d").format(today)
 
   GlassSurface(modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+
     // Header
     Text(
         text = stringResource(R.string.today_title_fmt, dateText),
@@ -121,69 +192,24 @@ private fun TodayCard(
         modifier = Modifier.padding(bottom = Dimensions.spacingXSmall))
     Spacer(Modifier.height(Dimensions.spacingMedium))
 
-    // ---- Classes section (card inside card) ----
-    SectionBox(
-        header = {
-          Text(
-              stringResource(R.string.classes_label),
-              style =
-                  MaterialTheme.typography.titleMedium.copy(
-                      fontSize = 18.sp,
-                      fontWeight = FontWeight.SemiBold,
-                      color = MaterialTheme.colorScheme.onSurface),
-              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
-        }) {
-          when {
-            (classes.isEmpty() && !allClassesFinished) -> {
-              Text(
-                  stringResource(R.string.no_classes_today),
-                  color = cs.onSurface.copy(alpha = 0.7f),
-                  modifier = modifier.fillMaxWidth())
-            }
-            (allClassesFinished) -> {
-              Box(
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .padding(top = Dimensions.spacingMedium)
-                          .clip(RoundedCornerShape(Dimensions.spacingLarge))
-                          .background(CustomGreen.copy(alpha = 0.15f))
-                          .padding(Dimensions.spacingLarge),
-                  contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.finished_classes),
-                        color = CustomGreen,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold)
-                  }
-            }
-            else -> {
-              Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                classes.forEachIndexed { idx, c ->
-                  val record = attendance.firstOrNull { it.classId == c.id }
-                  CompactClassRow(
-                      clazz = c,
-                      record = record,
-                      modifier = Modifier.fillMaxWidth().clickable { onClassClick(c) })
-                  if (idx != classes.lastIndex) {
-                    HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
-                  }
-                }
-              }
-            }
-          }
-        }
+    ClassesSection(
+        classes = classes,
+        attendance = attendance,
+        actions =
+            ScheduleActions(
+                onClassClick = onClassClick,
+                onGapClick = onGapClick,
+                onEventClick = onEventClick,
+                onEventDelete = onEventDelete),
+        allClassesFinished = allClassesFinished,
+        modifier = modifier)
 
     Spacer(Modifier.height(14.dp))
 
-    // ---- Daily objectives (your existing composable already looks like the mock) ----
     MaterialTheme(
-        colorScheme =
-            MaterialTheme.colorScheme.copy(
-                // ensure it uses your app purple for its internal Icons/Text tints
-                primary = PurplePrimary),
+        colorScheme = MaterialTheme.colorScheme.copy(primary = PurplePrimary),
         typography =
             MaterialTheme.typography.copy(
-                // DailyObjectivesSection uses titleMedium; bump it here locally
                 titleMedium =
                     MaterialTheme.typography.titleMedium.copy(
                         fontSize = 18.sp, fontWeight = FontWeight.SemiBold))) {
@@ -192,84 +218,154 @@ private fun TodayCard(
               modifier = Modifier.fillMaxWidth(),
               onNavigate = onObjectiveNavigate)
         }
+
     Spacer(Modifier.height(14.dp))
-    // ---- Today's To-Dos ----
-    SectionBox(
-        header = {
+
+    TodosSection(todos = todos, onTodoClicked = onTodoClicked, modifier = modifier)
+
+    Spacer(Modifier.height(14.dp))
+
+    WellnessSection()
+  }
+}
+
+@Composable
+private fun ClassesSection(
+    classes: List<DayScheduleItem>,
+    attendance: List<ClassAttendance>,
+    actions: ScheduleActions,
+    allClassesFinished: Boolean,
+    modifier: Modifier
+) {
+  val cs = MaterialTheme.colorScheme
+
+  SectionBox(
+      header = {
+        Text(
+            stringResource(R.string.classes_label),
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
+            modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
+      }) {
+        if (classes.isEmpty() && !allClassesFinished) {
           Text(
-              text = stringResource(R.string.schedule_day_todos_title),
-              fontSize = 18.sp,
-              fontWeight = FontWeight.SemiBold,
-              color = cs.onSurface,
-              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
-        }) {
-          if (todos.isEmpty()) {
-            Text(
-                text = stringResource(R.string.schedule_day_todos_empty),
-                color = cs.onSurface.copy(alpha = 0.7f),
-                modifier = modifier.fillMaxWidth())
-          } else {
-            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXSmall)) {
-              todos.forEach { todo ->
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(vertical = Dimensions.spacingXSmall)
-                            .clickable { onTodoClicked(todo.id) }) {
-                      Box(
-                          modifier =
-                              Modifier.width(5.dp)
-                                  .height(32.dp)
-                                  .background(cs.primary, RoundedCornerShape(999.dp)))
+              stringResource(R.string.no_classes_today),
+              color = cs.onSurface.copy(alpha = 0.7f),
+              modifier = modifier.fillMaxWidth())
+        }
 
-                      Spacer(Modifier.width(10.dp))
-
-                      Column {
-                        Text(
-                            text = todo.title,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            color = cs.onSurface)
-                        Text(
-                            text = todo.dueDateFormatted(),
-                            fontSize = 12.sp,
-                            color = cs.onSurface.copy(alpha = 0.7f))
-                      }
-                    }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          classes.forEachIndexed { idx, item ->
+            when (item) {
+              is ScheduleClassItem -> {
+                val c = item.classData
+                val record = attendance.firstOrNull { it.classId == c.id }
+                CompactClassRow(
+                    clazz = c,
+                    record = record,
+                    modifier = Modifier.fillMaxWidth().clickable { actions.onClassClick(c) })
               }
+              is ScheduleGapItem -> {
+                GapItemRow(gap = item, onClick = { actions.onGapClick(item) })
+              }
+              is ScheduleEventItem -> {
+                EventItemRow(
+                    event = item.eventData,
+                    onClick = { actions.onEventClick(item.eventData) },
+                    onDelete = { actions.onEventDelete(item.eventData) })
+              }
+            }
+
+            if (idx != classes.lastIndex) {
+              HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
             }
           }
         }
+      }
+}
 
-    Spacer(Modifier.height(14.dp))
+@Composable
+private fun TodosSection(todos: List<ToDo>, onTodoClicked: (String) -> Unit, modifier: Modifier) {
+  val cs = MaterialTheme.colorScheme
 
-    // ---- Wellness (match Classes/DailyObjectives look) ----
-    SectionBox(
-        header = {
+  SectionBox(
+      header = {
+        Text(
+            text = stringResource(R.string.schedule_day_todos_title),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = cs.onSurface,
+            modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
+      }) {
+        if (todos.isEmpty()) {
           Text(
-              stringResource(R.string.wellness_events_label),
-              style =
-                  MaterialTheme.typography.titleMedium.copy(
-                      fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
-              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
-        }) {
-          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            WellnessEventItem(
-                title = stringResource(R.string.wellness_event_yoga_title),
-                time = stringResource(R.string.wellness_event_yoga_time),
-                description = stringResource(R.string.wellness_event_yoga_description),
-                eventType = WellnessEventType.YOGA,
-                onClick = {})
-            HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
-            WellnessEventItem(
-                title = stringResource(R.string.wellness_event_lecture_title),
-                time = stringResource(R.string.wellness_event_lecture_time),
-                description = stringResource(R.string.wellness_event_lecture_description),
-                eventType = WellnessEventType.LECTURE,
-                onClick = {})
+              text = stringResource(R.string.schedule_day_todos_empty),
+              color = cs.onSurface.copy(alpha = 0.7f),
+              modifier = modifier.fillMaxWidth())
+        } else {
+          Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXSmall)) {
+            todos.forEach { todo ->
+              Row(
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .padding(vertical = Dimensions.spacingXSmall)
+                          .clickable { onTodoClicked(todo.id) }) {
+                    Box(
+                        modifier =
+                            Modifier.width(5.dp)
+                                .height(32.dp)
+                                .background(cs.primary, RoundedCornerShape(999.dp)))
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Column {
+                      Text(
+                          text = todo.title,
+                          fontWeight = FontWeight.SemiBold,
+                          fontSize = 14.sp,
+                          color = cs.onSurface)
+                      Text(
+                          text = todo.dueDateFormatted(),
+                          fontSize = 12.sp,
+                          color = cs.onSurface.copy(alpha = 0.7f))
+                    }
+                  }
+            }
           }
         }
-  }
+      }
+}
+
+@Composable
+private fun WellnessSection() {
+  val cs = MaterialTheme.colorScheme
+
+  SectionBox(
+      header = {
+        Text(
+            stringResource(R.string.wellness_events_label),
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
+            modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
+      }) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          WellnessEventItem(
+              title = stringResource(R.string.wellness_event_yoga_title),
+              time = stringResource(R.string.wellness_event_yoga_time),
+              description = stringResource(R.string.wellness_event_yoga_description),
+              eventType = WellnessEventType.YOGA,
+              onClick = {})
+          HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
+          WellnessEventItem(
+              title = stringResource(R.string.wellness_event_lecture_title),
+              time = stringResource(R.string.wellness_event_lecture_time),
+              description = stringResource(R.string.wellness_event_lecture_description),
+              eventType = WellnessEventType.LECTURE,
+              onClick = {})
+        }
+      }
 }
 
 @Composable
@@ -382,4 +478,86 @@ private fun CompactClassRow(clazz: Class, record: ClassAttendance?, modifier: Mo
           }
     }
   }
+}
+
+@Composable
+private fun GapItemRow(gap: ScheduleGapItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+  val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+
+  // Dashed border or light background to indicate "open slot"
+  Box(
+      modifier =
+          modifier
+              .fillMaxWidth()
+              .height(50.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .border(
+                  1.dp,
+                  Color.Gray.copy(alpha = 0.5f),
+                  RoundedCornerShape(
+                      12.dp)) // Dashed effect requires simpler custom modifier usually, plain
+              // border is fine
+              .background(Color.Transparent)
+              .clickable { onClick() }
+              .padding(horizontal = 12.dp),
+      contentAlignment = Alignment.CenterStart) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+              Column {
+                Text(stringResource(R.string.gap_row_title, gap.durationMinutes))
+                Text(
+                    text = "${gap.start.format(timeFmt)} - ${gap.end.format(timeFmt)}",
+                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
+              }
+
+              Icon(
+                  imageVector = Icons.Default.Add,
+                  contentDescription = stringResource(R.string.gap_row_add_activity))
+            }
+      }
+}
+
+@Composable
+private fun EventItemRow(event: ScheduleEvent, onClick: () -> Unit, onDelete: () -> Unit) {
+  val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+  Box(
+      modifier =
+          Modifier.fillMaxWidth()
+              .height(50.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(PurplePrimary.copy(alpha = 0.15f))
+              .clickable { onClick() }
+              .padding(start = 12.dp, end = 4.dp),
+      contentAlignment = Alignment.CenterStart) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+              Column {
+                Text(
+                    text = event.title,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold, color = PurplePrimary))
+                val start = event.time ?: LocalTime.MIN
+                val end = start.plusMinutes((event.durationMinutes ?: 60).toLong())
+                Text(
+                    text = "${start.format(timeFmt)} - ${end.format(timeFmt)}",
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(0.6f)))
+              }
+
+              // "Extreme right" button to remove the event
+              IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.event_remove),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp))
+              }
+            }
+      }
 }

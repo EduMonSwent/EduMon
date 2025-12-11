@@ -327,23 +327,24 @@ fun EduMonNavHost(
                       }
                 }
 
-                composable(AppDestination.Schedule.route) {
-                  ScreenWithTopBar(
-                      title = "Schedule",
-                      drawerState = drawerState,
-                      scope = scope,
-                      onBack = { navController.popBackStack() }) {
-                        ScheduleScreen(
-                            onAddTodoClicked = { date ->
-                              navController.navigate("addTodoFromSchedule/$date") {
-                                launchSingleTop = true
-                              }
-                            },
-                            onOpenTodo = { _ ->
-                              navController.navigateSingleTopTo(AppDestination.Todo.route)
-                            })
-                      }
-                }
+              composable(AppDestination.Schedule.route) {
+                ScreenWithTopBar(
+                    title = "Schedule",
+                    drawerState = drawerState,
+                    scope = scope,
+                    onBack = { navController.popBackStack() }) {
+                      ScheduleScreen(
+                          onAddTodoClicked = { date ->
+                            navController.navigate("addTodoFromSchedule/$date") {
+                              launchSingleTop = true
+                            }
+                          },
+                          onOpenTodo = { _ ->
+                            navController.navigateSingleTopTo(AppDestination.Todo.route)
+                          },
+                          onNavigateTo = { route -> navController.navigateSingleTopTo(route) })
+                    }
+              }
 
                 composable(
                     route = "addTodoFromSchedule/{date}",

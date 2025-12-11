@@ -25,6 +25,7 @@ import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.schedule.ScheduleTab
 import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
+import com.android.sample.feature.schedule.viewmodel.ScheduleNavEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.model.Objective
@@ -32,7 +33,11 @@ import com.android.sample.feature.weeks.ui.CourseExercisesRoute
 import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.ui.planner.AddStudyTaskModal
 import com.android.sample.ui.planner.PetHeader
+import com.android.sample.ui.theme.BackgroundDark
+import com.android.sample.ui.theme.BackgroundGradientEnd
+import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
 
 /** This class was implemented with the help of ai (ChatGPT) */
@@ -55,6 +60,7 @@ fun ScheduleScreen(
     petBackgroundBrush: Brush? = null,
     @DrawableRes environmentResId: Int = R.drawable.home, // 👈 NEW: environment
     level: Int = 5,
+    onNavigateTo: (String) -> Unit = {}
 ) {
   val colorScheme = MaterialTheme.colorScheme
 
@@ -103,6 +109,24 @@ fun ScheduleScreen(
 
   val weekStart = vm.startOfWeek(state.selectedDate)
   val weekTodos = state.todos.filter { it.dueDate in weekStart..weekStart.plusDays(6) }
+  LaunchedEffect(vm) {
+    vm.navEvents.collect { event ->
+      when (event) {
+        is ScheduleNavEvent.ToFlashcards -> onNavigateTo("flashcards") // Make sure route exists
+        is ScheduleNavEvent.ToGames -> onNavigateTo("games")
+        is ScheduleNavEvent.ToStudySession -> onNavigateTo("study")
+        is ScheduleNavEvent.ToStudyTogether -> onNavigateTo("study_together")
+        is ScheduleNavEvent.ShowWellnessSuggestion -> {
+          snackbarHostState.showSnackbar(event.message)
+        }
+      }
+    }
+  }
+  if (state.showAddTaskModal) {
+    AddStudyTaskModal(
+        onDismiss = { vm.onDismissAddStudyTaskModal() },
+        onAddTask = { _, _, _, _, _ -> vm.onDismissAddStudyTaskModal() })
+  }
 
   ScheduleSideEffects(
       vm = vm,
@@ -169,6 +193,7 @@ fun ScheduleScreen(
                 Spacer(Modifier.height(8.dp))
               }
 
+              // Extracted content — major complexity reduction
               ScheduleMainContent(
                   currentTab = currentTab,
                   vm = vm,
