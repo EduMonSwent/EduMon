@@ -2,7 +2,6 @@ package com.android.sample.ui.shop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.R
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +33,8 @@ sealed class PurchaseResult {
 }
 
 class ShopViewModel(
-    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val shopRepository: ShopRepository = AppRepositories.shopRepository
 ) : ViewModel() {
 
   // User's coin balance

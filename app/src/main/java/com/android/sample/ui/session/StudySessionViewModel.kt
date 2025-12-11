@@ -19,7 +19,6 @@ import com.android.sample.ui.stats.repository.StatsRepository
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -75,6 +74,7 @@ class StudySessionViewModel(
         val todayCompletedPomodoros = stats.todayStudyMinutes / POMODORO_MINUTES
         _uiState.update {
           it.copy(
+              // Use unified user stats here so it updates even offline
               totalMinutes = stats.totalStudyMinutes,
               streakCount = stats.streak,
               completedPomodoros = todayCompletedPomodoros,
@@ -101,7 +101,8 @@ class StudySessionViewModel(
     var lastPhase: PomodoroPhase? = null
     var lastState: PomodoroState? = null
 
-    combine(pomodoroViewModel.phase, pomodoroViewModel.timeLeft, pomodoroViewModel.state) {
+    kotlinx.coroutines.flow
+        .combine(pomodoroViewModel.phase, pomodoroViewModel.timeLeft, pomodoroViewModel.state) {
             phase,
             timeLeft,
             state ->
@@ -116,7 +117,7 @@ class StudySessionViewModel(
             )
           }
 
-          // End of a work session -> increment stats in Firestore
+          // End of a work session -> increment stats
           if (lastPhase == PomodoroPhase.WORK &&
               lastState != PomodoroState.FINISHED &&
               state == PomodoroState.FINISHED) {
@@ -131,12 +132,13 @@ class StudySessionViewModel(
 
   private fun onPomodoroCompleted() {
     viewModelScope.launch {
-      // Unified user stats: minutes + points + streak are handled centrally
-      userStatsRepository.addStudyMinutes(POMODORO_MINUTES)
-      userStatsRepository.addPoints(POINTS_PER_COMPLETED_POMODORO)
-      userStatsRepository.updateCoins(COINS_PER_COMPLETED_POMODORO)
+      // SINGLE update for all pomodoro rewards
+      userStatsRepository.addReward(
+          minutes = POMODORO_MINUTES,
+          points = POINTS_PER_COMPLETED_POMODORO,
+          coins = COINS_PER_COMPLETED_POMODORO)
 
-      // Persist session snapshot if needed by the study-session feature
+      // Persist session snapshot
       repository.saveCompletedSession(_uiState.value)
 
       // Per-subject total
@@ -145,7 +147,7 @@ class StudySessionViewModel(
         subjectsRepository.addStudyMinutesToSubject(subject.id, POMODORO_MINUTES)
       }
 
-      // Update weekly StudyStats used by the Stats screen (pie chart, 7-day bar, etc.)
+      // Update weekly stats
       updateWeeklyStatsForPomodoro(subjectName = subject?.name)
     }
   }

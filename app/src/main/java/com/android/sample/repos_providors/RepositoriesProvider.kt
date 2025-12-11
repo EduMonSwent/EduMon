@@ -15,6 +15,7 @@ import com.android.sample.repositories.ToDoRepository
 import com.android.sample.session.StudySessionRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.location.FriendRepository
+import com.android.sample.ui.shop.repository.ShopRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 
 /**
@@ -53,6 +54,9 @@ interface RepositoriesProvider {
   val flashcardsRepository: FlashcardsRepository
 
   val subjectsRepository: SubjectsRepository
+
+  // Shop
+  val shopRepository: ShopRepository
 }
 
 /**

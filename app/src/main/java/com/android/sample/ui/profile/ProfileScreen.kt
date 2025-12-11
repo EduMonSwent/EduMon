@@ -57,9 +57,9 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -79,7 +79,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.MainActivity
 import com.android.sample.R
 import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
@@ -87,7 +86,6 @@ import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
-import com.android.sample.ui.theme.*
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentViolet
 import com.android.sample.ui.theme.DarkCardItem
@@ -97,7 +95,9 @@ import com.android.sample.ui.theme.StatBarHeart
 import com.android.sample.ui.theme.StatBarLightbulb
 import com.android.sample.ui.theme.StatBarLightning
 import com.android.sample.ui.theme.TextLight
+import com.android.sample.ui.theme.UiValues
 
+// This code has been written partially using A.I (LLM).
 object ProfileScreenTestTags {
   const val PROFILE_SCREEN = "profileScreen"
   const val PET_SECTION = "petSection"
@@ -110,7 +110,6 @@ object ProfileScreenTestTags {
   const val SWITCH_FOCUS_MODE = "switchFocusMode"
 }
 
-// === constants ===
 private val CARD_CORNER_RADIUS = 16.dp
 private val SECTION_SPACING = 16.dp
 private val SCREEN_PADDING = 60.dp
@@ -131,7 +130,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(),
     onOpenFocusMode: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
-    onImportIcs: () -> Unit = {}
+    onImportIcs: () -> Unit = {},
+    onSignOut: () -> Unit = {}
 ) {
   val user by viewModel.userProfile.collectAsState()
   val stats by viewModel.userStats.collectAsState()
@@ -147,7 +147,7 @@ fun ProfileScreen(
 
   val snackbarHostState = remember { SnackbarHostState() }
 
-  LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
+  // LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
   Scaffold(
       snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
@@ -163,7 +163,6 @@ fun ProfileScreen(
             contentPadding = PaddingValues(vertical = SECTION_SPACING),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
               item { PetSection(viewModel = viewModel) }
-
               item {
                 GlowCard {
                   Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
@@ -197,7 +196,7 @@ fun ProfileScreen(
               item {
                 GlowCard {
                   Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
-                    AccountActionsSection()
+                    AccountActionsSection(onSignOut = onSignOut)
                   }
                 }
               }
@@ -387,7 +386,6 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     Text("Customize Buddy", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(12.dp))
 
-    // Accent base
     Text("Accent color", color = TextLight.copy(alpha = 0.7f), fontSize = 13.sp)
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -409,7 +407,6 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
       }
     }
 
-    // Variations
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(SMALL_FONT_SIZE.dp)) {
       AccentVariant.values().forEach { v ->
@@ -423,11 +420,10 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 
     Spacer(Modifier.height(20.dp))
 
-    // Inventory
     Text("Inventory", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(10.dp))
 
-    var selectedTab by remember { androidx.compose.runtime.mutableStateOf(AccessorySlot.HEAD) }
+    var selectedTab by remember { mutableStateOf(AccessorySlot.HEAD) }
     val tabs = AccessorySlot.values()
     TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
       tabs.forEach { slot ->
@@ -440,12 +436,15 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
     }
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
 
-    val user by viewModel.userProfile.collectAsState()
+    val userState by viewModel.userProfile.collectAsState()
 
     val slotItems =
-        remember(user, selectedTab) { viewModel.accessoryCatalog.filter { it.slot == selectedTab } }
+        remember(userState, selectedTab) {
+          viewModel.accessoryCatalog.filter { it.slot == selectedTab }
+        }
 
-    val equippedId = remember(user.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
+    val equippedId =
+        remember(userState.accessories, selectedTab) { viewModel.equippedId(selectedTab) }
 
     AccessoriesGrid(
         items = slotItems,
@@ -530,7 +529,6 @@ fun SettingsCard(
         fontWeight = FontWeight.SemiBold)
     Spacer(modifier = Modifier.height(SMALL_FONT_SIZE.dp))
 
-    // --- Location toggle ---
     SettingRow(
         stringResource(id = R.string.settings_location),
         stringResource(id = R.string.settings_location_desc),
@@ -540,7 +538,6 @@ fun SettingsCard(
 
     Divider(color = DarkDivider)
 
-    // --- Focus mode toggle ---
     SettingRow(
         stringResource(id = R.string.settings_focus),
         stringResource(id = R.string.settings_focus_desc),
@@ -555,7 +552,7 @@ fun SettingsCard(
 
     Divider(color = DarkDivider)
     Spacer(Modifier.height(12.dp))
-    androidx.compose.material3.TextButton(
+    TextButton(
         onClick = onOpenNotifications,
         modifier = Modifier.fillMaxWidth().testTag("open_notifications_screen")) {
           Text("Manage notifications")
@@ -593,26 +590,20 @@ fun SettingRow(
 }
 
 @Composable
-fun AccountActionsSection() {
-  val context = LocalContext.current
-  val activity = context as? MainActivity
-
+fun AccountActionsSection(onSignOut: () -> Unit = {}) {
   Column(modifier = Modifier.padding(12.dp)) {
     ActionButton(stringResource(id = R.string.account_privacy)) {}
     ActionButton(stringResource(id = R.string.account_terms)) {}
     ActionButton(
-        stringResource(id = R.string.account_logout),
-        textColor = Color.Red,
-        onClick = { activity?.signOutAll() })
+        stringResource(id = R.string.account_logout), textColor = Color.Red, onClick = onSignOut)
   }
 }
 
 @Composable
 fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit = {}) {
-  androidx.compose.material3.TextButton(
-      onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Text(text, color = textColor, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
-      }
+  TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Text(text, color = textColor, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+  }
 }
 
 private const val PROGRESS_TO_NEXT_LEVEL = "Progress to next level"
@@ -658,35 +649,5 @@ fun LevelProgressBar(level: Int, points: Int) {
         text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
         color = TextLight.copy(alpha = 0.7f),
         fontSize = 11.sp)
-  }
-}
-
-/** Collects level-up reward events from the ViewModel and shows a snackbar for each. */
-@Composable
-private fun LevelUpRewardSnackbarHandler(
-    viewModel: ProfileViewModel,
-    snackbarHostState: SnackbarHostState
-) {
-  LaunchedEffect(Unit) {
-    viewModel.rewardEvents.collect { event ->
-      when (event) {
-        is LevelUpRewardUiEvent.RewardsGranted -> {
-          val msg = buildRewardMessage(event)
-          snackbarHostState.showSnackbar(msg)
-        }
-      }
-    }
-  }
-}
-/** Builds a human-readable message summarizing the granted rewards. */
-private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): String {
-  val s = event.summary
-  return buildString {
-    append("🎉 Level ${event.newLevel} reached!")
-    if (s.coinsGranted > 0) append(" +${s.coinsGranted} coins")
-    if (s.accessoryIdsGranted.isNotEmpty()) {
-      append(" 🎁 ${s.accessoryIdsGranted.size} new item")
-      if (s.accessoryIdsGranted.size > 1) append("s")
-    }
   }
 }
