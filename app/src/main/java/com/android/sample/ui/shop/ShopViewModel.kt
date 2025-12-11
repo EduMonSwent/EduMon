@@ -2,8 +2,11 @@ package com.android.sample.ui.shop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.R
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.profile.ProfileRepositoryProvider
+import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.ui.shop.repository.ShopRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
