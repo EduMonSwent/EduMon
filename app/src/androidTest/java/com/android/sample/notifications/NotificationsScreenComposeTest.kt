@@ -26,7 +26,6 @@ class NotificationsScreenComposeTest {
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
   private class SpyNotificationsViewModel : NotificationsUiModel {
-    // State flows with sensible defaults mirroring NotificationsViewModel behavior
     private val _kickoffEnabled = kotlinx.coroutines.flow.MutableStateFlow(true)
     override val kickoffEnabled: kotlinx.coroutines.flow.StateFlow<Boolean> = _kickoffEnabled
 
