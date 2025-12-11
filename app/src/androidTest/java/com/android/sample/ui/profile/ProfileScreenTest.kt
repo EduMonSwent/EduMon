@@ -338,7 +338,7 @@ class ProfileScreenTest {
   fun petSectionWithMalformedAccessories() {
     val profile =
         UserProfile(
-            level = 5,
+            level = 1,
             accessories = listOf("malformed", "head:hat", "invalid_format", "torso:cape"),
         )
 
