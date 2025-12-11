@@ -30,6 +30,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// Parts of this code were written with the assistance of AI
+
 /**
  * Android instrumentation tests for [FriendStudyModeWorker] that run on a real device/emulator with
  * Firebase emulator.
