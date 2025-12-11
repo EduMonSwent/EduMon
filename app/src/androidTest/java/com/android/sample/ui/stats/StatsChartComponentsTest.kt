@@ -109,32 +109,21 @@ class StatsChartComponentsTest {
 
     val context = ApplicationProvider.getApplicationContext<Context>()
 
-    // Bring the 7-day progression card into view on small CI devices
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_section_progress_7_days))
-        .performScrollTo()
+    val mon = context.getString(R.string.stats_label_day_mon)
+    val tue = context.getString(R.string.stats_label_day_tue)
+    val wed = context.getString(R.string.stats_label_day_wed)
+    val thu = context.getString(R.string.stats_label_day_thu)
+    val fri = context.getString(R.string.stats_label_day_fri)
+    val sat = context.getString(R.string.stats_label_day_sat)
+    val sun = context.getString(R.string.stats_label_day_sun)
 
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_label_day_mon))
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_label_day_tue))
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_label_day_wed))
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_label_day_thu))
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_label_day_fri))
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_label_day_sat))
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithText(context.getString(R.string.stats_label_day_sun))
-        .assertIsDisplayed()
+    composeTestRule.onNodeWithText(mon).performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText(tue).performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText(wed).performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText(thu).performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText(fri).performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText(sat).performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText(sun).performScrollTo().assertIsDisplayed()
   }
 
   @Test

@@ -107,15 +107,28 @@ class StudySessionScreenTest {
     }
     composeTestRule.waitForIdle()
 
-    // Ensure scrollable content is in view on small CI devices
-    composeTestRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).performScrollTo()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).performScrollTo()
+    // Scroll each section into view before asserting (CI device may be very small)
+    composeTestRule.onNodeWithTag(StudySessionTestTags.TITLE).performScrollTo().assertIsDisplayed()
 
-    composeTestRule.onNodeWithTag(StudySessionTestTags.TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.TASK_LIST).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.TASK_LIST)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.TIMER_SECTION)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.STATS_PANEL)
+        .performScrollTo()
+        .assertIsDisplayed()
   }
 
   @Test
