@@ -17,7 +17,12 @@ class ShopScreenTest {
   @Test
   fun shopScreenDisplaysTitleAndCoins() {
     composeTestRule.setContent {
-      ShopContent(userCoins = 1200, items = sampleItems(), onBuy = { _, _, _ -> })
+      ShopContent(
+          userCoins = 1200,
+          items = sampleItems(),
+          isOnline = true,
+          isPurchasing = false,
+          onBuy = { _, _, _ -> })
     }
 
     composeTestRule.onNodeWithText("EduMon Shop").assertExists()
@@ -29,7 +34,12 @@ class ShopScreenTest {
   @Test
   fun shopDisplaysAllItems() {
     composeTestRule.setContent {
-      ShopContent(userCoins = 999, items = sampleItems(), onBuy = { _, _, _ -> })
+      ShopContent(
+          userCoins = 999,
+          items = sampleItems(),
+          isOnline = true,
+          isPurchasing = false,
+          onBuy = { _, _, _ -> })
     }
 
     sampleItems().forEach { composeTestRule.onNodeWithText(it.name).assertExists() }
@@ -46,6 +56,8 @@ class ShopScreenTest {
     composeTestRule.setContent {
       ShopItemCard(
           item = testItem,
+          isOnline = true,
+          isPurchasing = false,
           onBuy = { success, fail ->
             successTriggered = true
             success()
@@ -69,9 +81,11 @@ class ShopScreenTest {
   fun ownedItemDisplaysOwnedText() {
     val item = CosmeticItem("1", "Red Scarf", 300, R.drawable.shop_cosmetic_scarf, owned = true)
 
-    composeTestRule.setContent { ShopItemCard(item = item, onBuy = { _, _ -> }) }
+    composeTestRule.setContent {
+      ShopItemCard(item = item, isOnline = true, isPurchasing = false, onBuy = { _, _ -> })
+    }
 
-    composeTestRule.onNodeWithText("Owned").assertExists()
+    composeTestRule.onNodeWithText("✓ Owned").assertExists()
   }
 
   // --- ShopScreen triggers snackbar on success ---
@@ -81,7 +95,11 @@ class ShopScreenTest {
 
     composeTestRule.setContent {
       ShopContent(
-          userCoins = fakeViewModel.userCoins, items = fakeViewModel.items, onBuy = { _, _, _ -> })
+          userCoins = fakeViewModel.userCoins,
+          items = fakeViewModel.items,
+          isOnline = true,
+          isPurchasing = false,
+          onBuy = { _, _, _ -> })
     }
 
     composeTestRule.onAllNodes(hasClickAction())[0].performClick()
@@ -95,11 +113,79 @@ class ShopScreenTest {
 
     composeTestRule.setContent {
       ShopContent(
-          userCoins = fakeViewModel.userCoins, items = fakeViewModel.items, onBuy = { _, _, _ -> })
+          userCoins = fakeViewModel.userCoins,
+          items = fakeViewModel.items,
+          isOnline = true,
+          isPurchasing = false,
+          onBuy = { _, _, _ -> })
     }
 
     composeTestRule.onAllNodes(hasClickAction())[0].performClick()
     composeTestRule.waitForIdle()
+  }
+
+  // --- Offline mode displays offline banner ---
+  @Test
+  fun offlineModeDisplaysOfflineBanner() {
+    composeTestRule.setContent {
+      ShopContent(
+          userCoins = 1000,
+          items = sampleItems(),
+          isOnline = false,
+          isPurchasing = false,
+          onBuy = { _, _, _ -> })
+    }
+
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag("connection_status_offline").assertExists()
+  }
+
+  // --- Offline item shows "Offline" text instead of Buy button ---
+  @Test
+  fun offlineItemShowsOfflineText() {
+    val item =
+        CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
+
+    composeTestRule.setContent {
+      ShopItemCard(item = item, isOnline = false, isPurchasing = false, onBuy = { _, _ -> })
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Try multiple approaches to find the offline indicator
+    // 1. Try with testTag
+    val tagExists =
+        composeTestRule
+            .onAllNodesWithTag("item_offline_indicator", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+
+    // 2. Try with text
+    val textExists =
+        composeTestRule
+            .onAllNodesWithText("Offline", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+
+    // At least one should work
+    assert(tagExists || textExists) {
+      "Neither testTag nor text 'Offline' was found in the semantic tree"
+    }
+  }
+
+  // --- Online mode displays online status ---
+  @Test
+  fun onlineModeDisplaysOnlineStatus() {
+    composeTestRule.setContent {
+      ShopContent(
+          userCoins = 1000,
+          items = sampleItems(),
+          isOnline = true,
+          isPurchasing = false,
+          onBuy = { _, _, _ -> })
+    }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag("connection_status_online").assertExists()
   }
 
   // --- Particle generation logic ---
