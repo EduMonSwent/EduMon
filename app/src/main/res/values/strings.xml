@@ -360,10 +360,22 @@
 
     <!-- Stats screen main title -->
     <string name="stats_title_week">Your weekly statistics</string>
+    <string name="stats_subjects_this_week_hint">
+    Only includes study time for the current week.
+</string>
+
 
     <!-- Sections -->
     <string name="stats_section_subject_distribution">Time per subject</string>
     <string name="stats_section_progress_7_days">7-day progression</string>
+    <string name="stats_label_day_mon">Mon</string>
+    <string name="stats_label_day_tue">Tue</string>
+    <string name="stats_label_day_wed">Wed</string>
+    <string name="stats_label_day_thu">Thu</string>
+    <string name="stats_label_day_fri">Fri</string>
+    <string name="stats_label_day_sat">Sat</string>
+    <string name="stats_label_day_sun">Sun</string>
+
 
     <!-- Summary cards -->
     <string name="stats_summary_total_study">Total study</string>
@@ -386,15 +398,6 @@
 
     <!-- Units -->
     <string name="stats_unit_hours_short">h</string>
-
-    <!-- X-axis labels for last 7 days -->
-    <string name="stats_label_day_minus_6">D-6</string>
-    <string name="stats_label_day_minus_5">D-5</string>
-    <string name="stats_label_day_minus_4">D-4</string>
-    <string name="stats_label_day_minus_3">D-3</string>
-    <string name="stats_label_day_minus_2">D-2</string>
-    <string name="stats_label_day_minus_1">D-1</string>
-    <string name="stats_label_today">Today</string>
 
     <!-- Caption under the bar chart -->
     <string name="stats_bar_chart_caption">Study minutes per day (last 7 days)</string>

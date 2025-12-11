@@ -1,13 +1,19 @@
 package com.android.sample.ui.session
 
+// This code has been written partially using A.I (LLM).
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +49,9 @@ import kotlinx.coroutines.launch
 private const val SUBJECT_SECTION_SPACING_DP = 16
 private const val SUBJECT_CHIP_SPACING_DP = 8
 private const val SUBJECT_TEXT_FIELD_HEIGHT_DP = 8
+private const val SCREEN_HORIZONTAL_PADDING_DP = 24
+private const val SCREEN_VERTICAL_PADDING_DP = 24
+private const val SCREEN_SECTION_SPACING_DP = 24
 
 // --- Test Tags for UI tests ---
 object StudySessionTestTags {
@@ -76,9 +85,17 @@ fun StudySessionScreen(
   val (newSubjectName, setNewSubjectName) = remember { mutableStateOf("") }
 
   Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    val scrollState = rememberScrollState()
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
+        modifier =
+            Modifier.fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(
+                    horizontal = SCREEN_HORIZONTAL_PADDING_DP.dp,
+                    vertical = SCREEN_VERTICAL_PADDING_DP.dp,
+                ),
+        verticalArrangement = Arrangement.spacedBy(SCREEN_SECTION_SPACING_DP.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
       StudySessionTopContent(
@@ -89,8 +106,8 @@ fun StudySessionScreen(
             viewModel.createSubject(newSubjectName)
             setNewSubjectName("")
           },
-          onSelectSubject = viewModel::selectSubject, // StudySubject
-          onTaskSelected = viewModel::selectTask, // Task / ToDo
+          onSelectSubject = viewModel::selectSubject,
+          onTaskSelected = viewModel::selectTask,
           onStatusChange = viewModel::setSelectedTaskStatus,
       )
 
@@ -116,7 +133,7 @@ private fun StudySessionTopContent(
     newSubjectName: String,
     onSubjectNameChange: (String) -> Unit,
     onAddSubject: () -> Unit,
-    onSelectSubject: (StudySubject) -> Unit, // <-- FIXED
+    onSelectSubject: (StudySubject) -> Unit,
     onTaskSelected: (Task) -> Unit,
     onStatusChange: (Status) -> Unit,
 ) {
@@ -136,7 +153,7 @@ private fun StudySessionTopContent(
         newSubjectName = newSubjectName,
         onSubjectNameChange = onSubjectNameChange,
         onAddSubject = onAddSubject,
-        onSelectSubject = onSelectSubject, // StudySubject
+        onSelectSubject = onSelectSubject,
     )
 
     SuggestedTasksList(
@@ -150,13 +167,14 @@ private fun StudySessionTopContent(
   }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SubjectsSection(
     uiState: StudySessionUiState,
     newSubjectName: String,
     onSubjectNameChange: (String) -> Unit,
     onAddSubject: () -> Unit,
-    onSelectSubject: (StudySubject) -> Unit, // <-- FIXED
+    onSelectSubject: (StudySubject) -> Unit,
 ) {
   Column(
       modifier = Modifier.fillMaxWidth().testTag(StudySessionTestTags.SUBJECTS_SECTION),
@@ -194,10 +212,13 @@ private fun SubjectsSection(
     Spacer(Modifier.height(SUBJECT_SECTION_SPACING_DP.dp))
 
     if (uiState.subjects.isNotEmpty()) {
-      Row(horizontalArrangement = Arrangement.spacedBy(SUBJECT_CHIP_SPACING_DP.dp)) {
+      FlowRow(
+          horizontalArrangement = Arrangement.spacedBy(SUBJECT_CHIP_SPACING_DP.dp),
+          verticalArrangement = Arrangement.spacedBy(SUBJECT_CHIP_SPACING_DP.dp),
+      ) {
         uiState.subjects.forEach { subject ->
           AssistChip(
-              onClick = { onSelectSubject(subject) }, // passes StudySubject
+              onClick = { onSelectSubject(subject) },
               label = { Text(subject.name) },
               colors =
                   AssistChipDefaults.assistChipColors(
