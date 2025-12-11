@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -124,14 +125,40 @@ class FirestorePlannerRepository(
     }
   }
 
-  override suspend fun saveClass(classItem: Class): Result<Unit> {
+  override suspend fun saveClasses(classes: List<Class>): Result<Unit> {
     val uid = auth.currentUser?.uid ?: return Result.failure(Exception("Not logged in"))
 
     return try {
-      userPlannerClassesRef(uid)
-          .document(classItem.id)
-          .set(classItem.toFirestoreMap(), SetOptions.merge())
-          .await()
+      val batch = db.batch()
+      val collectionRef = userPlannerClassesRef(uid)
+
+      classes.forEach { classItem ->
+        val docRef = collectionRef.document(classItem.id)
+        batch.set(docRef, classItem.toFirestoreMap(), SetOptions.merge())
+      }
+
+      batch.commit().await()
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Result.failure(e)
+    }
+  }
+
+  override suspend fun clearClasses(): Result<Unit> {
+    val uid = auth.currentUser?.uid ?: return Result.failure(Exception("Not logged in"))
+
+    return try {
+      // 1. Get all documents in the classes collection
+      val snapshot = userPlannerClassesRef(uid).get().await()
+
+      // 2. Create a batch to delete them all at once (more efficient)
+      val batch = db.batch()
+      for (doc in snapshot.documents) {
+        batch.delete(doc.reference)
+      }
+
+      // 3. Commit the delete
+      batch.commit().await()
 
       Result.success(Unit)
     } catch (e: Exception) {
@@ -147,6 +174,19 @@ private fun DocumentSnapshot.toPlannerClass(): Class? {
   val startStr = getString("startTime") ?: return null
   val endStr = getString("endTime") ?: return null
   val typeStr = getString("type") ?: ClassType.LECTURE.name
+  val daysList = get("daysOfWeek") as? List<String>
+  val daysOfWeek =
+      if (daysList != null) {
+        daysList.mapNotNull { runCatching { DayOfWeek.valueOf(it) }.getOrNull() }
+      } else {
+        // Fallback: If "dayOfWeek" (singular) exists, use it. Otherwise, assume every day.
+        val singleDay = getString("dayOfWeek")
+        if (singleDay != null) {
+          listOfNotNull(runCatching { DayOfWeek.valueOf(singleDay) }.getOrNull())
+        } else {
+          DayOfWeek.values().toList()
+        }
+      }
 
   val startTime = runCatching { LocalTime.parse(startStr) }.getOrNull() ?: return null
   val endTime = runCatching { LocalTime.parse(endStr) }.getOrNull() ?: startTime
@@ -163,7 +203,8 @@ private fun DocumentSnapshot.toPlannerClass(): Class? {
       endTime = endTime,
       type = type,
       location = location,
-      instructor = instructor)
+      instructor = instructor,
+      daysOfWeek = daysOfWeek)
 }
 
 private fun DocumentSnapshot.toClassAttendance(): ClassAttendance? {
@@ -205,4 +246,5 @@ private fun Class.toFirestoreMap(): Map<String, Any?> =
         "endTime" to endTime.toString(),
         "type" to type.name,
         "location" to location,
-        "instructor" to instructor)
+        "instructor" to instructor,
+        "daysOfWeek" to daysOfWeek.map { it.name })

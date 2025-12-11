@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,133 +59,130 @@ fun WeekTabContent(
     onTodoClicked: (String) -> Unit = {}
 ) {
   val weekStart = vm.startOfWeek(selectedDate)
-  LazyColumn(
-      modifier = Modifier.fillMaxSize().testTag("WeekContent"),
-      verticalArrangement = Arrangement.spacedBy(16.dp),
-      contentPadding = PaddingValues(bottom = 96.dp)) {
-        item("week-big-frame") {
-          SectionBox(title = null, header = null) {
-            val weekDays = (0..6).map { weekStart.plusDays(it.toLong()) }
-            val weekTitle =
-                "${weekDays.first().month.name.lowercase().replaceFirstChar { it.uppercase() }} " +
-                    "${weekDays.first().dayOfMonth} - ${weekDays.last().dayOfMonth}"
+  Column(
+      modifier = Modifier.fillMaxSize().padding(bottom = 96.dp).testTag("WeekContent"),
+      verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        SectionBox(title = null, header = null) {
+          val weekDays = (0..6).map { weekStart.plusDays(it.toLong()) }
+          val weekTitle =
+              "${weekDays.first().month.name.lowercase().replaceFirstChar { it.uppercase() }} " +
+                  "${weekDays.first().dayOfMonth} - ${weekDays.last().dayOfMonth}"
 
-            // Header INSIDE the big SectionBox, but OUTSIDE the tiles frame
-            CalendarHeader(
-                title = weekTitle,
-                onPrevClick = { vm.onPreviousMonthWeekClicked() },
-                onNextClick = { vm.onNextMonthWeekClicked() })
-            Spacer(Modifier.height(8.dp))
+          // Header INSIDE the big SectionBox, but OUTSIDE the tiles frame
+          CalendarHeader(
+              title = weekTitle,
+              onPrevClick = { vm.onPreviousMonthWeekClicked() },
+              onNextClick = { vm.onNextMonthWeekClicked() })
+          Spacer(Modifier.height(8.dp))
 
-            // ---- Week header + day tiles (WeekRow renders its own title/arrows) ----
-            Card(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .shadow(8.dp, RoundedCornerShape(24.dp))
-                        .testTag(CalendarScreenTestTags.CALENDAR_CARD),
-                colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.85f)),
-                shape = RoundedCornerShape(24.dp)) {
-                  WeekRow(
-                      startOfWeek = weekStart,
-                      selectedDate = selectedDate,
-                      allTasks = allTasks,
-                      onDayClick = { vm.onDateSelected(it) })
-                }
-            Spacer(Modifier.height(16.dp))
+          // ---- Week header + day tiles (WeekRow renders its own title/arrows) ----
+          Card(
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .shadow(8.dp, RoundedCornerShape(24.dp))
+                      .testTag(CalendarScreenTestTags.CALENDAR_CARD),
+              colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.85f)),
+              shape = RoundedCornerShape(24.dp)) {
+                WeekRow(
+                    startOfWeek = weekStart,
+                    selectedDate = selectedDate,
+                    allTasks = allTasks,
+                    onDayClick = { vm.onDateSelected(it) })
+              }
+          Spacer(Modifier.height(16.dp))
 
-            // ---- Frame: "Week progression" ----
-            SectionBox(
-                header = {
-                  Text(
-                      text = stringResource(R.string.week_progression),
-                      style =
-                          MaterialTheme.typography.titleMedium.copy(
-                              fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
-                      modifier = Modifier.padding(bottom = 14.dp))
-                }) {
-                  WeekDotsRow(
-                      objectivesVm,
-                      modifier =
-                          Modifier.fillMaxWidth()
-                              .padding(top = 6.dp)
-                              .testTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
-                }
+          // ---- Frame: "Week progression" ----
+          SectionBox(
+              header = {
+                Text(
+                    text = stringResource(R.string.week_progression),
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
+                    modifier = Modifier.padding(bottom = 14.dp))
+              }) {
+                WeekDotsRow(
+                    objectivesVm,
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(top = 6.dp)
+                            .testTag(WeekProgDailyObjTags.WEEK_DOTS_ROW))
+              }
 
-            Spacer(Modifier.height(16.dp))
-            SectionBox(
-                header = {
+          Spacer(Modifier.height(16.dp))
+          SectionBox(
+              header = {
+                Text(
+                    text =
+                        stringResource(
+                            R.string.schedule_week_todos_title), // e.g. "This week's To-Dos"
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
+                    modifier = Modifier.padding(bottom = 14.dp))
+              }) {
+                val cs = MaterialTheme.colorScheme
+
+                if (weekTodos.isEmpty()) {
                   Text(
                       text =
                           stringResource(
-                              R.string.schedule_week_todos_title), // e.g. "This week's To-Dos"
-                      style =
-                          MaterialTheme.typography.titleMedium.copy(
-                              fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
-                      modifier = Modifier.padding(bottom = 14.dp))
-                }) {
-                  val cs = MaterialTheme.colorScheme
-
-                  if (weekTodos.isEmpty()) {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.schedule_week_no_todos), // e.g. "No to-dos this week"
-                        color = cs.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth())
-                  } else {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                      val sortedTodos =
-                          remember(weekTodos) {
-                            weekTodos.sortedWith(compareBy({ it.dueDate }, { it.title }))
-                          }
-                      sortedTodos.forEach { todo ->
-                        Row(
-                            modifier =
-                                Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable {
-                                  onTodoClicked(todo.id)
-                                }) {
-                              Box(
-                                  modifier =
-                                      Modifier.width(TodoBarWidth)
-                                          .height(TodoBarHeight)
-                                          .background(cs.primary, RoundedCornerShape(999.dp)))
-                              Spacer(Modifier.width(TodoSpacing))
-                              Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = todo.title,
-                                    style =
-                                        MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.SemiBold, color = cs.onSurface))
-                                Text(
-                                    text = todo.dueDateFormatted(),
-                                    style =
-                                        MaterialTheme.typography.labelSmall.copy(
-                                            color = cs.onSurfaceVariant))
-                              }
+                              R.string.schedule_week_no_todos), // e.g. "No to-dos this week"
+                      color = cs.onSurfaceVariant,
+                      modifier = Modifier.fillMaxWidth())
+                } else {
+                  Column(modifier = Modifier.fillMaxWidth()) {
+                    val sortedTodos =
+                        remember(weekTodos) {
+                          weekTodos.sortedWith(compareBy({ it.dueDate }, { it.title }))
+                        }
+                    sortedTodos.forEach { todo ->
+                      Row(
+                          modifier =
+                              Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable {
+                                onTodoClicked(todo.id)
+                              }) {
+                            Box(
+                                modifier =
+                                    Modifier.width(TodoBarWidth)
+                                        .height(TodoBarHeight)
+                                        .background(cs.primary, RoundedCornerShape(999.dp)))
+                            Spacer(Modifier.width(TodoSpacing))
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                              Text(
+                                  text = todo.title,
+                                  style =
+                                      MaterialTheme.typography.bodyMedium.copy(
+                                          fontWeight = FontWeight.SemiBold, color = cs.onSurface))
+                              Text(
+                                  text = todo.dueDateFormatted(),
+                                  style =
+                                      MaterialTheme.typography.labelSmall.copy(
+                                          color = cs.onSurfaceVariant))
                             }
-                      }
+                          }
                     }
                   }
                 }
+              }
 
-            Spacer(Modifier.height(16.dp))
+          Spacer(Modifier.height(16.dp))
 
-            // ---- Frame: Upcoming events (embedded; no inner GlassSurface) ----
-            SectionBox(title = null) {
-              val end = weekStart.plusDays(6)
-              val from = if (selectedDate.isBefore(weekStart)) weekStart else selectedDate
-              val weekTasks = allTasks.filter { it.date in from..end }
+          // ---- Frame: Upcoming events (embedded; no inner GlassSurface) ----
+          SectionBox(title = null) {
+            val end = weekStart.plusDays(6)
+            val from = if (selectedDate.isBefore(weekStart)) weekStart else selectedDate
+            val weekTasks = allTasks.filter { it.date in from..end }
 
-              UpcomingEventsSection(
-                  tasks =
-                      weekTasks.sortedWith(
-                          compareBy({ it.date }, { it.time ?: java.time.LocalTime.MIN })),
-                  selectedDate = selectedDate,
-                  onAddTaskClick = { /* handled by FAB */ _ -> },
-                  onTaskClick = {},
-                  title = stringResource(R.string.upcoming_events),
-              )
-            }
+            UpcomingEventsSection(
+                tasks =
+                    weekTasks.sortedWith(
+                        compareBy({ it.date }, { it.time ?: java.time.LocalTime.MIN })),
+                selectedDate = selectedDate,
+                onAddTaskClick = { /* handled by FAB */ _ -> },
+                onTaskClick = {},
+                title = stringResource(R.string.upcoming_events),
+            )
           }
         }
       }

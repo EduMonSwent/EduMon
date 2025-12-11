@@ -2,6 +2,10 @@ package com.android.sample.schedule
 
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -46,8 +50,7 @@ class WeekTabContentAllAndroidTest {
 
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
-  // ---------- Simple in-memory fakes ----------
-
+  // ... (Fakes and Helpers unchanged) ...
   private class InMemoryScheduleRepo(initial: List<ScheduleEvent> = emptyList()) :
       ScheduleRepository {
     private val _events = MutableStateFlow(initial)
@@ -245,29 +248,31 @@ class WeekTabContentAllAndroidTest {
     val selected = LocalDate.of(2025, 5, 7)
 
     rule.setContent {
-      WeekTabContent(
-          vm = vm,
-          objectivesVm = objectivesVm,
-          allTasks = tasksForWeek(selected),
-          selectedDate = selected,
-          weekTodos = emptyList())
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        WeekTabContent(
+            vm = vm,
+            objectivesVm = objectivesVm,
+            allTasks = tasksForWeek(selected),
+            selectedDate = selected,
+            weekTodos = emptyList())
+      }
     }
 
     // header
     val upcoming = rule.activity.getString(R.string.upcoming_events)
-    rule.onNodeWithText(upcoming).assertIsDisplayed()
+    rule.onNodeWithText(upcoming).performScrollTo().assertIsDisplayed()
 
     // inside-week items visible
-    rule.onAllNodesWithText("Linear Algebra review").onFirst().assertIsDisplayed()
-    rule.onAllNodesWithText("Part-time shift").onFirst().assertIsDisplayed()
-    rule.onAllNodesWithText("Gym with Sam").onFirst().assertIsDisplayed()
+    rule.onAllNodesWithText("Linear Algebra review").onFirst().performScrollTo().assertIsDisplayed()
+    rule.onAllNodesWithText("Part-time shift").onFirst().performScrollTo().assertIsDisplayed()
+    rule.onAllNodesWithText("Gym with Sam").onFirst().performScrollTo().assertIsDisplayed()
 
     // outside-week item not shown
     rule.onNodeWithText("Outside week task").assertDoesNotExist()
 
     // add button is there
     val addEvent = rule.activity.getString(R.string.add_event)
-    rule.onNodeWithText(addEvent).assertIsDisplayed()
+    rule.onNodeWithText(addEvent).performScrollTo().assertIsDisplayed()
   }
 
   @Test
@@ -302,12 +307,14 @@ class WeekTabContentAllAndroidTest {
     val weekStart = vm.startOfWeek(selected)
 
     rule.setContent {
-      WeekTabContent(
-          vm = vm,
-          objectivesVm = objectivesVm,
-          allTasks = tasksForWeek(selected),
-          selectedDate = selected,
-          weekTodos = emptyList())
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        WeekTabContent(
+            vm = vm,
+            objectivesVm = objectivesVm,
+            allTasks = tasksForWeek(selected),
+            selectedDate = selected,
+            weekTodos = emptyList())
+      }
     }
 
     val ctx = rule.activity
@@ -328,17 +335,19 @@ class WeekTabContentAllAndroidTest {
     val filteredWeekTodos = allWeekTodos.filter { it.dueDate in weekStart..weekStart.plusDays(6) }
 
     rule.setContent {
-      WeekTabContent(
-          vm = vm,
-          objectivesVm = objectivesVm,
-          allTasks = tasksForWeek(selected),
-          selectedDate = selected,
-          weekTodos = filteredWeekTodos)
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        WeekTabContent(
+            vm = vm,
+            objectivesVm = objectivesVm,
+            allTasks = tasksForWeek(selected),
+            selectedDate = selected,
+            weekTodos = filteredWeekTodos)
+      }
     }
 
     // Both inside-week todos should be visible; outside-week one is not passed in
-    rule.onNodeWithText("Week todo 1", substring = false).assertIsDisplayed()
-    rule.onNodeWithText("Week todo 2", substring = false).assertIsDisplayed()
+    rule.onNodeWithText("Week todo 1", substring = false).performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText("Week todo 2", substring = false).performScrollTo().assertIsDisplayed()
     rule.onNodeWithText("Outside week todo", substring = false).assertDoesNotExist()
   }
 

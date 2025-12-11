@@ -7,9 +7,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.android.sample.EduMonNavHost
 import com.android.sample.NavigationTestTags
+import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.repos_providors.FakeRepositoriesProvider
 import com.android.sample.ui.notifications.NotificationsScreen
 import com.android.sample.ui.notifications.NotificationsUiModel
+import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +28,19 @@ import org.junit.runner.RunWith
 class NotificationsScreenComposeTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+  private var originalRepositories = AppRepositories
+
+  @Before
+  fun setUp() {
+    // Use fake repositories to avoid Firestore crashes in CI (no logged-in user)
+    AppRepositories = FakeRepositoriesProvider
+  }
+
+  @After
+  fun tearDown() {
+    AppRepositories = originalRepositories
+  }
 
   private class SpyNotificationsViewModel : NotificationsUiModel {
     // State flows with sensible defaults mirroring NotificationsViewModel behavior
@@ -124,12 +141,9 @@ class NotificationsScreenComposeTest {
 
   @Test
   fun renders_study_route_with_event_id() {
-    composeRule.setContent {
-      val navController = androidx.navigation.compose.rememberNavController()
-      // Manually navigate to the deep-link route
-      EduMonNavHost(navController = navController)
-      navController.navigate("study/test-event")
-    }
+    // Use startDestination to navigate directly to study route instead of calling navigate()
+    // This avoids the "Navigation graph has not been set" error
+    composeRule.setContent { EduMonNavHost(startDestination = "study/test-event") }
 
     // Wait for composition
     composeRule.waitForIdle()
