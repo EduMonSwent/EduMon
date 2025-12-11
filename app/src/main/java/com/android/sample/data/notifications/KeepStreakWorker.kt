@@ -1,6 +1,5 @@
 package com.android.sample.data.notifications
 
-import android.Manifest
 import android.app.Notification
 import android.content.Context
 import androidx.annotation.RequiresPermission
@@ -27,14 +26,14 @@ internal fun buildKeepStreakNotification(ctx: Context, days: Int): Notification 
         .setAutoCancel(true)
         .build()
 
-@RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+@RequiresPermission(value = "android.permission.POST_NOTIFICATIONS", conditional = true)
 @VisibleForTesting
 internal fun postNotification(ctx: Context, id: Int, n: Notification) {
   NotificationManagerCompat.from(ctx).notify(id, n)
 }
 
 class KeepStreakWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  @RequiresPermission(value = "android.permission.POST_NOTIFICATIONS", conditional = true)
   override suspend fun doWork(): Result {
     NotificationUtils.ensureChannel(applicationContext)
     val days = StreakPrefs.get(applicationContext)

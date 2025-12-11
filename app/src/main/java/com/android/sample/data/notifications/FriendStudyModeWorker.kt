@@ -112,7 +112,7 @@ class FriendStudyModeWorker(appContext: Context, params: WorkerParameters) :
 
   /* ---------------------------- helpers: notification ---------------------------- */
 
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  @RequiresPermission(value = "android.permission.POST_NOTIFICATIONS", conditional = true)
   private fun postFriendStudyModeNotification(ctx: Context, friends: List<FriendStatus>) {
     NotificationUtils.ensureChannel(ctx)
 

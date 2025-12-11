@@ -177,7 +177,9 @@ class NotificationsViewModel(
           .edit()
           .putBoolean("friend_study_mode_enabled", on)
           .apply()
-    } catch (_: Exception) {}
+    } catch (e: Exception) {
+      Log.e("NotificationsVM", "Failed to persist friend_study_mode_enabled preference", e)
+    }
     if (on) {
       com.android.sample.data.notifications.FriendStudyModeWorker.startChain(ctx)
     } else {
