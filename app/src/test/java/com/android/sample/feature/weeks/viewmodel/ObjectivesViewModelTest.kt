@@ -1,12 +1,17 @@
 package com.android.sample.feature.weeks.viewmodel
 
 import app.cash.turbine.test
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
 import com.android.sample.login.MainDispatcherRule
 import java.time.DayOfWeek
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,19 +21,59 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+// -------------------- Fake UserStatsRepository --------------------
+
+private class FakeUserStatsRepository : UserStatsRepository {
+  private val _stats = MutableStateFlow(UserStats())
+  override val stats: StateFlow<UserStats> = _stats
+
+  override suspend fun start() {
+    // no-op for tests
+  }
+
+  override suspend fun addStudyMinutes(delta: Int) {
+    _stats.update { it.copy(todayStudyMinutes = it.todayStudyMinutes + delta) }
+  }
+
+  override suspend fun addPoints(delta: Int) {
+    _stats.update { it.copy(points = it.points + delta) }
+  }
+
+  override suspend fun updateCoins(delta: Int) {
+    _stats.update { it.copy(coins = (it.coins + delta).coerceAtLeast(0)) }
+  }
+
+  override suspend fun setWeeklyGoal(minutes: Int) {
+    _stats.update { it.copy(weeklyGoal = minutes) }
+  }
+
+  // addReward uses the default implementation from the interface (fine for tests)
+}
+
+// -------------------- Tests --------------------
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ObjectivesViewModelTest {
 
   @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
   private lateinit var viewModel: ObjectivesViewModel
+  private lateinit var fakeUserStatsRepository: FakeUserStatsRepository
 
   @Before
   fun setup() = runTest {
     // Reset the fake repo to a known state before each test
     FakeObjectivesRepository.setObjectives(defaultObjectives())
+
+    // Fake stats repo so we don't hit real Firebase-backed implementation
+    fakeUserStatsRepository = FakeUserStatsRepository()
+
     // requireAuth = false so we don't trigger Firebase auth during tests
-    viewModel = ObjectivesViewModel(repository = FakeObjectivesRepository, requireAuth = false)
+    viewModel =
+        ObjectivesViewModel(
+            repository = FakeObjectivesRepository,
+            userStatsRepository = fakeUserStatsRepository,
+            requireAuth = false)
     advanceUntilIdle()
   }
 

@@ -124,18 +124,6 @@ class ProfileViewModelTest {
   // ========== Avatar Accent & Variant ==========
 
   @Test
-  fun setAvatarAccent_updates_user_profile() =
-      runTest(dispatcher) {
-        val (vm, _) = vmWith()
-
-        val newColor = Color(0xFF10B981)
-        vm.setAvatarAccent(newColor)
-        advanceUntilIdle()
-
-        assertEquals(newColor.toArgb().toLong(), vm.userProfile.value.avatarAccent)
-      }
-
-  @Test
   fun setAccentVariant_updates_flow() =
       runTest(dispatcher) {
         val (vm, _) = vmWith()

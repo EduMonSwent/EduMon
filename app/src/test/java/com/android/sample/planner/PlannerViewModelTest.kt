@@ -4,6 +4,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
@@ -15,6 +17,8 @@ import com.android.sample.repositories.ToDoRepositoryLocal
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -37,8 +41,34 @@ class PlannerViewModelTest {
   private val dispatcher = UnconfinedTestDispatcher()
   private lateinit var viewModel: PlannerViewModel
 
-  // Fake repository avec flux finis (pas de collect infini)
+  /** Fake UserStatsRepository so tests don't touch Firebase-backed implementation. */
+  private class FakeUserStatsRepository : UserStatsRepository {
+    private val _stats = MutableStateFlow(UserStats())
+    override val stats: StateFlow<UserStats> = _stats
 
+    override suspend fun start() {
+      // no-op for tests
+    }
+
+    override suspend fun addStudyMinutes(delta: Int) {
+      _stats.value = _stats.value.copy(todayStudyMinutes = _stats.value.todayStudyMinutes + delta)
+    }
+
+    override suspend fun addPoints(delta: Int) {
+      _stats.value = _stats.value.copy(points = _stats.value.points + delta)
+    }
+
+    override suspend fun updateCoins(delta: Int) {
+      _stats.value = _stats.value.copy(coins = (_stats.value.coins + delta).coerceAtLeast(0))
+    }
+
+    override suspend fun setWeeklyGoal(minutes: Int) {
+      _stats.value = _stats.value.copy(weeklyGoal = minutes)
+    }
+    // addReward uses default implementation from the interface, which is fine for tests
+  }
+
+  // Fake repository avec flux finis (pas de collect infini)
   private class FakeToDoRepository(
       private val items: List<ToDo> = emptyList(),
       private val throws: Boolean = false
@@ -99,10 +129,12 @@ class PlannerViewModelTest {
   @Before
   fun setup() {
     Dispatchers.setMain(dispatcher)
-    // ⚠️ Important : fake repo qui émet une fois et s’arrête
+    // ⚠️ Important : use fake stats repo so we don't require Firebase
     viewModel =
         PlannerViewModel(
-            plannerRepository = FakePlannerRepository(), toDoRepository = ToDoRepositoryLocal())
+            plannerRepository = FakePlannerRepository(),
+            toDoRepository = ToDoRepositoryLocal(),
+            userStatsRepository = FakeUserStatsRepository())
   }
 
   @After
@@ -138,7 +170,7 @@ class PlannerViewModelTest {
       }
 
   @Test
-  fun `saveClassAttendance should emit snackbar and close modal`() =
+  fun `saveClassAttendance should emit toast and close modal`() =
       runTest(dispatcher) {
         val classItem = viewModel.uiState.first().classes.first()
 
@@ -155,7 +187,7 @@ class PlannerViewModelTest {
         val event = eventDeferred.await()
         assertTrue(event is PlannerViewModel.UiEvent.ShowSnackbar)
         assertEquals(
-            "Attendance saved successfully!",
+            "Attendance saved! Earned: +8 XP +3 coins",
             (event as PlannerViewModel.UiEvent.ShowSnackbar).message)
 
         // Check UI state updates (with timeout guard)
@@ -247,7 +279,8 @@ class PlannerViewModelTest {
                                 ToDo(
                                     title = "Read chapter",
                                     dueDate = LocalDate.now().plusDays(1),
-                                    priority = Priority.MEDIUM))))
+                                    priority = Priority.MEDIUM))),
+                userStatsRepository = FakeUserStatsRepository())
 
         // Let collectors run (UnconfinedTestDispatcher -> small delay is fine)
         delay(50)
@@ -263,7 +296,8 @@ class PlannerViewModelTest {
         val vm =
             PlannerViewModel(
                 plannerRepository = FakePlannerRepository(),
-                toDoRepository = FakeToDoRepository(throws = true))
+                toDoRepository = FakeToDoRepository(throws = true),
+                userStatsRepository = FakeUserStatsRepository())
 
         delay(50)
 

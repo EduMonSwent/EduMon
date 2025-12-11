@@ -288,42 +288,6 @@ class ProfileViewModel(
 
   private fun computeLevelFromPoints(points: Int): Int = levelForPoints(points)
 
-  fun debugLevelUpForTests() {
-    applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
-  }
-
-  private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
-    val oldProfile = _userProfile.value
-    val candidate = edit(oldProfile)
-
-    if (candidate.level <= oldProfile.level) {
-      _userProfile.value = candidate
-      pushProfile(candidate)
-      return
-    }
-
-    val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
-    val updated = result.updatedProfile
-    _userProfile.value = updated
-    pushProfile(updated)
-
-    if (!startupCompleted) {
-      return
-    }
-
-    if (!result.summary.isEmpty && baselineLevel != null && updated.level > baselineLevel!!) {
-      baselineLevel = updated.level
-      val event =
-          LevelUpRewardUiEvent.RewardsGranted(newLevel = updated.level, summary = result.summary)
-      viewModelScope.launch {
-        _rewardEvents.emit(event)
-        ToastNotifier.showLevelUpEvent(event)
-      }
-    } else {
-      baselineLevel = updated.level
-    }
-  }
-
   fun syncProfileWithStats(stats: UserStats) {
     val instanceId = System.identityHashCode(this)
     globalSyncCount++
