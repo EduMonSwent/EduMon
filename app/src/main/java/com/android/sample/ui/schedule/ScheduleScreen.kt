@@ -35,9 +35,6 @@ import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.planner.AddStudyTaskModal
 import com.android.sample.ui.planner.PetHeader
-import com.android.sample.ui.theme.BackgroundDark
-import com.android.sample.ui.theme.BackgroundGradientEnd
-import com.android.sample.ui.theme.PurplePrimary
 import java.time.LocalDate
 
 /** This class was implemented with the help of ai (ChatGPT) */
