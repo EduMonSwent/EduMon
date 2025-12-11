@@ -1,10 +1,11 @@
-// app/src/main/java/com/android/sample/feature/weeks/viewmodel/ObjectivesViewModel.kt
 package com.android.sample.feature.weeks.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.weeks.model.DefaultObjectives
 import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.repos_providors.AppRepositories
 import com.google.firebase.auth.ktx.auth
@@ -18,47 +19,48 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await // <- coroutines-play-services
+import kotlinx.coroutines.tasks.await
 
-// Navigation targets when user taps "Start" on an objective.
+// Reward constants by objective type
+private const val POINTS_QUIZ = 5
+private const val COINS_QUIZ = 3
+
+private const val POINTS_COURSE_OR_EXERCISES = 3
+private const val COINS_COURSE_OR_EXERCISES = 2
+
+private const val POINTS_RESUME = 2
+private const val COINS_RESUME = 1
+
 sealed class ObjectiveNavigation {
   data class ToQuiz(val objective: Objective) : ObjectiveNavigation()
-
   data class ToCourseExercises(val objective: Objective) : ObjectiveNavigation()
-
   data class ToResume(val objective: Objective) : ObjectiveNavigation()
 }
 
-// Holds only objective-related UI state
 data class ObjectivesUiState(
-    val objectives: List<Objective> = emptyList(),
-    val showWhy: Boolean = true,
+  val objectives: List<Objective> = emptyList(),
+  val showWhy: Boolean = true,
 )
 
 class ObjectivesViewModel(
-    // Default to provider; tests can still pass a Fake repo by overriding this param
-    // private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
-    private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
-    // When false, we won't attempt Firebase auth automatically (useful for tests)
-    private val requireAuth: Boolean = true,
+  private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
+  private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
+  private val requireAuth: Boolean = true,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
 
-  // Filtered objectives for today only
   val todayObjectives =
-      _uiState.map { state ->
-        val today = LocalDate.now().dayOfWeek
-        state.objectives.filter { it.day == today }
-      }
+    _uiState.map { state ->
+      val today = LocalDate.now().dayOfWeek
+      state.objectives.filter { it.day == today }
+    }
 
-  // One-shot navigation events the UI can observe.
   private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
   val navigationEvents = _navigationEvents.asSharedFlow()
 
   init {
-    // Ensure we have a user (optionally), then load data
     viewModelScope.launch {
       if (requireAuth) ensureSignedIn()
       refresh()
@@ -67,16 +69,13 @@ class ObjectivesViewModel(
 
   private suspend fun ensureSignedIn() {
     if (Firebase.auth.currentUser == null) {
-      // For quick testing; swap with your real auth flow in production
       Firebase.auth.signInAnonymously().await()
     }
   }
 
-  // Loads from repository
   fun refresh() {
     viewModelScope.launch {
       val objs = repository.getObjectives()
-      // If list is empty (fresh user), seed default objectives
       if (objs.isEmpty()) {
         val seeded = repository.setObjectives(DefaultObjectives.get())
         _uiState.update { it.copy(objectives = seeded) }
@@ -86,13 +85,11 @@ class ObjectivesViewModel(
     }
   }
 
-  // --- Query API for WeekDots ---
   fun isObjectivesOfDayCompleted(day: DayOfWeek): Boolean {
     val dayList = _uiState.value.objectives.filter { it.day == day }
     return dayList.isNotEmpty() && dayList.all { it.completed }
   }
 
-  // ---- Mutations ----
   fun setObjectives(objs: List<Objective>) {
     viewModelScope.launch {
       val list = repository.setObjectives(objs)
@@ -132,14 +129,38 @@ class ObjectivesViewModel(
     _uiState.update { it.copy(showWhy = show) }
   }
 
+  /**
+   * Calculate rewards based on objective type.
+   * Returns Pair<points, coins>
+   */
+  private fun calculateRewards(objective: Objective): Pair<Int, Int> {
+    return when (objective.type) {
+      ObjectiveType.QUIZ -> POINTS_QUIZ to COINS_QUIZ
+      ObjectiveType.COURSE_OR_EXERCISES -> POINTS_COURSE_OR_EXERCISES to COINS_COURSE_OR_EXERCISES
+      ObjectiveType.RESUME -> POINTS_RESUME to COINS_RESUME
+    }
+  }
+
   fun markObjectiveCompleted(objective: Objective) {
     viewModelScope.launch {
       val current = _uiState.value.objectives
       val index = current.indexOf(objective)
       if (index == -1) return@launch
 
-      // Reuse existing update logic; this takes care of repo + uiState.
+      // Check if it was already completed (to avoid granting rewards twice)
+      val wasAlreadyCompleted = current[index].completed
+
+      // Update the objective as completed
       updateObjective(index, current[index].copy(completed = true))
+
+      // Grant rewards only if it wasn't completed before
+      if (!wasAlreadyCompleted) {
+        val (points, coins) = calculateRewards(objective)
+        userStatsRepository.addReward(
+          points = points,
+          coins = coins
+        )
+      }
     }
   }
 

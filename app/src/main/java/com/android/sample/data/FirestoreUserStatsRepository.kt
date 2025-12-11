@@ -108,6 +108,8 @@ class FirestoreUserStatsRepository(
     }
   }
 
+
+
   override suspend fun updateCoins(delta: Int) {
     withContext(ioDispatcher) {
       if (delta == 0) return@withContext
@@ -139,7 +141,29 @@ class FirestoreUserStatsRepository(
 
   // ---------- Helpers ----------
 
-  private fun applyDailyRollover(stats: UserStats, today: LocalDate): UserStats {
+    override suspend fun addReward(minutes: Int, points: Int, coins: Int) {
+        withContext(ioDispatcher) {
+            if (minutes == 0 && points == 0 && coins == 0) return@withContext
+
+            val current = _stats.value
+            val updated = current.copy(
+                totalStudyMinutes = if (minutes > 0) {
+                    (current.totalStudyMinutes + minutes).coerceAtLeast(0)
+                } else current.totalStudyMinutes,
+                todayStudyMinutes = if (minutes > 0) {
+                    (current.todayStudyMinutes + minutes).coerceAtLeast(0)
+                } else current.todayStudyMinutes,
+                points = (current.points + points).coerceAtLeast(0),
+                coins = (current.coins + coins).coerceAtLeast(0)
+            )
+
+            _stats.value = updated
+            doc.set(updated.toMap(), SetOptions.merge())
+        }
+    }
+
+
+    private fun applyDailyRollover(stats: UserStats, today: LocalDate): UserStats {
     val lastEpoch =
         stats.lastStudyDateEpochDay ?: return stats.copy(lastStudyDateEpochDay = today.toEpochDay())
     val last = LocalDate.ofEpochDay(lastEpoch)
