@@ -33,29 +33,31 @@ private const val COINS_RESUME = 1
 
 sealed class ObjectiveNavigation {
   data class ToQuiz(val objective: Objective) : ObjectiveNavigation()
+
   data class ToCourseExercises(val objective: Objective) : ObjectiveNavigation()
+
   data class ToResume(val objective: Objective) : ObjectiveNavigation()
 }
 
 data class ObjectivesUiState(
-  val objectives: List<Objective> = emptyList(),
-  val showWhy: Boolean = true,
+    val objectives: List<Objective> = emptyList(),
+    val showWhy: Boolean = true,
 )
 
 class ObjectivesViewModel(
-  private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
-  private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
-  private val requireAuth: Boolean = true,
+    private val repository: ObjectivesRepository = AppRepositories.objectivesRepository,
+    private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
+    private val requireAuth: Boolean = true,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
 
   val todayObjectives =
-    _uiState.map { state ->
-      val today = LocalDate.now().dayOfWeek
-      state.objectives.filter { it.day == today }
-    }
+      _uiState.map { state ->
+        val today = LocalDate.now().dayOfWeek
+        state.objectives.filter { it.day == today }
+      }
 
   private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
   val navigationEvents = _navigationEvents.asSharedFlow()
@@ -129,10 +131,7 @@ class ObjectivesViewModel(
     _uiState.update { it.copy(showWhy = show) }
   }
 
-  /**
-   * Calculate rewards based on objective type.
-   * Returns Pair<points, coins>
-   */
+  /** Calculate rewards based on objective type. Returns Pair<points, coins> */
   private fun calculateRewards(objective: Objective): Pair<Int, Int> {
     return when (objective.type) {
       ObjectiveType.QUIZ -> POINTS_QUIZ to COINS_QUIZ
@@ -156,10 +155,7 @@ class ObjectivesViewModel(
       // Grant rewards only if it wasn't completed before
       if (!wasAlreadyCompleted) {
         val (points, coins) = calculateRewards(objective)
-        userStatsRepository.addReward(
-          points = points,
-          coins = coins
-        )
+        userStatsRepository.addReward(points = points, coins = coins)
       }
     }
   }

@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 private const val POMODORO_MINUTES = 25
-private const val POINTS_PER_COMPLETED_POMODORO = 1500
+private const val POINTS_PER_COMPLETED_POMODORO = 10
 private const val COINS_PER_COMPLETED_POMODORO = 2
 private const val DAYS_IN_WEEK = 7
 private const val DEFAULT_SUBJECT_COLOR_INDEX = 0
@@ -129,28 +129,27 @@ class StudySessionViewModel(
         .launchIn(viewModelScope)
   }
 
-    private fun onPomodoroCompleted() {
-        viewModelScope.launch {
-            // SINGLE update for all pomodoro rewards
-            userStatsRepository.addReward(
-                minutes = POMODORO_MINUTES,
-                points = POINTS_PER_COMPLETED_POMODORO,
-                coins = COINS_PER_COMPLETED_POMODORO
-            )
+  private fun onPomodoroCompleted() {
+    viewModelScope.launch {
+      // SINGLE update for all pomodoro rewards
+      userStatsRepository.addReward(
+          minutes = POMODORO_MINUTES,
+          points = POINTS_PER_COMPLETED_POMODORO,
+          coins = COINS_PER_COMPLETED_POMODORO)
 
-            // Persist session snapshot
-            repository.saveCompletedSession(_uiState.value)
+      // Persist session snapshot
+      repository.saveCompletedSession(_uiState.value)
 
-            // Per-subject total
-            val subject = _uiState.value.selectedSubject
-            if (subject != null) {
-                subjectsRepository.addStudyMinutesToSubject(subject.id, POMODORO_MINUTES)
-            }
+      // Per-subject total
+      val subject = _uiState.value.selectedSubject
+      if (subject != null) {
+        subjectsRepository.addStudyMinutesToSubject(subject.id, POMODORO_MINUTES)
+      }
 
-            // Update weekly stats
-            updateWeeklyStatsForPomodoro(subjectName = subject?.name)
-        }
+      // Update weekly stats
+      updateWeeklyStatsForPomodoro(subjectName = subject?.name)
     }
+  }
 
   /**
    * Updates StudyStats in statsRepository to reflect one completed pomodoro.
