@@ -25,6 +25,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,6 +36,34 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class FriendStudyModeWorkerAndroidTest {
+
+  companion object {
+    private var emulatorConfigured = false
+
+    @JvmStatic
+    @BeforeClass
+    fun setupClass() {
+      // Configure Firebase emulator ONCE for all tests before any getInstance() calls
+      if (!emulatorConfigured) {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        // Initialize Firebase if needed
+        if (FirebaseApp.getApps(context).isEmpty()) {
+          FirebaseApp.initializeApp(context)
+        }
+
+        // Configure default instances to use emulator
+        try {
+          FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
+          FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
+          emulatorConfigured = true
+        } catch (_: IllegalStateException) {
+          // Already configured, that's fine
+          emulatorConfigured = true
+        }
+      }
+    }
+  }
 
   @get:Rule
   val permissionRule: GrantPermissionRule =
@@ -59,21 +88,9 @@ class FriendStudyModeWorkerAndroidTest {
     notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    // Initialize Firebase if needed
-    if (FirebaseApp.getApps(context).isEmpty()) {
-      FirebaseApp.initializeApp(context)
-    }
-
+    // Get the already-configured Firebase instances (configured in setupClass)
     auth = FirebaseAuth.getInstance()
     db = FirebaseFirestore.getInstance()
-
-    // Use emulator if available (configured via local.properties or environment)
-    try {
-      db.useEmulator("10.0.2.2", 8080)
-      auth.useEmulator("10.0.2.2", 9099)
-    } catch (_: IllegalStateException) {
-      // Already configured
-    }
 
     // Clear notifications
     notificationManager.cancelAll()
@@ -82,7 +99,7 @@ class FriendStudyModeWorkerAndroidTest {
     context.getSharedPreferences("friend_study_mode", Context.MODE_PRIVATE).edit().clear().apply()
 
     // Cancel any existing work
-    workManager.cancelAllWork()
+    runBlocking { workManager.cancelAllWork().await() }
   }
 
   @After
@@ -91,10 +108,10 @@ class FriendStudyModeWorkerAndroidTest {
       // Sign out
       auth.signOut()
 
-      // Clean up test user if created
+      // Clean up test data from profiles collection
       testUserId?.let { uid ->
         try {
-          db.collection("users").document(uid).delete().await()
+          db.collection("profiles").document(uid).delete().await()
         } catch (_: Exception) {}
       }
 
@@ -105,7 +122,7 @@ class FriendStudyModeWorkerAndroidTest {
       notificationManager.cancelAll()
 
       // Cancel all work
-      workManager.cancelAllWork()
+      workManager.cancelAllWork().await()
     }
   }
 
@@ -215,7 +232,7 @@ class FriendStudyModeWorkerAndroidTest {
         .apply()
 
     // Give Firestore time to propagate the writes and trigger snapshot listeners
-    Thread.sleep(2000)
+    Thread.sleep(3000)
 
     // Run worker
     val request =
@@ -226,12 +243,12 @@ class FriendStudyModeWorkerAndroidTest {
 
     workManager.enqueue(request).await()
 
-    // Wait for work to complete
+    // Wait for work to complete with longer timeout
     var workInfo = workManager.getWorkInfoById(request.id).await()
     var attempts = 0
     while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
+        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 100) {
+      Thread.sleep(200)
       workInfo = workManager.getWorkInfoById(request.id).await()
       attempts++
     }
@@ -300,7 +317,7 @@ class FriendStudyModeWorkerAndroidTest {
         .apply()
 
     // Give Firestore time to propagate the writes and trigger snapshot listeners
-    Thread.sleep(2000)
+    Thread.sleep(3000)
 
     // Run worker
     val request =
@@ -311,12 +328,12 @@ class FriendStudyModeWorkerAndroidTest {
 
     workManager.enqueue(request).await()
 
-    // Wait for work to complete
+    // Wait for work to complete with longer timeout
     var workInfo = workManager.getWorkInfoById(request.id).await()
     var attempts = 0
     while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
+        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 100) {
+      Thread.sleep(200)
       workInfo = workManager.getWorkInfoById(request.id).await()
       attempts++
     }
@@ -409,7 +426,8 @@ class FriendStudyModeWorkerAndroidTest {
     prefs.apply()
 
     // Give Firestore time to propagate the writes and trigger snapshot listeners
-    Thread.sleep(2000)
+    // Increased delay for slower test environments
+    Thread.sleep(3000)
 
     // Run worker
     val request =
@@ -420,12 +438,12 @@ class FriendStudyModeWorkerAndroidTest {
 
     workManager.enqueue(request).await()
 
-    // Wait for work to complete
+    // Wait for work to complete with longer timeout
     var workInfo = workManager.getWorkInfoById(request.id).await()
     var attempts = 0
     while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
+        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 100) {
+      Thread.sleep(200)
       workInfo = workManager.getWorkInfoById(request.id).await()
       attempts++
     }

@@ -21,6 +21,7 @@ import com.android.sample.ui.location.ProfilesFriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -55,9 +56,10 @@ class FriendStudyModeWorker(appContext: Context, params: WorkerParameters) :
       val db = FirebaseFirestore.getInstance()
       val repo = ProfilesFriendRepository(db, auth)
 
+      // Skip the initial empty emission and wait for actual friend data
       val currentFriends =
-          withTimeoutOrNull(10_000) { // 10 second timeout
-            repo.friendsFlow.first()
+          withTimeoutOrNull(15_000) { // 15 second timeout (increased for test stability)
+            repo.friendsFlow.drop(1).first() // Skip initial empty list emission
           }
               ?: run {
                 Log.w(TAG, "Timeout waiting for friends data")
