@@ -1,10 +1,9 @@
 package com.android.sample.ui.profile
 
-// This code has been written partially using A.I (LLM).
-
 import LevelingConfig.levelForPoints
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -18,8 +17,8 @@ import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.rewards.LevelRewardEngine
 import com.android.sample.feature.schedule.repository.schedule.IcsImporter
+import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.profile.ProfileRepository
-import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentMagenta
@@ -35,34 +34,50 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// This code has been written partially using A.I (LLM).
 class ProfileViewModel(
-    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val profileRepository: ProfileRepository = AppRepositories.profileRepository,
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
 
-  // ----- Profile (name, email, avatar, accessories, settings) -----
-  private val _userProfile = MutableStateFlow(profileRepository.profile.value.copy())
+  private val _userProfile = MutableStateFlow(UserProfile())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
-  // ----- Unified stats from Firestore (/users/{uid}/stats/stats) -----
   private val _userStats = MutableStateFlow(UserStats())
   val userStats: StateFlow<UserStats> = _userStats
 
+  // Flag pour savoir si le profil a été chargé depuis Firestore
+  private var profileLoaded = false
+
   init {
     viewModelScope.launch {
+      profileRepository.profile.collect { profile ->
+        Log.d("ProfileViewModel", "Profile from repo: starterId='${profile.starterId}'")
+        _userProfile.value = profile
+        profileLoaded = true
+      }
+    }
+
+    viewModelScope.launch {
+      if (profileRepository is FirestoreProfileRepository) {
+        profileRepository.isLoaded.first { it }
+      }
+
       userStatsRepository.start()
       userStatsRepository.stats.collect { stats ->
         _userStats.value = stats
-        syncProfileWithStats(stats)
+        if (profileLoaded) {
+          syncProfileWithStats(stats)
+        }
       }
     }
   }
 
-  // Palette from theme
   val accentPalette: List<Color> =
       listOf(
           AccentViolet,
@@ -74,13 +89,10 @@ class ProfileViewModel(
           GlowGold,
           VioletSoft)
 
-  // ----- Profil LOCAL uniquement -----
-  // reward engine instance
   private val rewardEngine = LevelRewardEngine()
 
   private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
   val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
-  // Accessories catalog
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
@@ -191,8 +203,6 @@ class ProfileViewModel(
     pushProfile()
   }
 
-  // ---------- Color helpers ----------
-
   private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
       when (v) {
         AccentVariant.Base -> base
@@ -212,6 +222,37 @@ class ProfileViewModel(
                 base.alpha)
       }
 
+  fun setStarter(starterId: String) {
+    if (starterId.isBlank()) {
+      Log.w("ProfileViewModel", "setStarter: blank id ignored")
+      return
+    }
+
+    Log.d("ProfileViewModel", "=== setStarter CALLED: '$starterId' ===")
+
+    val updated = _userProfile.value.copy(starterId = starterId)
+    _userProfile.value = updated
+    profileLoaded = true
+
+    viewModelScope.launch {
+      try {
+        profileRepository.updateProfile(updated)
+        Log.d("ProfileViewModel", "=== setStarter SUCCESS ===")
+      } catch (e: Exception) {
+        Log.e("ProfileViewModel", "=== setStarter FAILED ===", e)
+      }
+    }
+  }
+
+  fun starterDrawable(): Int {
+    return when (_userProfile.value.starterId) {
+      "pyromon" -> R.drawable.edumon
+      "aquamon" -> R.drawable.edumon2
+      "floramon" -> R.drawable.edumon1
+      else -> R.drawable.edumon
+    }
+  }
+
   fun addCoins(amount: Int) {
     if (amount <= 0) return
     viewModelScope.launch { userStatsRepository.updateCoins(amount) }
@@ -219,17 +260,24 @@ class ProfileViewModel(
 
   fun addPoints(amount: Int) {
     if (amount <= 0) return
-
-    viewModelScope.launch {
-      // update STATS (source of truth)
-      userStatsRepository.addPoints(amount)
-
-      // Profile will update automatically via syncProfileWithStats()
-    }
+    viewModelScope.launch { userStatsRepository.addPoints(amount) }
   }
 
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
-    viewModelScope.launch { runCatching { profileRepository.updateProfile(updated) } }
+
+    if (!profileLoaded) {
+      Log.d("ProfileViewModel", "pushProfile: skipped (profile not loaded yet)")
+      return
+    }
+
+    viewModelScope.launch {
+      try {
+        profileRepository.updateProfile(updated)
+        Log.d("ProfileViewModel", "pushProfile: saved")
+      } catch (e: Exception) {
+        Log.e("ProfileViewModel", "pushProfile failed", e)
+      }
+    }
   }
 
   private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
@@ -263,12 +311,16 @@ class ProfileViewModel(
   }
 
   fun syncProfileWithStats(stats: UserStats) {
-    val old = _userProfile.value
 
+    if (!profileLoaded) {
+      Log.d("ProfileViewModel", "syncProfileWithStats: skipped (profile not loaded yet)")
+      return
+    }
+
+    val old = _userProfile.value
     val newPoints = stats.points
     val computedLevel = computeLevelFromPoints(newPoints)
 
-    // If no level change → just sync fields and exit
     if (computedLevel == old.level) {
       val updated =
           old.copy(
@@ -286,19 +338,14 @@ class ProfileViewModel(
       return
     }
 
-    // ---- LEVEL UP DETECTED ----
     val candidate = old.copy(points = newPoints, level = computedLevel)
-
-    // Apply rewards
     val result = rewardEngine.applyLevelUpRewards(old, candidate)
     val rewardedProfile = result.updatedProfile
 
-    // If rewards include coins, push them to statsRepository
     if (result.summary.coinsGranted > 0) {
       viewModelScope.launch { userStatsRepository.updateCoins(result.summary.coinsGranted) }
     }
 
-    // Final profile = reward result + FIRESTORE stats overlay
     val final =
         rewardedProfile.copy(
             coins = stats.coins + result.summary.coinsGranted,
@@ -308,11 +355,9 @@ class ProfileViewModel(
                     totalTimeMin = stats.totalStudyMinutes,
                     dailyGoalMin = old.studyStats.dailyGoalMin))
 
-    // Update profile
     _userProfile.value = final
     pushProfile(final)
 
-    // Emit level-up snackbar event
     if (!result.summary.isEmpty) {
       viewModelScope.launch {
         _rewardEvents.emit(

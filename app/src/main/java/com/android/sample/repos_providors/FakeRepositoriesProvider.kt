@@ -3,6 +3,7 @@ package com.android.sample.repos_providors
 // This code has been written partially using A.I (LLM).
 
 import com.android.sample.data.FakeUserStatsRepository
+import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
@@ -46,7 +47,10 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val friendRepository: FakeFriendRepository = FakeFriendRepository()
 
   override val toDoRepository: ToDoRepository = ToDoRepositoryLocal()
-  override val profileRepository: ProfileRepository = FakeProfileRepository()
+
+  override val profileRepository: ProfileRepository =
+      FakeProfileRepository(initial = UserProfile(starterId = "pyromon"))
+
   override val flashcardsRepository: FlashcardsRepository = InMemoryFlashcardsRepository
   override val subjectsRepository: SubjectsRepository = FakeSubjectsRepository()
 }

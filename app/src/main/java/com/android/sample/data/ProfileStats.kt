@@ -35,6 +35,7 @@ data class UserProfile(
     val locationEnabled: Boolean = DEFAULT_LOCATION,
     val focusModeEnabled: Boolean = DEFAULT_FOCUS_MODE,
     val avatarAccent: Long = DEFAULT_ACCENT,
+    val starterId: String = DEFAULT_STARTER_ID,
     val accessories: List<String> = emptyList(),
     val studyStats: StudyStats =
         StudyStats(totalTimeMin = DEFAULT_STUDY_TIME, dailyGoalMin = DEFAULT_DAILY_GOAL),
@@ -53,7 +54,10 @@ data class UserProfile(
     const val DEFAULT_LOCATION = true
     const val DEFAULT_FOCUS_MODE = false
     const val DEFAULT_ACCENT = 0xFF9333EAL
+    const val DEFAULT_STARTER_ID = ""
   }
+
+  fun hasCompletedOnboarding(): Boolean = starterId.isNotBlank()
 }
 
 enum class AccentVariant {

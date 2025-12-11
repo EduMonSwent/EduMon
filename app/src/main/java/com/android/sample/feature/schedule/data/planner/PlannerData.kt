@@ -8,6 +8,7 @@ import com.android.sample.ui.theme.EventColorMusic
 import com.android.sample.ui.theme.EventColorSocial
 import com.android.sample.ui.theme.EventColorSports
 import com.android.sample.ui.theme.EventColorYoga
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -20,7 +21,8 @@ data class Class(
     val endTime: LocalTime,
     val type: ClassType,
     val location: String = "",
-    val instructor: String = ""
+    val instructor: String = "",
+    val daysOfWeek: List<DayOfWeek> = DayOfWeek.values().toList()
 )
 
 enum class ClassType {

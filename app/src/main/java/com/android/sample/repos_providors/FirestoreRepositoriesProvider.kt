@@ -17,7 +17,7 @@ import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryLocal
@@ -74,7 +74,7 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
 
   override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
 
-  override val profileRepository: ProfileRepository by lazy { FakeProfileRepository() }
+  override val profileRepository: ProfileRepository by lazy { FirestoreProfileRepository(db, auth) }
 
   override val subjectsRepository: SubjectsRepository by lazy {
     FirestoreSubjectsRepository(auth, db)

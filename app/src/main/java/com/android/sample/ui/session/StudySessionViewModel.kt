@@ -19,7 +19,6 @@ import com.android.sample.ui.stats.repository.StatsRepository
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -75,6 +74,7 @@ class StudySessionViewModel(
         val todayCompletedPomodoros = stats.todayStudyMinutes / POMODORO_MINUTES
         _uiState.update {
           it.copy(
+              // Use unified user stats here so it updates even offline
               totalMinutes = stats.totalStudyMinutes,
               streakCount = stats.streak,
               completedPomodoros = todayCompletedPomodoros,
@@ -101,7 +101,8 @@ class StudySessionViewModel(
     var lastPhase: PomodoroPhase? = null
     var lastState: PomodoroState? = null
 
-    combine(pomodoroViewModel.phase, pomodoroViewModel.timeLeft, pomodoroViewModel.state) {
+    kotlinx.coroutines.flow
+        .combine(pomodoroViewModel.phase, pomodoroViewModel.timeLeft, pomodoroViewModel.state) {
             phase,
             timeLeft,
             state ->
@@ -116,7 +117,7 @@ class StudySessionViewModel(
             )
           }
 
-          // End of a work session -> increment stats in Firestore
+          // End of a work session -> increment stats
           if (lastPhase == PomodoroPhase.WORK &&
               lastState != PomodoroState.FINISHED &&
               state == PomodoroState.FINISHED) {

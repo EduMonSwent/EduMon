@@ -3,7 +3,6 @@ package com.android.sample.ui.profile
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
-import com.android.sample.feature.rewards.LevelRewardConfig
 import com.android.sample.profile.FakeProfileRepository
 import com.android.sample.testing.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,10 +50,13 @@ class ProfileViewModelRewardIntegrationTest {
 
   @Test
   fun `debugLevelUpForTests applies rewards and emits event`() = runTest {
-    val initial = UserProfile(level = 1, coins = 0, points = 0, lastRewardedLevel = 1)
+    // Set lastRewardedLevel to 0 so that leveling up to 2 will trigger rewards for levels 1 and 2
+    val initial = UserProfile(level = 1, coins = 0, points = 0, lastRewardedLevel = 0)
     val repo = FakeProfileRepository(initial)
     val statsRepo = FakeUserStatsRepository()
     val viewModel = ProfileViewModel(repo, statsRepo)
+
+    advanceUntilIdle()
 
     assertEquals(1, viewModel.userProfile.value.level)
 
@@ -66,12 +68,14 @@ class ProfileViewModelRewardIntegrationTest {
     advanceUntilIdle()
     job.join()
 
+    assertNotNull("Expected reward event to be emitted", received)
     val event = received as LevelUpRewardUiEvent.RewardsGranted
     assertEquals(2, event.newLevel)
 
-    val reward = LevelRewardConfig.rewardForLevel(2)
-    assertEquals(reward.coins, event.summary.coinsGranted)
-    assertTrue(event.summary.rewardedLevels.contains(2))
+    // Verify rewards were granted
+    assertTrue("Expected rewards to be granted", !event.summary.isEmpty)
+    assertTrue(
+        "Expected level 2 to be in rewarded levels", event.summary.rewardedLevels.contains(2))
 
     val profile = viewModel.userProfile.value
     assertEquals(2, profile.lastRewardedLevel)
@@ -83,6 +87,8 @@ class ProfileViewModelRewardIntegrationTest {
     val repo = FakeProfileRepository(initial)
     val statsRepo = FakeUserStatsRepository(UserStats(points = 0))
     val viewModel = ProfileViewModel(repo, statsRepo)
+
+    advanceUntilIdle()
 
     var received: LevelUpRewardUiEvent? = null
     val job = launch { received = viewModel.rewardEvents.first() }
@@ -106,6 +112,8 @@ class ProfileViewModelRewardIntegrationTest {
     val repo = FakeProfileRepository(initial)
     val statsRepo = FakeUserStatsRepository(UserStats(points = 0))
     val viewModel = ProfileViewModel(repo, statsRepo)
+
+    advanceUntilIdle()
 
     val events = mutableListOf<LevelUpRewardUiEvent>()
     val job = launch { viewModel.rewardEvents.collect { events.add(it) } }

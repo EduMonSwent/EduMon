@@ -1,6 +1,10 @@
 package com.android.sample.schedule
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -122,7 +126,11 @@ class DayTabContentAllAndroidTest {
     val clazz = fakeClass("c9", "AI")
     val state = ScheduleUiState(todayClasses = listOf(clazz))
 
-    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+    rule.setContent {
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false))
+      }
+    }
 
     rule
         .onNodeWithText(ctx.getString(R.string.wellness_events_label))
@@ -147,7 +155,11 @@ class DayTabContentAllAndroidTest {
         ScheduleUiState(
             todayClasses = emptyList(), attendanceRecords = emptyList(), todos = emptyList())
 
-    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+    rule.setContent {
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false))
+      }
+    }
 
     rule
         .onNodeWithText(ctx.getString(R.string.schedule_day_todos_title))
@@ -196,7 +208,10 @@ class DayTabContentAllAndroidTest {
     val vm = buildScheduleVM(ctx)
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(
+            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      }
     }
 
     val dateText = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMM d"))
@@ -310,7 +325,10 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(todayClasses = listOf(clazz))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(
+            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      }
     }
 
     // Scroll to the Wellness section header first
@@ -357,7 +375,10 @@ class DayTabContentAllAndroidTest {
             todayClasses = emptyList(), attendanceRecords = emptyList(), todos = emptyList())
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(
+            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      }
     }
 
     val title = ctx.getString(R.string.schedule_day_todos_title)
@@ -395,7 +416,10 @@ class DayTabContentAllAndroidTest {
             todos = listOf(todayTodo, tomorrowTodo))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(
+            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      }
     }
 
     // Only today's task should appear in the "Today's To-Dos" section
