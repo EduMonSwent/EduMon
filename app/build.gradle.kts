@@ -199,6 +199,7 @@ dependencies {
 }
 
 tasks.withType<Test> {
+    maxHeapSize = "2g"
     // Jacoco for unit tests
     configure<JacocoTaskExtension> {
         isIncludeNoLocationClasses = true
