@@ -100,22 +100,28 @@ class ScheduleViewModel(
             val now = LocalTime.now()
             val todayDay = today.dayOfWeek
 
-            // 1. Gather all "Busy Blocks" for today
+            // Classes
+            val rawTodayClasses = classes.filter { it.daysOfWeek.contains(todayDay) }
+            val todayClasses =
+                rawTodayClasses
+                    .groupBy { Triple(it.courseName, it.startTime, it.endTime) }
+                    .map { (_, group) -> group.first() }
+                    .sortedBy { it.startTime }
+
+            // Gather all "Busy Blocks" for today
             val busyBlocks = mutableListOf<DayScheduleItem>()
 
-            // A. Classes
-            val todayClasses = classes.filter { it.daysOfWeek.contains(todayDay) }
             todayClasses.forEach { busyBlocks.add(ScheduleClassItem(it)) }
 
-            // B. Scheduled Events (Tasks, Study Sessions, etc.)
+            // Scheduled Events (Tasks, Study Sessions, etc.)
             // This includes your "filled" choices, preventing double-booking.
             val todayEvents = events.filter { it.date == today && it.time != null }
             todayEvents.forEach { busyBlocks.add(ScheduleEventItem(it)) }
 
-            // 2. Sort by Start Time
+            // Sort by Start Time
             val sortedBlocks = busyBlocks.sortedBy { it.start }
 
-            // 3. Robust Gap Calculation (Sweep-line)
+            // Robust Gap Calculation (Sweep-line)
             // We track `currentBusyEnd` to handle overlapping/nested blocks correctly.
             val fullSchedule = mutableListOf<DayScheduleItem>()
             val minGapMinutes = 15L
@@ -126,8 +132,6 @@ class ScheduleViewModel(
             for (block in sortedBlocks) {
               if (currentBusyEnd == null) {
                 // First block of the day
-                // Optional: Check gap between 'now' and first block?
-                // For now, we only stick to the list start.
                 currentBusyEnd = block.end
               } else {
                 // Check if there is a gap between the previous max end and this block's start
@@ -382,21 +386,33 @@ class ScheduleViewModel(
   fun onGapTypeSelected(isStudy: Boolean) {
     val gap = _uiState.value.selectedGap ?: return
     val mins = gap.durationMinutes
+    val hour = gap.start.hour
+    val isLunchTime = hour in 12..13
 
     // Exact logic requested by user
     val propositions =
-        if (isStudy) {
-          if (mins in 15..30) {
-            listOf("Review Flashcards") // Suggestion for 15-30m
+        if (isLunchTime) {
+          // LUNCH LOGIC
+          if (isStudy) {
+            listOf("Review Flashcards (While Eating)", "Light Reading")
           } else {
-            listOf("Work on Objectives") // Suggestion for >30m (Study Session)
+            listOf("Eat Lunch", "Coffee with Friends", "Nap")
           }
         } else {
-          // Relax
-          if (mins in 15..30) {
-            listOf("Search Friend", "Play Games", "Walk around campus", "Call Family")
+          // STANDARD LOGIC
+          if (isStudy) {
+            if (mins in 15..30) {
+              listOf("Review Flashcards", "Quick Quiz")
+            } else {
+              listOf("Work on Objectives", "Read Course Material")
+            }
           } else {
-            listOf("Go to Gym", "Play Piano", "Read a Book", "Hobby Time")
+            // Relax
+            if (mins in 15..30) {
+              listOf("Search Friend", "Play Games", "Walk around campus", "Call Family")
+            } else {
+              listOf("Go to Gym", "Play Piano", "Read a Book", "Hobby Time")
+            }
           }
         }
 
