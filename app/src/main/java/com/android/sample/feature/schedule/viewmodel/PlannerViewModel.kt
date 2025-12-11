@@ -167,7 +167,7 @@ open class PlannerViewModel(
         onDismissClassAttendanceModal()
 
         // Show success message with earned rewards
-        val message = buildSuccessMessage(attendance, completion, points, coins)
+        val message = buildSuccessMessage(points, coins)
         _eventFlow.emit(UiEvent.ShowSnackbar(message))
       } else {
         _eventFlow.emit(UiEvent.ShowSnackbar("Error saving attendance"))
@@ -207,12 +207,7 @@ open class PlannerViewModel(
     return coins
   }
 
-  private fun buildSuccessMessage(
-      attendance: AttendanceStatus,
-      completion: CompletionStatus,
-      points: Int,
-      coins: Int
-  ): String {
+  private fun buildSuccessMessage(points: Int, coins: Int): String {
     return buildString {
       append("Attendance saved!")
       if (points > 0 || coins > 0) {

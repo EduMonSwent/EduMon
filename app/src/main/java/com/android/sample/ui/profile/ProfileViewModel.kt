@@ -121,7 +121,6 @@ class ProfileViewModel(
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
 
   init {
-    val instanceId = System.identityHashCode(this)
 
     viewModelScope.launch {
       userStatsRepository.start()
@@ -289,7 +288,6 @@ class ProfileViewModel(
   private fun computeLevelFromPoints(points: Int): Int = levelForPoints(points)
 
   fun syncProfileWithStats(stats: UserStats) {
-    val instanceId = System.identityHashCode(this)
     globalSyncCount++
 
     val old = _userProfile.value
