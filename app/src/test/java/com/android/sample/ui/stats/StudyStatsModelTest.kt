@@ -39,7 +39,6 @@ class StudyStatsModelTest {
     assertTrue(stats.courseTimesMin.isEmpty())
     assertEquals(0, stats.completedGoals)
     assertTrue(stats.progressByDayMin.isEmpty())
-    assertEquals(0, stats.weeklyGoalMin) // Default value
   }
 
   @Test

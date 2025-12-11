@@ -1,10 +1,12 @@
 package com.android.sample.ui.stats
 
 import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
 import com.android.sample.ui.theme.SampleAppTheme
@@ -84,6 +86,7 @@ class StatsChartComponentsTest {
     composeTestRule.onNodeWithText("Chemistry", substring = true).assertIsDisplayed()
   }
 
+  @OptIn(ExperimentalFoundationApi::class)
   @Test
   fun barChart_displays_all_seven_days() {
     composeTestRule.setContent {
@@ -106,7 +109,11 @@ class StatsChartComponentsTest {
 
     val context = ApplicationProvider.getApplicationContext<Context>()
 
-    // Check all day abbreviations are present
+    // Bring the 7-day progression card into view on small CI devices
+    composeTestRule
+        .onNodeWithText(context.getString(R.string.stats_section_progress_7_days))
+        .performScrollTo()
+
     composeTestRule
         .onNodeWithText(context.getString(R.string.stats_label_day_mon))
         .assertIsDisplayed()
@@ -178,6 +185,7 @@ class StatsChartComponentsTest {
     composeTestRule.onNodeWithText("2h 5m").assertIsDisplayed()
   }
 
+  @OptIn(ExperimentalFoundationApi::class)
   @Test
   fun barChart_caption_is_displayed() {
     composeTestRule.setContent {
@@ -199,8 +207,11 @@ class StatsChartComponentsTest {
     }
 
     val context = ApplicationProvider.getApplicationContext<Context>()
+
+    // Ensure the caption is scrolled into view
     composeTestRule
         .onNodeWithText(context.getString(R.string.stats_bar_chart_caption))
+        .performScrollTo()
         .assertIsDisplayed()
   }
 

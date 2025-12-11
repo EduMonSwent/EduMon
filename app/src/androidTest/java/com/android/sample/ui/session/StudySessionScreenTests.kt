@@ -3,6 +3,7 @@ package com.android.sample.ui.session
 // This code has been written partially using A.I (LLM).
 
 import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertAny
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
 import com.android.sample.data.FakeUserStatsRepository
@@ -79,6 +81,7 @@ class StudySessionScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
+  @OptIn(ExperimentalFoundationApi::class)
   @Test
   fun studySessionScreen_displaysTitleAndComponents() {
     val items =
@@ -103,6 +106,10 @@ class StudySessionScreenTest {
       }
     }
     composeTestRule.waitForIdle()
+
+    // Ensure scrollable content is in view on small CI devices
+    composeTestRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).performScrollTo()
+    composeTestRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).performScrollTo()
 
     composeTestRule.onNodeWithTag(StudySessionTestTags.TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).assertIsDisplayed()
