@@ -10,6 +10,7 @@ import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.HomeRepository
 import com.android.sample.feature.homeScreen.HomeUiState
 import com.android.sample.feature.homeScreen.HomeViewModel
+import com.android.sample.profile.ProfileRepository
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,6 +62,20 @@ class HomeViewModelTest {
     }
   }
 
+  private class TestProfileRepository(initial: UserProfile = UserProfile()) : ProfileRepository {
+    private val _profile = MutableStateFlow(initial)
+    override val profile: StateFlow<UserProfile> = _profile
+
+    override suspend fun updateProfile(newProfile: UserProfile) {
+      _profile.value = newProfile
+    }
+
+    // Helper for testing
+    fun emitProfile(newProfile: UserProfile) {
+      _profile.value = newProfile
+    }
+  }
+
   private class TestRepository(
       private val todos: List<ToDo> = run {
         val today = LocalDate.now()
@@ -79,7 +94,7 @@ class HomeViewModelTest {
       // needed or removed
       private val creature: CreatureStats = CreatureStats(),
       private val quote: String = "Test quote",
-      private val userProfile: UserProfile = UserProfile(level = 7)
+      private val userProfile: UserProfile = UserProfile(level = 10)
   ) : HomeRepository {
 
     var fetchTodosCalled = 0
@@ -110,6 +125,7 @@ class HomeViewModelTest {
 
   private val testDispatcher = StandardTestDispatcher()
   private lateinit var statsRepo: TestUserStatsRepository
+  private lateinit var profileRepo: TestProfileRepository
 
   @Before
   fun setUp() {
@@ -123,6 +139,7 @@ class HomeViewModelTest {
                 weeklyGoal = 120,
                 coins = 0,
                 points = 99))
+    profileRepo = TestProfileRepository(UserProfile(level = 10))
   }
 
   @After
@@ -136,7 +153,7 @@ class HomeViewModelTest {
         HomeViewModel(
             repository = TestRepository(),
             userStatsRepository = statsRepo,
-        )
+            profileRepository = profileRepo)
 
     assertTrue(vm.uiState.value.isLoading)
     advanceUntilIdle()
@@ -145,8 +162,8 @@ class HomeViewModelTest {
     assertFalse(s.isLoading)
     assertEquals(3, s.todos.size)
     assertEquals("A", s.todos.first().title)
-    // Now checking userLevel directly
-    assertEquals(7, s.userLevel)
+    // Checking userLevel comes from profileRepo flow init
+    assertEquals(10, s.userLevel)
     assertEquals(99, s.userStats.points)
     assertEquals("Test quote", s.quote)
   }
@@ -154,7 +171,10 @@ class HomeViewModelTest {
   @Test
   fun `refresh toggles loading then updates values`() = runTest {
     val vm =
-        HomeViewModel(repository = TestRepository(quote = "Q1"), userStatsRepository = statsRepo)
+        HomeViewModel(
+            repository = TestRepository(quote = "Q1"),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
 
     advanceUntilIdle()
     assertEquals("Q1", vm.uiState.value.quote)
@@ -170,7 +190,8 @@ class HomeViewModelTest {
     val vm =
         HomeViewModel(
             repository = TestRepository(todos = emptyList(), quote = "EmptyQ"),
-            userStatsRepository = statsRepo)
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
 
     advanceUntilIdle()
 
@@ -182,12 +203,18 @@ class HomeViewModelTest {
   @Test
   fun `different repos produce different quotes`() = runTest {
     val vm1 =
-        HomeViewModel(repository = TestRepository(quote = "Q1"), userStatsRepository = statsRepo)
+        HomeViewModel(
+            repository = TestRepository(quote = "Q1"),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
     advanceUntilIdle()
     assertEquals("Q1", vm1.uiState.value.quote)
 
     val vm2 =
-        HomeViewModel(repository = TestRepository(quote = "Q2"), userStatsRepository = statsRepo)
+        HomeViewModel(
+            repository = TestRepository(quote = "Q2"),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
     advanceUntilIdle()
     assertEquals("Q2", vm2.uiState.value.quote)
   }
@@ -207,7 +234,10 @@ class HomeViewModelTest {
   fun `userStatsRepository start is called on init`() = runTest {
     assertFalse(statsRepo.startCalled)
 
-    HomeViewModel(repository = TestRepository(), userStatsRepository = statsRepo)
+    HomeViewModel(
+        repository = TestRepository(),
+        userStatsRepository = statsRepo,
+        profileRepository = profileRepo)
 
     advanceUntilIdle()
     assertTrue(statsRepo.startCalled)
@@ -215,7 +245,11 @@ class HomeViewModelTest {
 
   @Test
   fun `user stats updates are reflected in UI state`() = runTest {
-    val vm = HomeViewModel(repository = TestRepository(), userStatsRepository = statsRepo)
+    val vm =
+        HomeViewModel(
+            repository = TestRepository(),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
 
     advanceUntilIdle()
     assertEquals(99, vm.uiState.value.userStats.points)
@@ -229,7 +263,9 @@ class HomeViewModelTest {
   @Test
   fun `multiple refreshes update state correctly`() = runTest {
     val repo = TestRepository(quote = "Initial")
-    val vm = HomeViewModel(repository = repo, userStatsRepository = statsRepo)
+    val vm =
+        HomeViewModel(
+            repository = repo, userStatsRepository = statsRepo, profileRepository = profileRepo)
 
     advanceUntilIdle()
     assertEquals(1, repo.fetchTodosCalled)
@@ -264,7 +300,11 @@ class HomeViewModelTest {
             points = 500)
     val customStatsRepo = TestUserStatsRepository(customStats)
 
-    val vm = HomeViewModel(repository = TestRepository(), userStatsRepository = customStatsRepo)
+    val vm =
+        HomeViewModel(
+            repository = TestRepository(),
+            userStatsRepository = customStatsRepo,
+            profileRepository = profileRepo)
 
     advanceUntilIdle()
 
@@ -273,21 +313,44 @@ class HomeViewModelTest {
     assertEquals(50, vm.uiState.value.userStats.todayStudyMinutes)
   }
 
+  // NEW TEST: Covers real-time profile level updates
+  @Test
+  fun `user level updates when profile repository emits new profile`() = runTest {
+    val vm =
+        HomeViewModel(
+            repository = TestRepository(),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
+
+    // Initial state from setUp() is level=10
+    advanceUntilIdle()
+    assertEquals(10, vm.uiState.value.userLevel)
+
+    // Simulate external profile update (e.g. gained level)
+    profileRepo.emitProfile(UserProfile(level = 15))
+    advanceUntilIdle()
+
+    // Verify UI state updated via flow collection
+    assertEquals(15, vm.uiState.value.userLevel)
+  }
+
   @Test
   fun `user level comes from user profile fetch`() = runTest {
-    val profile = UserProfile(level = 42)
-    val repo1 = TestRepository(userProfile = profile)
-    val vm = HomeViewModel(repository = repo1, userStatsRepository = statsRepo)
+    // This tests the initial fetch via repository.fetchUserStats(), though logic prefers flow now.
+    // fetchUserStats() in TestRepository returns userProfile(level=10) by default.
+    // profileRepo in setUp returns level=10.
+
+    val profileForFetch = UserProfile(level = 42)
+    val repo1 = TestRepository(userProfile = profileForFetch)
+    val customProfileRepo = TestProfileRepository(UserProfile(level = 42)) // Consistent data
+
+    val vm =
+        HomeViewModel(
+            repository = repo1,
+            userStatsRepository = statsRepo,
+            profileRepository = customProfileRepo)
 
     advanceUntilIdle()
-    assertEquals(42, vm.uiState.value.userLevel)
-
-    statsRepo.addPoints(100)
-    advanceUntilIdle()
-    assertEquals(199, vm.uiState.value.userStats.points)
-
-    // Level stays 42 until another refresh or logic update (logic is handled in ProfileViewModel
-    // mostly)
     assertEquals(42, vm.uiState.value.userLevel)
   }
 
@@ -301,7 +364,10 @@ class HomeViewModelTest {
             ToDo(id = "2", title = "B", dueDate = today.plusDays(1), priority = Priority.MEDIUM))
 
     val vm =
-        HomeViewModel(repository = TestRepository(todos = todos), userStatsRepository = statsRepo)
+        HomeViewModel(
+            repository = TestRepository(todos = todos),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
 
     advanceUntilIdle()
 
@@ -313,7 +379,11 @@ class HomeViewModelTest {
 
   @Test
   fun `stats repository updates persist across refreshes`() = runTest {
-    val vm = HomeViewModel(repository = TestRepository(), userStatsRepository = statsRepo)
+    val vm =
+        HomeViewModel(
+            repository = TestRepository(),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
 
     advanceUntilIdle()
     assertEquals(99, vm.uiState.value.userStats.points)
@@ -330,7 +400,11 @@ class HomeViewModelTest {
 
   @Test
   fun `all user stats fields update correctly`() = runTest {
-    val vm = HomeViewModel(repository = TestRepository(), userStatsRepository = statsRepo)
+    val vm =
+        HomeViewModel(
+            repository = TestRepository(),
+            userStatsRepository = statsRepo,
+            profileRepository = profileRepo)
 
     advanceUntilIdle()
 

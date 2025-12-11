@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
+import com.android.sample.profile.ProfileRepository
+import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +29,7 @@ data class HomeUiState(
 class HomeViewModel(
     private val repository: HomeRepository = AppRepositories.homeRepository,
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(HomeUiState())
@@ -41,6 +44,13 @@ class HomeViewModel(
       userStatsRepository.stats.collect { stats -> _uiState.update { it.copy(userStats = stats) } }
     }
 
+    // Keep Home screen in sync with profile level
+    viewModelScope.launch {
+      profileRepository.profile.collect { profile ->
+        _uiState.update { it.copy(userLevel = profile.level) }
+      }
+    }
+
     refresh()
   }
 
@@ -50,6 +60,12 @@ class HomeViewModel(
       val todos = repository.fetchTodos()
       // creatureStats fetch removed
       val quote = repository.dailyQuote()
+
+      // We are observing profileRepository directly now, but we can still force a fetch if needed
+      // by logic
+      // though typically the flow collection covers it.
+      // Keeping this fetch just in case HomeRepository does something special with fetchUserStats()
+      // but strictly speaking, the level should come from the profile state flow.
       val userProfile = repository.fetchUserStats()
 
       _uiState.update {
