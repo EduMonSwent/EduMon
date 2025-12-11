@@ -3,6 +3,7 @@ package com.android.sample.ui.session
 // This code has been written partially using A.I (LLM).
 
 import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertAny
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
 import com.android.sample.data.FakeUserStatsRepository
@@ -43,15 +45,12 @@ private class RepoWithSuggestions(private val items: List<ToDo>) : StudySessionR
   override suspend fun getSuggestedTasks(): List<ToDo> = items
 }
 
-/**
- * Very small fake SubjectsRepository used by the StudySessionScreen tests.
- *
- * It keeps an empty subjects list and treats all operations as no-ops, because these UI tests do
- * not assert on subjects behavior.
- */
-private class FakeSubjectsRepository : SubjectsRepository {
+/** Fake SubjectsRepository that can be initialized with subjects for testing. */
+private class FakeSubjectsRepository(
+    private val initialSubjects: List<StudySubject> = emptyList()
+) : SubjectsRepository {
 
-  private val _subjects = MutableStateFlow<List<StudySubject>>(emptyList())
+  private val _subjects = MutableStateFlow(initialSubjects)
   override val subjects: StateFlow<List<StudySubject>> = _subjects
 
   override suspend fun start() {
@@ -59,19 +58,28 @@ private class FakeSubjectsRepository : SubjectsRepository {
   }
 
   override suspend fun createSubject(name: String, colorIndex: Int) {
-    // no-op for tests
+    val newSubject =
+        StudySubject(
+            id = "subject_${_subjects.value.size}",
+            name = name,
+            colorIndex = colorIndex,
+            totalStudyMinutes = 0)
+    _subjects.value = _subjects.value + newSubject
   }
 
   override suspend fun renameSubject(id: String, newName: String) {
-    // no-op for tests
+    _subjects.value = _subjects.value.map { if (it.id == id) it.copy(name = newName) else it }
   }
 
   override suspend fun deleteSubject(id: String) {
-    // no-op for tests
+    _subjects.value = _subjects.value.filter { it.id != id }
   }
 
   override suspend fun addStudyMinutesToSubject(id: String, minutes: Int) {
-    // no-op for tests
+    _subjects.value =
+        _subjects.value.map {
+          if (it.id == id) it.copy(totalStudyMinutes = it.totalStudyMinutes + minutes) else it
+        }
   }
 }
 
@@ -79,6 +87,7 @@ class StudySessionScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
+  @OptIn(ExperimentalFoundationApi::class)
   @Test
   fun studySessionScreen_displaysTitleAndComponents() {
     val items =
@@ -104,11 +113,28 @@ class StudySessionScreenTest {
     }
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(StudySessionTestTags.TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.TASK_LIST).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertIsDisplayed()
+    // Scroll each section into view before asserting (CI device may be very small)
+    composeTestRule.onNodeWithTag(StudySessionTestTags.TITLE).performScrollTo().assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.TASK_LIST)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.TIMER_SECTION)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.STATS_PANEL)
+        .performScrollTo()
+        .assertIsDisplayed()
   }
 
   @Test
@@ -282,5 +308,203 @@ class StudySessionScreenTest {
         .onNodeWithTag(StudySessionTestTags.SELECTED_TASK)
         .assertIsDisplayed()
         .assert(hasText(expected))
+  }
+
+  // ==================== SUBJECT SELECTION TESTS ====================
+
+  @Test
+  fun subjectsSection_displaysWhenSubjectsExist() {
+    val testSubjects =
+        listOf(
+            StudySubject(id = "1", name = "Mathematics", colorIndex = 0, totalStudyMinutes = 60),
+            StudySubject(id = "2", name = "Physics", colorIndex = 1, totalStudyMinutes = 45),
+            StudySubject(id = "3", name = "Chemistry", colorIndex = 2, totalStudyMinutes = 30))
+
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(emptyList()),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(testSubjects))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Scroll to subjects section
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    // Verify all subject chips are displayed
+    composeTestRule.onNodeWithText("Mathematics").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Physics").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Chemistry").assertIsDisplayed()
+  }
+
+  @Test
+  fun subjectChip_canBeSelected() {
+    val testSubjects =
+        listOf(
+            StudySubject(id = "1", name = "Mathematics", colorIndex = 0, totalStudyMinutes = 60),
+            StudySubject(id = "2", name = "Physics", colorIndex = 1, totalStudyMinutes = 45))
+
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(emptyList()),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(testSubjects))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Scroll to subjects section
+    composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).performScrollTo()
+
+    // Click on Mathematics subject
+    composeTestRule.onNodeWithText("Mathematics").performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify selection in ViewModel
+    assertEquals("Mathematics", vm.uiState.value.selectedSubject?.name)
+  }
+
+  @Test
+  fun subjectChip_selectionChangesColor() {
+    val subject1 = StudySubject(id = "1", name = "Subject A", colorIndex = 0, totalStudyMinutes = 0)
+    val subject2 = StudySubject(id = "2", name = "Subject B", colorIndex = 1, totalStudyMinutes = 0)
+
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(emptyList()),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(listOf(subject1, subject2)))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Scroll to subjects section
+    composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).performScrollTo()
+
+    // Initially no subject selected
+    assertEquals(null, vm.uiState.value.selectedSubject)
+
+    // Select Subject A - covers primaryContainer color branch
+    composeTestRule.onNodeWithText("Subject A").performClick()
+    composeTestRule.waitForIdle()
+    assertEquals("1", vm.uiState.value.selectedSubject?.id)
+
+    // Select Subject B - covers surfaceVariant color for unselected chips
+    composeTestRule.onNodeWithText("Subject B").performClick()
+    composeTestRule.waitForIdle()
+    assertEquals("2", vm.uiState.value.selectedSubject?.id)
+  }
+
+  @Test
+  fun subjectsSection_hidesWhenNoSubjects() {
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(emptyList()),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(emptyList()))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Scroll to subjects section
+    composeTestRule
+        .onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    // Verify no subject chips are displayed (FlowRow is not rendered)
+    composeTestRule.onNodeWithText("Mathematics").assertDoesNotExist()
+    composeTestRule.onNodeWithText("Physics").assertDoesNotExist()
+  }
+
+  @Test
+  fun multipleSubjects_allChipsDisplayed() {
+    val testSubjects =
+        listOf(
+            StudySubject(id = "1", name = "Math", colorIndex = 0, totalStudyMinutes = 60),
+            StudySubject(id = "2", name = "Physics", colorIndex = 1, totalStudyMinutes = 45),
+            StudySubject(id = "3", name = "Chemistry", colorIndex = 2, totalStudyMinutes = 30),
+            StudySubject(id = "4", name = "Biology", colorIndex = 3, totalStudyMinutes = 25),
+            StudySubject(id = "5", name = "History", colorIndex = 4, totalStudyMinutes = 20))
+
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(emptyList()),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(testSubjects))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Scroll to subjects section
+    composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).performScrollTo()
+
+    // Verify all subjects displayed (covers FlowRow with multiple items and spacing)
+    testSubjects.forEach { subject ->
+      composeTestRule.onNodeWithText(subject.name).assertIsDisplayed()
+    }
+  }
+
+  @Test
+  fun subjectChip_onClickHandler_triggersSelection() {
+    val testSubject =
+        StudySubject(id = "test_id", name = "Test Subject", colorIndex = 0, totalStudyMinutes = 0)
+
+    val vm =
+        StudySessionViewModel(
+            repository = RepoWithSuggestions(emptyList()),
+            userStatsRepository = FakeUserStatsRepository(),
+            statsRepository = FakeStatsRepository(),
+            subjectsRepository = FakeSubjectsRepository(listOf(testSubject)))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        StudySessionScreen(viewModel = vm, pomodoroViewModel = vm.pomodoroViewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Scroll to subjects section
+    composeTestRule.onNodeWithTag(StudySessionTestTags.SUBJECTS_SECTION).performScrollTo()
+
+    // Initially not selected
+    assertEquals(null, vm.uiState.value.selectedSubject)
+
+    // Click chip (covers onClick lambda and onSelectSubject call)
+    composeTestRule.onNodeWithText("Test Subject").performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify onSelectSubject was called
+    assertEquals("test_id", vm.uiState.value.selectedSubject?.id)
+    assertEquals("Test Subject", vm.uiState.value.selectedSubject?.name)
   }
 }

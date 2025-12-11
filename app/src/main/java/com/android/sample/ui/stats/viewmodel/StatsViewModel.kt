@@ -4,6 +4,8 @@ package com.android.sample.ui.stats.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.sample.data.UserStats
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.stats.model.StudyStats
@@ -14,15 +16,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for StatsScreen. Reads StudyStats from repo and can sync completedGoals from Objectives
- * when requested.
+ * ViewModel for StatsScreen.
+ * - Reads StudyStats (weekly charts, per-subject) from StatsRepository.
+ * - Reads UserStats (total study, streak, etc.) from UserStatsRepository.
+ * - Can sync completedGoals from Objectives when requested.
  */
 class StatsViewModel(
     private val repo: StatsRepository = AppRepositories.statsRepository,
     private val objectivesRepo: ObjectivesRepository = AppRepositories.objectivesRepository,
+    private val userStatsRepo: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
 
   val stats: StateFlow<StudyStats?> = repo.stats
+
+  val userStats: StateFlow<UserStats>
+    get() = userStatsRepo.stats
 
   val scenarioTitles: List<String>
     get() = repo.titles
@@ -33,7 +41,10 @@ class StatsViewModel(
   fun selectScenario(i: Int) = repo.loadScenario(i)
 
   init {
-    viewModelScope.launch { repo.refresh() }
+    viewModelScope.launch {
+      userStatsRepo.start()
+      repo.refresh()
+    }
   }
 
   /** Computes completed goals from objectives and writes it into the stats doc. */
