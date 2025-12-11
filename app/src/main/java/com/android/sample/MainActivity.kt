@@ -1,135 +1,99 @@
 package com.android.sample
 
-// This code has been written partially using A.I (LLM).
-
-import android.net.Uri
+import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.android.sample.feature.homeScreen.AppDestination
-import com.android.sample.profile.ProfileRepositoryProvider
-import com.android.sample.ui.login.LoginScreen
-import com.android.sample.ui.onBoarding.EduMonOnboardingScreen
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.media3.common.util.UnstableApi
+import com.android.sample.ui.login.LoginTapToStartScreen
+import com.android.sample.ui.onBoarding.LoopingVideoBackgroundFromAssets
 import com.android.sample.ui.theme.EduMonTheme
-import com.android.sample.ui.theme.EdumonAppearance
-import com.android.sample.ui.theme.EdumonAppearances
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+
+enum class AppScreen {
+  TAP_TO_START,
+  LOGGING_IN,
+  APP
+}
 
 class MainActivity : ComponentActivity() {
 
   private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
+  @UnstableApi
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    // Capture the intent data (deep link) if present
-    val startUri: Uri? = intent?.data
-
-    // Compute start destination based on deep link
-    val (startRoute, _) =
-        if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
-          val id = startUri.pathSegments.firstOrNull()
-          if (!id.isNullOrEmpty()) {
-            "study/$id" to id
-          } else {
-            AppDestination.Home.route to null
-          }
-        } else {
-          AppDestination.Home.route to null
-        }
-
     setContent {
-      val nav = rememberNavController()
-      var user by remember { mutableStateOf(auth.currentUser) }
-      val scope = rememberCoroutineScope()
-
-      // Global appearance (theme + sprite + environment)
-      var appearance by remember { mutableStateOf<EdumonAppearance>(EdumonAppearances.Default) }
-      var hasCompletedOnboarding by remember { mutableStateOf(false) }
-
-      // React to Firebase auth state
-      DisposableEffect(Unit) {
-        val listener =
-            FirebaseAuth.AuthStateListener { fa ->
-              val u = fa.currentUser
-              user = u
-
-              // If user logs out, reset onboarding + theme
-              if (u == null) {
-                hasCompletedOnboarding = false
-                appearance = EdumonAppearances.Default
-              }
-
-              val targetRoute = if (u == null) "login" else "app"
-              nav.navigate(targetRoute) {
-                popUpTo(nav.graph.startDestinationId) { inclusive = true }
-                launchSingleTop = true
-              }
+      EduMonTheme {
+        val initialScreen =
+            if (auth.currentUser != null) {
+              Log.d("MainActivity", "User already logged in: ${auth.currentUser?.uid}")
+              AppScreen.APP
+            } else {
+              Log.d("MainActivity", "No user, showing TapToStart")
+              AppScreen.TAP_TO_START
             }
 
-        auth.addAuthStateListener(listener)
-        onDispose { auth.removeAuthStateListener(listener) }
-      }
+        var currentScreen by remember { mutableStateOf(initialScreen) }
+        val scope = rememberCoroutineScope()
+        val activity = this@MainActivity
 
-      EduMonTheme(appearance = appearance) {
         Scaffold { padding ->
           Box(Modifier.fillMaxSize().padding(padding)) {
-            NavHost(navController = nav, startDestination = if (user == null) "login" else "app") {
-              composable("login") {
-                LoginScreen(
-                    onLoggedIn = {
-                      nav.navigate("app") {
-                        popUpTo("login") { inclusive = true }
-                        launchSingleTop = true
+            when (currentScreen) {
+              AppScreen.TAP_TO_START -> {
+                LoginTapToStartScreen(
+                    onTap = {
+                      currentScreen = AppScreen.LOGGING_IN
+                      scope.launch {
+                        val success = performGoogleSignIn(activity)
+                        Log.d("MainActivity", "SignIn result: $success")
+                        currentScreen = if (success) AppScreen.APP else AppScreen.TAP_TO_START
                       }
                     })
               }
+              AppScreen.LOGGING_IN -> {
 
-              composable("app") {
-                // Keep any side-effects you need on user change
-                LaunchedEffect(user?.uid) {
-                  user?.let {
-                    try {
-                      // placeholder for any user-specific loading
-                    } catch (_: Exception) {}
+                Box(modifier = Modifier.fillMaxSize()) {
+                  LoopingVideoBackgroundFromAssets(
+                      assetFileName = "onboarding_background_epfl.mp4",
+                      modifier = Modifier.fillMaxSize())
+
+                  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                   }
                 }
-
-                if (!hasCompletedOnboarding) {
-                  // Show onboarding until a starter is chosen
-                  EduMonOnboardingScreen(
-                      onOnboardingFinished = { _, starterId ->
-                        val chosenAppearance = EdumonAppearances.fromStarterId(starterId)
-                        appearance = chosenAppearance
-                        hasCompletedOnboarding = true
-                      })
-                } else {
-                  // Main app, themed according to the chosen Edumon
-                  EduMonNavHost(
-                      startDestination = startRoute,
-                      creatureResId = appearance.creatureResId,
-                      environmentResId = appearance.environmentResId)
-                }
+              }
+              AppScreen.APP -> {
+                EduMonNavHost(
+                    onSignOut = {
+                      signOutAll()
+                      currentScreen = AppScreen.TAP_TO_START
+                    })
               }
             }
           }
@@ -138,30 +102,34 @@ class MainActivity : ComponentActivity() {
     }
   }
 
-  /**
-   * Syncs the profile repository from auth data.
-   *
-   * This is internal so androidTest can call it directly inside runBlocking.
-   */
-  internal suspend fun syncProfileFromAuthData(displayName: String?, email: String?) {
-    val repo = ProfileRepositoryProvider.repository
-    val currentProfile = repo.profile.value
+  private suspend fun performGoogleSignIn(activity: Activity): Boolean {
+    return try {
+      val credentialManager = CredentialManager.create(activity)
 
-    val resolvedName = displayName?.takeIf { it.isNotBlank() } ?: currentProfile.name
-    val resolvedEmail = email?.takeIf { it.isNotBlank() } ?: currentProfile.email
+      val googleIdOption =
+          GetSignInWithGoogleOption.Builder(getString(R.string.default_web_client_id)).build()
 
-    val updatedProfile = currentProfile.copy(name = resolvedName, email = resolvedEmail)
+      val request = GetCredentialRequest.Builder().addCredentialOption(googleIdOption).build()
 
-    runCatching { repo.updateProfile(updatedProfile) }
-  }
+      val result = credentialManager.getCredential(activity, request)
+      val credential = result.credential
 
-  // Optional helper if you still want to call it with FirebaseUser from non-coroutine code
-  fun syncProfileWithFirebaseUser(user: FirebaseUser?) {
-    if (user == null) return
-    lifecycleScope.launch { syncProfileFromAuthData(user.displayName, user.email) }
+      val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+      val idToken = googleIdTokenCredential.idToken
+
+      val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+      auth.signInWithCredential(firebaseCredential).await()
+
+      Log.d("MainActivity", "SignIn OK, user=${auth.currentUser?.uid}")
+      auth.currentUser != null
+    } catch (e: Exception) {
+      Log.e("MainActivity", "SignIn failed", e)
+      false
+    }
   }
 
   fun signOutAll() {
+    Log.d("MainActivity", "SignOut")
     val gso =
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))

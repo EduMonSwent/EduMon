@@ -17,7 +17,7 @@ import com.android.sample.feature.weeks.repository.FirestoreObjectivesRepository
 import com.android.sample.feature.weeks.repository.FirestoreWeeksRepository
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
 import com.android.sample.feature.weeks.repository.WeeksRepository
-import com.android.sample.profile.FakeProfileRepository
+import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.repositories.ToDoRepositoryLocal
@@ -27,6 +27,8 @@ import com.android.sample.ui.flashcards.data.FirestoreFlashcardsRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.location.FriendRepository
 import com.android.sample.ui.location.ProfilesFriendRepository
+import com.android.sample.ui.shop.repository.FirestoreShopRepository
+import com.android.sample.ui.shop.repository.ShopRepository
 import com.android.sample.ui.stats.repository.FirestoreStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.ktx.auth
@@ -74,11 +76,13 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
 
   override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
 
-  override val profileRepository: ProfileRepository by lazy { FakeProfileRepository() }
+  override val profileRepository: ProfileRepository by lazy { FirestoreProfileRepository(db, auth) }
 
   override val subjectsRepository: SubjectsRepository by lazy {
     FirestoreSubjectsRepository(auth, db)
   }
+
+  override val shopRepository: ShopRepository by lazy { FirestoreShopRepository(db, auth) }
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider

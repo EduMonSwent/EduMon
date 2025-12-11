@@ -1,13 +1,19 @@
 package com.android.sample.ui.profile
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,35 +27,30 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.AccessorySlot
+import com.android.sample.ui.theme.TextLight
 import com.android.sample.ui.theme.UiValues
 
+// This code has been written partially using A.I (LLM).
 @Composable
 fun EduMonAvatar(
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = viewModel(),
     showLevelLabel: Boolean = true,
     avatarSize: Dp = UiValues.AvatarSize,
-    @DrawableRes avatarResId: Int = R.drawable.edumon,
-    /** Optional override for the aura/background gradient around EduMon. */
-    auraColors: List<Color>? = null,
 ) {
   val user by viewModel.userProfile.collectAsState()
   val accent by viewModel.accentEffective.collectAsState()
   val accessories = user.accessories
-  val colorScheme = MaterialTheme.colorScheme
 
   val equipped =
       remember(accessories) {
         accessories
             .mapNotNull {
-              val p = it.split(":")
-              if (p.size == 2) p[0] to p[1] else null
+              val parts = it.split(":")
+              if (parts.size == 2) parts[0] to parts[1] else null
             }
             .toMap()
       }
-
-  val effectiveAuraColors =
-      auraColors ?: listOf(accent.copy(alpha = UiValues.AuraAlpha), Color.Transparent)
 
   Column(
       modifier = modifier,
@@ -60,20 +61,25 @@ fun EduMonAvatar(
                 Modifier.size(avatarSize * UiValues.AvatarScale)
                     .clip(RoundedCornerShape(UiValues.AvatarCornerRadius)),
             contentAlignment = Alignment.Center) {
-              // Aura / environment
               Box(
                   modifier =
-                      Modifier.fillMaxSize()
-                          .background(Brush.radialGradient(colors = effectiveAuraColors)))
+                      Modifier.background(
+                              Brush.radialGradient(
+                                  colors =
+                                      listOf(
+                                          accent.copy(alpha = UiValues.AuraAlpha),
+                                          Color.Transparent)))
+                          .size(avatarSize * UiValues.AvatarScale))
 
-              // Base EduMon sprite (configurable)
+              val starterRes = viewModel.starterDrawable()
+
               Image(
-                  painter = painterResource(id = avatarResId),
+                  painter = painterResource(id = starterRes),
                   contentDescription = stringResource(id = R.string.edumon_content_description),
                   modifier = Modifier.size(avatarSize).zIndex(UiValues.ZBase))
 
               @Composable
-              fun draw(slot: AccessorySlot, z: Float) {
+              fun DrawAccessory(slot: AccessorySlot, z: Float) {
                 val id = equipped[slot.name.lowercase()] ?: return
                 val res = viewModel.accessoryResId(slot, id)
                 if (res != 0) {
@@ -84,16 +90,16 @@ fun EduMonAvatar(
                 }
               }
 
-              draw(AccessorySlot.BACK, UiValues.ZBack)
-              draw(AccessorySlot.TORSO, UiValues.ZTorso)
-              draw(AccessorySlot.HEAD, UiValues.ZHead)
+              DrawAccessory(AccessorySlot.BACK, UiValues.ZBack)
+              DrawAccessory(AccessorySlot.TORSO, UiValues.ZTorso)
+              DrawAccessory(AccessorySlot.HEAD, UiValues.ZHead)
             }
 
         if (showLevelLabel) {
           Spacer(Modifier.height(UiValues.AvatarLevelSpacing))
           Text(
               text = stringResource(R.string.level_label, user.level),
-              color = colorScheme.onBackground,
+              color = TextLight,
               fontWeight = FontWeight.SemiBold,
               fontSize = UiValues.LevelTextSize)
         }

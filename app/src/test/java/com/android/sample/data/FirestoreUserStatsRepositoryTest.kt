@@ -527,4 +527,37 @@ class FirestoreUserStatsRepositoryTest {
 
     assertEquals(null, result.lastStudyDateEpochDay)
   }
+
+  @Test
+  fun addReward_single_atomic_update_covers_all_branches() = runTest {
+    val repo = createRepo()
+
+    // Test 1: All zeros - early return (line coverage for early return)
+    val initial1 =
+        UserStats(totalStudyMinutes = 50, todayStudyMinutes = 20, points = 100, coins = 50)
+    setInternalStats(repo, initial1)
+    repo.addReward(minutes = 0, points = 0, coins = 0)
+    assertEquals(initial1, repo.stats.value) // No change
+
+    // Test 2: All positive values - covers all update branches
+    val initial2 =
+        UserStats(totalStudyMinutes = 50, todayStudyMinutes = 20, points = 100, coins = 50)
+    setInternalStats(repo, initial2)
+    repo.addReward(minutes = 25, points = 10, coins = 5)
+    val updated = repo.stats.value
+    assertEquals(75, updated.totalStudyMinutes) // Covers minutes > 0 branch
+    assertEquals(45, updated.todayStudyMinutes) // Covers minutes > 0 branch
+    assertEquals(110, updated.points) // Covers points addition
+    assertEquals(55, updated.coins) // Covers coins addition
+
+    // Test 3: Negative values - covers coerceAtLeast(0) branches
+    val initial3 = UserStats(totalStudyMinutes = 50, todayStudyMinutes = 20, points = 5, coins = 10)
+    setInternalStats(repo, initial3)
+    repo.addReward(minutes = 0, points = -10, coins = -20)
+    val updated3 = repo.stats.value
+    assertEquals(50, updated3.totalStudyMinutes) // Unchanged (minutes not > 0)
+    assertEquals(20, updated3.todayStudyMinutes) // Unchanged (minutes not > 0)
+    assertEquals(0, updated3.points) // Coerced to 0
+    assertEquals(0, updated3.coins) // Coerced to 0
+  }
 }

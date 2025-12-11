@@ -3,6 +3,7 @@ package com.android.sample.repos_providors
 // This code has been written partially using A.I (LLM).
 
 import com.android.sample.data.FakeUserStatsRepository
+import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.homeScreen.FakeHomeRepository
 import com.android.sample.feature.homeScreen.HomeRepository
@@ -24,6 +25,8 @@ import com.android.sample.session.ToDoBackedStudySessionRepository
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.flashcards.data.InMemoryFlashcardsRepository
 import com.android.sample.ui.location.FakeFriendRepository
+import com.android.sample.ui.shop.repository.FakeShopRepository
+import com.android.sample.ui.shop.repository.ShopRepository
 import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 
@@ -46,9 +49,13 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val friendRepository: FakeFriendRepository = FakeFriendRepository()
 
   override val toDoRepository: ToDoRepository = ToDoRepositoryLocal()
-  override val profileRepository: ProfileRepository = FakeProfileRepository()
+
+  override val profileRepository: ProfileRepository =
+      FakeProfileRepository(initial = UserProfile(starterId = "pyromon"))
+
   override val flashcardsRepository: FlashcardsRepository = InMemoryFlashcardsRepository
   override val subjectsRepository: SubjectsRepository = FakeSubjectsRepository()
+  override val shopRepository: ShopRepository = FakeShopRepository()
 }
 
 @Volatile var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider
