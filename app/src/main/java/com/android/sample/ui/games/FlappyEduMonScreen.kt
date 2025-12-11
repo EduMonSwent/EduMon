@@ -1,6 +1,5 @@
 package com.android.sample.ui.games
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -29,7 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.sample.R
 import com.android.sample.ui.profile.EduMonAvatar
 import kotlin.random.Random
 import kotlinx.coroutines.delay
@@ -40,7 +38,6 @@ import kotlinx.coroutines.isActive
 @Composable
 fun FlappyEduMonScreen(
     modifier: Modifier = Modifier,
-    @DrawableRes avatarResId: Int = R.drawable.edumon, // 👈 new parameter
     onExit: (() -> Unit)? = null,
 ) {
   val colorScheme = MaterialTheme.colorScheme
@@ -115,6 +112,7 @@ fun FlappyEduMonScreen(
           pipes = pipes + Pipe(newX, topH)
         }
 
+        // Remove off-screen pipes
         pipes = pipes.filter { it.x + pipeWidth > 0 }
 
         // Collision detection
@@ -131,7 +129,10 @@ fun FlappyEduMonScreen(
           }
         }
 
+        // Out of bounds
         if (playerY < 0f || playerY > worldH.toFloat()) gameOver = true
+
+        // Increase score over time
         score += 0.01f
       }
       delay(frameDelay)
@@ -140,7 +141,13 @@ fun FlappyEduMonScreen(
 
   val backgroundBrush =
       Brush.verticalGradient(
-          colors = listOf(colorScheme.background, colorScheme.surfaceVariant, colorScheme.surface))
+          colors =
+              listOf(
+                  colorScheme.background,
+                  colorScheme.surfaceVariant,
+                  colorScheme.surface,
+              ),
+      )
 
   Box(
       modifier
@@ -151,83 +158,99 @@ fun FlappyEduMonScreen(
             worldH = it.height
             resetGame()
           }
-          .background(brush = backgroundBrush)) {
-        val pipeTopColor = colorScheme.primary
-        val pipeBottomColor = colorScheme.primaryContainer
+          .background(brush = backgroundBrush),
+  ) {
+    val pipeTopColor = colorScheme.primary
+    val pipeBottomColor = colorScheme.primaryContainer
 
-        Canvas(Modifier.fillMaxSize()) {
-          pipes.forEach { p ->
-            // Top pipe
-            drawRect(
-                color = pipeTopColor.copy(alpha = 0.85f),
-                topLeft = Offset(p.x + 0.5f, 0f),
-                size = Size(pipeWidth - 1f, p.topHeight))
+    Canvas(Modifier.fillMaxSize()) {
+      pipes.forEach { p ->
+        // Top pipe
+        drawRect(
+            color = pipeTopColor.copy(alpha = 0.85f),
+            topLeft = Offset(p.x + 0.5f, 0f),
+            size = Size(pipeWidth - 1f, p.topHeight),
+        )
 
-            // Bottom pipe
-            val bottomY = p.topHeight + pipeGap
-            drawRect(
-                color = pipeBottomColor.copy(alpha = 0.85f),
-                topLeft = Offset(p.x + 0.5f, bottomY),
-                size = Size(pipeWidth - 1f, worldH - bottomY))
-          }
-        }
+        // Bottom pipe
+        val bottomY = p.topHeight + pipeGap
+        drawRect(
+            color = pipeBottomColor.copy(alpha = 0.85f),
+            topLeft = Offset(p.x + 0.5f, bottomY),
+            size = Size(pipeWidth - 1f, worldH - bottomY),
+        )
+      }
+    }
 
-        Box(
-            modifier =
-                Modifier.offset {
-                      IntOffset(
-                          (playerX - playerSizePx / 2f).toInt(),
-                          (playerY - playerSizePx / 2f).toInt())
-                    }
-                    .size(playerSizeDp)) {
-              // 👇 Now uses the chosen Edumon sprite
-              EduMonAvatar(
-                  showLevelLabel = false,
-                  avatarResId = avatarResId,
+    // EduMon sprite – uses the persisted starter via EduMonAvatar / ProfileViewModel
+    Box(
+        modifier =
+            Modifier.offset {
+                  IntOffset(
+                      (playerX - playerSizePx / 2f).toInt(),
+                      (playerY - playerSizePx / 2f).toInt(),
+                  )
+                }
+                .size(playerSizeDp),
+    ) {
+      EduMonAvatar(
+          showLevelLabel = false,
+      )
+    }
+
+    Text(
+        text = "Score: ${score.toInt()}",
+        color = colorScheme.onBackground,
+        fontSize = 22.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
+    )
+
+    // “Tap to start”
+    if (!started && !gameOver) {
+      Text(
+          text = "Tap anywhere to start",
+          color = colorScheme.secondary,
+          fontSize = 18.sp,
+          fontWeight = FontWeight.Medium,
+          modifier = Modifier.align(Alignment.Center),
+      )
+    }
+
+    // Game over screen
+    if (gameOver) {
+      Column(
+          Modifier.align(Alignment.Center)
+              .background(
+                  colorScheme.scrim.copy(alpha = 0.75f),
+                  shape = MaterialTheme.shapes.medium,
               )
-            }
-
+              .padding(24.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
+      ) {
         Text(
-            text = "Score: ${score.toInt()}",
-            color = colorScheme.onBackground,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp))
-
-        // “Tap to start”
-        if (!started && !gameOver) {
-          Text(
-              text = "Tap anywhere to start",
-              color = colorScheme.secondary,
-              fontSize = 18.sp,
-              fontWeight = FontWeight.Medium,
-              modifier = Modifier.align(Alignment.Center))
-        }
-
-        // Game over screen
-        if (gameOver) {
-          Column(
-              Modifier.align(Alignment.Center)
-                  .background(
-                      colorScheme.scrim.copy(alpha = 0.75f), shape = MaterialTheme.shapes.medium)
-                  .padding(24.dp),
-              horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "Game Over",
-                    color = colorScheme.primary,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold)
-                Text("Score: ${score.toInt()}", color = colorScheme.onSurface, fontSize = 18.sp)
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = { resetGame() },
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = colorScheme.primary,
-                            contentColor = colorScheme.onPrimary)) {
-                      Text("Restart", fontSize = 16.sp)
-                    }
-              }
+            "Game Over",
+            color = colorScheme.primary,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            "Score: ${score.toInt()}",
+            color = colorScheme.onSurface,
+            fontSize = 18.sp,
+        )
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = { resetGame() },
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = colorScheme.primary,
+                    contentColor = colorScheme.onPrimary,
+                ),
+        ) {
+          Text("Restart", fontSize = 16.sp)
         }
       }
+    }
+  }
 }

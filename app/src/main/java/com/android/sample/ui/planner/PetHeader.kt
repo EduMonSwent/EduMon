@@ -16,7 +16,7 @@ fun PetHeader(
     modifier: Modifier = Modifier,
     level: Int,
     @DrawableRes avatarResId: Int = R.drawable.edumon,
-    @DrawableRes environmentResId: Int = R.drawable.home, // ✅ neutral default
+    @DrawableRes environmentResId: Int = R.drawable.home, // neutral default
     backgroundBrush: Brush? = null,
 ) {
   // Optional extra background (if you want a gradient behind the card)
@@ -29,14 +29,14 @@ fun PetHeader(
 
   Box(modifier = outerModifier) {
     CreatureHouseCard(
-        creatureResId = avatarResId, // ✅ chosen Edumon sprite
+        creatureResId = avatarResId, // chosen EduMon sprite for the card
         level = level,
-        environmentResId = environmentResId, // ✅ chosen environment
+        environmentResId = environmentResId, // chosen environment
         overrideCreature = {
-          // Reuse your avatar system so accessories / aura / accent work
+          // Reuse your avatar system so accessories / aura / accent work,
+          // relying on the persisted starterId in ProfileViewModel.
           EduMonAvatar(
               showLevelLabel = false,
-              avatarResId = avatarResId,
           )
         },
         modifier = Modifier.fillMaxWidth(),

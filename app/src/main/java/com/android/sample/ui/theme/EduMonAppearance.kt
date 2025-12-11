@@ -46,7 +46,7 @@ object EdumonAppearances {
   val Pyrmon =
       EdumonAppearance(
           id = "pyrmon",
-          creatureResId = R.drawable.edumon3, // adjust if you want a specific sprite
+          creatureResId = R.drawable.edumon, // adjust if you want a specific sprite
           environmentResId = R.drawable.bg_pyrmon,
           lightColors =
               lightColorScheme(
