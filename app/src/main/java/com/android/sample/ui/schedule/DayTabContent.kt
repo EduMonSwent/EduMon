@@ -95,21 +95,26 @@ fun DayTabContent(
   if (state.showGapOptionsModal && state.selectedGap != null) {
     AlertDialog(
         onDismissRequest = { vm.onDismissGapModal() },
-        title = { Text("Free Time Found (${state.selectedGap.durationMinutes} min)") },
-        text = { Text("How would you like to use this time?") },
+        title = {
+          Text(stringResource(R.string.smart_gap_modal_title, state.selectedGap.durationMinutes))
+        },
+        text = { Text(stringResource(R.string.smart_gap_modal_text)) },
         confirmButton = {
-          Button(onClick = { vm.onGapTypeSelected(isStudy = true) }) { Text("Study") }
+          Button(onClick = { vm.onGapTypeSelected(true) }) {
+            Text(stringResource(R.string.smart_gap_action_study))
+          }
         },
         dismissButton = {
-          // Renamed from Wellness to Relax as requested
-          TextButton(onClick = { vm.onGapTypeSelected(isStudy = false) }) { Text("Relax") }
+          TextButton(onClick = { vm.onGapTypeSelected(false) }) {
+            Text(stringResource(R.string.smart_gap_action_relax))
+          }
         })
   }
   // 3. Gap Step 2: Specific Propositions (The "Dialect")
   if (state.showGapPropositionsModal && state.selectedGap != null) {
     AlertDialog(
         onDismissRequest = { vm.onDismissGapModal() },
-        title = { Text("Suggestions") },
+        title = { Text(stringResource(R.string.smart_gap_suggestions_title)) },
         text = {
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             state.gapPropositions.forEach { prop ->
@@ -122,7 +127,9 @@ fun DayTabContent(
           }
         },
         confirmButton = {}, // Clicking an option is the confirm action
-        dismissButton = { TextButton(onClick = { vm.onDismissGapModal() }) { Text("Cancel") } })
+        dismissButton = {
+          TextButton(onClick = { vm.onDismissGapModal() }) { Text(stringResource(R.string.cancel)) }
+        })
   }
 
   Column(
@@ -168,6 +175,7 @@ private fun TodayCard(
   val dateText = DateTimeFormatter.ofPattern("EEEE, MMM d").format(today)
 
   GlassSurface(modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+
     // Header
     Text(
         text = stringResource(R.string.today_title_fmt, dateText),
@@ -177,63 +185,22 @@ private fun TodayCard(
         modifier = Modifier.padding(bottom = Dimensions.spacingXSmall))
     Spacer(Modifier.height(Dimensions.spacingMedium))
 
-    // ---- Classes section (card inside card) ----
-    SectionBox(
-        header = {
-          Text(
-              stringResource(R.string.classes_label),
-              style =
-                  MaterialTheme.typography.titleMedium.copy(
-                      fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
-              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
-        }) {
-          if (classes.isEmpty() && !allClassesFinished) {
-            Text(
-                stringResource(R.string.no_classes_today),
-                color = cs.onSurface.copy(alpha = 0.7f),
-                modifier = modifier.fillMaxWidth())
-          }
-
-          // Render the mixed list
-          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            classes.forEachIndexed { idx, item ->
-              when (item) {
-                is ScheduleClassItem -> {
-                  val c = item.classData
-                  val record = attendance.firstOrNull { it.classId == c.id }
-                  CompactClassRow(
-                      clazz = c,
-                      record = record,
-                      modifier = Modifier.fillMaxWidth().clickable { onClassClick(c) })
-                }
-                is ScheduleGapItem -> {
-                  GapItemRow(gap = item, onClick = { onGapClick(item) })
-                }
-                is ScheduleEventItem -> {
-                  EventItemRow(
-                      event = item.eventData,
-                      onClick = { onEventClick(item.eventData) },
-                      onDelete = { onEventDelete(item.eventData) })
-                }
-              }
-              if (idx != classes.lastIndex) {
-                HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
-              }
-            }
-          }
-        }
+    ClassesSection(
+        classes = classes,
+        attendance = attendance,
+        onClassClick = onClassClick,
+        onGapClick = onGapClick,
+        onEventClick = onEventClick,
+        onEventDelete = onEventDelete,
+        allClassesFinished = allClassesFinished,
+        modifier = modifier)
 
     Spacer(Modifier.height(14.dp))
 
-    // ---- Daily objectives (your existing composable already looks like the mock) ----
     MaterialTheme(
-        colorScheme =
-            MaterialTheme.colorScheme.copy(
-                // ensure it uses your app purple for its internal Icons/Text tints
-                primary = PurplePrimary),
+        colorScheme = MaterialTheme.colorScheme.copy(primary = PurplePrimary),
         typography =
             MaterialTheme.typography.copy(
-                // DailyObjectivesSection uses titleMedium; bump it here locally
                 titleMedium =
                     MaterialTheme.typography.titleMedium.copy(
                         fontSize = 18.sp, fontWeight = FontWeight.SemiBold))) {
@@ -242,84 +209,157 @@ private fun TodayCard(
               modifier = Modifier.fillMaxWidth(),
               onNavigate = onObjectiveNavigate)
         }
+
     Spacer(Modifier.height(14.dp))
-    // ---- Today's To-Dos ----
-    SectionBox(
-        header = {
+
+    TodosSection(todos = todos, onTodoClicked = onTodoClicked, modifier = modifier)
+
+    Spacer(Modifier.height(14.dp))
+
+    WellnessSection()
+  }
+}
+
+@Composable
+private fun ClassesSection(
+    classes: List<DayScheduleItem>,
+    attendance: List<ClassAttendance>,
+    onClassClick: (Class) -> Unit,
+    onGapClick: (ScheduleGapItem) -> Unit,
+    onEventClick: (ScheduleEvent) -> Unit,
+    onEventDelete: (ScheduleEvent) -> Unit,
+    allClassesFinished: Boolean,
+    modifier: Modifier
+) {
+  val cs = MaterialTheme.colorScheme
+
+  SectionBox(
+      header = {
+        Text(
+            stringResource(R.string.classes_label),
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
+            modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
+      }) {
+        if (classes.isEmpty() && !allClassesFinished) {
           Text(
-              text = stringResource(R.string.schedule_day_todos_title),
-              fontSize = 18.sp,
-              fontWeight = FontWeight.SemiBold,
-              color = cs.onSurface,
-              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
-        }) {
-          if (todos.isEmpty()) {
-            Text(
-                text = stringResource(R.string.schedule_day_todos_empty),
-                color = cs.onSurface.copy(alpha = 0.7f),
-                modifier = modifier.fillMaxWidth())
-          } else {
-            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXSmall)) {
-              todos.forEach { todo ->
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(vertical = Dimensions.spacingXSmall)
-                            .clickable { onTodoClicked(todo.id) }) {
-                      Box(
-                          modifier =
-                              Modifier.width(5.dp)
-                                  .height(32.dp)
-                                  .background(cs.primary, RoundedCornerShape(999.dp)))
+              stringResource(R.string.no_classes_today),
+              color = cs.onSurface.copy(alpha = 0.7f),
+              modifier = modifier.fillMaxWidth())
+        }
 
-                      Spacer(Modifier.width(10.dp))
-
-                      Column {
-                        Text(
-                            text = todo.title,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            color = cs.onSurface)
-                        Text(
-                            text = todo.dueDateFormatted(),
-                            fontSize = 12.sp,
-                            color = cs.onSurface.copy(alpha = 0.7f))
-                      }
-                    }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          classes.forEachIndexed { idx, item ->
+            when (item) {
+              is ScheduleClassItem -> {
+                val c = item.classData
+                val record = attendance.firstOrNull { it.classId == c.id }
+                CompactClassRow(
+                    clazz = c,
+                    record = record,
+                    modifier = Modifier.fillMaxWidth().clickable { onClassClick(c) })
               }
+              is ScheduleGapItem -> {
+                GapItemRow(gap = item, onClick = { onGapClick(item) })
+              }
+              is ScheduleEventItem -> {
+                EventItemRow(
+                    event = item.eventData,
+                    onClick = { onEventClick(item.eventData) },
+                    onDelete = { onEventDelete(item.eventData) })
+              }
+            }
+
+            if (idx != classes.lastIndex) {
+              HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
             }
           }
         }
+      }
+}
 
-    Spacer(Modifier.height(14.dp))
+@Composable
+private fun TodosSection(todos: List<ToDo>, onTodoClicked: (String) -> Unit, modifier: Modifier) {
+  val cs = MaterialTheme.colorScheme
 
-    // ---- Wellness (match Classes/DailyObjectives look) ----
-    SectionBox(
-        header = {
+  SectionBox(
+      header = {
+        Text(
+            text = stringResource(R.string.schedule_day_todos_title),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = cs.onSurface,
+            modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
+      }) {
+        if (todos.isEmpty()) {
           Text(
-              stringResource(R.string.wellness_events_label),
-              style =
-                  MaterialTheme.typography.titleMedium.copy(
-                      fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
-              modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
-        }) {
-          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            WellnessEventItem(
-                title = stringResource(R.string.wellness_event_yoga_title),
-                time = stringResource(R.string.wellness_event_yoga_time),
-                description = stringResource(R.string.wellness_event_yoga_description),
-                eventType = WellnessEventType.YOGA,
-                onClick = {})
-            HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
-            WellnessEventItem(
-                title = stringResource(R.string.wellness_event_lecture_title),
-                time = stringResource(R.string.wellness_event_lecture_time),
-                description = stringResource(R.string.wellness_event_lecture_description),
-                eventType = WellnessEventType.LECTURE,
-                onClick = {})
+              text = stringResource(R.string.schedule_day_todos_empty),
+              color = cs.onSurface.copy(alpha = 0.7f),
+              modifier = modifier.fillMaxWidth())
+        } else {
+          Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXSmall)) {
+            todos.forEach { todo ->
+              Row(
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .padding(vertical = Dimensions.spacingXSmall)
+                          .clickable { onTodoClicked(todo.id) }) {
+                    Box(
+                        modifier =
+                            Modifier.width(5.dp)
+                                .height(32.dp)
+                                .background(cs.primary, RoundedCornerShape(999.dp)))
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Column {
+                      Text(
+                          text = todo.title,
+                          fontWeight = FontWeight.SemiBold,
+                          fontSize = 14.sp,
+                          color = cs.onSurface)
+                      Text(
+                          text = todo.dueDateFormatted(),
+                          fontSize = 12.sp,
+                          color = cs.onSurface.copy(alpha = 0.7f))
+                    }
+                  }
+            }
           }
         }
-  }
+      }
+}
+
+@Composable
+private fun WellnessSection() {
+  val cs = MaterialTheme.colorScheme
+
+  SectionBox(
+      header = {
+        Text(
+            stringResource(R.string.wellness_events_label),
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
+            modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
+      }) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          WellnessEventItem(
+              title = stringResource(R.string.wellness_event_yoga_title),
+              time = stringResource(R.string.wellness_event_yoga_time),
+              description = stringResource(R.string.wellness_event_yoga_description),
+              eventType = WellnessEventType.YOGA,
+              onClick = {})
+          HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
+          WellnessEventItem(
+              title = stringResource(R.string.wellness_event_lecture_title),
+              time = stringResource(R.string.wellness_event_lecture_time),
+              description = stringResource(R.string.wellness_event_lecture_description),
+              eventType = WellnessEventType.LECTURE,
+              onClick = {})
+        }
+      }
 }
 
 @Composable
@@ -460,12 +500,7 @@ private fun GapItemRow(gap: ScheduleGapItem, onClick: () -> Unit, modifier: Modi
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
               Column {
-                Text(
-                    text = "Free Time (${gap.durationMinutes} min)",
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary))
+                Text(stringResource(R.string.gap_row_title, gap.durationMinutes))
                 Text(
                     text = "${gap.start.format(timeFmt)} - ${gap.end.format(timeFmt)}",
                     style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
@@ -473,8 +508,7 @@ private fun GapItemRow(gap: ScheduleGapItem, onClick: () -> Unit, modifier: Modi
 
               Icon(
                   imageVector = Icons.Default.Add,
-                  contentDescription = "Add activity",
-                  tint = MaterialTheme.colorScheme.primary)
+                  contentDescription = stringResource(R.string.gap_row_add_activity))
             }
       }
 }
@@ -514,7 +548,7 @@ private fun EventItemRow(event: ScheduleEvent, onClick: () -> Unit, onDelete: ()
               IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Remove event",
+                    contentDescription = stringResource(R.string.event_remove),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     modifier = Modifier.size(20.dp))
               }

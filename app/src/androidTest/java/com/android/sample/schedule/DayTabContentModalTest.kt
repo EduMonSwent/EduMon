@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.android.sample.R
 import com.android.sample.data.Priority as TodoPriority
@@ -551,5 +552,45 @@ class DayTabContentAllAndroidTest {
     rule.onNodeWithText("Math").assertIsDisplayed()
     rule.onNodeWithText("Free Time (30 min)").assertIsDisplayed()
     rule.onNodeWithText("Study Session").assertIsDisplayed()
+  }
+
+  @Test
+  fun clickingEventItem_triggersEventClickCallback() {
+    var clicked = false
+    val vm = buildScheduleVM(rule.activity)
+    val event =
+        ScheduleEvent(
+            title = "Review Flashcards",
+            date = LocalDate.now(),
+            time = LocalTime.of(14, 0),
+            durationMinutes = 30,
+            kind = EventKind.STUDY)
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
+
+    rule.setContent {
+      DayTabContent(
+          vm = vm,
+          state = state,
+          objectivesVm = ObjectivesViewModel(requireAuth = false),
+          onObjectiveNavigation = {},
+          onTodoClicked = {},
+      )
+    }
+
+    rule.onNodeWithText("Review Flashcards").performClick()
+  }
+
+  @Test
+  fun clickingDeleteOnEvent_triggersDeleteCallback() {
+    val vm = buildScheduleVM(rule.activity)
+    val event =
+        ScheduleEvent(title = "Review Flashcards", date = LocalDate.now(), kind = EventKind.STUDY)
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithContentDescription("Remove event").performClick()
   }
 }

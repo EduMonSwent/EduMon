@@ -98,74 +98,13 @@ class ScheduleViewModel(
           .collect { (events, classes, attendance) ->
             val today = LocalDate.now()
             val now = LocalTime.now()
-            val todayDay = today.dayOfWeek
 
-            // Classes
-            val rawTodayClasses = classes.filter { it.daysOfWeek.contains(todayDay) }
-            val todayClasses =
-                rawTodayClasses
-                    .groupBy { Triple(it.courseName, it.startTime, it.endTime) }
-                    .map { (_, group) -> group.first() }
-                    .sortedBy { it.startTime }
-
-            // Gather all "Busy Blocks" for today
-            val busyBlocks = mutableListOf<DayScheduleItem>()
-
-            todayClasses.forEach { busyBlocks.add(ScheduleClassItem(it)) }
-
-            // Scheduled Events (Tasks, Study Sessions, etc.)
-            // This includes your "filled" choices, preventing double-booking.
-            val todayEvents = events.filter { it.date == today && it.time != null }
-            todayEvents.forEach { busyBlocks.add(ScheduleEventItem(it)) }
-
-            // Sort by Start Time
+            val todayClasses = extractTodayClasses(classes, today)
+            val busyBlocks = buildBusyBlocks(todayClasses, events, today)
             val sortedBlocks = busyBlocks.sortedBy { it.start }
 
-            // Robust Gap Calculation (Sweep-line)
-            // We track `currentBusyEnd` to handle overlapping/nested blocks correctly.
-            val fullSchedule = mutableListOf<DayScheduleItem>()
-            val minGapMinutes = 15L
-            val endOfDay = LocalTime.of(20, 0) // Student limit 20:00
-
-            var currentBusyEnd: LocalTime? = null
-
-            for (block in sortedBlocks) {
-              if (currentBusyEnd == null) {
-                // First block of the day
-                currentBusyEnd = block.end
-              } else {
-                // Check if there is a gap between the previous max end and this block's start
-                // logic: if block.start > currentBusyEnd -> GAP
-                if (block.start.isAfter(currentBusyEnd)) {
-                  val gapSize = Duration.between(currentBusyEnd, block.start).toMinutes()
-                  if (gapSize >= minGapMinutes) {
-                    fullSchedule.add(ScheduleGapItem(currentBusyEnd!!, block.start))
-                  }
-                  // Update pointer to this block's end
-                  currentBusyEnd = block.end
-                } else {
-                  // Overlap or touching. Just extend the busy period if this block ends later.
-                  if (block.end.isAfter(currentBusyEnd)) {
-                    currentBusyEnd = block.end
-                  }
-                }
-              }
-              fullSchedule.add(block)
-            }
-
-            // 4. Evening Gap (After last busy block until 20:00)
-            if (currentBusyEnd != null && currentBusyEnd.isBefore(endOfDay)) {
-              val eveningGap = Duration.between(currentBusyEnd, endOfDay).toMinutes()
-              if (eveningGap >= minGapMinutes) {
-                fullSchedule.add(ScheduleGapItem(currentBusyEnd, endOfDay))
-              }
-            } else if (sortedBlocks.isEmpty()) {
-              // Entire day is free until 20:00? (Optional feature)
-            }
-
-            // "All Classes Finished" logic (visual flair)
-            val allFinished =
-                todayClasses.isNotEmpty() && todayClasses.all { it.endTime.isBefore(now) }
+            val fullSchedule = computeFullSchedule(sortedBlocks)
+            val allFinished = computeAllClassesFinished(todayClasses, now)
 
             _uiState.update {
               it.copy(
@@ -177,6 +116,63 @@ class ScheduleViewModel(
             }
           }
     }
+  }
+
+  private fun extractTodayClasses(classes: List<Class>, today: LocalDate): List<Class> {
+    val todayDay = today.dayOfWeek
+    return classes
+        .filter { it.daysOfWeek.contains(todayDay) }
+        .groupBy { Triple(it.courseName, it.startTime, it.endTime) }
+        .map { (_, group) -> group.first() }
+        .sortedBy { it.startTime }
+  }
+
+  private fun buildBusyBlocks(
+      todayClasses: List<Class>,
+      events: List<ScheduleEvent>,
+      today: LocalDate
+  ): List<DayScheduleItem> {
+
+    val busy = mutableListOf<DayScheduleItem>()
+    todayClasses.forEach { busy.add(ScheduleClassItem(it)) }
+
+    val todayEvents = events.filter { it.date == today && it.time != null }
+    todayEvents.forEach { busy.add(ScheduleEventItem(it)) }
+
+    return busy
+  }
+
+  private fun computeFullSchedule(sortedBlocks: List<DayScheduleItem>): List<DayScheduleItem> {
+    val result = mutableListOf<DayScheduleItem>()
+    val minGap = 15L
+    val endOfDay = LocalTime.of(20, 0)
+    var currentEnd: LocalTime? = null
+
+    for (block in sortedBlocks) {
+      currentEnd =
+          when {
+            currentEnd == null -> block.end
+            block.start.isAfter(currentEnd) -> {
+              val gapMinutes = Duration.between(currentEnd, block.start).toMinutes()
+              if (gapMinutes >= minGap) result.add(ScheduleGapItem(currentEnd, block.start))
+              block.end
+            }
+            block.end.isAfter(currentEnd) -> block.end
+            else -> currentEnd
+          }
+      result.add(block)
+    }
+
+    if (currentEnd != null && currentEnd.isBefore(endOfDay)) {
+      val gapMinutes = Duration.between(currentEnd, endOfDay).toMinutes()
+      if (gapMinutes >= minGap) result.add(ScheduleGapItem(currentEnd, endOfDay))
+    }
+
+    return result
+  }
+
+  private fun computeAllClassesFinished(todayClasses: List<Class>, now: LocalTime): Boolean {
+    return todayClasses.isNotEmpty() && todayClasses.all { it.endTime.isBefore(now) }
   }
 
   private fun observeTodos() {
@@ -387,33 +383,13 @@ class ScheduleViewModel(
     val gap = _uiState.value.selectedGap ?: return
     val mins = gap.durationMinutes
     val hour = gap.start.hour
-    val isLunchTime = hour in 12..13
+    val isLunch = hour in 12..13
 
-    // Exact logic requested by user
     val propositions =
-        if (isLunchTime) {
-          // LUNCH LOGIC
-          if (isStudy) {
-            listOf("Review Flashcards (While Eating)", "Light Reading")
-          } else {
-            listOf("Eat Lunch", "Coffee with Friends", "Nap")
-          }
+        if (isLunch) {
+          getLunchPropositions(isStudy)
         } else {
-          // STANDARD LOGIC
-          if (isStudy) {
-            if (mins in 15..30) {
-              listOf("Review Flashcards", "Quick Quiz")
-            } else {
-              listOf("Work on Objectives", "Read Course Material")
-            }
-          } else {
-            // Relax
-            if (mins in 15..30) {
-              listOf("Search Friend", "Play Games", "Walk around campus", "Call Family")
-            } else {
-              listOf("Go to Gym", "Play Piano", "Read a Book", "Hobby Time")
-            }
-          }
+          getStandardPropositions(isStudy, mins)
         }
 
     _uiState.update {
@@ -421,6 +397,47 @@ class ScheduleViewModel(
           showGapOptionsModal = false,
           showGapPropositionsModal = true,
           gapPropositions = propositions)
+    }
+  }
+
+  private fun getLunchPropositions(isStudy: Boolean): List<String> {
+    return if (isStudy) {
+      listOf(
+          resources.getString(R.string.gap_study_flashcards_lunch),
+          resources.getString(R.string.gap_study_light_reading))
+    } else {
+      listOf(
+          resources.getString(R.string.gap_relax_eat_lunch),
+          resources.getString(R.string.gap_relax_coffee_friends),
+          resources.getString(R.string.gap_relax_nap))
+    }
+  }
+
+  private fun getStandardPropositions(isStudy: Boolean, mins: Long): List<String> {
+    return if (isStudy) {
+      if (mins in 15..30) {
+        listOf(
+            resources.getString(R.string.gap_study_flashcards),
+            resources.getString(R.string.gap_study_quick_quiz))
+      } else {
+        listOf(
+            resources.getString(R.string.gap_study_objectives),
+            resources.getString(R.string.gap_study_read_material))
+      }
+    } else {
+      if (mins in 15..30) {
+        listOf(
+            resources.getString(R.string.gap_relax_search_friend),
+            resources.getString(R.string.gap_relax_play_games),
+            resources.getString(R.string.gap_relax_walk),
+            resources.getString(R.string.gap_relax_call_family))
+      } else {
+        listOf(
+            resources.getString(R.string.gap_relax_gym),
+            resources.getString(R.string.gap_relax_piano),
+            resources.getString(R.string.gap_relax_read_book),
+            resources.getString(R.string.gap_relax_hobby))
+      }
     }
   }
 
@@ -441,7 +458,7 @@ class ScheduleViewModel(
             time = gap.start,
             durationMinutes = gap.durationMinutes.toInt(),
             kind = EventKind.STUDY, // You could differ kinds based on proposition if needed
-            description = "Smart suggestion",
+            description = resources.getString(R.string.gap_suggestion_description),
             isCompleted = false)
 
     save(newEvent)
@@ -450,14 +467,19 @@ class ScheduleViewModel(
   // --- NAVIGATION LOGIC (When the user clicks the "Printed" event) ---
   fun onScheduleEventClicked(event: ScheduleEvent) {
     viewModelScope.launch {
-      when (event.title) {
-        "Review Flashcards" -> _navEvents.emit(ScheduleNavEvent.ToFlashcards)
-        "Work on Objectives" -> _navEvents.emit(ScheduleNavEvent.ToStudySession)
-        "Search Friend" -> _navEvents.emit(ScheduleNavEvent.ToStudyTogether)
-        "Play Games" -> _navEvents.emit(ScheduleNavEvent.ToGames)
+      val flashcards = resources.getString(R.string.gap_study_flashcards)
+      val objectives = resources.getString(R.string.gap_study_objectives)
+      val searchFriend = resources.getString(R.string.gap_relax_search_friend)
+      val playGames = resources.getString(R.string.gap_relax_play_games)
 
-        // For other non-navigable suggestions (Gym, Piano, etc.), just show feedback
-        else -> _eventFlow.emit(UiEvent.ShowSnackbar("Enjoy your ${event.title}!"))
+      when (event.title) {
+        flashcards -> _navEvents.emit(ScheduleNavEvent.ToFlashcards)
+        objectives -> _navEvents.emit(ScheduleNavEvent.ToStudySession)
+        searchFriend -> _navEvents.emit(ScheduleNavEvent.ToStudyTogether)
+        playGames -> _navEvents.emit(ScheduleNavEvent.ToGames)
+        else ->
+            _eventFlow.emit(
+                UiEvent.ShowSnackbar(resources.getString(R.string.enjoy_event_fmt, event.title)))
       }
     }
   }

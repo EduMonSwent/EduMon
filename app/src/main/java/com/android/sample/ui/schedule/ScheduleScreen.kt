@@ -109,9 +109,7 @@ fun ScheduleScreen(
   if (state.showAddTaskModal) {
     AddStudyTaskModal(
         onDismiss = { vm.onDismissAddStudyTaskModal() },
-        onAddTask = { subject, title, duration, deadline, priority ->
-          vm.onDismissAddStudyTaskModal()
-        })
+        onAddTask = { _, _, _, _, _ -> vm.onDismissAddStudyTaskModal() })
   }
 
   // Extracted — greatly reduces complexity
