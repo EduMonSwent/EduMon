@@ -182,14 +182,22 @@ class FriendStudyModeWorkerAndroidTest {
     val friendId = "test_friend_123"
     val friendName = "Khalil"
 
-    // Create current user profile
-    db.collection("users")
+    // Create current user profile using /profiles
+    db.collection("profiles")
         .document(currentUid)
-        .set(mapOf("name" to "Test User", "friends" to listOf(friendId)))
+        .set(mapOf("name" to "Test User", "mode" to FriendMode.IDLE.name))
         .await()
 
-    // Create friend profile with STUDY mode
+    // Create friend edge in /users/{uid}/friendIds/{friendUid}
     db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friendId)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    // Create friend profile with STUDY mode using /profiles
+    db.collection("profiles")
         .document(friendId)
         .set(
             mapOf(
@@ -256,14 +264,22 @@ class FriendStudyModeWorkerAndroidTest {
     // Create test friend
     val friendId = "test_friend_456"
 
-    // Create current user profile
-    db.collection("users")
+    // Create current user profile using /profiles
+    db.collection("profiles")
         .document(currentUid)
-        .set(mapOf("name" to "Test User", "friends" to listOf(friendId)))
+        .set(mapOf("name" to "Test User", "mode" to FriendMode.IDLE.name))
         .await()
 
-    // Create friend profile with STUDY mode
+    // Create friend edge in /users/{uid}/friendIds/{friendUid}
     db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friendId)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    // Create friend profile with STUDY mode using /profiles
+    db.collection("profiles")
         .document(friendId)
         .set(
             mapOf(
@@ -320,14 +336,36 @@ class FriendStudyModeWorkerAndroidTest {
     val friend2Id = "test_friend_2"
     val friend3Id = "test_friend_3"
 
-    // Create current user profile
-    db.collection("users")
+    // Create current user profile using /profiles collection (allowed by rules)
+    db.collection("profiles")
         .document(currentUid)
-        .set(mapOf("name" to "Test User", "friends" to listOf(friend1Id, friend2Id, friend3Id)))
+        .set(mapOf("name" to "Test User", "mode" to FriendMode.IDLE.name))
         .await()
 
-    // Create friend profiles all in STUDY mode
+    // Create friend edges in /users/{uid}/friendIds/{friendUid} (owned by current user)
     db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend1Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend2Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend3Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    // Create friend profiles all in STUDY mode using /profiles collection
+    db.collection("profiles")
         .document(friend1Id)
         .set(
             mapOf(
@@ -337,7 +375,7 @@ class FriendStudyModeWorkerAndroidTest {
                 "longitude" to 6.5652))
         .await()
 
-    db.collection("users")
+    db.collection("profiles")
         .document(friend2Id)
         .set(
             mapOf(
@@ -347,7 +385,7 @@ class FriendStudyModeWorkerAndroidTest {
                 "longitude" to 6.5652))
         .await()
 
-    db.collection("users")
+    db.collection("profiles")
         .document(friend3Id)
         .set(
             mapOf(
