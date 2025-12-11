@@ -62,6 +62,7 @@ import kotlin.math.roundToInt
 private const val DAYS_IN_WEEK = 7
 private const val GRID_ALPHA = 0.08f
 private const val AXIS_ALPHA = 0.2f
+private const val SECONDARY_TEXT_ALPHA = 0.8f
 private val DEFAULT_BAR_SPACING = 8.dp
 
 // --- Route: ViewModel wiring -------------------------------------------------
@@ -151,7 +152,7 @@ fun StatsScreen(
                 Text(
                     text = stringResource(R.string.stats_subjects_this_week_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA),
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -249,7 +250,7 @@ private fun SummaryCard(title: String, value: String, modifier: Modifier = Modif
       Text(
           title,
           style = MaterialTheme.typography.labelLarge,
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA))
       Spacer(Modifier.height(6.dp))
       Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
     }
@@ -620,7 +621,7 @@ private fun BarChartDayLabels(labelsX: List<String>, todayIndex: Int) {
   Text(
       text = stringResource(R.string.stats_bar_chart_caption),
       style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+      color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA))
 }
 
 // --- Encouragement + formatting ----------------------------------------------
