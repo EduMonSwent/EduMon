@@ -38,14 +38,35 @@ class FakeShopRepository : ShopRepository {
   }
 
   companion object {
+    // Item IDs
+    private const val ID_GLASSES = "glasses"
+    private const val ID_HAT = "hat"
+    private const val ID_SCARF = "scarf"
+    private const val ID_WINGS = "wings"
+    private const val ID_AURA = "aura"
+    private const val ID_CAPE = "cape"
+
+    // Item names
+    private const val NAME_GLASSES = "Cool Shades"
+    private const val NAME_HAT = "Wizard Hat"
+    private const val NAME_SCARF = "Red Scarf"
+    private const val NAME_WINGS = "Cyber Wings"
+    private const val NAME_AURA = "Epic Aura"
+    private const val NAME_CAPE = "Hero Cape"
+
+    // Prices
+    private const val STANDARD_PRICE = 200
+    private const val EPIC_PRICE = 1500
+
     /** Default cosmetic items available in the shop. */
     fun defaultCosmetics(): List<CosmeticItem> =
         listOf(
-            CosmeticItem("glasses", "Cool Shades", 200, R.drawable.shop_cosmetic_glasses),
-            CosmeticItem("hat", "Wizard Hat", 200, R.drawable.shop_cosmetic_hat),
-            CosmeticItem("scarf", "Red Scarf", 200, R.drawable.shop_cosmetic_scarf),
-            CosmeticItem("wings", "Cyber Wings", 200, R.drawable.shop_cosmetic_wings),
-            CosmeticItem("aura", "Epic Aura", 1500, R.drawable.shop_cosmetic_aura),
-            CosmeticItem("cape", "Hero Cape", 200, R.drawable.shop_cosmetic_cape))
+            CosmeticItem(
+                ID_GLASSES, NAME_GLASSES, STANDARD_PRICE, R.drawable.shop_cosmetic_glasses),
+            CosmeticItem(ID_HAT, NAME_HAT, STANDARD_PRICE, R.drawable.shop_cosmetic_hat),
+            CosmeticItem(ID_SCARF, NAME_SCARF, STANDARD_PRICE, R.drawable.shop_cosmetic_scarf),
+            CosmeticItem(ID_WINGS, NAME_WINGS, STANDARD_PRICE, R.drawable.shop_cosmetic_wings),
+            CosmeticItem(ID_AURA, NAME_AURA, EPIC_PRICE, R.drawable.shop_cosmetic_aura),
+            CosmeticItem(ID_CAPE, NAME_CAPE, STANDARD_PRICE, R.drawable.shop_cosmetic_cape))
   }
 }
