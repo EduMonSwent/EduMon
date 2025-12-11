@@ -9,13 +9,12 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.android.sample.data.CreatureStats
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.screens.CreatureSprite
-import com.android.sample.screens.CreatureStatsCard
 import org.junit.Rule
 import org.junit.Test
 
+@Deprecated("This test class should not be used since we removed the creature stats")
 class CreatureCardsAndroidTest {
 
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
@@ -86,25 +85,25 @@ class CreatureCardsAndroidTest {
     rule.onNodeWithContentDescription("Creature").assertIsDisplayed()
   }
 
-  @Test
-  fun creatureStatsCard_renders_all_stats_and_percentages() {
-    val stats = CreatureStats(happiness = 72, health = 88, energy = 40)
-
-    rule.setContent { CreatureStatsCard(stats = stats) }
-
-    // Header
-    rule.onNodeWithText("Buddy Stats").assertIsDisplayed()
-
-    // Labels
-    rule.onNodeWithText("Happiness").assertIsDisplayed()
-    rule.onNodeWithText("Health").assertIsDisplayed()
-    rule.onNodeWithText("Energy").assertIsDisplayed()
-
-    // Percentages
-    rule.onNodeWithText("72%").assertIsDisplayed()
-    rule.onNodeWithText("88%").assertIsDisplayed()
-    rule.onNodeWithText("40%").assertIsDisplayed()
-  }
+  //  @Test
+  //  fun creatureStatsCard_renders_all_stats_and_percentages() {
+  //    val stats = CreatureStats(happiness = 72, health = 88, energy = 40)
+  //
+  //    rule.setContent { CreatureStatsCard(stats = stats) }
+  //
+  //    // Header
+  //    rule.onNodeWithText("Buddy Stats").assertIsDisplayed()
+  //
+  //    // Labels
+  //    rule.onNodeWithText("Happiness").assertIsDisplayed()
+  //    rule.onNodeWithText("Health").assertIsDisplayed()
+  //    rule.onNodeWithText("Energy").assertIsDisplayed()
+  //
+  //    // Percentages
+  //    rule.onNodeWithText("72%").assertIsDisplayed()
+  //    rule.onNodeWithText("88%").assertIsDisplayed()
+  //    rule.onNodeWithText("40%").assertIsDisplayed()
+  //  }
 
   @Test
   fun creatureHouseCard_click_levelChip_does_not_crash() {

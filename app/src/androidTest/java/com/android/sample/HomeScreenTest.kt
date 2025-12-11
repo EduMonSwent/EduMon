@@ -2,9 +2,7 @@ package com.android.sample
 
 import android.R
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -12,7 +10,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.sample.data.CreatureStats
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
@@ -77,8 +74,7 @@ class HomeScreenTest {
                                 title = "Pack lab kit for tomorrow",
                                 dueDate = tomorrow,
                                 priority = Priority.LOW)),
-                    creatureStats =
-                        CreatureStats(happiness = 85, health = 90, energy = 70, level = 5),
+                    userLevel = 5,
                     userStats =
                         UserStats(
                             totalStudyMinutes = 100,
@@ -103,7 +99,6 @@ class HomeScreenTest {
     composeRule.onNodeWithText("Affirmation").performScrollTo().assertIsDisplayed()
     composeRule.onNodeWithText("Today").performScrollTo().assertIsDisplayed()
     composeRule.onNodeWithText("Quick Actions").performScrollTo().assertIsDisplayed()
-    composeRule.onNodeWithText("Buddy Stats").performScrollTo().assertIsDisplayed()
     composeRule.onNodeWithText("Your Stats").performScrollTo().assertIsDisplayed()
 
     composeRule
@@ -124,7 +119,8 @@ class HomeScreenTest {
 
   @Test
   fun drawer_opens_viaMenuButton() {
-    // Drawer is now owned by EduMonNavHost (not EduMonHomeScreen directly)
+    // We are now testing EduMonNavHost to ensure integration is correct since it owns the
+    // Scaffold/Drawer
     composeRule.setContent { EduMonTheme { EduMonNavHost() } }
 
     // Wait for the Home menu button to appear
@@ -150,14 +146,17 @@ class HomeScreenTest {
   }
 
   @Test
-  fun creatureStats_progressIndicators_haveExpectedValues() {
+  fun userStats_displayedCorrectly() {
     setHomeContent()
 
-    composeRule
-        .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.85f, 0f..1f, 0)))
-        .assertExists()
-    composeRule
-        .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.9f, 0f..1f, 0)))
-        .assertExists()
+    // Check stats are displayed
+    composeRule.onNodeWithText("Streak").performScrollTo().assertIsDisplayed()
+    composeRule.onNodeWithText("7d").performScrollTo().assertIsDisplayed()
+
+    composeRule.onNodeWithText("Points").performScrollTo().assertIsDisplayed()
+    composeRule.onNodeWithText("1250").performScrollTo().assertIsDisplayed()
+
+    composeRule.onNodeWithText("Study Today").performScrollTo().assertIsDisplayed()
+    composeRule.onNodeWithText("45m").performScrollTo().assertIsDisplayed()
   }
 }

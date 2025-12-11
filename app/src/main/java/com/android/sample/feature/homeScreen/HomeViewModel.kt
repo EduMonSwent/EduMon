@@ -4,10 +4,11 @@ package com.android.sample.feature.homeScreen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
+import com.android.sample.profile.ProfileRepository
+import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,15 +19,17 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val isLoading: Boolean = true,
     val todos: List<ToDo> = emptyList(),
-    val creatureStats: CreatureStats = CreatureStats(),
+    // creatureStats removed as requested
     val userStats: UserStats = UserStats(),
     val quote: String = "",
+    val userLevel: Int = 1,
 )
 
 // ---------- ViewModel ----------
 class HomeViewModel(
     private val repository: HomeRepository = AppRepositories.homeRepository,
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
+    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(HomeUiState())
@@ -41,6 +44,13 @@ class HomeViewModel(
       userStatsRepository.stats.collect { stats -> _uiState.update { it.copy(userStats = stats) } }
     }
 
+    // Keep Home screen in sync with profile level
+    viewModelScope.launch {
+      profileRepository.profile.collect { profile ->
+        _uiState.update { it.copy(userLevel = profile.level) }
+      }
+    }
+
     refresh()
   }
 
@@ -48,11 +58,18 @@ class HomeViewModel(
     _uiState.update { it.copy(isLoading = true) }
     viewModelScope.launch {
       val todos = repository.fetchTodos()
-      val creature = repository.fetchCreatureStats()
+      // creatureStats fetch removed
       val quote = repository.dailyQuote()
 
+      // We are observing profileRepository directly now, but we can still force a fetch if needed
+      // by logic
+      // though typically the flow collection covers it.
+      // Keeping this fetch just in case HomeRepository does something special with fetchUserStats()
+      // but strictly speaking, the level should come from the profile state flow.
+      val userProfile = repository.fetchUserStats()
+
       _uiState.update {
-        it.copy(isLoading = false, todos = todos, creatureStats = creature, quote = quote)
+        it.copy(isLoading = false, todos = todos, quote = quote, userLevel = userProfile.level)
       }
     }
   }
