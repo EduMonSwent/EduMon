@@ -214,6 +214,9 @@ class FriendStudyModeWorkerAndroidTest {
         .putString(friendId, FriendMode.IDLE.name)
         .apply()
 
+    // Give Firestore time to propagate the writes and trigger snapshot listeners
+    Thread.sleep(2000)
+
     // Run worker
     val request =
         OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
@@ -295,6 +298,9 @@ class FriendStudyModeWorkerAndroidTest {
         .edit()
         .putString(friendId, FriendMode.STUDY.name)
         .apply()
+
+    // Give Firestore time to propagate the writes and trigger snapshot listeners
+    Thread.sleep(2000)
 
     // Run worker
     val request =
@@ -402,6 +408,9 @@ class FriendStudyModeWorkerAndroidTest {
     prefs.putString(friend3Id, FriendMode.IDLE.name)
     prefs.apply()
 
+    // Give Firestore time to propagate the writes and trigger snapshot listeners
+    Thread.sleep(2000)
+
     // Run worker
     val request =
         OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
@@ -504,14 +513,29 @@ class FriendStudyModeWorkerAndroidTest {
     val friend1Id = "pref_test_1"
     val friend2Id = "pref_test_2"
 
-    // Create current user profile
-    db.collection("users")
+    // Create current user profile using /profiles
+    db.collection("profiles")
         .document(currentUid)
-        .set(mapOf("name" to "Test User", "friends" to listOf(friend1Id, friend2Id)))
+        .set(mapOf("name" to "Test User", "mode" to FriendMode.IDLE.name))
         .await()
 
-    // Create friends with different modes
+    // Create friend edges in /users/{uid}/friendIds/{friendUid}
     db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend1Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend2Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    // Create friends with different modes using /profiles
+    db.collection("profiles")
         .document(friend1Id)
         .set(
             mapOf(
@@ -521,7 +545,7 @@ class FriendStudyModeWorkerAndroidTest {
                 "longitude" to 6.5652))
         .await()
 
-    db.collection("users")
+    db.collection("profiles")
         .document(friend2Id)
         .set(
             mapOf(
@@ -530,6 +554,9 @@ class FriendStudyModeWorkerAndroidTest {
                 "latitude" to 46.5202,
                 "longitude" to 6.5652))
         .await()
+
+    // Give Firestore time to propagate
+    Thread.sleep(2000)
 
     // Run worker
     val request =
