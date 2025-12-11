@@ -1,6 +1,7 @@
 package com.android.sample
 
 import android.app.Activity
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.media3.common.util.UnstableApi
+import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.ui.login.LoginTapToStartScreen
 import com.android.sample.ui.onBoarding.LoopingVideoBackgroundFromAssets
 import com.android.sample.ui.theme.EduMonTheme
