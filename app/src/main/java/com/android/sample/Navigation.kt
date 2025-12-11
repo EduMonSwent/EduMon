@@ -334,7 +334,8 @@ fun EduMonNavHost(
                           },
                           onOpenTodo = { _ ->
                             navController.navigateSingleTopTo(AppDestination.Todo.route)
-                          })
+                          },
+                          onNavigateTo = { route -> navController.navigateSingleTopTo(route) })
                     }
               }
 

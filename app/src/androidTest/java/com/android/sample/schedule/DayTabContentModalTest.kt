@@ -7,7 +7,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.android.sample.R
 import com.android.sample.data.Priority as TodoPriority
@@ -16,10 +18,16 @@ import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.ClassType
 import com.android.sample.feature.schedule.data.planner.CompletionStatus
+import com.android.sample.feature.schedule.data.planner.ScheduleClassItem
+import com.android.sample.feature.schedule.data.planner.ScheduleEventItem
+import com.android.sample.feature.schedule.data.planner.ScheduleGapItem
+import com.android.sample.feature.schedule.data.schedule.EventKind
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.schedule.DayTabContent
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import org.junit.Rule
 import org.junit.Test
@@ -32,20 +40,20 @@ class DayTabContentAllAndroidTest {
 
   // ---- Test new branch: allClassesFinished ----
   @Test
-  fun showsFinishedClasses_when_allClassesFinishedTrue() {
+  fun doesNotShowNoClassesMessage_whenAllClassesFinished() {
+    val ctx = rule.activity
     val vm = buildScheduleVM(ctx)
 
     val state =
         ScheduleUiState(
-            todayClasses = listOf(), // irrelevant
-            attendanceRecords = emptyList(),
-            allClassesFinished = true)
+            todaySchedule = emptyList(), attendanceRecords = emptyList(), allClassesFinished = true)
 
     rule.setContent {
       DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
-    rule.onNodeWithText(ctx.getString(R.string.finished_classes)).assertIsDisplayed()
+    // "No classes today" should NOT be shown when allClassesFinished = true
+    rule.onNodeWithText(ctx.getString(R.string.no_classes_today)).assertDoesNotExist()
   }
 
   // ---- Test original empty-classes branch ----
@@ -71,7 +79,9 @@ class DayTabContentAllAndroidTest {
     val clazz = fakeClass(id = "c1", name = "Algorithms")
     val record = fakeAttendance("c1") // default YES/YES
 
-    val state = ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(record))
+    val state =
+        ScheduleUiState(
+            todaySchedule = listOf(ScheduleClassItem(clazz)), attendanceRecords = listOf(record))
 
     rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
 
@@ -92,7 +102,9 @@ class DayTabContentAllAndroidTest {
             completion = CompletionStatus.PARTIALLY)
 
     val state =
-        ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(latePartial))
+        ScheduleUiState(
+            todaySchedule = listOf(ScheduleClassItem(clazz)),
+            attendanceRecords = listOf(latePartial))
 
     rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
 
@@ -111,7 +123,9 @@ class DayTabContentAllAndroidTest {
             classId = "c3", attendance = AttendanceStatus.NO, completion = CompletionStatus.NO)
 
     val state =
-        ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(missedNotDone))
+        ScheduleUiState(
+            todaySchedule = listOf(ScheduleClassItem(clazz)),
+            attendanceRecords = listOf(missedNotDone))
 
     rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
 
@@ -204,7 +218,7 @@ class DayTabContentAllAndroidTest {
             location = "BC02",
             instructor = "Dr. Smith",
             type = ClassType.LECTURE)
-    val state = ScheduleUiState(todayClasses = listOf(clazz))
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleClassItem(clazz)))
     val vm = buildScheduleVM(ctx)
 
     rule.setContent {
@@ -259,7 +273,9 @@ class DayTabContentAllAndroidTest {
     val clazz = fakeClass(id = "c1", name = "Algorithms")
     val record = fakeAttendance(classId = "c1") // default YES/YES in your helpers
 
-    val state = ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(record))
+    val state =
+        ScheduleUiState(
+            todaySchedule = listOf(ScheduleClassItem(clazz)), attendanceRecords = listOf(record))
 
     rule.setContent {
       DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
@@ -283,7 +299,9 @@ class DayTabContentAllAndroidTest {
             completion = CompletionStatus.PARTIALLY)
 
     val state =
-        ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(latePartial))
+        ScheduleUiState(
+            todaySchedule = listOf(ScheduleClassItem(clazz)),
+            attendanceRecords = listOf(latePartial))
 
     rule.setContent {
       DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
@@ -305,7 +323,9 @@ class DayTabContentAllAndroidTest {
             classId = "c3", attendance = AttendanceStatus.NO, completion = CompletionStatus.NO)
 
     val state =
-        ScheduleUiState(todayClasses = listOf(clazz), attendanceRecords = listOf(missedNotDone))
+        ScheduleUiState(
+            todaySchedule = listOf(ScheduleClassItem(clazz)),
+            attendanceRecords = listOf(missedNotDone))
 
     rule.setContent {
       DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
@@ -425,5 +445,152 @@ class DayTabContentAllAndroidTest {
     // Only today's task should appear in the "Today's To-Dos" section
     rule.onNodeWithText("Today task", substring = false).performScrollTo().assertIsDisplayed()
     rule.onNodeWithText("Tomorrow task").assertDoesNotExist()
+  }
+
+  @Test
+  fun showsGapItem_whenScheduleHasGap() {
+    val vm = buildScheduleVM(rule.activity)
+
+    val gap = ScheduleGapItem(start = LocalTime.of(10, 0), end = LocalTime.of(10, 30))
+
+    val state = ScheduleUiState(todaySchedule = listOf(gap))
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText("Free Time (30 min)").assertIsDisplayed()
+    rule.onNodeWithText("10:00 - 10:30").assertIsDisplayed()
+  }
+
+  @Test
+  fun gapOptionsModal_isVisible_whenFlagIsTrue() {
+    val vm = buildScheduleVM(rule.activity)
+    val gap = ScheduleGapItem(LocalTime.of(12, 0), LocalTime.of(12, 20))
+
+    val state = ScheduleUiState(showGapOptionsModal = true, selectedGap = gap)
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText("Free Time Found (20 min)").assertIsDisplayed()
+    rule.onNodeWithText("How would you like to use this time?").assertIsDisplayed()
+
+    rule.onNodeWithText("Study").assertIsDisplayed()
+    rule.onNodeWithText("Relax").assertIsDisplayed()
+  }
+
+  @Test
+  fun gapPropositionsModal_showsButtons() {
+    val vm = buildScheduleVM(rule.activity)
+    val gap = ScheduleGapItem(LocalTime.of(14, 0), LocalTime.of(14, 45))
+
+    val propositions = listOf("Work on Objectives", "Read Course Material")
+
+    val state =
+        ScheduleUiState(
+            showGapPropositionsModal = true, selectedGap = gap, gapPropositions = propositions)
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText("Suggestions").assertIsDisplayed()
+    rule.onNodeWithText("Work on Objectives").assertIsDisplayed()
+    rule.onNodeWithText("Read Course Material").assertIsDisplayed()
+  }
+
+  @Test
+  fun showsEventItemRow_correctly() {
+    val vm = buildScheduleVM(rule.activity)
+
+    val event =
+        ScheduleEvent(
+            id = "e1",
+            title = "Review Flashcards",
+            date = LocalDate.now(),
+            time = LocalTime.of(15, 0),
+            durationMinutes = 30,
+            kind = EventKind.STUDY)
+
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText("Review Flashcards").assertIsDisplayed()
+    rule.onNodeWithText("15:00 - 15:30").assertIsDisplayed()
+
+    // Delete button visible
+    rule.onNodeWithContentDescription("Remove event").assertIsDisplayed()
+  }
+
+  @Test
+  fun mixedSchedule_rendersClassGapEvent() {
+    val ctx = rule.activity
+    val vm = buildScheduleVM(ctx)
+
+    val clazz = fakeClass(id = "cx", name = "Math")
+    val gap = ScheduleGapItem(LocalTime.of(10, 0), LocalTime.of(10, 30))
+    val event =
+        ScheduleEvent(
+            id = "ex",
+            title = "Study Session",
+            date = LocalDate.now(),
+            time = LocalTime.of(11, 0),
+            durationMinutes = 60,
+            kind = EventKind.STUDY)
+
+    val items = listOf(ScheduleClassItem(clazz), gap, ScheduleEventItem(event))
+
+    val state = ScheduleUiState(todaySchedule = items)
+
+    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+
+    rule.onNodeWithText("Math").assertIsDisplayed()
+    rule.onNodeWithText("Free Time (30 min)").assertIsDisplayed()
+    rule.onNodeWithText("Study Session").assertIsDisplayed()
+  }
+
+  @Test
+  fun clickingEventItem_triggersEventClickCallback() {
+    var clicked = false
+    val vm = buildScheduleVM(rule.activity)
+    val event =
+        ScheduleEvent(
+            title = "Review Flashcards",
+            date = LocalDate.now(),
+            time = LocalTime.of(14, 0),
+            durationMinutes = 30,
+            kind = EventKind.STUDY)
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
+
+    rule.setContent {
+      DayTabContent(
+          vm = vm,
+          state = state,
+          objectivesVm = ObjectivesViewModel(requireAuth = false),
+          onObjectiveNavigation = {},
+          onTodoClicked = {},
+      )
+    }
+
+    rule.onNodeWithText("Review Flashcards").performClick()
+  }
+
+  @Test
+  fun clickingDeleteOnEvent_triggersDeleteCallback() {
+    val vm = buildScheduleVM(rule.activity)
+    val event =
+        ScheduleEvent(title = "Review Flashcards", date = LocalDate.now(), kind = EventKind.STUDY)
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
+
+    rule.setContent {
+      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithContentDescription("Remove event").performClick()
   }
 }

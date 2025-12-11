@@ -48,7 +48,7 @@ fun StarterSelectionScreen(onStarterSelected: (String) -> Unit) {
           StarterItem(
               id = "aquamon", image = R.drawable.edumon2, background = R.drawable.bg_aquamon),
           StarterItem(
-              id = "floramon", image = R.drawable.edumon1, background = R.drawable.bg_floramon))
+              id = "floramon", image = R.drawable.bg_aquamon, background = R.drawable.bg_floramon))
 
   val pagerState = rememberPagerState(pageCount = { starters.size })
   val coroutine = rememberCoroutineScope()

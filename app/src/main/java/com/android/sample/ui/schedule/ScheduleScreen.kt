@@ -24,6 +24,7 @@ import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.schedule.ScheduleTab
 import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
+import com.android.sample.feature.schedule.viewmodel.ScheduleNavEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.model.Objective
@@ -31,6 +32,7 @@ import com.android.sample.feature.weeks.ui.CourseExercisesRoute
 import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.ui.planner.AddStudyTaskModal
 import com.android.sample.ui.planner.PetHeader
 import com.android.sample.ui.theme.BackgroundDark
 import com.android.sample.ui.theme.BackgroundGradientEnd
@@ -50,7 +52,11 @@ object ScheduleScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (String) -> Unit = {}) {
+fun ScheduleScreen(
+    onAddTodoClicked: (LocalDate) -> Unit = {},
+    onOpenTodo: (String) -> Unit = {},
+    onNavigateTo: (String) -> Unit = {}
+) {
   // Repos
   val resources = LocalContext.current.resources
   val repositories = remember { AppRepositories }
@@ -87,6 +93,24 @@ fun ScheduleScreen(onAddTodoClicked: (LocalDate) -> Unit = {}, onOpenTodo: (Stri
 
   val weekStart = vm.startOfWeek(state.selectedDate)
   val weekTodos = state.todos.filter { it.dueDate in weekStart..weekStart.plusDays(6) }
+  LaunchedEffect(vm) {
+    vm.navEvents.collect { event ->
+      when (event) {
+        is ScheduleNavEvent.ToFlashcards -> onNavigateTo("flashcards") // Make sure route exists
+        is ScheduleNavEvent.ToGames -> onNavigateTo("games")
+        is ScheduleNavEvent.ToStudySession -> onNavigateTo("study")
+        is ScheduleNavEvent.ToStudyTogether -> onNavigateTo("study_together")
+        is ScheduleNavEvent.ShowWellnessSuggestion -> {
+          snackbarHostState.showSnackbar(event.message)
+        }
+      }
+    }
+  }
+  if (state.showAddTaskModal) {
+    AddStudyTaskModal(
+        onDismiss = { vm.onDismissAddStudyTaskModal() },
+        onAddTask = { _, _, _, _, _ -> vm.onDismissAddStudyTaskModal() })
+  }
 
   // Extracted — greatly reduces complexity
   ScheduleSideEffects(
