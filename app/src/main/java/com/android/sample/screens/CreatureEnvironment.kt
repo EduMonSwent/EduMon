@@ -13,9 +13,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Bolt
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,14 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.android.sample.data.CreatureStats
 
 @Composable
 fun CreatureHouseCard(
@@ -123,54 +116,5 @@ fun CreatureSprite(resId: Int, modifier: Modifier = Modifier, size: Dp = 120.dp)
         contentDescription = "Creature",
         contentScale = ContentScale.Fit,
         modifier = Modifier.size(size).offset(y = offset.dp))
-  }
-}
-
-@Composable
-fun CreatureStatsCard(stats: CreatureStats, modifier: Modifier = Modifier) {
-  ElevatedCard(
-      modifier,
-      colors =
-          CardDefaults.elevatedCardColors(
-              containerColor = MaterialTheme.colorScheme.surface,
-              contentColor = MaterialTheme.colorScheme.onSurface),
-      shape = RoundedCornerShape(20.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text("Buddy Stats", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-          StatRow(
-              "Happiness",
-              stats.happiness,
-              Icons.Outlined.FavoriteBorder,
-              MaterialTheme.colorScheme.primary)
-          StatRow(
-              "Health",
-              stats.health,
-              Icons.Outlined.LocalHospital,
-              MaterialTheme.colorScheme.secondary)
-          StatRow("Energy", stats.energy, Icons.Outlined.Bolt, MaterialTheme.colorScheme.tertiary)
-        }
-      }
-}
-
-@Composable
-private fun StatRow(
-    title: String,
-    value: Int,
-    icon: ImageVector,
-    barColor: Color,
-) {
-  Column {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(icon, contentDescription = null, tint = barColor)
-      Spacer(Modifier.width(6.dp))
-      Text(title, modifier = Modifier.weight(1f))
-      Text("$value%", color = MaterialTheme.colorScheme.onSurface)
-    }
-    Spacer(Modifier.height(6.dp))
-    LinearProgressIndicator(
-        progress = value / 100f,
-        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .20f),
-        color = barColor,
-        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(8.dp)))
   }
 }

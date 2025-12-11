@@ -25,6 +25,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
+@Deprecated("This test class should not be used since we removed the creature stats")
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
@@ -74,9 +75,11 @@ class HomeViewModelTest {
             ToDo(id = "2", title = "B", dueDate = today, priority = Priority.LOW),
             ToDo(id = "3", title = "C", dueDate = tomorrow, priority = Priority.HIGH))
       },
-      private val creature: CreatureStats =
-          CreatureStats(happiness = 10, health = 20, energy = 30, level = 7),
-      private val quote: String = "Test quote"
+      // creature param is now effectively ignored for stats logic, but kept for compatibility if
+      // needed or removed
+      private val creature: CreatureStats = CreatureStats(),
+      private val quote: String = "Test quote",
+      private val userProfile: UserProfile = UserProfile(level = 7)
   ) : HomeRepository {
 
     var fetchTodosCalled = 0
@@ -96,7 +99,7 @@ class HomeViewModelTest {
 
     override suspend fun fetchUserStats(): UserProfile {
       fetchUserStatsCalled++
-      return UserProfile()
+      return userProfile
     }
 
     override fun dailyQuote(nowMillis: Long): String {
@@ -142,7 +145,8 @@ class HomeViewModelTest {
     assertFalse(s.isLoading)
     assertEquals(3, s.todos.size)
     assertEquals("A", s.todos.first().title)
-    assertEquals(7, s.creatureStats.level)
+    // Now checking userLevel directly
+    assertEquals(7, s.userLevel)
     assertEquals(99, s.userStats.points)
     assertEquals("Test quote", s.quote)
   }
@@ -193,7 +197,8 @@ class HomeViewModelTest {
     val s = HomeUiState()
     assertTrue(s.isLoading)
     assertTrue(s.todos.isEmpty())
-    assertTrue(s.creatureStats.level >= 1)
+    // userLevel default is 1
+    assertEquals(1, s.userLevel)
     assertEquals(UserStats(), s.userStats)
     assertEquals("", s.quote)
   }
@@ -228,19 +233,23 @@ class HomeViewModelTest {
 
     advanceUntilIdle()
     assertEquals(1, repo.fetchTodosCalled)
-    assertEquals(1, repo.fetchCreatureStatsCalled)
+
+    assertEquals(0, repo.fetchCreatureStatsCalled)
+    assertEquals(1, repo.fetchUserStatsCalled)
 
     vm.refresh()
     advanceUntilIdle()
 
     assertEquals(2, repo.fetchTodosCalled)
-    assertEquals(2, repo.fetchCreatureStatsCalled)
+    assertEquals(0, repo.fetchCreatureStatsCalled)
+    assertEquals(2, repo.fetchUserStatsCalled)
 
     vm.refresh()
     advanceUntilIdle()
 
     assertEquals(3, repo.fetchTodosCalled)
-    assertEquals(3, repo.fetchCreatureStatsCalled)
+    assertEquals(0, repo.fetchCreatureStatsCalled)
+    assertEquals(3, repo.fetchUserStatsCalled)
   }
 
   @Test
@@ -265,21 +274,21 @@ class HomeViewModelTest {
   }
 
   @Test
-  fun `creature stats update independently of user stats`() = runTest {
-    val creature1 = CreatureStats(happiness = 50, health = 60, energy = 70, level = 3)
-
-    val repo1 = TestRepository(creature = creature1)
+  fun `user level comes from user profile fetch`() = runTest {
+    val profile = UserProfile(level = 42)
+    val repo1 = TestRepository(userProfile = profile)
     val vm = HomeViewModel(repository = repo1, userStatsRepository = statsRepo)
 
     advanceUntilIdle()
-    assertEquals(3, vm.uiState.value.creatureStats.level)
-    assertEquals(50, vm.uiState.value.creatureStats.happiness)
+    assertEquals(42, vm.uiState.value.userLevel)
 
     statsRepo.addPoints(100)
     advanceUntilIdle()
     assertEquals(199, vm.uiState.value.userStats.points)
 
-    assertEquals(3, vm.uiState.value.creatureStats.level)
+    // Level stays 42 until another refresh or logic update (logic is handled in ProfileViewModel
+    // mostly)
+    assertEquals(42, vm.uiState.value.userLevel)
   }
 
   @Test
@@ -360,7 +369,7 @@ class HomeViewModelTest {
     val userProfile = repo.fetchUserStats()
 
     assertEquals(3, todos.size)
-    assertTrue(creature.level >= 1)
+    assertTrue(creature.level >= 1) // Just ensuring it returns something valid
     assertEquals("Alex", userProfile.name)
   }
 }

@@ -4,7 +4,6 @@ package com.android.sample.feature.homeScreen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
@@ -18,9 +17,10 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val isLoading: Boolean = true,
     val todos: List<ToDo> = emptyList(),
-    val creatureStats: CreatureStats = CreatureStats(),
+    // creatureStats removed as requested
     val userStats: UserStats = UserStats(),
     val quote: String = "",
+    val userLevel: Int = 1,
 )
 
 // ---------- ViewModel ----------
@@ -48,11 +48,12 @@ class HomeViewModel(
     _uiState.update { it.copy(isLoading = true) }
     viewModelScope.launch {
       val todos = repository.fetchTodos()
-      val creature = repository.fetchCreatureStats()
+      // creatureStats fetch removed
       val quote = repository.dailyQuote()
+      val userProfile = repository.fetchUserStats()
 
       _uiState.update {
-        it.copy(isLoading = false, todos = todos, creatureStats = creature, quote = quote)
+        it.copy(isLoading = false, todos = todos, quote = quote, userLevel = userProfile.level)
       }
     }
   }

@@ -2,31 +2,53 @@ package com.android.sample.feature.homeScreen
 
 // This code has been written partially using A.I (LLM).
 
-// 🔽 Only dependency on creature UI:
-
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.EventNote
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.FlashOn
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Mood
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.VideogameAsset
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -39,12 +61,7 @@ import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
 import com.android.sample.screens.CreatureHouseCard
-import com.android.sample.screens.CreatureStatsCard
 import com.android.sample.ui.profile.EduMonAvatar
-import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.MidDarkCard
-
-private const val DAYS_PER_WEEK = 7
 
 /** ---------- Test tags used by UI tests ---------- */
 object HomeTestTags {
@@ -56,12 +73,10 @@ object HomeTestTags {
   // Cards / chips / actions
   const val TODAY_SEE_ALL = "today_see_all"
   const val CHIP_OPEN_PLANNER = "chip_open_planner"
-  const val CHIP_FOCUS_MODE = "chip_focus_mode"
   const val CHIP_MOOD = "chip_mood" // NEW
 
   const val QUICK_STUDY = "quick_study"
   const val QUICK_BREAK = "quick_break"
-  const val QUICK_EXERCISE = "quick_exercise"
   const val QUICK_SOCIAL = "quick_social"
 }
 
@@ -72,7 +87,7 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
   Schedule("schedule", "Schedule", Icons.Outlined.CalendarMonth),
   Study("study", "Study", Icons.Outlined.Timer),
   Games("games", "Games", Icons.Outlined.Extension),
-  Stats("stats", "Stats", Icons.Outlined.ShowChart),
+  Stats("stats", "Stats", Icons.AutoMirrored.Outlined.ShowChart),
   Flashcards("flashcards", "Flashcards", Icons.Outlined.FlashOn),
   Todo("todo", "To-Do", Icons.Outlined.CheckBox),
   // NEW: Daily Reflection / Mood
@@ -123,17 +138,11 @@ fun EduMonHomeScreen(
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CreatureHouseCard(
             creatureResId = creatureResId,
-            level = state.creatureStats.level,
+            level = state.userLevel, // Ensure real level is used (synchronized with user stats)
             environmentResId = environmentResId,
             overrideCreature = { EduMonAvatar(showLevelLabel = false) })
 
-        Row(
-            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-              CreatureStatsCard(
-                  stats = state.creatureStats, modifier = Modifier.weight(1f).fillMaxHeight())
-              UserStatsCard(stats = state.userStats, modifier = Modifier.weight(1f).fillMaxHeight())
-            }
+        UserStatsCard(stats = state.userStats, modifier = Modifier.fillMaxWidth())
 
         AffirmationsAndRemindersCard(
             quote = state.quote,
@@ -146,9 +155,10 @@ fun EduMonHomeScreen(
 
         QuickActionsCard(
             onStudy = { onNavigate(AppDestination.Study.route) },
-            onTakeBreak = { /* start break */},
-            onExercise = { /* open exercise tips */},
-            onSocial = { /* open social time */},
+            onTakeBreak = { onNavigate(AppDestination.Games.route) },
+            onSocial = {
+              onNavigate(AppDestination.StudyTogether.route)
+            }, // Updated to navigate to "Study Together"
         )
 
         Spacer(Modifier.height(72.dp))
@@ -169,29 +179,24 @@ fun UserStatsCard(stats: UserStats, modifier: Modifier = Modifier) {
         Column(Modifier.padding(16.dp)) {
           Text("Your Stats", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
           Spacer(Modifier.height(8.dp))
-          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-              Label("Streak")
-              BigNumber("${stats.streak}d")
-            }
-            Column {
-              Label("Points")
-              BigNumber("${stats.points}")
-            }
-          }
+          HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
           Spacer(Modifier.height(12.dp))
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-              Label("Study Today")
-              BigNumber("${stats.todayStudyMinutes}m")
-            }
-            Column {
-              Label("Weekly Goal")
-              BigNumber("${stats.weeklyGoal}m")
-            }
+            StatsItem("Streak", "${stats.streak}d")
+            StatsItem("Points", "${stats.points}")
+            StatsItem("Study Today", "${stats.todayStudyMinutes}m")
+            StatsItem("Weekly Goal", "${stats.weeklyGoal}m")
           }
         }
       }
+}
+
+@Composable
+private fun StatsItem(label: String, value: String) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Label(label)
+    BigNumber(value)
+  }
 }
 
 @Composable
@@ -273,7 +278,8 @@ fun TodayTodosCard(
 
                 Icon(
                     imageVector =
-                        if (isDone) Icons.Outlined.CheckCircle else Icons.Outlined.ChevronRight,
+                        if (isDone) Icons.Outlined.CheckCircle
+                        else Icons.AutoMirrored.Outlined.ArrowForward,
                     contentDescription = null,
                     tint =
                         if (isDone) MaterialTheme.colorScheme.secondary
@@ -307,18 +313,15 @@ fun AffirmationsAndRemindersCard(
             AssistChip(
                 onClick = onOpenPlanner,
                 label = { Text("Open Schedule") },
-                leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
+                leadingIcon = {
+                  Icon(Icons.AutoMirrored.Outlined.EventNote, contentDescription = null)
+                },
                 modifier = Modifier.testTag(HomeTestTags.CHIP_OPEN_PLANNER))
             AssistChip(
                 onClick = onOpenMood,
                 label = { Text("Daily Reflection") },
                 leadingIcon = { Icon(Icons.Outlined.Mood, contentDescription = null) },
                 modifier = Modifier.testTag(HomeTestTags.CHIP_MOOD))
-            AssistChip(
-                onClick = {},
-                label = { Text("Focus Mode") },
-                leadingIcon = { Icon(Icons.Outlined.DoNotDisturbOn, contentDescription = null) },
-                modifier = Modifier.testTag(HomeTestTags.CHIP_FOCUS_MODE))
           }
         }
       }
@@ -328,7 +331,6 @@ fun AffirmationsAndRemindersCard(
 fun QuickActionsCard(
     onStudy: () -> Unit,
     onTakeBreak: () -> Unit,
-    onExercise: () -> Unit,
     onSocial: () -> Unit,
 ) {
   ElevatedCard(
@@ -341,29 +343,22 @@ fun QuickActionsCard(
           Text("Quick Actions", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
           Spacer(Modifier.height(10.dp))
           Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-              QuickButton(
-                  "Study 30m",
-                  Icons.Outlined.MenuBook,
-                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_STUDY),
-                  onStudy)
-              QuickButton(
-                  "Take Break",
-                  Icons.Outlined.Coffee,
-                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_BREAK),
-                  onTakeBreak)
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-              QuickButton(
-                  "Exercise",
-                  Icons.Outlined.FitnessCenter,
-                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_EXERCISE),
-                  onExercise)
-              QuickButton(
-                  "Social Time",
-                  Icons.Outlined.Groups2,
-                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_SOCIAL),
-                  onSocial)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              QuickAction(
+                  Icons.Outlined.Timer,
+                  "Study",
+                  onStudy,
+                  Modifier.testTag(HomeTestTags.QUICK_STUDY))
+              QuickAction(
+                  Icons.Outlined.VideogameAsset,
+                  "Break",
+                  onTakeBreak,
+                  Modifier.testTag(HomeTestTags.QUICK_BREAK))
+              QuickAction(
+                  Icons.Outlined.Group,
+                  "Social",
+                  onSocial,
+                  Modifier.testTag(HomeTestTags.QUICK_SOCIAL))
             }
           }
         }
@@ -371,52 +366,27 @@ fun QuickActionsCard(
 }
 
 @Composable
-private fun QuickButton(
-    text: String,
+fun QuickAction(
     icon: ImageVector,
-    modifier: Modifier = Modifier,
+    label: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-  Surface(
-      modifier = modifier.height(56.dp).clip(RoundedCornerShape(16.dp)).clickable { onClick() },
-      color = MaterialTheme.colorScheme.surfaceVariant,
-      contentColor = MaterialTheme.colorScheme.onSurface,
-  ) {
-    Row(
-        Modifier.fillMaxSize().padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-          Icon(icon, contentDescription = null)
-          Text(text)
-        }
-  }
-}
-
-// Optional fancy card (uses your theme colors)
-@Composable
-fun GlowCard(content: @Composable () -> Unit) {
-  val infiniteTransition = rememberInfiniteTransition(label = "glowAnim")
-  val glowAlpha by
-      infiniteTransition.animateFloat(
-          initialValue = 0.25f,
-          targetValue = 0.6f,
-          animationSpec =
-              infiniteRepeatable(
-                  animation = tween(durationMillis = 2500, easing = LinearEasing),
-                  repeatMode = RepeatMode.Reverse),
-          label = "glowAlpha")
-
-  Card(
-      modifier = Modifier.fillMaxWidth(0.9f).shadow(16.dp, RoundedCornerShape(16.dp)),
-      shape = RoundedCornerShape(16.dp),
-      colors = CardDefaults.cardColors(containerColor = MidDarkCard)) {
-        Box(
-            modifier =
-                Modifier.background(
-                    Brush.radialGradient(
-                        colors =
-                            listOf(AccentViolet.copy(alpha = glowAlpha), Color.Transparent)))) {
-              content()
+  Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      modifier = modifier.clickable { onClick() }) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(48.dp)) {
+              Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer)
+              }
             }
+        Spacer(Modifier.height(4.dp))
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium)
       }
 }
