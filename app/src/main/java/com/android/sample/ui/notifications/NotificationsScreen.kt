@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -29,8 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
-import com.android.sample.ui.theme.MidDarkCard
-import com.android.sample.ui.theme.TextLight
 import java.util.Calendar
 
 // Parts of this code were written with ChatGPT assistance
@@ -107,9 +104,11 @@ private fun HeaderBar(onBack: () -> Unit, onGoHome: () -> Unit) {
 
 @Composable
 internal fun StartupErrorBanner(startupError: String?) {
+  val colorScheme = MaterialTheme.colorScheme
+
   startupError?.let { msg ->
     Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-      Text(stringResource(R.string.notification_setup_error_fmt, msg), color = Color.Red)
+      Text(stringResource(R.string.notification_setup_error_fmt, msg), color = colorScheme.error)
     }
   }
 }
@@ -124,6 +123,8 @@ internal fun KickoffSection(
     onPickRequest: (Int) -> Unit,
     onApply: () -> Unit
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   SectionCard(
       title = stringResource(R.string.study_kickoff_title),
       subtitle = stringResource(R.string.study_kickoff_subtitle),
@@ -134,7 +135,7 @@ internal fun KickoffSection(
           Text(
               if (kickoffEnabled) stringResource(R.string.select_days_set_times)
               else stringResource(R.string.enable_to_configure_schedule),
-              color = TextLight.copy(0.7f),
+              color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
               modifier = Modifier.testTag("kickoff_empty_hint"))
         }
         if (kickoffDays.isNotEmpty()) {
@@ -159,6 +160,8 @@ internal fun KickoffSection(
 
 @Composable
 private fun StreakSection(streakEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
   SectionCard(
       title = stringResource(R.string.keep_streak_title),
       subtitle = stringResource(R.string.keep_streak_subtitle),
@@ -166,13 +169,15 @@ private fun StreakSection(streakEnabled: Boolean, onToggle: (Boolean) -> Unit) {
       onToggle = onToggle) {
         Text(
             stringResource(R.string.keep_streak_desc),
-            color = TextLight.copy(0.75f),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             style = MaterialTheme.typography.bodySmall)
       }
 }
 
 @Composable
 private fun FriendStudyModeSection(friendStudyModeEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
   SectionCard(
       title = stringResource(R.string.friend_study_mode_toggle_title),
       subtitle = stringResource(R.string.friend_study_mode_toggle_subtitle),
@@ -180,13 +185,15 @@ private fun FriendStudyModeSection(friendStudyModeEnabled: Boolean, onToggle: (B
       onToggle = onToggle) {
         Text(
             stringResource(R.string.friend_study_mode_desc),
-            color = TextLight.copy(0.75f),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             style = MaterialTheme.typography.bodySmall)
       }
 }
 
 @Composable
 private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
   SectionCard(
       title = stringResource(R.string.task_notifications_title),
       subtitle = stringResource(R.string.task_notifications_subtitle),
@@ -194,7 +201,7 @@ private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -
       onToggle = onToggle) {
         Text(
             stringResource(R.string.task_notifications_desc),
-            color = TextLight.copy(0.75f),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             style = MaterialTheme.typography.bodySmall)
       }
 }
@@ -270,6 +277,7 @@ fun NotificationsScreen(
     testMode: Boolean = false,
 ) {
   val ctx = LocalContext.current
+  val colorScheme = MaterialTheme.colorScheme
 
   // Build permission request lambdas; under tests we don't create ActivityResult launchers
   var requestNotifPermissionForTest: (String) -> Unit = { _: String ->
@@ -309,7 +317,7 @@ fun NotificationsScreen(
   Scaffold(topBar = { HeaderBar(onBack, onGoHome) }) { padding ->
     Column(
         Modifier.fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFF0E102A), Color(0xFF171A36))))
+            .background(Brush.verticalGradient(listOf(colorScheme.background, colorScheme.surface)))
             .padding(padding)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
@@ -363,19 +371,21 @@ private fun SectionCard(
     switchTag: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Card(
       modifier = Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(20.dp)),
-      colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+      colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
       shape = RoundedCornerShape(20.dp)) {
         Column(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
               Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                  Text(title, color = TextLight, fontWeight = FontWeight.SemiBold)
+                  Text(title, color = colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                   Text(
                       subtitle,
-                      color = TextLight.copy(0.75f),
+                      color = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                       style = MaterialTheme.typography.bodySmall)
                 }
                 Switch(
@@ -440,6 +450,7 @@ private fun TimePickerDialog(
     onConfirm: (Int, Int) -> Unit,
     onDismiss: () -> Unit
 ) {
+  val colors = MaterialTheme.colorScheme
   var hh by remember { mutableStateOf(initial.first.coerceIn(0, 23).toString().padStart(2, '0')) }
   var mm by remember { mutableStateOf(initial.second.coerceIn(0, 59).toString().padStart(2, '0')) }
 
@@ -466,7 +477,7 @@ private fun TimePickerDialog(
                   label = { Text(stringResource(R.string.hh_label)) },
                   singleLine = true,
                   modifier = Modifier.width(84.dp))
-              Text(stringResource(R.string.time_separator), color = TextLight)
+              Text(stringResource(R.string.time_separator), color = colors.onSurface)
               OutlinedTextField(
                   value = mm,
                   onValueChange = { mm = it.filter(Char::isDigit).take(2) },
@@ -475,5 +486,5 @@ private fun TimePickerDialog(
                   modifier = Modifier.width(84.dp))
             }
       },
-      containerColor = MidDarkCard)
+      containerColor = colors.surface)
 }
