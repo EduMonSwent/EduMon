@@ -14,6 +14,7 @@ import androidx.work.WorkManager
 import androidx.work.await
 import com.android.sample.data.notifications.FriendStudyModeWorker
 import com.android.sample.ui.location.FriendMode
+import com.android.sample.util.FirebaseEmulator
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -35,34 +36,44 @@ import org.junit.runner.RunWith
 /**
  * Android instrumentation tests for [FriendStudyModeWorker] that run on a real device/emulator with
  * Firebase emulator.
+ *
+ * NOTE: This test configures the DEFAULT Firebase instances to use the emulator. This is required
+ * because the worker uses Firebase.getInstance() which gets the default app. The emulator must be
+ * running for these tests to pass.
  */
 @RunWith(AndroidJUnit4::class)
 class FriendStudyModeWorkerAndroidTest {
 
   companion object {
-    private var emulatorConfigured = false
+    private var configured = false
 
     @JvmStatic
     @BeforeClass
     fun setupClass() {
-      // Configure Firebase emulator ONCE for all tests before any getInstance() calls
-      if (!emulatorConfigured) {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+      if (configured) return
 
-        // Initialize Firebase if needed
-        if (FirebaseApp.getApps(context).isEmpty()) {
-          FirebaseApp.initializeApp(context)
-        }
+      val context = ApplicationProvider.getApplicationContext<Context>()
 
-        // Configure default instances to use emulator
-        try {
-          FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
-          FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
-          emulatorConfigured = true
-        } catch (_: IllegalStateException) {
-          // Already configured, that's fine
-          emulatorConfigured = true
-        }
+      // Initialize default Firebase app if needed
+      if (FirebaseApp.getApps(context).isEmpty()) {
+        FirebaseApp.initializeApp(context)
+      }
+
+      // Check if emulator is running
+      FirebaseEmulator.initIfNeeded(context)
+      if (!FirebaseEmulator.isRunning) {
+        // Emulator not running - tests will be skipped via assertion in setup()
+        return
+      }
+
+      // Configure DEFAULT instances to use emulator (required for worker to function)
+      try {
+        FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
+        FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
+        configured = true
+      } catch (_: IllegalStateException) {
+        // Already configured
+        configured = true
       }
     }
   }
@@ -90,7 +101,13 @@ class FriendStudyModeWorkerAndroidTest {
     notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    // Get the already-configured Firebase instances (configured in setupClass)
+    // Verify emulator is running
+    assertTrue(
+        "Firebase emulators not reachable (firestore:8080, auth:9099). " +
+            "Start with: firebase emulators:start --only firestore,auth",
+        FirebaseEmulator.isRunning)
+
+    // Use default instances (now configured to use emulator)
     auth = FirebaseAuth.getInstance()
     db = FirebaseFirestore.getInstance()
 
@@ -115,6 +132,11 @@ class FriendStudyModeWorkerAndroidTest {
         try {
           db.collection("profiles").document(uid).delete().await()
         } catch (_: Exception) {}
+      }
+
+      // Clear all emulator data
+      if (FirebaseEmulator.isRunning) {
+        FirebaseEmulator.clearAll()
       }
 
       // Clear SharedPreferences
