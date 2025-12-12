@@ -115,6 +115,9 @@ class NotificationsViewModel(
   private val _streakEnabled = MutableStateFlow(false)
   override val streakEnabled: StateFlow<Boolean> = _streakEnabled.asStateFlow()
 
+  private val _friendStudyModeEnabled = MutableStateFlow(false)
+  override val friendStudyModeEnabled: StateFlow<Boolean> = _friendStudyModeEnabled.asStateFlow()
+
   private val DEFAULT_STREAK_HOUR = 19
 
   override fun scheduleTestNotification(ctx: Context) = repo.scheduleOneMinuteFromNow(ctx)
@@ -164,6 +167,24 @@ class NotificationsViewModel(
   override fun setStreakEnabled(ctx: Context, on: Boolean) {
     _streakEnabled.value = on
     repo.setDailyEnabled(ctx, NotificationKind.KEEP_STREAK, on, DEFAULT_STREAK_HOUR)
+  }
+
+  override fun setFriendStudyModeEnabled(ctx: Context, on: Boolean) {
+    _friendStudyModeEnabled.value = on
+    // persist user preference
+    try {
+      ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+          .edit()
+          .putBoolean("friend_study_mode_enabled", on)
+          .apply()
+    } catch (e: Exception) {
+      Log.e("NotificationsVM", "Failed to persist friend_study_mode_enabled preference", e)
+    }
+    if (on) {
+      com.android.sample.data.notifications.FriendStudyModeWorker.startChain(ctx)
+    } else {
+      com.android.sample.data.notifications.FriendStudyModeWorker.cancel(ctx)
+    }
   }
 
   @SuppressLint("ScheduleExactAlarm")

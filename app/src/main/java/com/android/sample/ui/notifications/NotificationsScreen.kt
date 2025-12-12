@@ -167,6 +167,22 @@ private fun StreakSection(streakEnabled: Boolean, onToggle: (Boolean) -> Unit) {
 }
 
 @Composable
+private fun FriendStudyModeSection(friendStudyModeEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
+  SectionCard(
+      title = stringResource(R.string.friend_study_mode_toggle_title),
+      subtitle = stringResource(R.string.friend_study_mode_toggle_subtitle),
+      enabled = friendStudyModeEnabled,
+      onToggle = onToggle) {
+        Text(
+            stringResource(R.string.friend_study_mode_desc),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+            style = MaterialTheme.typography.bodySmall)
+      }
+}
+
+@Composable
 private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -> Unit) {
   val colorScheme = MaterialTheme.colorScheme
 
@@ -279,6 +295,7 @@ fun NotificationsScreen(
   val kickoffTimes by vm.kickoffTimes.collectAsState()
   val taskNotificationsEnabled by vm.taskNotificationsEnabled.collectAsState()
   val streakEnabled by vm.streakEnabled.collectAsState()
+  val friendStudyModeEnabled by vm.friendStudyModeEnabled.collectAsState()
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
   var startupError by remember { mutableStateOf<String?>(null) }
@@ -306,6 +323,10 @@ fun NotificationsScreen(
 
           StreakSection(
               streakEnabled = streakEnabled, onToggle = { on -> vm.setStreakEnabled(ctx, on) })
+
+          FriendStudyModeSection(
+              friendStudyModeEnabled = friendStudyModeEnabled,
+              onToggle = { on -> vm.setFriendStudyModeEnabled(ctx, on) })
 
           TaskNotificationsSection(
               taskEnabled = taskNotificationsEnabled,
