@@ -17,13 +17,10 @@ import androidx.work.WorkerParameters
 import com.android.sample.R
 import com.android.sample.ui.location.FriendMode
 import com.android.sample.ui.location.FriendStatus
-import com.android.sample.ui.location.ProfilesFriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.tasks.await
 
 /**
  * Background worker that periodically checks if any friends have entered STUDY mode. If a friend
@@ -52,33 +49,58 @@ class FriendStudyModeWorker(appContext: Context, params: WorkerParameters) :
     }
 
     try {
-      // Load current friends from repository with timeout
+      // Load current friends from Firestore directly (not via Flow repository)
+      // Workers should use direct queries, not reactive flows
       val db = FirebaseFirestore.getInstance()
-      val repo = ProfilesFriendRepository(db, auth)
 
-      // Collect from flow until we get non-empty friend data or timeout
-      // The flow emits: [empty], [possibly empty when friendIds loads], [data when profiles load]
-      // We need to wait for actual profile data, not just the friendIds collection
-      var emissionCount = 0
-      val currentFriends =
-          withTimeoutOrNull(15_000) {
-            repo.friendsFlow
-                .onEach { emissionCount++ }
-                .first { friends ->
-                  // Accept when:
-                  // 1. We have non-empty data after at least 2 emissions (skipped initial empty)
-                  // 2. We've seen 5+ emissions and still empty (user has no friends)
-                  (emissionCount >= 2 && friends.isNotEmpty()) || emissionCount >= 5
-                }
-          }
-              ?: run {
-                Log.w(TAG, "Timeout waiting for friends data")
-                return Result.success()
-              }
+      // Query friend IDs directly
+      val friendIdsSnapshot =
+          db.collection("users").document(currentUid).collection("friendIds").get().await()
 
-      // If no friends, nothing to check
-      if (currentFriends.isEmpty()) {
+      val friendIds = friendIdsSnapshot.documents.map { it.id }
+
+      if (friendIds.isEmpty()) {
         Log.d(TAG, "User has no friends, nothing to check")
+        return Result.success()
+      }
+
+      // Query each friend's profile directly
+      val currentFriends = mutableListOf<FriendStatus>()
+      for (friendId in friendIds) {
+        try {
+          val profileDoc = db.collection("profiles").document(friendId).get().await()
+
+          if (profileDoc.exists()) {
+            val name = profileDoc.getString("name") ?: "Unknown"
+            val modeStr = profileDoc.getString("mode") ?: "IDLE"
+            val mode =
+                try {
+                  FriendMode.valueOf(modeStr)
+                } catch (_: IllegalArgumentException) {
+                  FriendMode.IDLE
+                }
+
+            // Get location data (use 0.0 as default if not present)
+            val geoPoint = profileDoc.getGeoPoint("location")
+            val latitude = geoPoint?.latitude ?: 0.0
+            val longitude = geoPoint?.longitude ?: 0.0
+
+            currentFriends.add(
+                FriendStatus(
+                    id = friendId,
+                    name = name,
+                    latitude = latitude,
+                    longitude = longitude,
+                    mode = mode))
+          }
+        } catch (e: Exception) {
+          Log.w(TAG, "Failed to load profile for friend $friendId", e)
+          // Continue with other friends
+        }
+      }
+
+      if (currentFriends.isEmpty()) {
+        Log.d(TAG, "No valid friend profiles found")
         return Result.success()
       }
 
