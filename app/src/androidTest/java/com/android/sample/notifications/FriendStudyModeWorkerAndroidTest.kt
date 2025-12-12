@@ -20,7 +20,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -121,33 +120,29 @@ class FriendStudyModeWorkerAndroidTest {
     runBlocking { workManager.cancelAllWork().await() }
   }
 
-  @After
-  fun tearDown() {
-    runBlocking {
-      // Sign out
-      auth.signOut()
+  /**
+   * Helper to enqueue and wait for worker completion. Returns the final WorkInfo. Uses the same
+   * pattern as CampusEntryPollWorkerAndroidTest for consistency.
+   */
+  private fun runWorker(inputData: Data): WorkInfo = runBlocking {
+    val request = OneTimeWorkRequestBuilder<FriendStudyModeWorker>().setInputData(inputData).build()
 
-      // Clean up test data from profiles collection
-      testUserId?.let { uid ->
-        try {
-          db.collection("profiles").document(uid).delete().await()
-        } catch (_: Exception) {}
+    // Enqueue and await completion
+    workManager.enqueue(request).await()
+
+    // Poll for completion (max 20 seconds - longer for Firebase operations)
+    val startTime = System.currentTimeMillis()
+    while (System.currentTimeMillis() - startTime < 20000) {
+      kotlinx.coroutines.delay(200)
+
+      val info = workManager.getWorkInfoById(request.id).await()
+      if (info.state.isFinished) {
+        return@runBlocking info
       }
-
-      // Clear all emulator data
-      if (FirebaseEmulator.isRunning) {
-        FirebaseEmulator.clearAll()
-      }
-
-      // Clear SharedPreferences
-      context.getSharedPreferences("friend_study_mode", Context.MODE_PRIVATE).edit().clear().apply()
-
-      // Clear notifications
-      notificationManager.cancelAll()
-
-      // Cancel all work
-      workManager.cancelAllWork().await()
     }
+
+    // Return final state if timeout
+    return@runBlocking workManager.getWorkInfoById(request.id).await()
   }
 
   @Test
@@ -155,25 +150,12 @@ class FriendStudyModeWorkerAndroidTest {
     // Ensure user is logged out
     auth.signOut()
 
-    val request =
-        OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
-            .setInputData(
-                Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build())
-            .build()
+    val inputData = Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build()
 
-    workManager.enqueue(request).await()
+    // Run worker using helper
+    val workInfo = runWorker(inputData)
 
-    // Wait for work to complete (poll until finished)
-    var workInfo = workManager.getWorkInfoById(request.id).await()
-    var attempts = 0
-    while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
-      workInfo = workManager.getWorkInfoById(request.id).await()
-      attempts++
-    }
-
-    assertEquals(WorkInfo.State.SUCCEEDED, workInfo?.state)
+    assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
 
     // Should not post notification
     val notifications = notificationManager.activeNotifications
@@ -191,25 +173,12 @@ class FriendStudyModeWorkerAndroidTest {
     auth.signInAnonymously().await()
     testUserId = auth.currentUser?.uid
 
-    val request =
-        OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
-            .setInputData(
-                Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build())
-            .build()
+    val inputData = Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build()
 
-    workManager.enqueue(request).await()
+    // Run worker using helper
+    val workInfo = runWorker(inputData)
 
-    // Wait for work to complete
-    var workInfo = workManager.getWorkInfoById(request.id).await()
-    var attempts = 0
-    while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
-      workInfo = workManager.getWorkInfoById(request.id).await()
-      attempts++
-    }
-
-    assertEquals(WorkInfo.State.SUCCEEDED, workInfo?.state)
+    assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
   }
 
   @Test
@@ -255,26 +224,11 @@ class FriendStudyModeWorkerAndroidTest {
         .putString(friendId, FriendMode.IDLE.name)
         .apply()
 
-    // Run worker
-    val request =
-        OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
-            .setInputData(
-                Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build())
-            .build()
+    // Run worker using helper
+    val inputData = Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build()
+    val workInfo = runWorker(inputData)
 
-    workManager.enqueue(request).await()
-
-    // Wait for work to complete with longer timeout
-    var workInfo = workManager.getWorkInfoById(request.id).await()
-    var attempts = 0
-    while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 100) {
-      Thread.sleep(200)
-      workInfo = workManager.getWorkInfoById(request.id).await()
-      attempts++
-    }
-
-    assertEquals(WorkInfo.State.SUCCEEDED, workInfo?.state)
+    assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
 
     // Verify notification was posted
     val notifications = notificationManager.activeNotifications
@@ -337,26 +291,11 @@ class FriendStudyModeWorkerAndroidTest {
         .putString(friendId, FriendMode.STUDY.name)
         .apply()
 
-    // Run worker
-    val request =
-        OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
-            .setInputData(
-                Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build())
-            .build()
+    // Run worker using helper
+    val inputData = Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build()
+    val workInfo = runWorker(inputData)
 
-    workManager.enqueue(request).await()
-
-    // Wait for work to complete with longer timeout
-    var workInfo = workManager.getWorkInfoById(request.id).await()
-    var attempts = 0
-    while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 100) {
-      Thread.sleep(200)
-      workInfo = workManager.getWorkInfoById(request.id).await()
-      attempts++
-    }
-
-    assertEquals(WorkInfo.State.SUCCEEDED, workInfo?.state)
+    assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
 
     // Should NOT post notification (friend was already studying)
     val notifications = notificationManager.activeNotifications
@@ -587,24 +526,11 @@ class FriendStudyModeWorkerAndroidTest {
                 "longitude" to 6.5652))
         .await()
 
-    // Run worker
-    val request =
-        OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
-            .setInputData(
-                Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build())
-            .build()
+    // Run worker using helper
+    val inputData = Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build()
+    val workInfo = runWorker(inputData)
 
-    workManager.enqueue(request).await()
-
-    // Wait for work to complete
-    var workInfo = workManager.getWorkInfoById(request.id).await()
-    var attempts = 0
-    while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
-      workInfo = workManager.getWorkInfoById(request.id).await()
-      attempts++
-    }
+    assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
 
     // Verify SharedPreferences contain all friends' current modes
     val prefs = context.getSharedPreferences("friend_study_mode", Context.MODE_PRIVATE)
@@ -619,19 +545,10 @@ class FriendStudyModeWorkerAndroidTest {
     testUserId = auth.currentUser?.uid
 
     // Run worker WITHOUT disabling chain
-    val request = OneTimeWorkRequestBuilder<FriendStudyModeWorker>().build()
+    val inputData = Data.Builder().build()
+    val workInfo = runWorker(inputData)
 
-    workManager.enqueue(request).await()
-
-    // Wait for first work to complete
-    var workInfo = workManager.getWorkInfoById(request.id).await()
-    var attempts = 0
-    while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
-      workInfo = workManager.getWorkInfoById(request.id).await()
-      attempts++
-    }
+    assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
 
     // Verify next work is scheduled
     val workInfos = workManager.getWorkInfosByTag("friend_study_mode_poll").await()
@@ -647,25 +564,10 @@ class FriendStudyModeWorkerAndroidTest {
     testUserId = auth.currentUser?.uid
 
     // Run worker WITH chain disabled
-    val request =
-        OneTimeWorkRequestBuilder<FriendStudyModeWorker>()
-            .setInputData(
-                Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build())
-            .build()
+    val inputData = Data.Builder().putBoolean(FriendStudyModeWorker.KEY_DISABLE_CHAIN, true).build()
+    val workInfo = runWorker(inputData)
 
-    workManager.enqueue(request).await()
-
-    // Wait for work to complete
-    var workInfo = workManager.getWorkInfoById(request.id).await()
-    var attempts = 0
-    while ((workInfo?.state == WorkInfo.State.ENQUEUED ||
-        workInfo?.state == WorkInfo.State.RUNNING) && attempts < 50) {
-      Thread.sleep(100)
-      workInfo = workManager.getWorkInfoById(request.id).await()
-      attempts++
-    }
-
-    assertEquals(WorkInfo.State.SUCCEEDED, workInfo?.state)
+    assertEquals(WorkInfo.State.SUCCEEDED, workInfo.state)
 
     // Should not schedule next work automatically (only the test work should exist)
     val workInfos = workManager.getWorkInfosByTag("friend_study_mode_poll").await()
