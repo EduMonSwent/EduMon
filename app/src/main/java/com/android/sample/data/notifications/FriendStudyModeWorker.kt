@@ -21,7 +21,8 @@ import com.android.sample.ui.location.ProfilesFriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -55,18 +56,15 @@ class FriendStudyModeWorker(appContext: Context, params: WorkerParameters) :
       val db = FirebaseFirestore.getInstance()
       val repo = ProfilesFriendRepository(db, auth)
 
-      // Wait for friendsFlow to emit a non-empty list (actual friend data loaded)
-      // or timeout if user has no friends
+      // Wait for friend data: skip initial empty emission, get the next one
       val currentFriends =
-          withTimeoutOrNull(15_000) {
-            repo.friendsFlow.firstOrNull { it.isNotEmpty() } ?: emptyList()
-          }
+          withTimeoutOrNull(10_000) { repo.friendsFlow.drop(1).first() }
               ?: run {
-                Log.w(TAG, "Timeout waiting for friends data, assuming no friends")
+                Log.w(TAG, "Timeout waiting for friends data")
                 return Result.success()
               }
 
-      // If the list is empty after getting a result, user genuinely has no friends
+      // If no friends, nothing to check
       if (currentFriends.isEmpty()) {
         Log.d(TAG, "User has no friends, nothing to check")
         return Result.success()
