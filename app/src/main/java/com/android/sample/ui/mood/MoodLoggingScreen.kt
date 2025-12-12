@@ -26,7 +26,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.data.MoodEntry
 import com.android.sample.data.MoodRepository
-import com.android.sample.ui.theme.*
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -64,23 +63,24 @@ fun MoodLoggingScreen(
     onSave: () -> Unit,
     onChartMode: (ChartMode) -> Unit
 ) {
-  val emojis = listOf("😞", "🙁", "😐", "🙂", "😄") // 1..5
+  val emojis = listOf("😞", "🙁", "😐", "🙂", "😄")
+  val colors = MaterialTheme.colorScheme
 
-  Column(modifier = Modifier.fillMaxSize().background(BackgroundDark).padding(16.dp)) {
+  Column(modifier = Modifier.fillMaxSize().background(colors.background).padding(16.dp)) {
     Text(
         text = "Daily Reflection",
         style =
             MaterialTheme.typography.headlineSmall.copy(
-                color = TextLight, fontWeight = FontWeight.Bold))
+                color = colors.onBackground, fontWeight = FontWeight.Bold))
     Spacer(Modifier.height(12.dp))
 
     // ─────────────── Mood + Note ───────────────
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         shape = RoundedCornerShape(20.dp)) {
           Column(Modifier.padding(16.dp)) {
-            Text("How do you feel today?", color = TextLight)
+            Text("How do you feel today?", color = colors.onSurface)
             Spacer(Modifier.height(8.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -93,11 +93,11 @@ fun MoodLoggingScreen(
                             Modifier.size(if (selected) 56.dp else 48.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (selected) AccentViolet.copy(alpha = 0.2f)
+                                    if (selected) colors.primary.copy(alpha = 0.2f)
                                     else Color.Transparent)
                                 .border(
                                     width = if (selected) 2.dp else 1.dp,
-                                    color = if (selected) AccentViolet else DarkDivider,
+                                    color = if (selected) colors.primary else colors.outlineVariant,
                                     shape = CircleShape)
                                 .clickable(enabled = state.canEditToday) { onSelectMood(mood) }
                                 .testTag("mood_$mood")) {
@@ -111,23 +111,25 @@ fun MoodLoggingScreen(
                 value = state.note,
                 onValueChange = onNoteChanged,
                 enabled = state.canEditToday,
-                label = { Text("Short note (max 140 chars)", color = PurpleText) },
+                label = { Text("Short note (max 140 chars)", color = colors.onSurfaceVariant) },
                 modifier = Modifier.fillMaxWidth().testTag("noteField"),
                 colors =
                     OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentViolet,
-                        unfocusedBorderColor = DarkDivider,
-                        focusedTextColor = TextLight,
-                        unfocusedTextColor = TextLight,
-                        focusedLabelColor = AccentViolet,
-                        cursorColor = AccentViolet))
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = colors.outline,
+                        focusedTextColor = colors.onSurface,
+                        unfocusedTextColor = colors.onSurface,
+                        focusedLabelColor = colors.primary,
+                        cursorColor = colors.primary))
 
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = onSave,
                 enabled = state.canEditToday,
                 modifier = Modifier.testTag("save_button"),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = colors.primary, contentColor = colors.onPrimary)) {
                   Text(
                       if (state.existingToday == null) "Save today’s mood"
                       else "Update today’s mood")
@@ -140,10 +142,10 @@ fun MoodLoggingScreen(
     // ─────────────── Past 7 days ───────────────
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         shape = RoundedCornerShape(20.dp)) {
           Column(Modifier.padding(16.dp)) {
-            Text("Past 7 days", color = TextLight, fontWeight = FontWeight.SemiBold)
+            Text("Past 7 days", color = colors.onSurface, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -162,7 +164,7 @@ fun MoodLoggingScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                       Text(
                           d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
-                          color = PurpleCalendar,
+                          color = colors.primary,
                           style = MaterialTheme.typography.labelMedium)
                       Spacer(Modifier.height(4.dp))
                       Text(emoji, style = MaterialTheme.typography.titleLarge)
@@ -190,16 +192,18 @@ private fun ChartCard(
     mode: ChartMode,
     onModeChange: (ChartMode) -> Unit
 ) {
+  val colors = MaterialTheme.colorScheme
+
   Card(
       modifier = Modifier.fillMaxWidth(),
-      colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+      colors = CardDefaults.cardColors(containerColor = colors.surface),
       shape = RoundedCornerShape(20.dp)) {
         Column(Modifier.padding(16.dp)) {
           Row(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.SpaceBetween,
               modifier = Modifier.fillMaxWidth()) {
-                Text("Mood trend", color = TextLight, fontWeight = FontWeight.SemiBold)
+                Text("Mood trend", color = colors.onSurface, fontWeight = FontWeight.SemiBold)
                 ChartTabs(mode = mode, onModeChange = onModeChange)
               }
           Spacer(Modifier.height(12.dp))
@@ -207,8 +211,14 @@ private fun ChartCard(
           MoodLineChart(entries = entries, modifier = Modifier.fillMaxWidth().height(180.dp))
           Spacer(Modifier.height(8.dp))
           Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("1 = low", color = PurpleText, style = MaterialTheme.typography.labelSmall)
-            Text("5 = high", color = PurpleText, style = MaterialTheme.typography.labelSmall)
+            Text(
+                "1 = low",
+                color = colors.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall)
+            Text(
+                "5 = high",
+                color = colors.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall)
           }
         }
       }
@@ -217,39 +227,46 @@ private fun ChartCard(
 @Composable
 private fun ChartTabs(mode: ChartMode, onModeChange: (ChartMode) -> Unit) {
   val tabs = listOf(ChartMode.WEEK to "Week", ChartMode.MONTH to "Month")
-  Row(modifier = Modifier.clip(RoundedCornerShape(50)).background(Gray).padding(2.dp)) {
-    tabs.forEach { (value, title) ->
-      val selected = mode == value
-      Box(
-          modifier =
-              Modifier.clip(RoundedCornerShape(50))
-                  .background(if (selected) AccentViolet else Color.Transparent)
-                  .clickable { onModeChange(value) }
-                  .padding(horizontal = 12.dp, vertical = 6.dp)
-                  .testTag("tab_${title.lowercase()}")) {
-            Text(
-                title,
-                color = if (selected) TextLight else TextLight.copy(alpha = 0.7f),
-                style = MaterialTheme.typography.labelLarge)
-          }
-    }
-  }
+  val colors = MaterialTheme.colorScheme
+
+  Row(
+      modifier =
+          Modifier.clip(RoundedCornerShape(50)).background(colors.surfaceVariant).padding(2.dp)) {
+        tabs.forEach { (value, title) ->
+          val selected = mode == value
+          Box(
+              modifier =
+                  Modifier.clip(RoundedCornerShape(50))
+                      .background(if (selected) colors.primary else Color.Transparent)
+                      .clickable { onModeChange(value) }
+                      .padding(horizontal = 12.dp, vertical = 6.dp)
+                      .testTag("tab_${title.lowercase()}")) {
+                Text(
+                    title,
+                    color = if (selected) colors.onPrimary else colors.onSurface.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.labelLarge)
+              }
+        }
+      }
 }
 
 @Composable
 private fun MoodLineChart(entries: List<MoodEntry>, modifier: Modifier = Modifier) {
+  val colors = MaterialTheme.colorScheme
   val stroke = 3f
   val points = entries.mapIndexed { idx, e -> idx to e.mood.coerceIn(0, 5) }
   val maxY = 5f
   val n = points.size.coerceAtLeast(2)
 
-  Canvas(modifier = modifier.clip(RoundedCornerShape(16.dp)).background(DarkBlue)) {
-    // grid
+  Canvas(modifier = modifier.clip(RoundedCornerShape(16.dp)).background(colors.surfaceVariant)) {
     val stepY = size.height / maxY
     repeat(5) { i ->
       val y = size.height - (i + 1) * stepY
       drawLine(
-          color = DarkDivider, start = Offset(0f, y), end = Offset(size.width, y), strokeWidth = 1f)
+          color = colors.outlineVariant,
+          start = Offset(0f, y),
+          end = Offset(size.width, y),
+          strokeWidth = 1f)
     }
 
     val stepX = size.width / (n - 1).coerceAtLeast(1)
@@ -258,15 +275,15 @@ private fun MoodLineChart(entries: List<MoodEntry>, modifier: Modifier = Modifie
     points.forEach { (idx, mood) ->
       val x = idx * stepX
       if (mood == 0) {
-        drawCircle(color = PurpleGrey80, radius = 4f, center = Offset(x, size.height))
+        drawCircle(color = colors.onSurfaceVariant, radius = 4f, center = Offset(x, size.height))
         lastPoint = null
       } else {
         val y = size.height - (mood / maxY) * size.height
         val cur = Offset(x, y)
         lastPoint?.let {
-          drawLine(color = AccentViolet, start = it, end = cur, strokeWidth = stroke)
+          drawLine(color = colors.primary, start = it, end = cur, strokeWidth = stroke)
         }
-        drawCircle(color = AccentViolet, radius = 6f, center = cur)
+        drawCircle(color = colors.primary, radius = 6f, center = cur)
         lastPoint = cur
       }
     }

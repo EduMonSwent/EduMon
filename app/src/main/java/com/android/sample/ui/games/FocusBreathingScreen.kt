@@ -1,16 +1,24 @@
 package com.android.sample.ui.games
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -19,6 +27,7 @@ import kotlinx.coroutines.delay
 fun FocusBreathingScreen() {
   var phase by remember { mutableStateOf("Inhale...") }
   val scale = remember { Animatable(1f) }
+  val colorScheme = MaterialTheme.colorScheme
 
   LaunchedEffect(Unit) {
     while (true) {
@@ -33,16 +42,18 @@ fun FocusBreathingScreen() {
   }
 
   Box(
-      modifier = Modifier.fillMaxSize().background(Color(0xFF141526)),
+      modifier = Modifier.fillMaxSize().background(colorScheme.background),
       contentAlignment = Alignment.Center) {
         Box(
             modifier =
-                Modifier.size(150.dp).scale(scale.value).background(Color(0xFF4C7EFF), CircleShape))
+                Modifier.size(150.dp)
+                    .scale(scale.value)
+                    .background(colorScheme.primary, CircleShape))
+
         Text(
             text = phase,
-            color = Color(0xFFE2E3F3),
+            color = colorScheme.onBackground,
             fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp))
       }
 }

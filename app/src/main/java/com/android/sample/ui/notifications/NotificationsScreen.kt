@@ -32,8 +32,6 @@ import java.util.Calendar
 
 // Parts of this code were written with ChatGPT assistance
 
-/* ---------- Helpers testables ---------- */
-
 @VisibleForTesting
 internal fun clampTimeInputs(hh: String, mm: String): Pair<Int, Int> {
   val h = hh.filter(Char::isDigit).take(2).toIntOrNull() ?: 0
@@ -62,8 +60,6 @@ internal fun formatDayTimeLabel(day: Int, times: Map<Int, Pair<Int, Int>>): Stri
   return "%s %02d:%02d".format(d, hh, mm)
 }
 
-/* ------------ NEW SMALL DEDUPLICATION HELPER (minimal change) ------------ */
-
 @Composable
 private fun localizedDayName(day: Int): String =
     when (day) {
@@ -77,15 +73,11 @@ private fun localizedDayName(day: Int): String =
       else -> stringResource(R.string.unknown)
     }
 
-/* ------------------------------------------------------------------------- */
-
 @Composable
 internal fun formatDayTimeLabelLocalized(day: Int, times: Map<Int, Pair<Int, Int>>): String {
   val (h, m) = times[day] ?: (9 to 0)
   return "%s %02d:%02d".format(localizedDayName(day), h.coerceIn(0, 23), m.coerceIn(0, 59))
 }
-
-/* -------------------------- Sub-composables (extraits) -------------------------- */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -264,8 +256,6 @@ internal fun StartScheduleObserver(
   }
 }
 
-/* ------------------------------------ UI ------------------------------------ */
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
@@ -273,13 +263,11 @@ fun NotificationsScreen(
     onBack: () -> Unit = {},
     onGoHome: () -> Unit = {},
     forceDialogForDay: Int? = null,
-    // New: avoid creating ActivityResult launchers under Robolectric/unit tests
     testMode: Boolean = false,
 ) {
   val ctx = LocalContext.current
   val colorScheme = MaterialTheme.colorScheme
 
-  // Build permission request lambdas; under tests we don't create ActivityResult launchers
   var requestNotifPermissionForTest: (String) -> Unit = { _: String ->
     vm.scheduleTestNotification(ctx)
   }

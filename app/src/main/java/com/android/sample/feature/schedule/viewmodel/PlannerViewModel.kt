@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.sample.data.Priority
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
+import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
@@ -16,7 +17,12 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-/** This class was implemented with the help of ai (chatgbt) */
+// Reward constants - adjust these values as needed
+private const val POINTS_FOR_ATTENDANCE = 5
+private const val POINTS_FOR_COMPLETION = 3
+private const val COINS_FOR_ATTENDANCE = 1
+private const val COINS_FOR_COMPLETION = 2
+
 data class PlannerUiState(
     val classes: List<Class> = emptyList(),
     val attendanceRecords: List<ClassAttendance> = emptyList(),
@@ -25,14 +31,14 @@ data class PlannerUiState(
     val showAddTaskModal: Boolean = false,
     val showAttendanceModal: Boolean = false,
     val selectedClass: Class? = null,
-    // --- Added for adaptive planner ---
     val todos: List<ToDo> = emptyList(),
     val recommendedTask: ToDo? = null
 )
 
 open class PlannerViewModel(
     private val plannerRepository: PlannerRepository = AppRepositories.plannerRepository,
-    private val toDoRepository: ToDoRepository = AppRepositories.toDoRepository
+    private val toDoRepository: ToDoRepository = AppRepositories.toDoRepository,
+    private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(PlannerUiState())
@@ -47,16 +53,14 @@ open class PlannerViewModel(
 
   init {
     observePlannerData()
-    observeToDos() // start observing tasks for recommendations
+    observeToDos()
   }
 
-  /** Collects classes and attendance records from the repository as Flows. */
   private fun observePlannerData() {
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
 
       try {
-        // Collect class updates
         launch {
           plannerRepository
               .getTodayClassesFlow()
@@ -69,7 +73,6 @@ open class PlannerViewModel(
               }
         }
 
-        // Collect attendance updates
         launch {
           plannerRepository
               .getTodayAttendanceFlow()
@@ -87,11 +90,8 @@ open class PlannerViewModel(
     }
   }
 
-  // --- Adaptive Planner Section ---
   private fun observeToDos() {
-
     viewModelScope.launch {
-      // <-- add todo to repository here for visual testing
       toDoRepository.todos
           .catch { e -> _uiState.value = _uiState.value.copy(errorMessage = e.localizedMessage) }
           .collectLatest { todos ->
@@ -109,7 +109,7 @@ open class PlannerViewModel(
         .sortedWith(
             compareByDescending<ToDo> { it.priority.weight() }
                 .thenBy { it.dueDate }
-                .thenBy { it.status.ordinal * (-1) }) // In progress tasks first
+                .thenBy { it.status.ordinal * (-1) })
         .firstOrNull()
   }
 
@@ -120,7 +120,6 @@ open class PlannerViewModel(
         Priority.LOW -> 1
       }
 
-  // --- Class Attendance Management (existing logic) ---
   fun onAddStudyTaskClicked() {
     _uiState.value = _uiState.value.copy(showAddTaskModal = true)
   }
@@ -153,10 +152,69 @@ open class PlannerViewModel(
       val result = plannerRepository.saveAttendance(attendanceRecord)
 
       if (result.isSuccess) {
+        // Calculate rewards based on attendance and completion
+        val points = calculatePoints(attendance, completion)
+        val coins = calculateCoins(attendance, completion)
+
+        // Grant rewards if earned (single Firestore write, one toast)
+        if (points > 0 || coins > 0) {
+          userStatsRepository.addReward(
+              points = points, coins = coins
+              // minutes defaults to 0
+              )
+        }
+
         onDismissClassAttendanceModal()
-        _eventFlow.emit(UiEvent.ShowSnackbar("Attendance saved successfully!"))
+
+        // Show success message with earned rewards
+        val message = buildSuccessMessage(points, coins)
+        _eventFlow.emit(UiEvent.ShowSnackbar(message))
       } else {
         _eventFlow.emit(UiEvent.ShowSnackbar("Error saving attendance"))
+      }
+    }
+  }
+
+  private fun calculatePoints(attendance: AttendanceStatus, completion: CompletionStatus): Int {
+    var points = 0
+
+    // Points for attending class
+    if (attendance == AttendanceStatus.YES) {
+      points += POINTS_FOR_ATTENDANCE
+    }
+
+    // Bonus points for completing the work
+    if (completion == CompletionStatus.YES) {
+      points += POINTS_FOR_COMPLETION
+    }
+
+    return points
+  }
+
+  private fun calculateCoins(attendance: AttendanceStatus, completion: CompletionStatus): Int {
+    var coins = 0
+
+    // Coins for attending class
+    if (attendance == AttendanceStatus.YES) {
+      coins += COINS_FOR_ATTENDANCE
+    }
+
+    // Bonus coins for completing the work
+    if (completion == CompletionStatus.YES) {
+      coins += COINS_FOR_COMPLETION
+    }
+
+    return coins
+  }
+
+  private fun buildSuccessMessage(points: Int, coins: Int): String {
+    return buildString {
+      append("Attendance saved!")
+      if (points > 0 || coins > 0) {
+        append(" Earned: ")
+        if (points > 0) append("+$points XP")
+        if (points > 0 && coins > 0) append(" ")
+        if (coins > 0) append("+$coins coins")
       }
     }
   }
@@ -169,7 +227,6 @@ open class PlannerViewModel(
     _uiState.value = _uiState.value.copy(classes = classes, attendanceRecords = attendance)
   }
 
-  // --- Optional for UI: force refresh recommendation manually ---
   fun refreshRecommendation() {
     _uiState.value = _uiState.value.copy(recommendedTask = recommendNextTask(_uiState.value.todos))
   }

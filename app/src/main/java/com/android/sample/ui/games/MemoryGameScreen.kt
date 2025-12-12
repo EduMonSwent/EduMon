@@ -9,21 +9,35 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.sample.ui.theme.*
 import kotlinx.coroutines.delay
 
-// ✅ Version unifiée : utilisée à la fois pour le jeu normal et les tests
+// ✅ Shared implementation for game & tests
 @Composable
 fun MemoryGameScreenBase(
     icons: List<ImageVector> =
@@ -42,6 +56,8 @@ fun MemoryGameScreenBase(
     initialGameOver: Boolean = false,
     enableTimer: Boolean = true
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   var cards by remember { mutableStateOf(initialCards ?: generateCards(icons)) }
   var flipped by remember { mutableStateOf(listOf<Int>()) }
   var score by remember { mutableStateOf(0) }
@@ -49,7 +65,7 @@ fun MemoryGameScreenBase(
   var isGameOver by remember { mutableStateOf(initialGameOver) }
   var isWin by remember { mutableStateOf(initialWin) }
 
-  // ⏱️ Timer uniquement si activé (désactivé dans les tests)
+  // Timer (disabled in tests if needed)
   LaunchedEffect(enableTimer, isGameOver, isWin) {
     if (enableTimer && !isGameOver && !isWin) {
       while (timer > 0) {
@@ -60,10 +76,10 @@ fun MemoryGameScreenBase(
     }
   }
 
-  // 🎉 Victoire
+  // Win condition
   LaunchedEffect(cards) { if (cards.all { it.isMatched }) isWin = true }
 
-  // 💡 Logique de matching
+  // Matching logic
   if (flipped.size == 2) {
     LaunchedEffect(flipped) {
       delay(700)
@@ -78,20 +94,20 @@ fun MemoryGameScreenBase(
     }
   }
 
-  // 🧠 UI du jeu
+  // UI
   Column(
       modifier =
           Modifier.fillMaxSize()
-              .background(BackgroundDark)
+              .background(colorScheme.background)
               .padding(horizontal = 16.dp, vertical = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             "Memory Game",
-            color = AccentViolet,
+            color = colorScheme.primary,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold,
             modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
-        Text("Time: ${timer}s | Score: $score", color = TextLight, fontSize = 16.sp)
+        Text("Time: ${timer}s | Score: $score", color = colorScheme.onBackground, fontSize = 16.sp)
         Spacer(Modifier.height(16.dp))
 
         Box(modifier = Modifier.weight(1f)) {
@@ -114,32 +130,30 @@ fun MemoryGameScreenBase(
                   }
                 }
               }
-        }
 
-        // 🎭 Overlay fin de partie
-        if (isWin || isGameOver) {
-          GameEndOverlay(
-              isWin = isWin,
-              score = score,
-              onRestart = {
-                cards = generateCards(icons)
-                flipped = emptyList()
-                score = 0
-                timer = 90
-                isWin = false
-                isGameOver = false
-              })
+          // End-of-game overlay
+          if (isWin || isGameOver) {
+            GameEndOverlay(
+                isWin = isWin,
+                score = score,
+                onRestart = {
+                  cards = generateCards(icons)
+                  flipped = emptyList()
+                  score = 0
+                  timer = 90
+                  isWin = false
+                  isGameOver = false
+                })
+          }
         }
       }
 }
 
-// ✅ Écran utilisé dans l’application
 @Composable
 fun MemoryGameScreen() {
   MemoryGameScreenBase()
 }
 
-// ✅ Variante utilisée dans les tests
 @Composable
 fun MemoryGameScreenTestable(
     initialCards: List<MemoryCard> =
@@ -161,46 +175,53 @@ fun MemoryGameScreenTestable(
       initialCards = initialCards,
       initialWin = initialWin,
       initialGameOver = initialGameOver,
-      enableTimer = false // 🔕 pas de timer dans les tests
-      )
+      enableTimer = false)
 }
 
-// 🎭 Overlay de fin de partie
+// 🎭 Game end overlay
 @Composable
 fun GameEndOverlay(isWin: Boolean, score: Int, onRestart: () -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Box(
-      modifier = Modifier.fillMaxSize().background(Color(0xAA000000)),
+      modifier = Modifier.fillMaxSize().background(colorScheme.scrim.copy(alpha = 0.8f)),
       contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           Text(
               text = if (isWin) "Well done!" else "Time’s up!",
-              color = if (isWin) AccentViolet else Color.Red,
+              color = if (isWin) colorScheme.primary else colorScheme.error,
               fontSize = 26.sp,
               fontWeight = FontWeight.Bold)
           Spacer(Modifier.height(8.dp))
-          Text("Score: $score", color = TextLight, fontSize = 18.sp)
+          Text("Score: $score", color = colorScheme.onBackground, fontSize = 18.sp)
           Spacer(Modifier.height(20.dp))
           Button(
               onClick = onRestart,
-              colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
-                Text("Restart", color = TextLight, fontWeight = FontWeight.Bold)
+              colors =
+                  ButtonDefaults.buttonColors(
+                      containerColor = colorScheme.primary, contentColor = colorScheme.onPrimary)) {
+                Text("Restart", fontWeight = FontWeight.Bold)
               }
         }
       }
 }
 
 // -----------------------------------------------------------
-// Cartes et utilitaires
+// Cards & helpers
 // -----------------------------------------------------------
 @Composable
 fun MemoryCardView(card: MemoryCard, onClick: () -> Unit) {
+  val colorScheme = MaterialTheme.colorScheme
+
   val bg by
       animateColorAsState(
-          when {
-            card.isMatched -> Glow
-            card.isFlipped -> MidDarkCard
-            else -> Color(0xFF1C1C2E)
-          })
+          targetValue =
+              when {
+                card.isMatched -> colorScheme.secondaryContainer
+                card.isFlipped -> colorScheme.surfaceVariant
+                else -> colorScheme.surface
+              },
+          label = "memoryCardBg")
 
   Box(
       modifier =
@@ -211,13 +232,13 @@ fun MemoryCardView(card: MemoryCard, onClick: () -> Unit) {
               .clickable(enabled = !card.isMatched) { onClick() },
       contentAlignment = Alignment.Center) {
         if (card.isFlipped || card.isMatched) {
-          Icon(
+          androidx.compose.material3.Icon(
               imageVector = card.icon,
               contentDescription = null,
-              tint = TextLight,
+              tint = colorScheme.onSurface,
               modifier = Modifier.size(36.dp))
         } else {
-          Text("?", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = TextLight)
+          Text("?", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
         }
       }
 }
