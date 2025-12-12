@@ -21,6 +21,8 @@ import com.android.sample.ui.location.ProfilesFriendRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -57,21 +59,17 @@ class FriendStudyModeWorker(appContext: Context, params: WorkerParameters) :
       // Collect from flow until we get non-empty friend data or timeout
       // The flow emits: [empty], [possibly empty when friendIds loads], [data when profiles load]
       // We need to wait for actual profile data, not just the friendIds collection
+      var emissionCount = 0
       val currentFriends =
           withTimeoutOrNull(15_000) {
-            var result: List<FriendStatus> = emptyList()
-            var attempts = 0
-            repo.friendsFlow.collect { friends ->
-              result = friends
-              attempts++
-              // Strategy: Wait for either:
-              // 1. Non-empty data after skipping initial empty (user has friends)
-              // 2. Multiple emissions that are all empty (user has no friends)
-              if ((attempts >= 2 && friends.isNotEmpty()) || attempts >= 5) {
-                return@collect // Exit collect, return result
-              }
-            }
-            result
+            repo.friendsFlow
+                .onEach { emissionCount++ }
+                .first { friends ->
+                  // Accept when:
+                  // 1. We have non-empty data after at least 2 emissions (skipped initial empty)
+                  // 2. We've seen 5+ emissions and still empty (user has no friends)
+                  (emissionCount >= 2 && friends.isNotEmpty()) || emissionCount >= 5
+                }
           }
               ?: run {
                 Log.w(TAG, "Timeout waiting for friends data")
