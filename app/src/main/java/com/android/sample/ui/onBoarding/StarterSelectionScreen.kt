@@ -16,7 +16,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -36,31 +38,45 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sample.R
+import com.android.sample.ui.theme.EduMonStarterIds
 import kotlinx.coroutines.launch
 
 // This code has been written partially using A.I (LLM).
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StarterSelectionScreen(onStarterSelected: (String) -> Unit) {
   val starters =
       listOf(
-          StarterItem(id = "pyromon", image = R.drawable.edumon, background = R.drawable.bg_pyrmon),
           StarterItem(
-              id = "aquamon", image = R.drawable.edumon2, background = R.drawable.bg_aquamon),
+              id = EduMonStarterIds.FIRST,
+              image = R.drawable.edumon,
+              background = R.drawable.bg_pyrmon,
+          ),
           StarterItem(
-              id = "floramon", image = R.drawable.bg_aquamon, background = R.drawable.bg_floramon))
+              id = EduMonStarterIds.SECOND,
+              image = R.drawable.edumon2,
+              background = R.drawable.bg_aquamon,
+          ),
+          StarterItem(
+              id = EduMonStarterIds.THIRD,
+              image = R.drawable.edumon1,
+              background = R.drawable.bg_floramon,
+          ),
+      )
 
   val pagerState = rememberPagerState(pageCount = { starters.size })
   val coroutine = rememberCoroutineScope()
 
   Box(modifier = Modifier.fillMaxSize()) {
 
-    // 🟢 FULLSCREEN BACKGROUND FIX
+    // Fullscreen background that changes with selected starter
     Image(
         painter = painterResource(starters[pagerState.currentPage].background),
         contentDescription = null,
         contentScale = ContentScale.FillBounds,
-        modifier = Modifier.fillMaxSize())
+        modifier = Modifier.fillMaxSize(),
+    )
 
     // Floating animation
     val floatTransition = rememberInfiniteTransition(label = "")
@@ -70,33 +86,40 @@ fun StarterSelectionScreen(onStarterSelected: (String) -> Unit) {
             targetValue = 12f,
             animationSpec =
                 infiniteRepeatable(animation = tween(2000), repeatMode = RepeatMode.Reverse),
-            label = "")
+            label = "",
+        )
 
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
-        verticalAlignment = Alignment.CenterVertically) { page ->
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(starters[page].image),
-                contentDescription = null,
-                modifier = Modifier.graphicsLayer { translationY = floatAnim }.size(260.dp))
-          }
-        }
+        verticalAlignment = Alignment.CenterVertically,
+    ) { page ->
+      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Image(
+            painter = painterResource(starters[page].image),
+            contentDescription = null,
+            modifier = Modifier.graphicsLayer { translationY = floatAnim }.size(260.dp),
+        )
+      }
+    }
 
     // Left arrow
     AnimatedArrow(
-        visible = pagerState.currentPage > 0, alignment = Alignment.CenterStart, isLeft = true) {
-          coroutine.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-        }
+        visible = pagerState.currentPage > 0,
+        alignment = Alignment.CenterStart,
+        isLeft = true,
+    ) {
+      coroutine.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+    }
 
     // Right arrow
     AnimatedArrow(
         visible = pagerState.currentPage < starters.lastIndex,
         alignment = Alignment.CenterEnd,
-        isLeft = false) {
-          coroutine.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
-        }
+        isLeft = false,
+    ) {
+      coroutine.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+    }
 
     Button(
         onClick = { onStarterSelected(starters[pagerState.currentPage].id) },
@@ -104,12 +127,14 @@ fun StarterSelectionScreen(onStarterSelected: (String) -> Unit) {
         colors =
             ButtonDefaults.buttonColors(
                 containerColor = colorResource(R.color.onboarding_button_background)),
-        shape = RoundedCornerShape(50.dp)) {
-          Text(
-              text = stringResource(R.string.onboarding_confirm_starter),
-              fontSize = 18.sp,
-              color = colorResource(R.color.onboarding_button_text))
-        }
+        shape = RoundedCornerShape(50.dp),
+    ) {
+      Text(
+          text = stringResource(R.string.onboarding_confirm_starter),
+          fontSize = 18.sp,
+          color = colorResource(R.color.onboarding_button_text),
+      )
+    }
   }
 }
 
@@ -118,7 +143,7 @@ private fun AnimatedArrow(
     visible: Boolean,
     alignment: Alignment,
     isLeft: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
   AnimatedVisibility(visible = visible, modifier = Modifier.fillMaxSize()) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = alignment) {
@@ -129,17 +154,24 @@ private fun AnimatedArrow(
                   targetValue = 1f,
                   animationSpec =
                       infiniteRepeatable(animation = tween(700), repeatMode = RepeatMode.Reverse),
-                  label = "")
+                  label = "",
+              )
 
       Image(
           imageVector = if (isLeft) ArrowLeftCute else ArrowRightCute,
           contentDescription = null,
-          modifier = Modifier.size(48.dp).alpha(alphaAnim).clickable { onClick() })
+          modifier = Modifier.size(48.dp).alpha(alphaAnim).clickable { onClick() },
+      )
     }
   }
 }
 
-data class StarterItem(val id: String, val image: Int, val background: Int)
+// Starter descriptor used only in this file
+data class StarterItem(
+    val id: String,
+    val image: Int,
+    val background: Int,
+)
 
 // Cute arrows
 val ArrowLeftCute: ImageVector =
@@ -148,28 +180,31 @@ val ArrowLeftCute: ImageVector =
             defaultWidth = 48.dp,
             defaultHeight = 48.dp,
             viewportWidth = 48f,
-            viewportHeight = 48f)
+            viewportHeight = 48f,
+        )
         .apply {
           path(
               fill = SolidColor(Color(0x4DB3E5FC)),
               stroke = null,
-              pathFillType = PathFillType.NonZero) {
-                moveTo(30f, 6f)
-                lineTo(18f, 18f)
-                lineTo(30f, 30f)
-                close()
-              }
+              pathFillType = PathFillType.NonZero,
+          ) {
+            moveTo(30f, 6f)
+            lineTo(18f, 18f)
+            lineTo(30f, 30f)
+            close()
+          }
 
           path(
               fill = SolidColor(Color.Transparent),
               stroke = SolidColor(Color(0xFF79B8FF)),
               strokeLineWidth = 4f,
               strokeLineCap = StrokeCap.Round,
-              strokeLineJoin = StrokeJoin.Round) {
-                moveTo(30f, 6f)
-                lineTo(18f, 18f)
-                lineTo(30f, 30f)
-              }
+              strokeLineJoin = StrokeJoin.Round,
+          ) {
+            moveTo(30f, 6f)
+            lineTo(18f, 18f)
+            lineTo(30f, 30f)
+          }
         }
         .build()
 
@@ -179,27 +214,30 @@ val ArrowRightCute: ImageVector =
             defaultWidth = 48.dp,
             defaultHeight = 48.dp,
             viewportWidth = 48f,
-            viewportHeight = 48f)
+            viewportHeight = 48f,
+        )
         .apply {
           path(
               fill = SolidColor(Color(0x4DB3E5FC)),
               stroke = null,
-              pathFillType = PathFillType.NonZero) {
-                moveTo(18f, 6f)
-                lineTo(30f, 18f)
-                lineTo(18f, 30f)
-                close()
-              }
+              pathFillType = PathFillType.NonZero,
+          ) {
+            moveTo(18f, 6f)
+            lineTo(30f, 18f)
+            lineTo(18f, 30f)
+            close()
+          }
 
           path(
               fill = SolidColor(Color.Transparent),
               stroke = SolidColor(Color(0xFF79B8FF)),
               strokeLineWidth = 4f,
               strokeLineCap = StrokeCap.Round,
-              strokeLineJoin = StrokeJoin.Round) {
-                moveTo(18f, 6f)
-                lineTo(30f, 18f)
-                lineTo(18f, 30f)
-              }
+              strokeLineJoin = StrokeJoin.Round,
+          ) {
+            moveTo(18f, 6f)
+            lineTo(30f, 18f)
+            lineTo(18f, 30f)
+          }
         }
         .build()

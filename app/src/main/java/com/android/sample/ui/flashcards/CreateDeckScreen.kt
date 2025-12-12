@@ -4,13 +4,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.ui.theme.*
 
 /**
  * Composable screen for creating a new flashcard deck. Allows the user to input a title,
@@ -23,75 +32,87 @@ fun CreateDeckScreen(
     onCancel: () -> Unit,
     vm: CreateDeckViewModel = viewModel()
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Column(
       Modifier.fillMaxSize()
-          .background(BackgroundDark)
+          .background(colorScheme.background)
           .padding(16.dp)
           .testTag("CreateDeckScreenRoot")) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-          Text("New Deck", style = MaterialTheme.typography.headlineMedium, color = AccentViolet)
+          Text(
+              "New Deck",
+              style = MaterialTheme.typography.headlineMedium,
+              color = colorScheme.primary)
           TextButton(
               onClick = onCancel,
-              colors = ButtonDefaults.textButtonColors(contentColor = TextLight)) {
+              colors = ButtonDefaults.textButtonColors(contentColor = colorScheme.onBackground)) {
                 Text("Cancel")
               }
         }
         Spacer(Modifier.height(8.dp))
 
+        val title by vm.title.collectAsState()
+        val description by vm.description.collectAsState()
+
         OutlinedTextField(
-            value = vm.title.collectAsState().value,
+            value = title,
             onValueChange = vm::setTitle,
-            label = { Text("Title", color = TextLight) },
+            label = { Text("Title", color = colorScheme.onSurfaceVariant) },
             modifier = Modifier.fillMaxWidth(),
             colors = textFieldColors())
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
-            value = vm.description.collectAsState().value,
+            value = description,
             onValueChange = vm::setDescription,
-            label = { Text("Description", color = TextLight) },
+            label = { Text("Description", color = colorScheme.onSurfaceVariant) },
             modifier = Modifier.fillMaxWidth(),
             colors = textFieldColors())
 
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-          Text("Cards", color = TextLight, style = MaterialTheme.typography.titleMedium)
+          Text(
+              "Cards",
+              color = colorScheme.onBackground,
+              style = MaterialTheme.typography.titleMedium)
           Button(
               onClick = vm::addEmptyCard,
               colors =
                   ButtonDefaults.buttonColors(
-                      containerColor = AccentViolet, contentColor = TextLight)) {
+                      containerColor = colorScheme.primary, contentColor = colorScheme.onPrimary)) {
                 Text("Add card")
               }
         }
 
         val cards = vm.cards.collectAsState().value
         Spacer(Modifier.height(8.dp))
+
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
               itemsIndexed(cards) { index, card ->
                 Surface(
-                    color = MidDarkCard,
-                    contentColor = TextLight,
+                    color = colorScheme.surfaceVariant,
+                    contentColor = colorScheme.onSurfaceVariant,
                     shape = MaterialTheme.shapes.large) {
                       Column(Modifier.padding(12.dp)) {
                         OutlinedTextField(
                             value = card.question,
                             onValueChange = { vm.updateCard(index, question = it) },
-                            label = { Text("Question", color = TextLight) },
+                            label = { Text("Question", color = colorScheme.onSurfaceVariant) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = textFieldColors())
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
                             value = card.answer,
                             onValueChange = { vm.updateCard(index, answer = it) },
-                            label = { Text("Answer", color = TextLight) },
+                            label = { Text("Answer", color = colorScheme.onSurfaceVariant) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = textFieldColors())
                         Spacer(Modifier.height(8.dp))
                         TextButton(
                             onClick = { vm.removeCard(index) },
                             colors =
-                                ButtonDefaults.textButtonColors(contentColor = AccentMagenta)) {
+                                ButtonDefaults.textButtonColors(contentColor = colorScheme.error)) {
                               Text("Remove")
                             }
                       }
@@ -105,7 +126,8 @@ fun CreateDeckScreen(
             modifier = Modifier.fillMaxWidth(),
             colors =
                 ButtonDefaults.buttonColors(
-                    containerColor = AccentMint, contentColor = TextLight)) {
+                    containerColor = colorScheme.secondary,
+                    contentColor = colorScheme.onSecondary)) {
               Text("Save Deck")
             }
       }
@@ -115,10 +137,11 @@ fun CreateDeckScreen(
 @Composable
 private fun textFieldColors() =
     OutlinedTextFieldDefaults.colors(
-        focusedTextColor = TextLight,
-        unfocusedTextColor = TextLight,
-        focusedBorderColor = AccentViolet,
-        unfocusedBorderColor = TextLight.copy(alpha = .24f),
-        cursorColor = AccentViolet,
-        focusedContainerColor = MidDarkCard,
-        unfocusedContainerColor = MidDarkCard)
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+    )

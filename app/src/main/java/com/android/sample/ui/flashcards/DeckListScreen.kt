@@ -8,8 +8,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,7 +33,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.ui.flashcards.model.Deck
-import com.android.sample.ui.theme.*
 
 /** Flashcards Deck List Screen */
 @Composable
@@ -28,8 +43,9 @@ fun DeckListScreen(
     vm: DeckListViewModel = viewModel()
 ) {
   val decks by vm.decks.collectAsState()
+  val colorScheme = MaterialTheme.colorScheme
 
-  Box(Modifier.fillMaxSize().background(BackgroundDark)) {
+  Box(Modifier.fillMaxSize().background(colorScheme.background)) {
     Column(Modifier.padding(16.dp)) {
 
       // ---- HEADER ----
@@ -37,14 +53,18 @@ fun DeckListScreen(
           Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically) {
-            Text("Flashcards", style = MaterialTheme.typography.headlineLarge, color = TextLight)
+            Text(
+                "Flashcards",
+                style = MaterialTheme.typography.headlineLarge,
+                color = colorScheme.onBackground)
 
             Button(
                 onClick = onCreateDeck,
                 modifier = Modifier.testTag("CreateDeckButton"),
                 colors =
                     ButtonDefaults.buttonColors(
-                        containerColor = AccentViolet, contentColor = TextLight)) {
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary)) {
                   Icon(Icons.Default.Add, contentDescription = null)
                   Spacer(Modifier.width(8.dp))
                   Text("New Deck")
@@ -64,8 +84,8 @@ fun DeckListScreen(
     // ---- FLOATING IMPORT BUTTON (BOTTOM RIGHT) ----
     FloatingActionButton(
         onClick = onImportDeck,
-        containerColor = AccentMagenta,
-        contentColor = TextLight,
+        containerColor = colorScheme.secondary,
+        contentColor = colorScheme.onSecondary,
         modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp).testTag("ImportDeckFab")) {
           Icon(Icons.Default.Share, contentDescription = "Import deck")
         }
@@ -80,13 +100,15 @@ fun DeckRow(
     onDeleteDeck: (String) -> Unit,
     vm: DeckListViewModel
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   var confirmDelete by remember { mutableStateOf(false) }
   var showShareDialog by remember { mutableStateOf(false) }
   val isEmpty = deck.cards.isEmpty()
 
   Surface(
-      color = MidDarkCard,
-      contentColor = TextLight,
+      color = colorScheme.surfaceVariant,
+      contentColor = colorScheme.onSurfaceVariant,
       tonalElevation = 2.dp,
       modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.extraLarge)) {
         Column(Modifier.padding(16.dp)) {
@@ -99,7 +121,7 @@ fun DeckRow(
                   Text(
                       deck.description,
                       style = MaterialTheme.typography.bodyMedium,
-                      color = TextLight.copy(alpha = .75f),
+                      color = colorScheme.onSurfaceVariant.copy(alpha = .75f),
                       maxLines = 2)
                 }
 
@@ -111,7 +133,8 @@ fun DeckRow(
                       enabled = !isEmpty,
                       colors =
                           ButtonDefaults.buttonColors(
-                              containerColor = AccentViolet, contentColor = TextLight)) {
+                              containerColor = colorScheme.primary,
+                              contentColor = colorScheme.onPrimary)) {
                         Text(if (isEmpty) "No Cards" else "Study")
                       }
 
@@ -120,7 +143,9 @@ fun DeckRow(
                   // SHARE BUTTON
                   IconButton(onClick = { showShareDialog = true }) {
                     Icon(
-                        Icons.Default.Share, contentDescription = "Share deck", tint = AccentViolet)
+                        Icons.Default.Share,
+                        contentDescription = "Share deck",
+                        tint = colorScheme.primary)
                   }
 
                   Spacer(Modifier.width(8.dp))
@@ -130,7 +155,7 @@ fun DeckRow(
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Delete deck",
-                        tint = AccentMagenta)
+                        tint = colorScheme.error)
                   }
                 }
               }
@@ -142,7 +167,7 @@ fun DeckRow(
               label = { Text("${deck.cards.size} cards") },
               colors =
                   AssistChipDefaults.assistChipColors(
-                      containerColor = BackgroundDark, labelColor = TextLight))
+                      containerColor = colorScheme.surface, labelColor = colorScheme.onSurface))
         }
       }
 
@@ -158,11 +183,11 @@ fun DeckRow(
                 confirmDelete = false
                 onDeleteDeck(deck.id)
               }) {
-                Text("Delete", color = AccentMagenta)
+                Text("Delete", color = colorScheme.error)
               }
         },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
-        containerColor = MidDarkCard)
+        containerColor = colorScheme.surface)
   }
 
   // SHARE DIALOG
