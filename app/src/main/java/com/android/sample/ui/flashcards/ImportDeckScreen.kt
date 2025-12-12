@@ -1,10 +1,23 @@
 package com.android.sample.ui.flashcards
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -32,6 +45,8 @@ fun ImportDeckScreen(
   val state = vm.state.collectAsState().value
   var token by remember { mutableStateOf("") }
 
+  val colorScheme = MaterialTheme.colorScheme
+
   // Navigate back when success
   LaunchedEffect(state.success) {
     if (state.success) {
@@ -42,7 +57,10 @@ fun ImportDeckScreen(
   }
 
   Column(
-      Modifier.fillMaxSize().padding(20.dp).testTag("ImportDeckScreenRoot"),
+      Modifier.fillMaxSize()
+          .background(colorScheme.background)
+          .padding(20.dp)
+          .testTag("ImportDeckScreenRoot"),
       verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
         // ---- TOP BAR ----
@@ -51,7 +69,10 @@ fun ImportDeckScreen(
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = BACK_NAVIGATION_ARROW)
           }
           Spacer(Modifier.width(8.dp))
-          Text("Import Shared Deck", style = MaterialTheme.typography.headlineLarge)
+          Text(
+              "Import Shared Deck",
+              style = MaterialTheme.typography.headlineLarge,
+              color = colorScheme.onBackground)
         }
 
         // ---- TEXT FIELD ----
@@ -76,10 +97,7 @@ fun ImportDeckScreen(
 
         // ---- ERROR ----
         state.error?.let { msg ->
-          Text(
-              msg,
-              color = MaterialTheme.colorScheme.error,
-              style = MaterialTheme.typography.bodyLarge)
+          Text(msg, color = colorScheme.error, style = MaterialTheme.typography.bodyLarge)
         }
       }
 }

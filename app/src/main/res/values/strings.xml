@@ -424,6 +424,50 @@
     <string name="onboarding_edumon_water_name">AquaMon</string>
     <string name="onboarding_edumon_grass_name">FloraMon</string>
 
+    <!-- Smart gap suggestions (study) -->
+    <string name="gap_study_flashcards">Review Flashcards</string>
+    <string name="gap_study_flashcards_lunch">Review Flashcards (While Eating)</string>
+    <string name="gap_study_light_reading">Light Reading</string>
+    <string name="gap_study_quick_quiz">Quick Quiz</string>
+    <string name="gap_study_objectives">Work on Objectives</string>
+    <string name="gap_study_read_material">Read Course Material</string>
+
+    <!-- Smart gap suggestions (relax) -->
+    <string name="gap_relax_eat_lunch">Eat Lunch</string>
+    <string name="gap_relax_coffee_friends">Coffee with Friends</string>
+    <string name="gap_relax_nap">Nap</string>
+    <string name="gap_relax_search_friend">Search Friend</string>
+    <string name="gap_relax_play_games">Play Games</string>
+    <string name="gap_relax_walk">Walk around campus</string>
+    <string name="gap_relax_call_family">Call Family</string>
+    <string name="gap_relax_gym">Go to Gym</string>
+    <string name="gap_relax_piano">Play Piano</string>
+    <string name="gap_relax_read_book">Read a Book</string>
+    <string name="gap_relax_hobby">Hobby Time</string>
+
+    <!-- Smart suggestion description -->
+    <string name="gap_suggestion_description">Smart suggestion</string>
+
+    <!-- Generic -->
+    <string name="enjoy_event_fmt">Enjoy your %1$s!</string>
+    <!-- Smart gap modal UI -->
+    <string name="smart_gap_modal_title">Free Time Found (%1$d min)</string>
+    <string name="smart_gap_modal_text">How would you like to use this time?</string>
+    <string name="smart_gap_action_study">Study</string>
+    <string name="smart_gap_action_relax">Relax</string>
+
+    <!-- Gap propositions modal -->
+    <string name="smart_gap_suggestions_title">Suggestions</string>
+
+    <!-- Gap row -->
+    <string name="gap_row_title">Free Time (%1$d min)</string>
+    <string name="gap_row_add_activity">Add activity</string>
+
+    <!-- Event row -->
+    <string name="event_remove">Remove event</string>
+
+
+
 
 
 </resources>

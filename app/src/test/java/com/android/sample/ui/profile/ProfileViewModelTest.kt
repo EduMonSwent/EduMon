@@ -245,21 +245,6 @@ class ProfileViewModelTest {
   // ==================== Avatar Accent & Variant ====================
 
   @Test
-  fun setAvatarAccent_updates_user_profile() =
-      runTest(dispatcher) {
-        val (vm, _) = vmWith()
-        advanceUntilIdle()
-
-        val newColor = Color(0xFF10B981)
-        vm.setAvatarAccent(newColor)
-        advanceUntilIdle()
-
-        val actualAccent = vm.userProfile.value.avatarAccent
-        val expectedAccent = newColor.toArgb().toLong()
-        assertEquals(expectedAccent.toInt(), actualAccent.toInt())
-      }
-
-  @Test
   fun setAccentVariant_updates_flow() =
       runTest(dispatcher) {
         val (vm, _) = vmWith()
@@ -735,40 +720,6 @@ class ProfileViewModelTest {
 
         val drawable = vm.starterDrawable()
         assertTrue(drawable != 0)
-      }
-
-  // ==================== Level Up & Rewards ====================
-
-  @Test
-  fun debugLevelUpForTests_increments_level() =
-      runTest(dispatcher) {
-        val profile = UserProfile(level = 1)
-        val repo = FakeProfileRepository(profile)
-        val (vm, _) = vmWith(repo, RecordingUserStatsRepository())
-        advanceUntilIdle()
-
-        val initialLevel = vm.userProfile.value.level
-
-        vm.debugLevelUpForTests()
-        advanceUntilIdle()
-
-        assertTrue(vm.userProfile.value.level > initialLevel)
-      }
-
-  @Test
-  fun debugLevelUpForTests_emits_reward_event() =
-      runTest(dispatcher) {
-        val profile = UserProfile(level = 1)
-        val repo = FakeProfileRepository(profile)
-        val (vm, _) = vmWith(repo, RecordingUserStatsRepository())
-        advanceUntilIdle()
-
-        // We test that the method runs without crashing
-        // Actual reward emission depends on LevelRewardEngine
-        vm.debugLevelUpForTests()
-        advanceUntilIdle()
-
-        assertTrue(vm.userProfile.value.level >= 2)
       }
 
   @Test

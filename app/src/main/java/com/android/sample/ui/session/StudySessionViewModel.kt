@@ -132,12 +132,13 @@ class StudySessionViewModel(
 
   private fun onPomodoroCompleted() {
     viewModelScope.launch {
-      // Unified user stats: minutes + points + streak are handled centrally
-      userStatsRepository.addStudyMinutes(POMODORO_MINUTES)
-      userStatsRepository.addPoints(POINTS_PER_COMPLETED_POMODORO)
-      userStatsRepository.updateCoins(COINS_PER_COMPLETED_POMODORO)
+      // SINGLE update for all pomodoro rewards
+      userStatsRepository.addReward(
+          minutes = POMODORO_MINUTES,
+          points = POINTS_PER_COMPLETED_POMODORO,
+          coins = COINS_PER_COMPLETED_POMODORO)
 
-      // Persist session snapshot if needed by the study-session feature
+      // Persist session snapshot
       repository.saveCompletedSession(_uiState.value)
 
       // Per-subject total
@@ -146,7 +147,7 @@ class StudySessionViewModel(
         subjectsRepository.addStudyMinutesToSubject(subject.id, POMODORO_MINUTES)
       }
 
-      // Update weekly StudyStats used by the Stats screen (pie chart, 7-day bar, etc.)
+      // Update weekly stats
       updateWeeklyStatsForPomodoro(subjectName = subject?.name)
     }
   }

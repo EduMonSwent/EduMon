@@ -57,7 +57,6 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -148,7 +147,7 @@ fun ProfileScreen(
 
   val snackbarHostState = remember { SnackbarHostState() }
 
-  LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
+  // LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
   Scaffold(
       snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
@@ -164,7 +163,6 @@ fun ProfileScreen(
             contentPadding = PaddingValues(vertical = SECTION_SPACING),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
               item { PetSection(viewModel = viewModel) }
-
               item {
                 GlowCard {
                   Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
@@ -651,34 +649,5 @@ fun LevelProgressBar(level: Int, points: Int) {
         text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
         color = TextLight.copy(alpha = 0.7f),
         fontSize = 11.sp)
-  }
-}
-
-@Composable
-private fun LevelUpRewardSnackbarHandler(
-    viewModel: ProfileViewModel,
-    snackbarHostState: SnackbarHostState
-) {
-  LaunchedEffect(Unit) {
-    viewModel.rewardEvents.collect { event ->
-      when (event) {
-        is LevelUpRewardUiEvent.RewardsGranted -> {
-          val msg = buildRewardMessage(event)
-          snackbarHostState.showSnackbar(msg)
-        }
-      }
-    }
-  }
-}
-
-private fun buildRewardMessage(event: LevelUpRewardUiEvent.RewardsGranted): String {
-  val s = event.summary
-  return buildString {
-    append("🎉 Level ${event.newLevel} reached!")
-    if (s.coinsGranted > 0) append(" +${s.coinsGranted} coins")
-    if (s.accessoryIdsGranted.isNotEmpty()) {
-      append(" 🎁 ${s.accessoryIdsGranted.size} new item")
-      if (s.accessoryIdsGranted.size > 1) append("s")
-    }
   }
 }

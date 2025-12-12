@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,41 +23,50 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.android.sample.ui.theme.*
 
 @Composable
 fun GamesScreen(navController: NavController) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Box(
-      modifier = Modifier.fillMaxSize().background(BackgroundDark).padding(16.dp),
+      modifier = Modifier.fillMaxSize().background(colorScheme.background).padding(16.dp),
       contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally) {
               Text(
                   text = "EduMon Games",
-                  color = TextLight,
+                  color = colorScheme.onBackground,
                   fontSize = 28.sp,
                   fontWeight = FontWeight.ExtraBold,
                   modifier = Modifier.padding(bottom = 24.dp))
 
-              GameCard("Memory Game", "Train your memory", Icons.Default.Memory, AccentBlue) {
-                navController.navigate("memory")
-              }
-              GameCard("Reaction Test", "Test your reflexes", Icons.Default.FlashOn, AccentViolet) {
-                navController.navigate("reaction")
-              }
+              GameCard(
+                  "Memory Game",
+                  "Train your memory",
+                  Icons.Default.Memory,
+                  color = colorScheme.primary) {
+                    navController.navigate("memory")
+                  }
+              GameCard(
+                  "Reaction Test",
+                  "Test your reflexes",
+                  Icons.Default.FlashOn,
+                  color = colorScheme.secondary) {
+                    navController.navigate("reaction")
+                  }
               GameCard(
                   "Focus Breathing",
                   "Relax and breathe",
                   Icons.Default.SelfImprovement,
-                  AccentBlue) {
+                  color = colorScheme.tertiary) {
                     navController.navigate("focus")
                   }
               GameCard(
                   "EduMon Runner",
                   "Jump over obstacles",
                   Icons.Default.SportsEsports,
-                  AccentViolet) {
+                  color = colorScheme.primary) {
                     navController.navigate("runner")
                   }
             }
@@ -71,12 +81,14 @@ fun GameCard(
     color: Color,
     onClick: () -> Unit
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   Box(
       modifier =
           Modifier.fillMaxWidth()
               .padding(vertical = 8.dp)
               .shadow(8.dp, RoundedCornerShape(20.dp))
-              .background(MidDarkCard, RoundedCornerShape(20.dp))
+              .background(colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
               .clickable { onClick() }
               .padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -93,8 +105,13 @@ fun GameCard(
               }
           Spacer(Modifier.width(16.dp))
           Column {
-            Text(title, color = TextLight, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text(subtitle, color = TextLight.copy(alpha = 0.6f), fontSize = 14.sp)
+            Text(
+                title,
+                color = colorScheme.onSurface,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold)
+            Text(
+                subtitle, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = 14.sp)
           }
         }
       }
