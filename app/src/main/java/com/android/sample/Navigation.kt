@@ -1,6 +1,5 @@
 package com.android.sample
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -231,14 +230,9 @@ fun EduMonNavHost(
   var needsOnboarding by remember { mutableStateOf(false) }
 
   LaunchedEffect(isLoaded, userProfile) {
-    Log.d(
-        "EduMonNavHost",
-        "isLoaded=$isLoaded, starterId='${userProfile.starterId}', hasDecided=$hasDecided")
-
     if (isLoaded && !hasDecided) {
       needsOnboarding = userProfile.starterId.isBlank()
       hasDecided = true
-      Log.d("EduMonNavHost", "Decision: needsOnboarding=$needsOnboarding")
     }
   }
 
@@ -278,7 +272,6 @@ fun EduMonNavHost(
                 composable("onboarding") {
                   EduMonOnboardingScreen(
                       onOnboardingFinished = { _, starterId ->
-                        Log.d("EduMonNavHost", "Onboarding finished: $starterId")
                         profileViewModel.setStarter(starterId)
                         navController.navigate(AppDestination.Home.route) {
                           popUpTo("onboarding") { inclusive = true }
@@ -288,7 +281,6 @@ fun EduMonNavHost(
                 }
 
                 composable(AppDestination.Home.route) {
-                  val creatureResId = profileViewModel.starterDrawable()
                   Scaffold(
                       topBar = {
                         TopAppBar(
@@ -334,6 +326,9 @@ fun EduMonNavHost(
                       scope = scope,
                       onBack = { navController.popBackStack() }) {
                         ScheduleScreen(
+                            avatarResId = currentAppearance.creatureResId,
+                            environmentResId = currentAppearance.environmentResId,
+                            level = userProfile.level,
                             onAddTodoClicked = { date ->
                               navController.navigate("addTodoFromSchedule/$date") {
                                 launchSingleTop = true
@@ -452,7 +447,7 @@ fun EduMonNavHost(
                       drawerState = drawerState,
                       scope = scope,
                       onBack = { navController.popBackStack() }) {
-                        StudyTogetherScreen()
+                        StudyTogetherScreen(userEdumonResId = currentAppearance.creatureResId)
                       }
                 }
 
