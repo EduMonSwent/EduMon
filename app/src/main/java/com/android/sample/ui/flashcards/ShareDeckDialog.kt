@@ -1,39 +1,65 @@
 package com.android.sample.ui.flashcards
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import com.android.sample.R
 import com.android.sample.ui.flashcards.model.Deck
-import com.android.sample.ui.theme.*
+import com.android.sample.ui.flashcards.util.rememberIsOnline
+import com.android.sample.ui.theme.AccentViolet
+import com.android.sample.ui.theme.BackgroundDark
+import com.android.sample.ui.theme.MidDarkCard
+import com.android.sample.ui.theme.TextLight
 import kotlinx.coroutines.launch
 
 private const val ALLOW_SHARING = "Allow sharing"
-
 private const val GENERATE_SHARE_LINK = "Generate share link"
-
 private const val SHARE_THIS_CODE_WITH_A_FRIEND_ = "Share this code with a friend:"
-
 private const val COPY = "Copy"
-
 private const val CLOSE = "Close"
 
 /**
  * Dialog for sharing a deck. Lets the user:
  * - Enable/disable sharing for the deck
  * - Generate a share token (if sharing is enabled)
- * - Copy the token to clipboard Some parts of this code have been written by an LLM(ChatGPT)
+ * - Copy the token to clipboard
+ *
+ * This code has been written partially using A.I (LLM).
  */
 @Composable
 fun ShareDeckDialog(deck: Deck, vm: DeckListViewModel, onDismiss: () -> Unit) {
   var generating by remember { mutableStateOf(false) }
   var shareToken by remember { mutableStateOf<String?>(null) }
+
+  val isOnline by rememberIsOnline()
 
   val scope = rememberCoroutineScope()
   val clipboard = LocalClipboardManager.current
@@ -54,16 +80,28 @@ fun ShareDeckDialog(deck: Deck, vm: DeckListViewModel, onDismiss: () -> Unit) {
           if (deck.shareable) {
             HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
+            if (!isOnline) {
+              Text(
+                  text = stringResource(R.string.flashcards_offline_generate_link),
+                  color = MaterialTheme.colorScheme.error,
+                  style = MaterialTheme.typography.bodyMedium)
+            }
+
             // ---- Generate token button ----
             if (shareToken == null) {
               Button(
                   onClick = {
+                    if (!isOnline) return@Button
                     generating = true
                     scope.launch {
-                      shareToken = vm.createShareToken(deck.id)
-                      generating = false
+                      try {
+                        shareToken = vm.createShareToken(deck.id)
+                      } finally {
+                        generating = false
+                      }
                     }
                   },
+                  enabled = isOnline && !generating,
                   colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
                     if (generating) {
                       CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextLight)
