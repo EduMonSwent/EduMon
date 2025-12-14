@@ -1,6 +1,5 @@
 package com.android.sample
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -188,7 +187,7 @@ private fun ScreenWithTopBar(
     title: String,
     drawerState: androidx.compose.material3.DrawerState,
     scope: CoroutineScope,
-    onBack: () -> Unit,
+    navController: NavHostController,
     content: @Composable () -> Unit
 ) {
   Scaffold(
@@ -197,7 +196,7 @@ private fun ScreenWithTopBar(
             title = { Text(title, modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE)) },
             navigationIcon = {
               IconButton(
-                  onClick = onBack,
+                  onClick = { safeNavigateBack(navController) },
                   modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
                     Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
                   }
@@ -210,6 +209,25 @@ private fun ScreenWithTopBar(
       }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) { content() }
       }
+}
+
+// Safe navigation back function that always has a fallback
+private fun safeNavigateBack(navController: NavHostController) {
+  val currentRoute = navController.currentDestination?.route
+
+  // Check if we're already on Home - if so, do nothing
+  if (currentRoute == AppDestination.Home.route) {
+    return
+  }
+
+  // Try to pop back, if it fails, go to Home
+  val popped = navController.popBackStack()
+  if (!popped) {
+    navController.navigate(AppDestination.Home.route) {
+      popUpTo(0) { inclusive = true }
+      launchSingleTop = true
+    }
+  }
 }
 
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -231,14 +249,9 @@ fun EduMonNavHost(
   var needsOnboarding by remember { mutableStateOf(false) }
 
   LaunchedEffect(isLoaded, userProfile) {
-    Log.d(
-        "EduMonNavHost",
-        "isLoaded=$isLoaded, starterId='${userProfile.starterId}', hasDecided=$hasDecided")
-
     if (isLoaded && !hasDecided) {
       needsOnboarding = userProfile.starterId.isBlank()
       hasDecided = true
-      Log.d("EduMonNavHost", "Decision: needsOnboarding=$needsOnboarding")
     }
   }
 
@@ -278,7 +291,6 @@ fun EduMonNavHost(
                 composable("onboarding") {
                   EduMonOnboardingScreen(
                       onOnboardingFinished = { _, starterId ->
-                        Log.d("EduMonNavHost", "Onboarding finished: $starterId")
                         profileViewModel.setStarter(starterId)
                         navController.navigate(AppDestination.Home.route) {
                           popUpTo("onboarding") { inclusive = true }
@@ -319,10 +331,14 @@ fun EduMonNavHost(
                       title = "Profile",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         ProfileScreen(
-                            onOpenNotifications = { navController.navigate("notifications") },
-                            onOpenFocusMode = { navController.navigate("focus_mode") },
+                            onOpenNotifications = {
+                              navController.navigate("notifications") { launchSingleTop = true }
+                            },
+                            onOpenFocusMode = {
+                              navController.navigate("focus_mode") { launchSingleTop = true }
+                            },
                             onSignOut = onSignOut)
                       }
                 }
@@ -332,7 +348,7 @@ fun EduMonNavHost(
                       title = "Schedule",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         ScheduleScreen(
                             onAddTodoClicked = { date ->
                               navController.navigate("addTodoFromSchedule/$date") {
@@ -351,8 +367,14 @@ fun EduMonNavHost(
                     arguments = listOf(navArgument("date") { type = NavType.StringType })) {
                       AddToDoScreen(
                           onBack = {
-                            navController.popBackStack(
-                                route = AppDestination.Schedule.route, inclusive = false)
+                            // Try to pop back to Schedule, if it fails navigate directly
+                            if (!navController.popBackStack(
+                                route = AppDestination.Schedule.route, inclusive = false)) {
+                              navController.navigate(AppDestination.Schedule.route) {
+                                popUpTo(navController.graph.startDestinationId)
+                                launchSingleTop = true
+                              }
+                            }
                           })
                     }
 
@@ -361,7 +383,7 @@ fun EduMonNavHost(
                       title = "Stats",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         StatsRoute()
                       }
                 }
@@ -371,7 +393,7 @@ fun EduMonNavHost(
                       title = "Games",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         GamesScreen(navController)
                       }
                 }
@@ -381,7 +403,7 @@ fun EduMonNavHost(
                       title = "Memory Game",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         MemoryGameScreen()
                       }
                 }
@@ -391,7 +413,7 @@ fun EduMonNavHost(
                       title = "Reaction Test",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         ReactionGameScreen()
                       }
                 }
@@ -401,7 +423,7 @@ fun EduMonNavHost(
                       title = "Focus Breathing",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         FocusBreathingScreen()
                       }
                 }
@@ -411,7 +433,7 @@ fun EduMonNavHost(
                       title = "EduMon Runner",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         FlappyEduMonScreen()
                       }
                 }
@@ -421,7 +443,7 @@ fun EduMonNavHost(
                       title = "Flashcards",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         FlashcardsApp()
                       }
                 }
@@ -431,7 +453,7 @@ fun EduMonNavHost(
                       title = "Todo",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         TodoNavHostInThisFile()
                       }
                 }
@@ -441,7 +463,7 @@ fun EduMonNavHost(
                       title = "Daily Reflection",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         MoodLoggingRoute()
                       }
                 }
@@ -451,7 +473,7 @@ fun EduMonNavHost(
                       title = "Study Together",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         StudyTogetherScreen()
                       }
                 }
@@ -461,14 +483,14 @@ fun EduMonNavHost(
                       title = "Shop",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         ShopScreen()
                       }
                 }
 
                 composable("notifications") {
                   NotificationsScreen(
-                      onBack = { navController.popBackStack() },
+                      onBack = { safeNavigateBack(navController) },
                       onGoHome = { navController.navigateSingleTopTo(AppDestination.Home.route) })
                 }
 
@@ -477,7 +499,7 @@ fun EduMonNavHost(
                       title = "Focus Mode",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = { navController.popBackStack() }) {
+                      navController = navController) {
                         FocusModeScreen()
                       }
                 }
@@ -489,7 +511,7 @@ fun EduMonNavHost(
                           title = "Study Session",
                           drawerState = drawerState,
                           scope = scope,
-                          onBack = { navController.popBackStack() }) {
+                          navController = navController) {
                             StudySessionScreen()
                           }
                     }
@@ -499,13 +521,7 @@ fun EduMonNavHost(
                       title = "Study",
                       drawerState = drawerState,
                       scope = scope,
-                      onBack = {
-                        if (!navController.popBackStack()) {
-                          navController.navigate(AppDestination.Home.route) {
-                            popUpTo(0) { inclusive = true }
-                          }
-                        }
-                      }) {
+                      navController = navController) {
                         StudySessionScreen()
                       }
                 }
