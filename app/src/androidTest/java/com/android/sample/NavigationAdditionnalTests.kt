@@ -73,10 +73,10 @@ class NavigationAdditionnalTests {
     // Verify we're on Profile
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
 
-    // Scroll down to reveal the SettingsCard using relative coordinates via swipe action.
-    // Target the root node which contains the LazyColumn.
-    composeTestRule.onRoot().performTouchInput {
-      // Get the size of the node we are interacting with (the root)
+    // Scroll down to reveal the SettingsCard.
+    // Target the LazyColumn itself using its testTag.
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
+      // Get the size of the node we are interacting with (the LazyColumn)
       val size = this@performTouchInput.visibleSize
       val width = size.width
       val height = size.height
@@ -126,8 +126,9 @@ class NavigationAdditionnalTests {
     // Verify we're on Profile
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
 
-    // Scroll down to reveal the SettingsCard using relative coordinates via swipe action.
-    composeTestRule.onRoot().performTouchInput {
+    // Scroll down to reveal the SettingsCard.
+    // Target the LazyColumn itself using its testTag.
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
       val size = this@performTouchInput.visibleSize
       val width = size.width
       val height = size.height
