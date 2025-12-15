@@ -335,7 +335,6 @@ class DayTabContentAllAndroidTest {
     rule.onNodeWithText(ctx.getString(R.string.completion_not_done)).assertIsDisplayed()
   }
 
-
   @Test
   fun dayTab_showsEmptyTodosMessage_whenNoTodosForToday() {
     val ctx = rule.activity
