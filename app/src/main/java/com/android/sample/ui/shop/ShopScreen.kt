@@ -54,7 +54,6 @@ fun ShopScreen(viewModel: ShopViewModel = androidx.lifecycle.viewmodel.compose.v
   val isPurchasing by viewModel.isPurchasing.collectAsState()
 
   val snackbarHostState = remember { SnackbarHostState() }
-  val coroutineScope = rememberCoroutineScope()
 
   // Observe network connectivity
   LaunchedEffect(Unit) {
@@ -146,8 +145,7 @@ fun ShopContent(
     onBuy: (CosmeticItem, () -> Unit, () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
-  val colorScheme = MaterialTheme.colorScheme
-
+  val localColorScheme = MaterialTheme.colorScheme
   val glowAlpha by
       rememberInfiniteTransition(label = "glow")
           .animateFloat(
@@ -164,7 +162,8 @@ fun ShopContent(
           modifier
               .fillMaxSize()
               .background(
-                  Brush.verticalGradient(listOf(colorScheme.background, colorScheme.surface)))
+                  Brush.verticalGradient(
+                      listOf(localColorScheme.background, localColorScheme.surface)))
               .padding(16.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         // Add top padding when offline banner is showing
@@ -175,7 +174,7 @@ fun ShopContent(
         Text(
             text = "EduMon Shop",
             fontWeight = FontWeight.Bold,
-            color = colorScheme.primary,
+            color = localColorScheme.primary,
             fontSize = 26.sp)
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -289,8 +288,14 @@ fun ShopItemCard(
   // Determine if purchase is allowed
   val canPurchase = isOnline && !item.owned && !isPurchasing
 
+  // Capture colors for use in non-Composable contexts
+  val localColorScheme = MaterialTheme.colorScheme
+  val particleColor = localColorScheme.primary
+  val textColor = localColorScheme.onSurface
+  val surfaceColor = localColorScheme.surface
+
   Card(
-      colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
+      colors = CardDefaults.cardColors(containerColor = surfaceColor),
       shape = RoundedCornerShape(18.dp),
       modifier =
           Modifier.fillMaxWidth()
@@ -319,9 +324,7 @@ fun ShopItemCard(
           Canvas(modifier = Modifier.matchParentSize()) {
             particles.forEach { p ->
               drawCircle(
-                  color = colorScheme.primary.copy(alpha = Random.nextFloat()),
-                  radius = 4f,
-                  center = p)
+                  color = particleColor.copy(alpha = Random.nextFloat()), radius = 4f, center = p)
             }
           }
 
@@ -339,7 +342,7 @@ fun ShopItemCard(
                     text = item.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = colorScheme.onSurface,
+                    color = textColor,
                     textAlign = TextAlign.Center)
 
                 when {
