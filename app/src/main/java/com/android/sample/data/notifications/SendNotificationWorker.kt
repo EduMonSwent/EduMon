@@ -1,6 +1,5 @@
 package com.android.sample.data.notifications
 
-import android.Manifest
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
@@ -37,7 +36,7 @@ internal fun buildOneShotNotification(
 class SendNotificationWorker(appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
 
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  @RequiresPermission(value = "android.permission.POST_NOTIFICATIONS", conditional = true)
   override suspend fun doWork(): Result {
     NotificationUtils.ensureChannel(applicationContext)
 

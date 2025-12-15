@@ -1,6 +1,7 @@
 package com.android.sample
 
 import android.app.Activity
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.media3.common.util.UnstableApi
+import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.ui.login.LoginTapToStartScreen
 import com.android.sample.ui.onBoarding.LoopingVideoBackgroundFromAssets
 import com.android.sample.ui.theme.EduMonTheme
@@ -46,6 +48,30 @@ class MainActivity : ComponentActivity() {
   @UnstableApi
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    // Start friend study mode polling chain if user enabled (stored in notifications prefs)
+    val friendStudyModeEnabled =
+        getSharedPreferences("notifications", MODE_PRIVATE)
+            .getBoolean("friend_study_mode_enabled", false)
+    if (friendStudyModeEnabled) {
+      com.android.sample.data.notifications.FriendStudyModeWorker.startChain(this)
+    }
+
+    // Capture the intent data (deep link) if present
+    val startUri: Uri? = intent?.data
+
+    // Compute start destination based on deep link
+    val (startRoute, _) =
+        if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
+          val id = startUri.pathSegments.firstOrNull()
+          if (!id.isNullOrEmpty()) {
+            "study/$id" to id
+          } else {
+            AppDestination.Home.route to null
+          }
+        } else {
+          AppDestination.Home.route to null
+        }
 
     setContent {
       EduMonTheme {

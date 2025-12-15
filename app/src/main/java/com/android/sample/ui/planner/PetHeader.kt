@@ -1,25 +1,45 @@
 package com.android.sample.ui.planner
 
-import androidx.compose.foundation.layout.*
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import com.android.sample.R
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.ui.profile.EduMonAvatar
 
 @Composable
 fun PetHeader(
-    level: Int,
     modifier: Modifier = Modifier,
-    environmentResId: Int = R.drawable.epfl_amphi_background,
-    creatureResId: Int = R.drawable.edumon
+    level: Int,
+    @DrawableRes avatarResId: Int = R.drawable.edumon,
+    @DrawableRes environmentResId: Int = R.drawable.home, // neutral default
+    backgroundBrush: Brush? = null,
 ) {
-  Box(modifier = modifier.fillMaxWidth()) {
+  // Optional extra background (if you want a gradient behind the card)
+  val outerModifier =
+      if (backgroundBrush != null) {
+        modifier.fillMaxWidth().background(backgroundBrush)
+      } else {
+        modifier.fillMaxWidth()
+      }
+
+  Box(modifier = outerModifier) {
     CreatureHouseCard(
-        creatureResId = creatureResId,
+        creatureResId = avatarResId, // chosen EduMon sprite for the card
         level = level,
-        environmentResId = environmentResId,
-        overrideCreature = { EduMonAvatar(showLevelLabel = false) },
-        modifier = Modifier.fillMaxWidth())
+        environmentResId = environmentResId, // chosen environment
+        overrideCreature = {
+          // Reuse your avatar system so accessories / aura / accent work,
+          // relying on the persisted starterId in ProfileViewModel.
+          EduMonAvatar(
+              showLevelLabel = false,
+          )
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
   }
 }

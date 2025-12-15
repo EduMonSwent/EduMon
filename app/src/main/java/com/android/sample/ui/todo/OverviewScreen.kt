@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,11 +39,7 @@ import com.android.sample.repos_providors.AppRepositories
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OverviewScreen(
-    onAddClicked: () -> Unit, // Navigate to AddToDoScreen
-    onEditClicked: (String) -> Unit // Navigate to EditToDoScreen for a given ID
-) {
-  // Create a ViewModel and inject the repository
+fun OverviewScreen(onAddClicked: () -> Unit, onEditClicked: (String) -> Unit) {
   val vm: OverviewViewModel =
       viewModel(
           factory =
@@ -55,10 +50,8 @@ fun OverviewScreen(
                 }
               })
 
-  // Observe UI state (list of todos)
   val state by vm.uiState.collectAsState()
 
-  // provides the top bar and FAB layout
   Scaffold(
       modifier = Modifier.testTag(TestTags.OverviewScreen),
       containerColor = TodoColors.Background,
@@ -69,22 +62,21 @@ fun OverviewScreen(
       },
       floatingActionButton = {
         FloatingActionButton(
-            onClick = onAddClicked, // open AddToDoScreen
+            onClick = onAddClicked,
             containerColor = TodoColors.Accent,
             modifier = Modifier.testTag(TestTags.FabAdd)) {
-              Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+              Icon(
+                  Icons.Default.Add,
+                  contentDescription = "Add",
+                  tint = MaterialTheme.colorScheme.onPrimary)
             }
       }) { padding ->
-
-        // If there are no tasks, show a message
         if (state.items.isEmpty()) {
           Box(
               Modifier.fillMaxSize().padding(padding).background(TodoColors.Background),
               contentAlignment = Alignment.Center) {
                 Text("No tasks yet. Tap + to add one.", color = TodoColors.OnBackground)
               }
-
-          // Otherwise show the list of To-Dos
         } else {
           LazyColumn(
               modifier =
@@ -93,8 +85,6 @@ fun OverviewScreen(
                       .background(TodoColors.Background)
                       .testTag(TestTags.List),
               verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                // For each To-Do in the list
                 items(state.items, key = { it.id }) { item ->
                   Card(
                       colors = todoCardColors(),
@@ -102,9 +92,7 @@ fun OverviewScreen(
                       border = BorderStroke(1.dp, TodoColors.CardStroke),
                       modifier = Modifier.fillMaxWidth().testTag(TestTags.card(item.id))) {
                         Column(
-                            Modifier
-                                // Click anywhere on the card to edit
-                                .clickable(
+                            Modifier.clickable(
                                     indication = null,
                                     interactionSource = remember { MutableInteractionSource() },
                                     onClick = { onEditClicked(item.id) })
@@ -125,25 +113,22 @@ fun OverviewScreen(
                                       Icon(
                                           Icons.Default.Delete,
                                           contentDescription = "Delete",
-                                          tint = Color(0xFFFF3B30))
+                                          tint = MaterialTheme.colorScheme.error)
                                     }
                               }
 
                               Spacer(Modifier.height(4.dp))
-                              // To-Do title
                               Text(
                                   item.title,
                                   style = MaterialTheme.typography.titleMedium,
                                   fontWeight = FontWeight.SemiBold)
 
                               Spacer(Modifier.height(2.dp))
-                              // Due date
                               Text(
                                   "Due: ${item.dueDateFormatted()}",
                                   style = MaterialTheme.typography.bodySmall,
                                   color = TodoColors.OnCard.copy(alpha = 0.85f))
 
-                              // Optional note (if present)
                               if (!item.note.isNullOrBlank()) {
                                 Spacer(Modifier.height(8.dp))
                                 Text(item.note!!, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -168,8 +153,10 @@ private fun StatusChip(status: Status, onClick: () -> Unit, modifier: Modifier =
   AssistChip(
       onClick = onClick,
       label = { Text(status.name.replace('_', ' ')) },
-      modifier = modifier, // allow tagging from caller
-      colors = AssistChipDefaults.assistChipColors(containerColor = bg, labelColor = Color.White))
+      modifier = modifier,
+      colors =
+          AssistChipDefaults.assistChipColors(
+              containerColor = bg, labelColor = MaterialTheme.colorScheme.onPrimary))
 }
 
 /** A chip that displays the priority level (LOW / MEDIUM / HIGH) */
@@ -184,20 +171,20 @@ private fun PriorityChip(priority: Priority, modifier: Modifier = Modifier) {
   AssistChip(
       onClick = {},
       label = { Text("Priority: ${priority.name}") },
-      modifier = modifier, // allow tagging from caller
+      modifier = modifier,
       colors =
           AssistChipDefaults.assistChipColors(
               containerColor = chipColor.copy(alpha = 0.25f), labelColor = TodoColors.OnCard))
 }
 
-// routes local to this file
+// routes etc. (unchanged) ...
+
 private const val ROUTE_OVERVIEW = "overview"
 private const val ROUTE_ADD = "todo/add"
 private const val ROUTE_EDIT = "todo/edit/{id}"
 
 private fun editRoute(id: String) = "todo/edit/$id"
 
-/** Call this instead of OverviewScreen() from your Activity/entry point */
 @Composable
 fun TodoNavHostInThisFile() {
   val nav = rememberNavController()

@@ -4,10 +4,14 @@ import android.Manifest
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.Configuration
+import androidx.work.WorkManager
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import java.util.Calendar
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -52,6 +56,13 @@ private class FakeRepo : NotificationRepository {
 class NotificationsViewModelTest {
 
   private val ctx: Context = ApplicationProvider.getApplicationContext()
+
+  @Before
+  fun setUp() {
+    // Initialize WorkManager for tests that need it
+    val config = Configuration.Builder().setMinimumLoggingLevel(android.util.Log.DEBUG).build()
+    WorkManagerTestInitHelper.initializeTestWorkManager(ctx, config)
+  }
 
   @Test
   fun schedule_test_notification_calls_repo() {
@@ -164,5 +175,160 @@ class NotificationsViewModelTest {
     // Should schedule directly, not request permission
     assertNull(requestedPermission)
     assertEquals(1, repo.oneShotCalls)
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_whenEnabled_updatesStateFlow() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    assertFalse("Should be disabled by default", vm.friendStudyModeEnabled.value)
+
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    assertTrue("StateFlow should be updated to true", vm.friendStudyModeEnabled.value)
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_whenDisabled_updatesStateFlow() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // First enable it
+    vm.setFriendStudyModeEnabled(ctx, true)
+    assertTrue(vm.friendStudyModeEnabled.value)
+
+    // Then disable it
+    vm.setFriendStudyModeEnabled(ctx, false)
+
+    assertFalse("StateFlow should be updated to false", vm.friendStudyModeEnabled.value)
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_whenEnabled_persistsToSharedPreferences() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    val prefs = ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+    val enabled = prefs.getBoolean("friend_study_mode_enabled", false)
+
+    assertTrue("Preference should be persisted as true", enabled)
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_whenDisabled_persistsToSharedPreferences() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // First enable
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    // Then disable
+    vm.setFriendStudyModeEnabled(ctx, false)
+
+    val prefs = ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+    val enabled = prefs.getBoolean("friend_study_mode_enabled", true)
+
+    assertFalse("Preference should be persisted as false", enabled)
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_whenEnabled_startsWorkerChain() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    // Verify WorkManager has scheduled work
+    val workManager = androidx.work.WorkManager.getInstance(ctx)
+    val workInfos = workManager.getWorkInfosByTag("friend_study_mode_poll").get()
+
+    assertTrue("Worker chain should be started", workInfos.isNotEmpty())
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_whenDisabled_cancelsWorkerChain() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // First enable to start the chain
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    // Verify work is scheduled
+    val workManager = androidx.work.WorkManager.getInstance(ctx)
+    var workInfos = workManager.getWorkInfosByTag("friend_study_mode_poll").get()
+    assertTrue("Work should be scheduled after enabling", workInfos.isNotEmpty())
+
+    // Then disable to cancel the chain
+    vm.setFriendStudyModeEnabled(ctx, false)
+
+    // Verify work is cancelled
+    workInfos = workManager.getWorkInfosByTag("friend_study_mode_poll").get()
+    val hasActiveWork =
+        workInfos.any {
+          it.state == androidx.work.WorkInfo.State.ENQUEUED ||
+              it.state == androidx.work.WorkInfo.State.RUNNING
+        }
+
+    assertFalse("Worker chain should be cancelled", hasActiveWork)
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_toggleMultipleTimes_worksCorrectly() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+    val prefs = ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+
+    // Enable
+    vm.setFriendStudyModeEnabled(ctx, true)
+    assertTrue(vm.friendStudyModeEnabled.value)
+    assertTrue(prefs.getBoolean("friend_study_mode_enabled", false))
+
+    // Disable
+    vm.setFriendStudyModeEnabled(ctx, false)
+    assertFalse(vm.friendStudyModeEnabled.value)
+    assertFalse(prefs.getBoolean("friend_study_mode_enabled", true))
+
+    // Enable again
+    vm.setFriendStudyModeEnabled(ctx, true)
+    assertTrue(vm.friendStudyModeEnabled.value)
+    assertTrue(prefs.getBoolean("friend_study_mode_enabled", false))
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_multipleCalls_updatesConsistently() {
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // Enable twice
+    vm.setFriendStudyModeEnabled(ctx, true)
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    assertTrue("StateFlow should still be true", vm.friendStudyModeEnabled.value)
+
+    val prefs = ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+    assertTrue(
+        "Preference should still be true", prefs.getBoolean("friend_study_mode_enabled", false))
+  }
+
+  @Test
+  fun setFriendStudyModeEnabled_doesNotCrashOnSharedPreferencesError() {
+    // This test verifies exception handling doesn't crash the app
+    // In real scenario, SharedPreferences might fail due to disk issues, permissions, etc.
+    val repo = FakeRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // Call should not throw exception even if SharedPreferences has issues
+    try {
+      vm.setFriendStudyModeEnabled(ctx, true)
+      // If we reach here, the exception was handled gracefully
+      assertTrue(
+          "StateFlow should be updated despite potential SharedPreferences error",
+          vm.friendStudyModeEnabled.value)
+    } catch (_: Exception) {
+      fail("setFriendStudyModeEnabled should handle exceptions gracefully")
+    }
   }
 }

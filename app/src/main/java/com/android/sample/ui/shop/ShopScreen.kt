@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -144,6 +146,8 @@ fun ShopContent(
     onBuy: (CosmeticItem, () -> Unit, () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
+  val colorScheme = MaterialTheme.colorScheme
+
   val glowAlpha by
       rememberInfiniteTransition(label = "glow")
           .animateFloat(
@@ -159,7 +163,8 @@ fun ShopContent(
       modifier =
           modifier
               .fillMaxSize()
-              .background(Brush.verticalGradient(listOf(BackgroundDark, Color(0xFF181830))))
+              .background(
+                  Brush.verticalGradient(listOf(colorScheme.background, colorScheme.surface)))
               .padding(16.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         // Add top padding when offline banner is showing
@@ -170,7 +175,7 @@ fun ShopContent(
         Text(
             text = "EduMon Shop",
             fontWeight = FontWeight.Bold,
-            color = AccentViolet,
+            color = colorScheme.primary,
             fontSize = 26.sp)
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -285,7 +290,7 @@ fun ShopItemCard(
   val canPurchase = isOnline && !item.owned && !isPurchasing
 
   Card(
-      colors = CardDefaults.cardColors(containerColor = MidDarkCard),
+      colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
       shape = RoundedCornerShape(18.dp),
       modifier =
           Modifier.fillMaxWidth()
@@ -314,7 +319,9 @@ fun ShopItemCard(
           Canvas(modifier = Modifier.matchParentSize()) {
             particles.forEach { p ->
               drawCircle(
-                  color = AccentViolet.copy(alpha = Random.nextFloat()), radius = 4f, center = p)
+                  color = colorScheme.primary.copy(alpha = Random.nextFloat()),
+                  radius = 4f,
+                  center = p)
             }
           }
 
@@ -332,7 +339,7 @@ fun ShopItemCard(
                     text = item.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = TextLight,
+                    color = colorScheme.onSurface,
                     textAlign = TextAlign.Center)
 
                 when {

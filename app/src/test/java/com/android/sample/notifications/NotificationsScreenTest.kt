@@ -3,12 +3,15 @@ package com.android.sample.notifications
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Configuration
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.android.sample.data.notifications.NotificationUtils
 import com.android.sample.model.notifications.NotificationKind
 import com.android.sample.model.notifications.NotificationRepository
 import com.android.sample.ui.notifications.NotificationsViewModel
 import java.util.Calendar
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -47,6 +50,13 @@ class CapturingRepo : NotificationRepository {
 class NotificationsScreenTest {
 
   private val ctx: Context = ApplicationProvider.getApplicationContext()
+
+  @Before
+  fun setUp() {
+    // Initialize WorkManager for tests
+    val config = Configuration.Builder().setMinimumLoggingLevel(android.util.Log.DEBUG).build()
+    WorkManagerTestInitHelper.initializeTestWorkManager(ctx, config)
+  }
 
   @Test
   fun renders_updates_time_and_applies_schedule() {
@@ -89,5 +99,45 @@ class NotificationsScreenTest {
 
     val after = shadow.allNotifications.size
     assertEquals(before + 1, after)
+  }
+
+  @Test
+  fun friend_study_mode_toggle_enables() {
+    val repo = CapturingRepo()
+    val vm = NotificationsViewModel(repo)
+
+    assertFalse("Should be disabled by default", vm.friendStudyModeEnabled.value)
+
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    assertTrue("Toggle should enable friend study mode", vm.friendStudyModeEnabled.value)
+  }
+
+  @Test
+  fun friend_study_mode_toggle_disables() {
+    val repo = CapturingRepo()
+    val vm = NotificationsViewModel(repo)
+
+    // First enable it
+    vm.setFriendStudyModeEnabled(ctx, true)
+    assertTrue(vm.friendStudyModeEnabled.value)
+
+    // Then toggle off
+    vm.setFriendStudyModeEnabled(ctx, false)
+
+    assertFalse("Toggle should disable friend study mode", vm.friendStudyModeEnabled.value)
+  }
+
+  @Test
+  fun friend_study_mode_toggle_persists_state() {
+    val repo = CapturingRepo()
+    val vm = NotificationsViewModel(repo)
+
+    vm.setFriendStudyModeEnabled(ctx, true)
+
+    val prefs = ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+    val enabled = prefs.getBoolean("friend_study_mode_enabled", false)
+
+    assertTrue("Toggle state should be persisted", enabled)
   }
 }

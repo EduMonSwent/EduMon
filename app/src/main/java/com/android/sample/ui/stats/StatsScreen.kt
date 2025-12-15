@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -257,7 +258,7 @@ private fun SummaryCard(title: String, value: String, modifier: Modifier = Modif
   }
 }
 
-// --- Colors for pie chart (from theme, no hardcoded Color(...)) --------------
+// --- Colors for pie chart (Edumon theme colors) ------------------------------
 
 private val SliceColors =
     listOf(
@@ -310,6 +311,8 @@ private fun PieChart(
 @Composable
 private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
   val total = data.values.sum().coerceAtLeast(1)
+  val fallbackColor = MaterialTheme.colorScheme.outlineVariant
+
   Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
     data.entries
         .sortedByDescending { it.value }
@@ -322,7 +325,7 @@ private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(10.dp)
-                    .background(colors[label] ?: Color.LightGray, RoundedCornerShape(2.dp)))
+                    .background(colors[label] ?: fallbackColor, RoundedCornerShape(2.dp)))
             Spacer(Modifier.width(8.dp))
             Text(
                 line,
@@ -379,13 +382,14 @@ private fun BarChart7Days(
   val clampedTodayIndex = if (values.isEmpty()) 0 else todayIndex.coerceIn(0, values.lastIndex)
 
   val goalColor = MaterialTheme.colorScheme.tertiary
+  val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
 
   val goalLabel: String? =
       perDayGoal?.let { stringResource(R.string.stats_goal_per_day_format, it, unitLabel) }
 
   Column(modifier = modifier) {
     Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
-      val layout = createBarChartLayout()
+      val layout = createBarChartLayout(labelColor)
 
       drawYAxisGrid(
           yMax = yMax,
@@ -452,7 +456,7 @@ private data class BarDrawingParams(
 
 // --- DrawScope helpers -------------------------------------------------------
 
-private fun DrawScope.createBarChartLayout(): BarChartLayout {
+private fun DrawScope.createBarChartLayout(labelColor: Color): BarChartLayout {
   val leftPad = 36.dp.toPx()
   val bottomPad = 18.dp.toPx()
   val topPad = 8.dp.toPx()
@@ -465,7 +469,7 @@ private fun DrawScope.createBarChartLayout(): BarChartLayout {
       android.graphics.Paint().apply {
         isAntiAlias = true
         textSize = 11.dp.toPx()
-        color = android.graphics.Color.argb(180, 220, 225, 235)
+        color = labelColor.toArgb()
       }
 
   return BarChartLayout(

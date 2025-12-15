@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
 import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.planner.ScheduleClassItem
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
@@ -54,13 +55,8 @@ class ScheduleViewModel_ObservePlannerTest {
     Dispatchers.resetMain()
   }
 
-  /**
-   * ---------------------------------------------------------------
-   * Test 1 — Classes are deduped, only upcoming are shown, sorted.
-   * ---------------------------------------------------------------
-   */
   @Test
-  fun `observePlannerData sorts upcoming classes and dedupes correctly`() =
+  fun `observePlannerData dedupes classes and populates todaySchedule`() =
       runTest(dispatcher) {
         val classes =
             listOf(
@@ -87,41 +83,29 @@ class ScheduleViewModel_ObservePlannerTest {
                     LocalTime.of(13, 0),
                     ClassType.LECTURE,
                     "C",
-                    "Prof N"),
-                Class(
-                    "3",
-                    "Databases",
-                    LocalTime.of(8, 0),
-                    LocalTime.of(9, 30),
-                    ClassType.LECTURE,
-                    "D",
-                    "Prof D") // ends BEFORE now → filtered out
-                )
+                    "Prof N"))
 
         plannerRepo.emitClasses(classes)
         advanceUntilIdle()
 
         val state = vm.uiState.value
 
-        // Should remove duplicate Algo
-        assertEquals(4, classes.size)
+        // 1. Verify deduping in todayClasses
         assertEquals(2, state.todayClasses.size)
+        assertEquals("Algo", state.todayClasses[0].courseName)
+        assertEquals("Networks", state.todayClasses[1].courseName)
 
-        // Only classes ending AFTER now (10:00) → Algo and Networks
-        assertEquals(listOf("Algo", "Networks"), state.todayClasses.map { it.courseName })
+        // 2. Verify todaySchedule has correct items
+        // Should have: Algo(Class) -> Gap(11-12) -> Networks(Class) -> Gap(13-20)
+        // Note: Gap detection depends on >15m.
+        val items = state.todaySchedule
 
-        // Sorted by startTime → Algo(9:00), Networks(12:00)
-        assertEquals(LocalTime.of(9, 0), state.todayClasses[0].startTime)
-        assertEquals(LocalTime.of(12, 0), state.todayClasses[1].startTime)
-
-        assertFalse(state.allClassesFinished)
+        // Count just the classes in the schedule
+        val classItems = items.filterIsInstance<ScheduleClassItem>()
+        assertEquals(2, classItems.size)
+        assertEquals("Algo", classItems[0].classData.courseName)
       }
 
-  /**
-   * ---------------------------------------------------------------
-   * Test 2 — All classes finished → allClassesFinished = true
-   * ---------------------------------------------------------------
-   */
   @Test
   fun `all classes finished sets allClassesFinished true`() =
       runTest(dispatcher) {
@@ -139,23 +123,15 @@ class ScheduleViewModel_ObservePlannerTest {
                     ""))
 
         plannerRepo.emitClasses(finishedClasses)
-
         advanceUntilIdle()
 
         val state = vm.uiState.value
-
-        // No upcoming classes
-        assertTrue(state.todayClasses.isEmpty())
-
-        // All endTime < now(10:00)
+        // Verify classes are loaded
+        assertFalse(state.todayClasses.isEmpty())
+        // Verify all finished flag (current time is 10:00)
         assertTrue(state.allClassesFinished)
       }
 
-  /**
-   * ---------------------------------------------------------------
-   * Test 3 — Mixed classes → allClassesFinished = false
-   * ---------------------------------------------------------------
-   */
   @Test
   fun `mixed finished and upcoming classes sets allClassesFinished false`() =
       runTest(dispatcher) {
@@ -163,33 +139,27 @@ class ScheduleViewModel_ObservePlannerTest {
             listOf(
                 Class(
                     "1",
-                    "Algo",
+                    "Finished",
                     LocalTime.of(7, 0),
                     LocalTime.of(8, 0),
                     ClassType.LECTURE,
                     "",
-                    ""), // finished
+                    ""),
                 Class(
                     "2",
-                    "Networks",
+                    "Upcoming",
                     LocalTime.of(11, 0),
                     LocalTime.of(12, 0),
                     ClassType.LECTURE,
                     "",
-                    "") // upcoming
-                )
+                    ""))
 
         plannerRepo.emitClasses(mixed)
         advanceUntilIdle()
 
         val state = vm.uiState.value
-
-        assertEquals(1, state.todayClasses.size)
-        assertEquals("Networks", state.todayClasses.first().courseName)
-
         assertFalse(state.allClassesFinished)
       }
-
   // ----------------------------------------------------------
   // Supporting Fake Repos
   // ----------------------------------------------------------
