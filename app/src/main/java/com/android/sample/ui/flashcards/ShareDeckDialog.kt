@@ -66,68 +66,27 @@ fun ShareDeckDialog(deck: Deck, vm: DeckListViewModel, onDismiss: () -> Unit) {
 
   AlertDialog(
       onDismissRequest = onDismiss,
-      title = { Text("Share “${deck.title}”") },
+      title = { Text("Share \"${deck.title}\"") },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-          // ---- Sharing toggle ----
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(ALLOW_SHARING)
-            Spacer(Modifier.weight(1f))
-            Switch(checked = deck.shareable, onCheckedChange = { vm.toggleShareable(deck.id, it) })
-          }
+          ShareableToggle(deck = deck, vm = vm)
 
           if (deck.shareable) {
-            HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
-
-            if (!isOnline) {
-              Text(
-                  text = stringResource(R.string.flashcards_offline_generate_link),
-                  color = MaterialTheme.colorScheme.error,
-                  style = MaterialTheme.typography.bodyMedium)
-            }
-
-            // ---- Generate token button ----
-            if (shareToken == null) {
-              Button(
-                  onClick = {
-                    if (!isOnline) return@Button
-                    generating = true
-                    scope.launch {
-                      try {
-                        shareToken = vm.createShareToken(deck.id)
-                      } finally {
-                        generating = false
-                      }
-                    }
-                  },
-                  enabled = isOnline && !generating,
-                  colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
-                    if (generating) {
-                      CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextLight)
-                    } else {
-                      Text(GENERATE_SHARE_LINK)
+            ShareableContent(
+                isOnline = isOnline,
+                shareToken = shareToken,
+                generating = generating,
+                onGenerateToken = {
+                  generating = true
+                  scope.launch {
+                    try {
+                      shareToken = vm.createShareToken(deck.id)
+                    } finally {
+                      generating = false
                     }
                   }
-            }
-
-            // ---- Token ready: display it & copy button ----
-            shareToken?.let { token ->
-              Text(SHARE_THIS_CODE_WITH_A_FRIEND_)
-
-              Box(
-                  Modifier.fillMaxWidth()
-                      .background(BackgroundDark, shape = MaterialTheme.shapes.medium)
-                      .padding(12.dp)) {
-                    Text(token, color = AccentViolet)
-                  }
-
-              Button(
-                  onClick = { clipboard.setText(AnnotatedString(token)) },
-                  colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
-                    Text(COPY)
-                  }
-            }
+                },
+                onCopyToken = { token -> clipboard.setText(AnnotatedString(token)) })
           }
         }
       },
@@ -135,4 +94,74 @@ fun ShareDeckDialog(deck: Deck, vm: DeckListViewModel, onDismiss: () -> Unit) {
       containerColor = MidDarkCard,
       textContentColor = TextLight,
       titleContentColor = TextLight)
+}
+
+@Composable
+private fun ShareableToggle(deck: Deck, vm: DeckListViewModel) {
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    Text(ALLOW_SHARING)
+    Spacer(Modifier.weight(1f))
+    Switch(checked = deck.shareable, onCheckedChange = { vm.toggleShareable(deck.id, it) })
+  }
+}
+
+@Composable
+private fun ShareableContent(
+    isOnline: Boolean,
+    shareToken: String?,
+    generating: Boolean,
+    onGenerateToken: () -> Unit,
+    onCopyToken: (String) -> Unit
+) {
+  HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+
+  if (!isOnline) {
+    OfflineWarning()
+  }
+
+  if (shareToken != null) {
+    TokenDisplay(token = shareToken, onCopy = onCopyToken)
+  } else {
+    GenerateTokenButton(isOnline = isOnline, generating = generating, onClick = onGenerateToken)
+  }
+}
+
+@Composable
+private fun OfflineWarning() {
+  Text(
+      text = stringResource(R.string.flashcards_offline_generate_link),
+      color = MaterialTheme.colorScheme.error,
+      style = MaterialTheme.typography.bodyMedium)
+}
+
+@Composable
+private fun GenerateTokenButton(isOnline: Boolean, generating: Boolean, onClick: () -> Unit) {
+  Button(
+      onClick = { if (isOnline) onClick() },
+      enabled = isOnline && !generating,
+      colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
+        if (generating) {
+          CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextLight)
+        } else {
+          Text(GENERATE_SHARE_LINK)
+        }
+      }
+}
+
+@Composable
+private fun TokenDisplay(token: String, onCopy: (String) -> Unit) {
+  Text(SHARE_THIS_CODE_WITH_A_FRIEND_)
+
+  Box(
+      Modifier.fillMaxWidth()
+          .background(BackgroundDark, shape = MaterialTheme.shapes.medium)
+          .padding(12.dp)) {
+        Text(token, color = AccentViolet)
+      }
+
+  Button(
+      onClick = { onCopy(token) },
+      colors = ButtonDefaults.buttonColors(containerColor = AccentViolet)) {
+        Text(COPY)
+      }
 }

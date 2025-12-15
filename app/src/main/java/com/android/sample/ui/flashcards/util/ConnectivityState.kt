@@ -14,11 +14,11 @@ internal fun interface DisposableHandle {
   fun dispose()
 }
 
-internal interface OnlineChecker {
+internal fun interface OnlineChecker {
   fun isOnline(context: Context): Boolean
 }
 
-internal interface ConnectivityObserver {
+internal fun interface ConnectivityObserver {
   fun observe(context: Context, onOnlineChanged: (Boolean) -> Unit): DisposableHandle
 }
 
