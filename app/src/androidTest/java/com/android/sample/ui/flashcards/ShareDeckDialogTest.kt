@@ -1,17 +1,29 @@
 package com.android.sample.ui.flashcards
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import com.android.sample.R
 import com.android.sample.ui.flashcards.data.FlashcardsRepository
 import com.android.sample.ui.flashcards.model.Deck
 import com.android.sample.ui.flashcards.model.Flashcard
+import com.android.sample.ui.flashcards.util.ConnectivityDeps
+import com.android.sample.ui.flashcards.util.ConnectivityObserver
+import com.android.sample.ui.flashcards.util.DisposableHandle
+import com.android.sample.ui.flashcards.util.OnlineChecker
 import com.android.sample.ui.theme.EduMonTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -22,6 +34,38 @@ import org.junit.Test
 class ShareDeckDialogTest {
 
   @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+  private lateinit var previousOnlineChecker: OnlineChecker
+  private lateinit var previousObserver: ConnectivityObserver
+
+  private class FakeOnlineChecker(private val online: Boolean) : OnlineChecker {
+    override fun isOnline(context: android.content.Context): Boolean = online
+  }
+
+  private class NoOpObserver : ConnectivityObserver {
+    override fun observe(
+        context: android.content.Context,
+        onOnlineChanged: (Boolean) -> Unit
+    ): DisposableHandle {
+      return DisposableHandle {}
+    }
+  }
+
+  @Before
+  fun saveAndOverrideConnectivity() {
+    previousOnlineChecker = ConnectivityDeps.onlineChecker
+    previousObserver = ConnectivityDeps.observer
+
+    // Default for existing tests: deterministic ONLINE.
+    ConnectivityDeps.onlineChecker = FakeOnlineChecker(true)
+    ConnectivityDeps.observer = NoOpObserver()
+  }
+
+  @After
+  fun restoreConnectivity() {
+    ConnectivityDeps.onlineChecker = previousOnlineChecker
+    ConnectivityDeps.observer = previousObserver
+  }
 
   // ------------------------------------------------------------------
   // Fake repo for testing share toggle + token generation
@@ -125,6 +169,7 @@ class ShareDeckDialogTest {
 
     composeRule.onNodeWithText("Copy").performClick()
   }
+
   // ------------------------------------------------------------------
   // 4) Close button dismisses dialog
   // ------------------------------------------------------------------
@@ -142,5 +187,22 @@ class ShareDeckDialogTest {
 
     composeRule.onNodeWithText("Close").performClick()
     composeRule.waitUntil(3_000) { dismissed }
+  }
+
+  @Test
+  fun offline_disablesGenerate_andShowsMessage() {
+    // Force OFFLINE deterministically for this test.
+    ConnectivityDeps.onlineChecker = FakeOnlineChecker(false)
+
+    val deck = testDeck(true)
+    val repo = FakeRepo().apply { decksFlow.value = listOf(deck) }
+    val vm = DeckListViewModel(repo, requireAuth = false)
+
+    composeRule.setContent { EduMonTheme { ShareDeckDialog(deck = deck, vm = vm, onDismiss = {}) } }
+
+    val offlineText = composeRule.activity.getString(R.string.flashcards_offline_generate_link)
+    composeRule.onNodeWithText(offlineText).assertIsDisplayed()
+
+    composeRule.onNodeWithText("Generate share link").assertIsNotEnabled()
   }
 }

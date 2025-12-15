@@ -466,7 +466,10 @@
     <!-- Event row -->
     <string name="event_remove">Remove event</string>
 
+    <!-- Offline flashcards -->
 
+    <string name="flashcards_offline_generate_link">You are offline, you cannot generate a link.</string>
+    <string name="flashcards_offline_import_deck">You are offline, you cannot import a deck.</string>
 
 
 
