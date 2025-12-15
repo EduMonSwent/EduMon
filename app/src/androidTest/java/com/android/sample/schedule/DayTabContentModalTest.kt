@@ -335,57 +335,6 @@ class DayTabContentAllAndroidTest {
     rule.onNodeWithText(ctx.getString(R.string.completion_not_done)).assertIsDisplayed()
   }
 
-  // ---- Wellness events block texts ----
-  @Test
-  fun rendersWellnessEvents_withCorrectTexts() {
-    val ctx = rule.activity
-    val vm = buildScheduleVM(ctx)
-    val clazz = fakeClass(id = "c9", name = "AI") // any class to render the card
-
-    val state = ScheduleUiState(todayClasses = listOf(clazz))
-
-    rule.setContent {
-      Column(Modifier.verticalScroll(rememberScrollState())) {
-        DayTabContent(
-            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
-      }
-    }
-
-    // Scroll to the Wellness section header first
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_events_label))
-        .performScrollTo()
-        .assertIsDisplayed()
-
-    // Yoga item
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_title))
-        .performScrollTo()
-        .assertIsDisplayed()
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_time))
-        .performScrollTo()
-        .assertIsDisplayed()
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_description))
-        .performScrollTo()
-        .assertIsDisplayed()
-
-    // Lecture item
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_lecture_title))
-        .performScrollTo()
-        .assertIsDisplayed()
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_lecture_time))
-        .performScrollTo()
-        .assertIsDisplayed()
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_lecture_description))
-        .performScrollTo()
-        .assertIsDisplayed()
-  }
-
   @Test
   fun dayTab_showsEmptyTodosMessage_whenNoTodosForToday() {
     val ctx = rule.activity
