@@ -67,12 +67,6 @@ fun MoodLoggingScreen(
   val colors = MaterialTheme.colorScheme
 
   Column(modifier = Modifier.fillMaxSize().background(colors.background).padding(16.dp)) {
-    Text(
-        text = "Daily Reflection",
-        style =
-            MaterialTheme.typography.headlineSmall.copy(
-                color = colors.onBackground, fontWeight = FontWeight.Bold))
-    Spacer(Modifier.height(12.dp))
 
     // ─────────────── Mood + Note ───────────────
     Card(
