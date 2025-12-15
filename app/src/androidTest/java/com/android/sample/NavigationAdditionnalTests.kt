@@ -1,5 +1,6 @@
 package com.android.sample
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -72,53 +73,25 @@ class NavigationAdditionnalTests {
     // Verify we're on Profile
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
 
-    // Scroll down to reveal the SettingsCard.
-    // The ProfileScreen content is within a LazyColumn.
-    // Find the LazyColumn and perform a scroll gesture.
-    // The LazyColumn itself might not have a specific tag. Let's try scrolling the main content
-    // area.
-    // We can try to find the main container or just perform a generic scroll down (swipe up
-    // gesture).
-    // Let's try performing a swipe up gesture on the overall screen content.
-    // The screen content is within the Scaffold's content slot, inside the LazyColumn.
-    // We might need to target the LazyColumn itself. It's the root of the content passed to
-    // Scaffold.
-    // The LazyColumn is inside the Scaffold's content lambda.
-    // Let's try to find a node that represents the scrollable area. The LazyColumn itself is the
-    // scrollable.
-    // We might need to target the root of the LazyColumn's content or find a way to interact with
-    // the LazyColumn directly.
-    // Since there's no explicit tag on the LazyColumn, let's try to perform a scroll action on the
-    // first scrollable container found.
-    // composeTestRule.onRoot().performTouchInput { swipeUp() } // This might not work as expected
-    // if the root isn't scrollable.
-    // Let's try to find the LazyColumn by its role or properties if possible.
-    // A more reliable way is to target the overall scrollable container.
-    // The content inside the Scaffold's content lambda is the LazyColumn.
-    // Let's try scrolling the node that *contains* the profile content. It's likely the root of the
-    // LazyColumn's content.
-    // The LazyColumn is defined as: LazyColumn { ... item { PetSection(...) } ... item { GlowCard {
-    // Box(ProfileScreenTestTags.PROFILE_CARD) } ... } ... }
-    // The PetSection is first, then the cards.
-    // Let's try to perform a generic scroll down action on the main content area.
-    // We'll use `performTouchInput` and `swipeUp` (swiping up scrolls content down).
-    // Let's find the main content area. It's the LazyColumn. We'll try to find it implicitly by
-    // performing a scroll action.
-    // A common way is to find the root content and perform a scroll gesture.
-    // Let's assume the root node is scrollable or find the first scrollable ancestor of an item we
-    // expect to find later.
-    // Let's try to find the LazyColumn by searching for its content and then scrolling.
-    // Or, let's just perform a scroll gesture on the screen area.
-    // composeTestRule.onRoot().performTouchInput { swipeUp(start = Offset(500f, 1000f), end =
-    // Offset(500f, 200f)) }
-    // This performs a swipe from near the bottom of the screen upwards, simulating a scroll down.
-    // Let's try this approach.
+    // Scroll down to reveal the SettingsCard using relative coordinates via swipe action.
+    // Target the root node which contains the LazyColumn.
     composeTestRule.onRoot().performTouchInput {
-      swipeUp(
-          // Start near the bottom of the visible area
-          startY = 1000f,
-          // End near the top of the visible area
-          endY = 200f)
+      // Get the size of the node we are interacting with (the root)
+      val size = this@performTouchInput.visibleSize
+      val width = size.width
+      val height = size.height
+
+      // Calculate relative start and end points for the swipe
+      // Start near the bottom (e.g., 80% down the height)
+      val startY = (height * 0.80).toFloat()
+      // End near the top (e.g., 20% down the height)
+      val endY = (height * 0.20).toFloat()
+
+      // The x-coordinate can be the center
+      val centerX = (width / 2.0).toFloat()
+
+      // Perform the swipe gesture
+      swipe(start = Offset(centerX, startY), end = Offset(centerX, endY))
     }
     composeTestRule.waitForIdle()
 
@@ -153,13 +126,17 @@ class NavigationAdditionnalTests {
     // Verify we're on Profile
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
 
-    // Scroll down to reveal the SettingsCard.
-    // Perform a swipe up gesture on the screen content area to scroll down.
+    // Scroll down to reveal the SettingsCard using relative coordinates via swipe action.
     composeTestRule.onRoot().performTouchInput {
-      swipeUp(
-          startY = 1000f, // Start near the bottom
-          endY = 200f // End near the top
-          )
+      val size = this@performTouchInput.visibleSize
+      val width = size.width
+      val height = size.height
+
+      val startY = (height * 0.80).toFloat()
+      val endY = (height * 0.20).toFloat()
+      val centerX = (width / 2.0).toFloat()
+
+      swipe(start = Offset(centerX, startY), end = Offset(centerX, endY))
     }
     composeTestRule.waitForIdle()
 
