@@ -129,6 +129,16 @@ private fun EduMonDrawerContent(
             modifier =
                 Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     .testTag(HomeTestTags.drawerTag(AppDestination.Schedule.route)))
+
+        // Added Study right above Stats (This code has been written partially using A.I (LLM).)
+        NavigationDrawerItem(
+            label = { Text("Study") },
+            selected = currentRoute?.startsWith(AppDestination.Study.route) == true,
+            onClick = { onDestinationClick(AppDestination.Study.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Study.route)))
+
         NavigationDrawerItem(
             label = { Text("Stats") },
             selected = currentRoute == AppDestination.Stats.route,

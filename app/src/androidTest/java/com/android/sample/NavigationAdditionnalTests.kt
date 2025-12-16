@@ -1,8 +1,13 @@
 package com.android.sample
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
@@ -50,6 +55,44 @@ class NavigationAdditionnalTests {
     // The Home screen should NOT have a back button (because safeNavigateBack returns early).
     // This proves the 'if (currentRoute == AppDestination.Home.route) { return }' branch was taken.
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertDoesNotExist()
+  }
+
+  /**
+   * NEW: Tests the new Study entry in the drawer is visible and navigates to the Study screen.
+   * Covers:
+   * - Drawer item exists for AppDestination.Study.route
+   * - Clicking it navigates to AppDestination.Study.route and shows the top bar title "Study"
+   */
+  @Test
+  fun drawer_study_button_navigates_to_study_screen() {
+    composeTestRule.setContent { EduMonNavHost(startDestination = AppDestination.Home.route) }
+    composeTestRule.waitForIdle()
+    waitForHomeScreen()
+
+    // Open drawer (from Home)
+    composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Study item should exist (added above Stats)
+    composeTestRule
+        .onNodeWithTag(HomeTestTags.drawerTag(AppDestination.Study.route))
+        .assertExists()
+        .performClick()
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(300) // Give navigation time to complete
+
+    // We should be on Study screen
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Study")
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
   }
 
   /**
