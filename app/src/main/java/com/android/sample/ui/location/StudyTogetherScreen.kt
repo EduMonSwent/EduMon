@@ -614,44 +614,6 @@ fun GoBackToMeChip(onClick: () -> Unit, modifier: Modifier = Modifier) {
       }
 }
 
-/**
- * Visually appealing status pill in-app theme:
- * - surface background
- * - soft border using the mode color
- * - readable text + small colored dot
- * - subtle scale/alpha animation
- */
-@Composable
-private fun FriendStatusPill(mode: FriendMode, alpha: Float, scale: Float) {
-  val cs = MaterialTheme.colorScheme
-  val (label, accent) =
-      when (mode) {
-        FriendMode.STUDY -> "Studying" to cs.tertiary
-        FriendMode.BREAK -> "Break" to cs.secondary
-        FriendMode.IDLE -> "Idle" to cs.primary
-      }
-
-  val shape = RoundedCornerShape(14.dp)
-
-  Row(
-      modifier =
-          Modifier.graphicsLayer {
-                this.alpha = alpha
-                scaleX = scale
-                scaleY = scale
-              }
-              .shadow(6.dp, shape, clip = false)
-              .clip(shape)
-              .background(cs.surface.copy(alpha = 0.94f))
-              .border(1.dp, accent.copy(alpha = 0.55f), shape)
-              .padding(horizontal = 10.dp, vertical = 7.dp),
-      verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(accent))
-        Spacer(Modifier.width(8.dp))
-        Text(text = label, style = MaterialTheme.typography.labelLarge, color = cs.onSurface)
-      }
-}
-
 @Composable
 private fun AddFriendFab(onClick: () -> Unit) {
   ExtendedFloatingActionButton(
