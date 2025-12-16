@@ -3,6 +3,7 @@ package com.android.sample.screen
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.feature.schedule.data.planner.AttendanceStatus
+import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
 import com.android.sample.feature.schedule.data.planner.ClassType
 import com.android.sample.feature.schedule.data.planner.CompletionStatus
@@ -12,6 +13,7 @@ import com.google.android.gms.tasks.Tasks
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -48,6 +50,62 @@ class FirestorePlannerRepositoryEmulatorTest {
     if (FirebaseEmulator.isRunning) {
       FirebaseEmulator.clearAll()
     }
+  }
+
+  @Test
+  fun saveClasses_and_clearClasses_work_correctly() = runBlocking {
+    val c1 =
+        Class(
+            UUID.randomUUID().toString(),
+            "Batch 1",
+            LocalTime.now(),
+            LocalTime.now(),
+            ClassType.LAB)
+    val c2 =
+        Class(
+            UUID.randomUUID().toString(),
+            "Batch 2",
+            LocalTime.now(),
+            LocalTime.now(),
+            ClassType.LECTURE)
+
+    // Test Batch Save
+    val saveResult = repo.saveClasses(listOf(c1, c2))
+    assertTrue(saveResult.isSuccess)
+
+    val loaded = repo.getTodayClassesFlow().first()
+    assertTrue(loaded.any { it.courseName == "Batch 1" })
+    assertTrue(loaded.any { it.courseName == "Batch 2" })
+
+    // Test Clear
+    val clearResult = repo.clearClasses()
+    assertTrue(clearResult.isSuccess)
+
+    val loadedAfterClear = repo.getTodayClassesFlow().first()
+    assertTrue("Classes should be empty after clear", loadedAfterClear.isEmpty())
+  }
+
+  @Test
+  fun getTodayClassesFlow_read_from_firestore_when_docs_exist() = runBlocking {
+    val db = FirebaseEmulator.firestore
+    val uid = FirebaseEmulator.auth.currentUser!!.uid
+    val today = LocalDate.now()
+
+    val classesCol = db.collection("users").document(uid).collection("classes")
+
+    Tasks.await(
+        classesCol.add(
+            mapOf(
+                "courseName" to "Networks",
+                "startTime" to LocalTime.of(14, 0).toString(),
+                "endTime" to LocalTime.of(16, 0).toString(),
+                "type" to ClassType.LAB.name,
+                "location" to "Lab A",
+                "instructor" to "Prof. Davis",
+                "date" to today.toString())))
+
+    val classes = repo.getTodayClassesFlow().first()
+    assertTrue(classes.any { it.courseName == "Networks" })
   }
 
   @Test
@@ -290,7 +348,7 @@ class FirestorePlannerRepositoryEmulatorTest {
             location = "LAB-X",
             instructor = "Prof. Turing")
 
-    val result = repo.saveClass(classItem)
+    val result = repo.saveClasses(listOf(classItem))
     assertTrue("saveClass() should succeed", result.isSuccess)
 
     // Snapshot listener needs a moment to update

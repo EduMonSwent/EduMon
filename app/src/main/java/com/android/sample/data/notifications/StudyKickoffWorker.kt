@@ -1,6 +1,5 @@
 package com.android.sample.data.notifications
 
-import android.Manifest
 import android.content.Context
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
@@ -11,7 +10,7 @@ import com.android.sample.R
 
 /** Prompt to start your first study block of the day. */
 class StudyKickoffWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
-  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  @RequiresPermission(value = "android.permission.POST_NOTIFICATIONS", conditional = true)
   override suspend fun doWork(): Result {
     NotificationUtils.ensureChannel(applicationContext)
     val n =

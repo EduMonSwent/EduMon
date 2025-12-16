@@ -13,6 +13,7 @@ interface NotificationsUiModel {
   val taskNotificationsEnabled: StateFlow<Boolean>
   val streakEnabled: StateFlow<Boolean>
   val campusEntryEnabled: StateFlow<Boolean>
+  val friendStudyModeEnabled: StateFlow<Boolean>
 
   // UI actions
   fun setKickoffEnabled(ctx: Context, on: Boolean)
@@ -36,6 +37,7 @@ interface NotificationsUiModel {
   fun setTaskNotificationsEnabled(ctx: Context, on: Boolean)
 
   fun setCampusEntryEnabled(ctx: Context, on: Boolean)
+  fun setFriendStudyModeEnabled(ctx: Context, on: Boolean)
 
   fun startObservingSchedule(ctx: Context)
 }

@@ -313,6 +313,15 @@
     <string name="location_permission_needed">Location permission required</string>
     <string name="grant_location_permission">Grant Permission</string>
 
+    <!-- Friend Study Mode Notifications -->
+    <string name="friend_study_mode_title">Friend started studying</string>
+    <string name="friend_study_mode_single">%1$s is now studying</string>
+    <string name="friend_study_mode_two">%1$s and %2$s are now studying</string>
+    <string name="friend_study_mode_multiple">%1$s and %2$d others are now studying</string>
+    <string name="friend_study_mode_toggle_title">Friend study notifications</string>
+    <string name="friend_study_mode_toggle_subtitle">Notify when friends start studying</string>
+    <string name="friend_study_mode_desc">Get notified when your friends enter study mode to join them</string>
+
     <!-- Background Location Permission -->
     <string name="edumon_content_description">EduMon character</string>
     <string name="level_label">Level %1$d</string>
@@ -354,10 +363,22 @@
 
     <!-- Stats screen main title -->
     <string name="stats_title_week">Your weekly statistics</string>
+    <string name="stats_subjects_this_week_hint">
+    Only includes study time for the current week.
+</string>
+
 
     <!-- Sections -->
     <string name="stats_section_subject_distribution">Time per subject</string>
     <string name="stats_section_progress_7_days">7-day progression</string>
+    <string name="stats_label_day_mon">Mon</string>
+    <string name="stats_label_day_tue">Tue</string>
+    <string name="stats_label_day_wed">Wed</string>
+    <string name="stats_label_day_thu">Thu</string>
+    <string name="stats_label_day_fri">Fri</string>
+    <string name="stats_label_day_sat">Sat</string>
+    <string name="stats_label_day_sun">Sun</string>
+
 
     <!-- Summary cards -->
     <string name="stats_summary_total_study">Total study</string>
@@ -380,15 +401,6 @@
 
     <!-- Units -->
     <string name="stats_unit_hours_short">h</string>
-
-    <!-- X-axis labels for last 7 days -->
-    <string name="stats_label_day_minus_6">D-6</string>
-    <string name="stats_label_day_minus_5">D-5</string>
-    <string name="stats_label_day_minus_4">D-4</string>
-    <string name="stats_label_day_minus_3">D-3</string>
-    <string name="stats_label_day_minus_2">D-2</string>
-    <string name="stats_label_day_minus_1">D-1</string>
-    <string name="stats_label_today">Today</string>
 
     <!-- Caption under the bar chart -->
     <string name="stats_bar_chart_caption">Study minutes per day (last 7 days)</string>
@@ -414,6 +426,53 @@
     <string name="onboarding_edumon_fire_name">PyroMon</string>
     <string name="onboarding_edumon_water_name">AquaMon</string>
     <string name="onboarding_edumon_grass_name">FloraMon</string>
+
+    <!-- Smart gap suggestions (study) -->
+    <string name="gap_study_flashcards">Review Flashcards</string>
+    <string name="gap_study_flashcards_lunch">Review Flashcards (While Eating)</string>
+    <string name="gap_study_light_reading">Light Reading</string>
+    <string name="gap_study_quick_quiz">Quick Quiz</string>
+    <string name="gap_study_objectives">Work on Objectives</string>
+    <string name="gap_study_read_material">Read Course Material</string>
+
+    <!-- Smart gap suggestions (relax) -->
+    <string name="gap_relax_eat_lunch">Eat Lunch</string>
+    <string name="gap_relax_coffee_friends">Coffee with Friends</string>
+    <string name="gap_relax_nap">Nap</string>
+    <string name="gap_relax_search_friend">Search Friend</string>
+    <string name="gap_relax_play_games">Play Games</string>
+    <string name="gap_relax_walk">Walk around campus</string>
+    <string name="gap_relax_call_family">Call Family</string>
+    <string name="gap_relax_gym">Go to Gym</string>
+    <string name="gap_relax_piano">Play Piano</string>
+    <string name="gap_relax_read_book">Read a Book</string>
+    <string name="gap_relax_hobby">Hobby Time</string>
+
+    <!-- Smart suggestion description -->
+    <string name="gap_suggestion_description">Smart suggestion</string>
+
+    <!-- Generic -->
+    <string name="enjoy_event_fmt">Enjoy your %1$s!</string>
+    <!-- Smart gap modal UI -->
+    <string name="smart_gap_modal_title">Free Time Found (%1$d min)</string>
+    <string name="smart_gap_modal_text">How would you like to use this time?</string>
+    <string name="smart_gap_action_study">Study</string>
+    <string name="smart_gap_action_relax">Relax</string>
+
+    <!-- Gap propositions modal -->
+    <string name="smart_gap_suggestions_title">Suggestions</string>
+
+    <!-- Gap row -->
+    <string name="gap_row_title">Free Time (%1$d min)</string>
+    <string name="gap_row_add_activity">Add activity</string>
+
+    <!-- Event row -->
+    <string name="event_remove">Remove event</string>
+
+    <!-- Offline flashcards -->
+
+    <string name="flashcards_offline_generate_link">You are offline, you cannot generate a link.</string>
+    <string name="flashcards_offline_import_deck">You are offline, you cannot import a deck.</string>
 
 
 

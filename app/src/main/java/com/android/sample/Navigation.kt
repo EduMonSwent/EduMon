@@ -1,20 +1,44 @@
 package com.android.sample
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -25,6 +49,7 @@ import androidx.navigation.navArgument
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.EduMonHomeRoute
 import com.android.sample.feature.homeScreen.HomeTestTags
+import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.flashcards.FlashcardsApp
 import com.android.sample.ui.focus.FocusModeScreen
 import com.android.sample.ui.games.FlappyEduMonScreen
@@ -35,17 +60,20 @@ import com.android.sample.ui.games.ReactionGameScreen
 import com.android.sample.ui.location.StudyTogetherScreen
 import com.android.sample.ui.mood.MoodLoggingRoute
 import com.android.sample.ui.notifications.NotificationsScreen
+import com.android.sample.ui.onBoarding.EduMonOnboardingScreen
 import com.android.sample.ui.profile.ProfileScreen
+import com.android.sample.ui.profile.ProfileViewModel
 import com.android.sample.ui.schedule.ScheduleScreen
 import com.android.sample.ui.session.StudySessionScreen
 import com.android.sample.ui.shop.ShopScreen
 import com.android.sample.ui.stats.StatsRoute
+import com.android.sample.ui.theme.EduMonTheme
+import com.android.sample.ui.theme.EdumonAppearances
 import com.android.sample.ui.todo.AddToDoScreen
 import com.android.sample.ui.todo.TodoNavHostInThisFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/** Stable tags used by UI tests */
 object NavigationTestTags {
   const val NAV_HOST = "nav_host"
   const val TOP_BAR_TITLE = "top_bar_title"
@@ -59,7 +87,6 @@ private object GameRoutes {
   const val Runner = "runner"
 }
 
-/** Drawer content reused for all screens. Same items as the old home drawer. */
 @Composable
 private fun EduMonDrawerContent(
     currentRoute: String?,
@@ -76,33 +103,91 @@ private fun EduMonDrawerContent(
             modifier = Modifier.padding(horizontal = 20.dp))
         Text(
             text = "EPFL Companion",
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp))
-        Spacer(Modifier.height(8.dp))
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(horizontal = 20.dp))
+        Spacer(Modifier.height(24.dp))
 
-        AppDestination.values().forEach { dest ->
-          val selected =
-              currentRoute == dest.route || (currentRoute?.startsWith(dest.route) == true)
+        NavigationDrawerItem(
+            label = { Text("Home") },
+            selected = currentRoute == AppDestination.Home.route,
+            onClick = { onDestinationClick(AppDestination.Home.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Home.route)))
+        NavigationDrawerItem(
+            label = { Text("Profile") },
+            selected = currentRoute == AppDestination.Profile.route,
+            onClick = { onDestinationClick(AppDestination.Profile.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Profile.route)))
+        NavigationDrawerItem(
+            label = { Text("Schedule") },
+            selected = currentRoute == AppDestination.Schedule.route,
+            onClick = { onDestinationClick(AppDestination.Schedule.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Schedule.route)))
 
-          NavigationDrawerItem(
-              label = { Text(dest.label) },
-              selected = selected,
-              onClick = { onDestinationClick(dest.route) },
-              icon = { Icon(dest.icon, contentDescription = dest.label) },
-              colors =
-                  NavigationDrawerItemDefaults.colors(
-                      unselectedTextColor = MaterialTheme.colorScheme.onSurface,
-                      selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                      unselectedContainerColor = Color.Transparent,
-                      selectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                      unselectedIconColor = MaterialTheme.colorScheme.primary,
-                      selectedIconColor = MaterialTheme.colorScheme.primary),
-              modifier =
-                  Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                      .testTag(HomeTestTags.drawerTag(dest.route)))
-        }
+        // Added Study right above Stats (This code has been written partially using A.I (LLM).)
+        NavigationDrawerItem(
+            label = { Text("Study") },
+            selected = currentRoute?.startsWith(AppDestination.Study.route) == true,
+            onClick = { onDestinationClick(AppDestination.Study.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Study.route)))
 
-        Spacer(Modifier.height(8.dp))
+        NavigationDrawerItem(
+            label = { Text("Stats") },
+            selected = currentRoute == AppDestination.Stats.route,
+            onClick = { onDestinationClick(AppDestination.Stats.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Stats.route)))
+        NavigationDrawerItem(
+            label = { Text("Games") },
+            selected = currentRoute == AppDestination.Games.route,
+            onClick = { onDestinationClick(AppDestination.Games.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Games.route)))
+        NavigationDrawerItem(
+            label = { Text("Flashcards") },
+            selected = currentRoute == AppDestination.Flashcards.route,
+            onClick = { onDestinationClick(AppDestination.Flashcards.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Flashcards.route)))
+        NavigationDrawerItem(
+            label = { Text("Todo") },
+            selected = currentRoute == AppDestination.Todo.route,
+            onClick = { onDestinationClick(AppDestination.Todo.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Todo.route)))
+        NavigationDrawerItem(
+            label = { Text("Daily Reflection") },
+            selected = currentRoute == AppDestination.Mood.route,
+            onClick = { onDestinationClick(AppDestination.Mood.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Mood.route)))
+        NavigationDrawerItem(
+            label = { Text("Study Together") },
+            selected = currentRoute == AppDestination.StudyTogether.route,
+            onClick = { onDestinationClick(AppDestination.StudyTogether.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.StudyTogether.route)))
+        NavigationDrawerItem(
+            label = { Text("Shop") },
+            selected = currentRoute == AppDestination.Shop.route,
+            onClick = { onDestinationClick(AppDestination.Shop.route) },
+            modifier =
+                Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .testTag(HomeTestTags.drawerTag(AppDestination.Shop.route)))
       }
 }
 
@@ -110,10 +195,10 @@ private fun EduMonDrawerContent(
 @Composable
 private fun ScreenWithTopBar(
     title: String,
-    drawerState: DrawerState,
+    drawerState: androidx.compose.material3.DrawerState,
     scope: CoroutineScope,
-    onBack: () -> Unit,
-    content: @Composable () -> Unit,
+    navController: NavHostController,
+    content: @Composable () -> Unit
 ) {
   Scaffold(
       topBar = {
@@ -121,14 +206,14 @@ private fun ScreenWithTopBar(
             title = { Text(title, modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE)) },
             navigationIcon = {
               IconButton(
-                  onClick = onBack,
+                  onClick = { safeNavigateBack(navController) },
                   modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
                   }
             },
             actions = {
               IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                Icon(Icons.Outlined.Menu, contentDescription = "Menu")
+                Icon(Icons.Outlined.Menu, contentDescription = null)
               }
             })
       }) { padding ->
@@ -136,279 +221,325 @@ private fun ScreenWithTopBar(
       }
 }
 
+// Safe navigation back function that always has a fallback
+private fun safeNavigateBack(navController: NavHostController) {
+  val currentRoute = navController.currentDestination?.route
+
+  // Check if we're already on Home - if so, do nothing
+  if (currentRoute == AppDestination.Home.route) {
+    return
+  }
+
+  // Try to pop back, if it fails, go to Home
+  val popped = navController.popBackStack()
+  if (!popped) {
+    navController.navigate(AppDestination.Home.route) {
+      popUpTo(0) { inclusive = true }
+      launchSingleTop = true
+    }
+  }
+}
+
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EduMonNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = AppDestination.Home.route
+    startDestination: String = AppDestination.Home.route,
+    onSignOut: () -> Unit = {}
 ) {
-  val nav = navController
+  val profileViewModel: ProfileViewModel = viewModel()
+  val userProfile by profileViewModel.userProfile.collectAsState()
 
-  val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-  val scope = rememberCoroutineScope()
+  val repo = AppRepositories.profileRepository
+  val isLoaded by repo.isLoaded.collectAsState()
 
-  val backStackEntry by nav.currentBackStackEntryAsState()
-  val currentRoute = backStackEntry?.destination?.route
+  var hasDecided by remember { mutableStateOf(false) }
+  var needsOnboarding by remember { mutableStateOf(false) }
 
-  ModalNavigationDrawer(
-      drawerState = drawerState,
-      drawerContent = {
-        EduMonDrawerContent(
-            currentRoute = currentRoute,
-            onDestinationClick = { route ->
-              scope.launch { drawerState.close() }
-              nav.navigateSingleTopTo(route)
-            })
-      }) {
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = modifier.testTag(NavigationTestTags.NAV_HOST)) {
+  LaunchedEffect(isLoaded, userProfile) {
+    if (isLoaded && !hasDecided) {
+      needsOnboarding = userProfile.starterId.isBlank()
+      hasDecided = true
+    }
+  }
 
-              // HOME
-              composable(AppDestination.Home.route) {
-                Scaffold(
-                    topBar = {
-                      TopAppBar(
-                          title = {
-                            Text(
-                                "Home",
-                                modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
-                          },
-                          navigationIcon = {
-                            IconButton(
-                                onClick = { scope.launch { drawerState.open() } },
-                                modifier = Modifier.testTag(HomeTestTags.MENU_BUTTON)) {
-                                  Icon(Icons.Outlined.Menu, contentDescription = "Menu")
-                                }
-                          })
-                    }) { padding ->
-                      Box(Modifier.fillMaxSize().padding(padding)) {
-                        EduMonHomeRoute(
-                            creatureResId = R.drawable.edumon,
-                            environmentResId = R.drawable.home,
-                            onNavigate = { route -> nav.navigateSingleTopTo(route) })
-                      }
-                    }
-              }
-
-              // PROFILE
-              composable(AppDestination.Profile.route) {
-                ScreenWithTopBar(
-                    title = "Profile",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      ProfileScreen(
-                          onOpenNotifications = { nav.navigate("notifications") },
-                          onOpenFocusMode = { nav.navigate("focus_mode") })
-                    }
-              }
-
-              // SCHEDULE
-              composable(AppDestination.Schedule.route) {
-                ScreenWithTopBar(
-                    title = "Schedule",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      ScheduleScreen(
-                          onAddTodoClicked = { date ->
-                            nav.navigate("addTodoFromSchedule/$date") { launchSingleTop = true }
-                          },
-                          onOpenTodo = { _ -> nav.navigateSingleTopTo(AppDestination.Todo.route) })
-                    }
-              }
-
-              composable(
-                  route = "addTodoFromSchedule/{date}",
-                  arguments = listOf(navArgument("date") { type = NavType.StringType })) {
-                    AddToDoScreen(
-                        onBack = {
-                          nav.popBackStack(route = AppDestination.Schedule.route, inclusive = false)
-                        })
-                  }
-
-              // STATS
-              composable(AppDestination.Stats.route) {
-                ScreenWithTopBar(
-                    title = "Stats",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      StatsRoute()
-                    }
-              }
-
-              // GAMES (hub)
-              composable(AppDestination.Games.route) {
-                ScreenWithTopBar(
-                    title = "Games",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      GamesScreen(nav)
-                    }
-              }
-
-              // Individual games
-              composable(GameRoutes.Memory) {
-                ScreenWithTopBar(
-                    title = "Memory Game",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      MemoryGameScreen()
-                    }
-              }
-
-              composable(GameRoutes.Reaction) {
-                ScreenWithTopBar(
-                    title = "Reaction Test",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      ReactionGameScreen()
-                    }
-              }
-
-              composable(GameRoutes.Focus) {
-                ScreenWithTopBar(
-                    title = "Focus Breathing",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      FocusBreathingScreen()
-                    }
-              }
-
-              composable(GameRoutes.Runner) {
-                ScreenWithTopBar(
-                    title = "EduMon Runner",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      FlappyEduMonScreen()
-                    }
-              }
-
-              // STUDY SESSION
-              composable(AppDestination.Study.route) {
-                ScreenWithTopBar(
-                    title = "Study",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = {
-                      val popped = nav.popBackStack()
-                      if (!popped) {
-                        nav.navigateSingleTopTo(AppDestination.Home.route)
-                      }
-                    }) {
-                      StudySessionScreen()
-                    }
-              }
-
-              // Deep-linkable study route: study/{eventId}
-              composable(
-                  route = "study/{eventId}",
-                  arguments = listOf(navArgument("eventId") { type = NavType.StringType })) {
-                      backStackEntry ->
-                    val eventId = backStackEntry.arguments?.getString("eventId")
-                    ScreenWithTopBar(
-                        title = "Study",
-                        drawerState = drawerState,
-                        scope = scope,
-                        onBack = {
-                          val popped = nav.popBackStack()
-                          if (!popped) {
-                            nav.navigateSingleTopTo(AppDestination.Home.route)
-                          }
-                        }) {
-                          StudySessionScreen(eventId)
-                        }
-                  }
-
-              // FLASHCARDS
-              composable(AppDestination.Flashcards.route) {
-                ScreenWithTopBar(
-                    title = "Study",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      FlashcardsApp()
-                    }
-              }
-
-              // TODOS LIST
-              composable(AppDestination.Todo.route) {
-                ScreenWithTopBar(
-                    title = "Todo",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      TodoNavHostInThisFile()
-                    }
-              }
-
-              // MOOD (Daily Reflection)
-              composable(AppDestination.Mood.route) {
-                ScreenWithTopBar(
-                    title = "Daily Reflection",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      MoodLoggingRoute()
-                    }
-              }
-
-              // STUDY TOGETHER
-              composable(AppDestination.StudyTogether.route) {
-                ScreenWithTopBar(
-                    title = "Study Together",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      StudyTogetherScreen()
-                    }
-              }
-
-              // SHOP
-              composable(AppDestination.Shop.route) {
-                ScreenWithTopBar(
-                    title = "Shop",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      ShopScreen()
-                    }
-              }
-
-              // Notifications keeps its own internal top bar callbacks
-              composable("notifications") {
-                NotificationsScreen(
-                    onBack = { nav.popBackStack() },
-                    onGoHome = { nav.navigateSingleTopTo(AppDestination.Home.route) })
-              }
-
-              // FOCUS MODE
-              composable("focus_mode") {
-                ScreenWithTopBar(
-                    title = "Focus Mode",
-                    drawerState = drawerState,
-                    scope = scope,
-                    onBack = { nav.popBackStack() }) {
-                      FocusModeScreen()
-                    }
-              }
-            }
+  val currentAppearance =
+      EdumonAppearances.fromStarterId(
+          userProfile.starterId.takeIf { it.isNotBlank() },
+      )
+  EduMonTheme(appearance = currentAppearance) {
+    if (!hasDecided) {
+      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
       }
+      return@EduMonTheme
+    }
+
+    val actualStartDestination = if (needsOnboarding) "onboarding" else startDestination
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+          EduMonDrawerContent(
+              currentRoute = currentRoute,
+              onDestinationClick = { route ->
+                scope.launch { drawerState.close() }
+                navController.navigateSingleTopTo(route)
+              })
+        }) {
+          NavHost(
+              navController = navController,
+              startDestination = actualStartDestination,
+              modifier = modifier.testTag(NavigationTestTags.NAV_HOST)) {
+                composable("onboarding") {
+                  EduMonOnboardingScreen(
+                      onOnboardingFinished = { _, starterId ->
+                        profileViewModel.setStarter(starterId)
+                        navController.navigate(AppDestination.Home.route) {
+                          popUpTo("onboarding") { inclusive = true }
+                          launchSingleTop = true
+                        }
+                      })
+                }
+
+                composable(AppDestination.Home.route) {
+                  val creatureResId = profileViewModel.starterDrawable()
+                  Scaffold(
+                      topBar = {
+                        TopAppBar(
+                            title = {
+                              Text(
+                                  "Home",
+                                  modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+                            },
+                            navigationIcon = {
+                              IconButton(
+                                  onClick = { scope.launch { drawerState.open() } },
+                                  modifier = Modifier.testTag(HomeTestTags.MENU_BUTTON)) {
+                                    Icon(Icons.Outlined.Menu, contentDescription = null)
+                                  }
+                            })
+                      }) { padding ->
+                        Box(Modifier.fillMaxSize().padding(padding)) {
+                          EduMonHomeRoute(
+                              creatureResId = currentAppearance.creatureResId,
+                              environmentResId = currentAppearance.environmentResId,
+                              onNavigate = { route -> navController.navigateSingleTopTo(route) })
+                        }
+                      }
+                }
+
+                composable(AppDestination.Profile.route) {
+                  ScreenWithTopBar(
+                      title = "Profile",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        ProfileScreen(
+                            onOpenNotifications = {
+                              navController.navigate("notifications") { launchSingleTop = true }
+                            },
+                            onOpenFocusMode = {
+                              navController.navigate("focus_mode") { launchSingleTop = true }
+                            },
+                            onSignOut = onSignOut)
+                      }
+                }
+
+                composable(AppDestination.Schedule.route) {
+                  ScreenWithTopBar(
+                      title = "Schedule",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        ScheduleScreen(
+                            onAddTodoClicked = { date ->
+                              navController.navigate("addTodoFromSchedule/$date") {
+                                launchSingleTop = true
+                              }
+                            },
+                            onOpenTodo = { _ ->
+                              navController.navigateSingleTopTo(AppDestination.Todo.route)
+                            },
+                            onNavigateTo = { route -> navController.navigateSingleTopTo(route) })
+                      }
+                }
+
+                composable(
+                    route = "addTodoFromSchedule/{date}",
+                    arguments = listOf(navArgument("date") { type = NavType.StringType })) {
+                      AddToDoScreen(
+                          onBack = {
+                            // Try to pop back to Schedule, if it fails navigate directly
+                            if (!navController.popBackStack(
+                                route = AppDestination.Schedule.route, inclusive = false)) {
+                              navController.navigate(AppDestination.Schedule.route) {
+                                popUpTo(navController.graph.startDestinationId)
+                                launchSingleTop = true
+                              }
+                            }
+                          })
+                    }
+
+                composable(AppDestination.Stats.route) {
+                  ScreenWithTopBar(
+                      title = "Stats",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        StatsRoute()
+                      }
+                }
+
+                composable(AppDestination.Games.route) {
+                  ScreenWithTopBar(
+                      title = "Games",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        GamesScreen(navController)
+                      }
+                }
+
+                composable(GameRoutes.Memory) {
+                  ScreenWithTopBar(
+                      title = "Memory Game",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        MemoryGameScreen()
+                      }
+                }
+
+                composable(GameRoutes.Reaction) {
+                  ScreenWithTopBar(
+                      title = "Reaction Test",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        ReactionGameScreen()
+                      }
+                }
+
+                composable(GameRoutes.Focus) {
+                  ScreenWithTopBar(
+                      title = "Focus Breathing",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        FocusBreathingScreen()
+                      }
+                }
+
+                composable(GameRoutes.Runner) {
+                  ScreenWithTopBar(
+                      title = "EduMon Runner",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        FlappyEduMonScreen()
+                      }
+                }
+
+                composable(AppDestination.Flashcards.route) {
+                  ScreenWithTopBar(
+                      title = "Flashcards",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        FlashcardsApp()
+                      }
+                }
+
+                composable(AppDestination.Todo.route) {
+                  ScreenWithTopBar(
+                      title = "Todo",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        TodoNavHostInThisFile()
+                      }
+                }
+
+                composable(AppDestination.Mood.route) {
+                  ScreenWithTopBar(
+                      title = "Daily Reflection",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        MoodLoggingRoute()
+                      }
+                }
+
+                composable(AppDestination.StudyTogether.route) {
+                  ScreenWithTopBar(
+                      title = "Study Together",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        StudyTogetherScreen()
+                      }
+                }
+
+                composable(AppDestination.Shop.route) {
+                  ScreenWithTopBar(
+                      title = "Shop",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        ShopScreen()
+                      }
+                }
+
+                composable("notifications") {
+                  NotificationsScreen(
+                      onBack = { safeNavigateBack(navController) },
+                      onGoHome = { navController.navigateSingleTopTo(AppDestination.Home.route) })
+                }
+
+                composable("focus_mode") {
+                  ScreenWithTopBar(
+                      title = "Focus Mode",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        FocusModeScreen()
+                      }
+                }
+
+                composable(
+                    route = "study/{id}",
+                    arguments = listOf(navArgument("id") { type = NavType.StringType })) {
+                      ScreenWithTopBar(
+                          title = "Study Session",
+                          drawerState = drawerState,
+                          scope = scope,
+                          navController = navController) {
+                            StudySessionScreen()
+                          }
+                    }
+
+                composable(AppDestination.Study.route) {
+                  ScreenWithTopBar(
+                      title = "Study",
+                      drawerState = drawerState,
+                      scope = scope,
+                      navController = navController) {
+                        StudySessionScreen()
+                      }
+                }
+              }
+        }
+  }
 }
 
-/**
- * Helper to avoid stacking multiple copies of the same destination and to reduce race conditions
- * when navigating very fast.
- */
 private fun NavHostController.navigateSingleTopTo(route: String) {
   val currentRoute = this.currentDestination?.route
   if (currentRoute == route) return
@@ -417,12 +548,5 @@ private fun NavHostController.navigateSingleTopTo(route: String) {
     popUpTo(this@navigateSingleTopTo.graph.startDestinationId) { saveState = true }
     launchSingleTop = true
     restoreState = true
-  }
-}
-
-@Composable
-private fun SimpleStub(title: String) {
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Text(title, style = MaterialTheme.typography.titleLarge)
   }
 }

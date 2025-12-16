@@ -1,15 +1,15 @@
-// app/src/test/java/com/android/sample/ui/stats/StatsViewModelTest.kt
-@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-
 package com.android.sample.ui.stats
 
-import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
+import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.ui.stats.model.StudyStats
 import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.stats.viewmodel.StatsViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -18,13 +18,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class StatsViewModelTest {
 
-  private val dispatcher = UnconfinedTestDispatcher()
+  private val dispatcher = StandardTestDispatcher()
+  private lateinit var fakeStatsRepo: FakeStatsRepository
+  private lateinit var fakeUserStatsRepo: FakeUserStatsRepository
 
   @Before
   fun setUp() {
     Dispatchers.setMain(dispatcher)
+    fakeStatsRepo = FakeStatsRepository()
+    fakeUserStatsRepo = FakeUserStatsRepository()
   }
 
   @After
@@ -33,16 +38,43 @@ class StatsViewModelTest {
   }
 
   @Test
-  fun fake_scenarios_emit_into_state() {
-    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
-    val s = vm.stats.value
-    assertNotNull(s)
-    assertEquals(300, s!!.weeklyGoalMin)
+  fun `initial state emits stats from repository`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
+    val stats = vm.stats.value
+    assertNotNull(stats)
+    assertEquals(300, stats!!.weeklyGoalMin)
   }
 
   @Test
-  fun titles_are_exposed_and_contain_known_labels() {
-    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
+  fun `userStats flow is exposed from userStatsRepository`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
+    val userStats = vm.userStats.value
+    assertNotNull(userStats)
+    assertEquals(0, userStats.totalStudyMinutes)
+    assertEquals(0, userStats.todayStudyMinutes)
+  }
+
+  @Test
+  fun `titles are exposed from repository`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
     val titles = vm.scenarioTitles
     assertTrue(titles.isNotEmpty())
     assertTrue(titles.contains("Début de semaine"))
@@ -50,23 +82,32 @@ class StatsViewModelTest {
   }
 
   @Test
-  fun initial_selected_index_is_zero() {
-    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
+  fun `initial selected index is zero`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
     assertEquals(0, vm.scenarioIndex.value)
   }
 
   @Test
-  fun coversDefaultCtor() {
-    StudyStats(0, emptyMap(), 2, emptyList())
-  }
+  fun `selectScenario updates stats and index`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
 
-  @Test
-  fun selectScenario_updates_stats_from_fake_repo() {
-    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
     val initial = vm.stats.value
     assertNotNull(initial)
+    assertEquals(0, initial!!.totalTimeMin)
 
     vm.selectScenario(1)
+    advanceUntilIdle()
 
     val updated = vm.stats.value
     assertNotNull(updated)
@@ -75,30 +116,107 @@ class StatsViewModelTest {
   }
 
   @Test
-  fun selectScenario_clamps_below_zero_to_zero() {
-    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
+  fun `selectScenario clamps negative index to zero`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
     vm.selectScenario(-10)
+    advanceUntilIdle()
+
     assertEquals(0, vm.scenarioIndex.value)
   }
 
   @Test
-  fun selectScenario_clamps_above_last_to_last() {
-    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
+  fun `selectScenario clamps index above max to last scenario`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
     vm.selectScenario(999)
+    advanceUntilIdle()
+
     assertEquals(4, vm.scenarioIndex.value)
     assertEquals(180, vm.stats.value!!.totalTimeMin)
   }
 
   @Test
-  fun multiple_selections_update_stats_each_time() {
-    val vm = StatsViewModel(repo = FakeStatsRepository(), objectivesRepo = FakeObjectivesRepository)
+  fun `multiple scenario selections update stats correctly`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
     vm.selectScenario(3)
+    advanceUntilIdle()
     assertEquals(320, vm.stats.value!!.totalTimeMin)
 
     vm.selectScenario(2)
+    advanceUntilIdle()
     assertEquals(235, vm.stats.value!!.totalTimeMin)
 
     vm.selectScenario(0)
+    advanceUntilIdle()
     assertEquals(0, vm.stats.value!!.totalTimeMin)
+  }
+
+  @Test
+  fun `StudyStats data class can be created with default values`() {
+    val stats =
+        StudyStats(
+            totalTimeMin = 0,
+            courseTimesMin = emptyMap(),
+            completedGoals = 2,
+            progressByDayMin = emptyList())
+
+    assertEquals(0, stats.totalTimeMin)
+    assertEquals(0, stats.courseTimesMin.size)
+    assertEquals(2, stats.completedGoals)
+    assertTrue(stats.progressByDayMin.isEmpty())
+  }
+
+  @Test
+  fun `stats flow updates when repository updates`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
+    val initial = vm.stats.value
+    assertNotNull(initial)
+
+    // Simulate repository update
+    fakeStatsRepo.update(initial!!.copy(totalTimeMin = 999))
+    advanceUntilIdle()
+
+    assertEquals(999, vm.stats.value!!.totalTimeMin)
+  }
+
+  @Test
+  fun `userStats updates when userStatsRepository updates`() = runTest {
+    val vm =
+        StatsViewModel(
+            repo = fakeStatsRepo,
+            objectivesRepo = com.android.sample.feature.weeks.repository.FakeObjectivesRepository,
+            userStatsRepo = fakeUserStatsRepo)
+    advanceUntilIdle()
+
+    assertEquals(0, vm.userStats.value.totalStudyMinutes)
+
+    // Simulate study session
+    fakeUserStatsRepo.addStudyMinutes(25)
+    advanceUntilIdle()
+
+    assertEquals(25, vm.userStats.value.totalStudyMinutes)
   }
 }

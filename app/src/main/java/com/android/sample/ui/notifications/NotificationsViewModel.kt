@@ -117,6 +117,8 @@ class NotificationsViewModel(
 
   private val _campusEntryEnabled = MutableStateFlow(false)
   override val campusEntryEnabled: StateFlow<Boolean> = _campusEntryEnabled.asStateFlow()
+  private val _friendStudyModeEnabled = MutableStateFlow(false)
+  override val friendStudyModeEnabled: StateFlow<Boolean> = _friendStudyModeEnabled.asStateFlow()
 
   private val DEFAULT_STREAK_HOUR = 19
 
@@ -182,6 +184,22 @@ class NotificationsViewModel(
     }
     // Note: Worker chain runs continuously regardless of this setting.
     // This preference only controls whether notifications are sent.
+  override fun setFriendStudyModeEnabled(ctx: Context, on: Boolean) {
+    _friendStudyModeEnabled.value = on
+    // persist user preference
+    try {
+      ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+          .edit()
+          .putBoolean("friend_study_mode_enabled", on)
+          .apply()
+    } catch (e: Exception) {
+      Log.e("NotificationsVM", "Failed to persist friend_study_mode_enabled preference", e)
+    }
+    if (on) {
+      com.android.sample.data.notifications.FriendStudyModeWorker.startChain(ctx)
+    } else {
+      com.android.sample.data.notifications.FriendStudyModeWorker.cancel(ctx)
+    }
   }
 
   @SuppressLint("ScheduleExactAlarm")

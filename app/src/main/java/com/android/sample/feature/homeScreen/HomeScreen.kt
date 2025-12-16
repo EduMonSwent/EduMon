@@ -4,6 +4,7 @@ package com.android.sample.feature.homeScreen
 
 // 🔽 Only dependency on creature UI:
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -35,14 +36,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.sample.R
 import com.android.sample.data.Status
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
 import com.android.sample.screens.CreatureHouseCard
 import com.android.sample.screens.CreatureStatsCard
-import com.android.sample.ui.profile.EduMonAvatar
-import com.android.sample.ui.theme.AccentViolet
-import com.android.sample.ui.theme.MidDarkCard
 
 private const val DAYS_PER_WEEK = 7
 
@@ -84,10 +83,10 @@ enum class AppDestination(val route: String, val label: String, val icon: ImageV
 // ---------- Route (hooks up VM to UI) ----------
 @Composable
 fun EduMonHomeRoute(
-    creatureResId: Int,
-    environmentResId: Int,
-    onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
+    @DrawableRes creatureResId: Int = R.drawable.edumon,
+    @DrawableRes environmentResId: Int = R.drawable.bg_pyrmon,
+    onNavigate: (String) -> Unit,
     vm: HomeViewModel = viewModel(),
 ) {
   val state by vm.uiState.collectAsState()
@@ -121,11 +120,12 @@ fun EduMonHomeScreen(
           .verticalScroll(rememberScrollState())
           .padding(horizontal = 16.dp, vertical = 8.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Creature + environment fully driven by parameters (no hard-coded sprite)
         CreatureHouseCard(
             creatureResId = creatureResId,
-            level = state.creatureStats.level,
+            level = LevelingConfig.levelForPoints(state.userStats.points),
             environmentResId = environmentResId,
-            overrideCreature = { EduMonAvatar(showLevelLabel = false) })
+        )
 
         Row(
             Modifier.fillMaxWidth().height(IntrinsicSize.Min),
@@ -406,16 +406,18 @@ fun GlowCard(content: @Composable () -> Unit) {
                   repeatMode = RepeatMode.Reverse),
           label = "glowAlpha")
 
+  val colorScheme = MaterialTheme.colorScheme
+  val glowColor = colorScheme.primary
+
   Card(
       modifier = Modifier.fillMaxWidth(0.9f).shadow(16.dp, RoundedCornerShape(16.dp)),
       shape = RoundedCornerShape(16.dp),
-      colors = CardDefaults.cardColors(containerColor = MidDarkCard)) {
+      colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)) {
         Box(
             modifier =
                 Modifier.background(
                     Brush.radialGradient(
-                        colors =
-                            listOf(AccentViolet.copy(alpha = glowAlpha), Color.Transparent)))) {
+                        colors = listOf(glowColor.copy(alpha = glowAlpha), Color.Transparent)))) {
               content()
             }
       }

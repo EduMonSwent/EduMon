@@ -1,10 +1,9 @@
 package com.android.sample.ui.profile
 
-// This code has been written partially using A.I (LLM).
-
 import LevelingConfig.levelForPoints
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -18,9 +17,10 @@ import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.rewards.LevelRewardEngine
 import com.android.sample.feature.schedule.repository.schedule.IcsImporter
+import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.profile.ProfileRepository
-import com.android.sample.profile.ProfileRepositoryProvider
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.ui.gamification.ToastNotifier
 import com.android.sample.ui.theme.AccentBlue
 import com.android.sample.ui.theme.AccentMagenta
 import com.android.sample.ui.theme.AccentMint
@@ -35,54 +35,119 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// This code has been written partially using A.I (LLM).
 class ProfileViewModel(
-    private val profileRepository: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val profileRepository: ProfileRepository = AppRepositories.profileRepository,
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
 
-  // ----- Profile (name, email, avatar, accessories, settings) -----
-  private val _userProfile = MutableStateFlow(profileRepository.profile.value.copy())
+  companion object {
+    // Global state shared across all instances to handle the multiple-instance bug
+    private var globalSyncCount = 0
+    private var globalStartupComplete = false
+    private var globalLastProcessedPoints = 0
+    private var globalLastProcessedCoins = 0
+    private var globalJustLeveledUp = false
+  }
+
+  // ----- State Flows -----
+  private val _userProfile = MutableStateFlow(UserProfile())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
-  // ----- Unified stats from Firestore (/users/{uid}/stats/stats) -----
   private val _userStats = MutableStateFlow(UserStats())
   val userStats: StateFlow<UserStats> = _userStats
 
-  init {
-    viewModelScope.launch {
-      userStatsRepository.start()
-      userStatsRepository.stats.collect { stats ->
-        _userStats.value = stats
-        syncProfileWithStats(stats)
-      }
-    }
-  }
+  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
+  val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
 
-  // Palette from theme
+  private val accentVariant = MutableStateFlow(AccentVariant.Base)
+  val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
+
+  // ----- Startup synchronization flags -----
+  private var startupCompleted: Boolean
+    get() = globalStartupComplete
+    set(value) {
+      globalStartupComplete = value
+    }
+
+  private var lastProcessedPoints: Int
+    get() = globalLastProcessedPoints
+    set(value) {
+      globalLastProcessedPoints = value
+    }
+
+  private var lastProcessedCoins: Int
+    get() = globalLastProcessedCoins
+    set(value) {
+      globalLastProcessedCoins = value
+    }
+
+  private var justLeveledUp: Boolean
+    get() = globalJustLeveledUp
+    set(value) {
+      globalJustLeveledUp = value
+    }
+
+  // Flag to know if profile has been loaded from Firestore
+  private var profileLoaded = false
+
+  // ----- Reward engine -----
+  private val rewardEngine = LevelRewardEngine()
+
+  // ----- Theme palette -----
   val accentPalette: List<Color> =
       listOf(
           AccentViolet,
           AccentBlue,
-          AccentMint,
           EventColorSports,
           AccentMagenta,
           PurplePrimary,
-          AccentBlue,
           AccentMint,
           GlowGold,
           VioletSoft)
 
-  // ----- Profil LOCAL uniquement -----
-  // reward engine instance
-  private val rewardEngine = LevelRewardEngine()
+  val accentEffective: StateFlow<Color> =
+      combine(userProfile, accentVariantFlow) { user, variant ->
+            applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
+          }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
 
-  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
-  val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
-  // Accessories catalog
+  init {
+    Log.d("ProfileViewModel", "=== ProfileViewModel INIT ===")
+
+    // Collect profile from repository
+    viewModelScope.launch {
+      profileRepository.profile.collect { profile ->
+        Log.d("ProfileViewModel", "Profile from repo: starterId='${profile.starterId}'")
+        _userProfile.value = profile
+        profileLoaded = true
+      }
+    }
+
+    // Wait for Firestore to load, then start stats collection
+    viewModelScope.launch {
+      if (profileRepository is FirestoreProfileRepository) {
+        Log.d("ProfileViewModel", "Waiting for Firestore profile to load...")
+        profileRepository.isLoaded.first { it }
+        Log.d("ProfileViewModel", "Firestore profile loaded")
+      }
+
+      userStatsRepository.start()
+      userStatsRepository.stats.collect { stats ->
+        _userStats.value = stats
+        if (profileLoaded) {
+          syncProfileWithStats(stats)
+        }
+      }
+    }
+  }
+
+  // ----- Accessory Management -----
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
@@ -102,16 +167,7 @@ class ProfileViewModel(
       return fullCatalog().filter { item -> item.id == "none" || owned.contains(item.id) }
     }
 
-  private val accentVariant = MutableStateFlow(AccentVariant.Base)
-  val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
-
-  open val accentEffective: StateFlow<Color> =
-      combine(userProfile, accentVariantFlow) { user, variant ->
-            applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
-          }
-          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
-
-  open fun accessoryResId(slot: AccessorySlot, id: String): Int {
+  fun accessoryResId(slot: AccessorySlot, id: String): Int {
     return when (slot) {
       AccessorySlot.HEAD ->
           when (id) {
@@ -142,24 +198,6 @@ class ProfileViewModel(
         .toSet()
   }
 
-  fun setAvatarAccent(color: Color) {
-    val argb = color.toArgb().toLong()
-    _userProfile.update { it.copy(avatarAccent = argb) }
-    pushProfile()
-  }
-
-  fun setAccentVariant(variant: AccentVariant) {
-    accentVariant.value = variant
-  }
-
-  fun toggleNotifications() = updateLocal {
-    it.copy(notificationsEnabled = !it.notificationsEnabled)
-  }
-
-  fun toggleLocation() = updateLocal { it.copy(locationEnabled = !it.locationEnabled) }
-
-  fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
-
   fun equip(slot: AccessorySlot, id: String) {
     val owned = ownedIds()
     if (id != "none" && !owned.contains(id)) return
@@ -188,12 +226,17 @@ class ProfileViewModel(
     return entry.removePrefix(prefix)
   }
 
-  private fun updateLocal(edit: (UserProfile) -> UserProfile) {
-    _userProfile.update(edit)
+  // ----- Theme and Accent Management -----
+
+  fun setAvatarAccent(color: Color) {
+    val argb = color.toArgb().toLong()
+    _userProfile.update { it.copy(avatarAccent = argb) }
     pushProfile()
   }
 
-  // ---------- Color helpers ----------
+  fun setAccentVariant(variant: AccentVariant) {
+    accentVariant.value = variant
+  }
 
   private fun applyAccentVariant(base: Color, v: AccentVariant): Color =
       when (v) {
@@ -214,6 +257,51 @@ class ProfileViewModel(
                 base.alpha)
       }
 
+  // ----- Settings Management -----
+
+  fun toggleNotifications() = updateLocal {
+    it.copy(notificationsEnabled = !it.notificationsEnabled)
+  }
+
+  fun toggleLocation() = updateLocal { it.copy(locationEnabled = !it.locationEnabled) }
+
+  fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
+
+  // ----- Starter Selection -----
+
+  fun setStarter(starterId: String) {
+    if (starterId.isBlank()) {
+      Log.w("ProfileViewModel", "setStarter: blank id ignored")
+      return
+    }
+
+    Log.d("ProfileViewModel", "=== setStarter CALLED: '$starterId' ===")
+
+    val updated = _userProfile.value.copy(starterId = starterId)
+    _userProfile.value = updated
+    profileLoaded = true
+
+    viewModelScope.launch {
+      try {
+        profileRepository.updateProfile(updated)
+        Log.d("ProfileViewModel", "=== setStarter SUCCESS ===")
+      } catch (e: Exception) {
+        Log.e("ProfileViewModel", "=== setStarter FAILED ===", e)
+      }
+    }
+  }
+
+  fun starterDrawable(): Int {
+    return when (_userProfile.value.starterId) {
+      "pyromon" -> R.drawable.edumon
+      "aquamon" -> R.drawable.edumon2
+      "floramon" -> R.drawable.edumon1
+      else -> R.drawable.edumon
+    }
+  }
+
+  // ----- Points and Coins Management -----
+
   fun addCoins(amount: Int) {
     if (amount <= 0) return
     viewModelScope.launch { userStatsRepository.updateCoins(amount) }
@@ -221,57 +309,61 @@ class ProfileViewModel(
 
   fun addPoints(amount: Int) {
     if (amount <= 0) return
-
-    viewModelScope.launch {
-      // update STATS (source of truth)
-      userStatsRepository.addPoints(amount)
-
-      // Profile will update automatically via syncProfileWithStats()
-    }
+    viewModelScope.launch { userStatsRepository.addPoints(amount) }
   }
 
-  private fun pushProfile(updated: UserProfile = _userProfile.value) {
-    viewModelScope.launch { runCatching { profileRepository.updateProfile(updated) } }
-  }
-
-  private fun applyProfileWithPotentialRewards(edit: (UserProfile) -> UserProfile) {
-    val oldProfile = _userProfile.value
-    val candidate = edit(oldProfile)
-
-    if (candidate.level <= oldProfile.level) {
-      _userProfile.value = candidate
-      pushProfile(candidate)
-      return
-    }
-
-    val result = rewardEngine.applyLevelUpRewards(oldProfile, candidate)
-    val updated = result.updatedProfile
-
-    _userProfile.value = updated
-    pushProfile(updated)
-
-    if (!result.summary.isEmpty) {
-      viewModelScope.launch {
-        _rewardEvents.emit(
-            LevelUpRewardUiEvent.RewardsGranted(newLevel = updated.level, summary = result.summary))
-      }
-    }
-  }
+  // ----- Level and Rewards Management -----
 
   private fun computeLevelFromPoints(points: Int): Int = levelForPoints(points)
 
-  fun debugLevelUpForTests() {
-    applyProfileWithPotentialRewards { current -> current.copy(level = current.level + 1) }
-  }
-
   fun syncProfileWithStats(stats: UserStats) {
+    globalSyncCount++
+
+    if (!profileLoaded) {
+      Log.d("ProfileViewModel", "syncProfileWithStats: skipped (profile not loaded yet)")
+      return
+    }
+
     val old = _userProfile.value
-
     val newPoints = stats.points
-    val computedLevel = computeLevelFromPoints(newPoints)
+    val computed = computeLevelFromPoints(newPoints)
 
-    // If no level change → just sync fields and exit
-    if (computedLevel == old.level) {
+    // First sync - establish baseline
+    if (!startupCompleted) {
+      val initial =
+          old.copy(
+              points = newPoints,
+              level = computed,
+              coins = stats.coins,
+              streak = stats.streak,
+              lastRewardedLevel = computed,
+              studyStats =
+                  old.studyStats.copy(
+                      totalTimeMin = stats.totalStudyMinutes,
+                      dailyGoalMin = old.studyStats.dailyGoalMin))
+
+      _userProfile.value = initial
+      pushProfile(initial)
+
+      startupCompleted = true
+      lastProcessedPoints = newPoints
+      lastProcessedCoins = stats.coins
+
+      Log.d("ProfileViewModel", "Baseline set: level=$computed, points=$newPoints")
+      return
+    }
+
+    val safeNewLevel = maxOf(computed, old.level)
+
+    // Calculate deltas BEFORE updating tracking variables
+    val pointsDelta = (newPoints - lastProcessedPoints).coerceAtLeast(0)
+    val coinsDelta = (stats.coins - lastProcessedCoins).coerceAtLeast(0)
+
+    // NO LEVEL CHANGE
+    if (safeNewLevel == old.level) {
+      lastProcessedPoints = newPoints
+      lastProcessedCoins = stats.coins
+
       val updated =
           old.copy(
               points = newPoints,
@@ -281,28 +373,42 @@ class ProfileViewModel(
                   old.studyStats.copy(
                       totalTimeMin = stats.totalStudyMinutes,
                       dailyGoalMin = old.studyStats.dailyGoalMin))
-      if (updated != old) {
-        _userProfile.value = updated
-        pushProfile(updated)
+      _userProfile.value = updated
+      pushProfile(updated)
+
+      // Show toast for stat gains ONLY if:
+      // 1. After startup (globalSyncCount > 2)
+      // 2. Not right after a level-up (justLeveledUp = false)
+      if ((pointsDelta > 0 || coinsDelta > 0) && globalSyncCount > 2 && !justLeveledUp) {
+        ToastNotifier.showStatGain(pointsDelta, coinsDelta)
       }
+
+      // Reset level-up flag AFTER we've blocked the follow-up sync
+      if (justLeveledUp) {
+        justLeveledUp = false
+      }
+
       return
     }
 
-    // ---- LEVEL UP DETECTED ----
-    val candidate = old.copy(points = newPoints, level = computedLevel)
+    // LEVEL UP
+    justLeveledUp = true
 
-    // Apply rewards
+    val candidate = old.copy(points = newPoints, level = safeNewLevel)
     val result = rewardEngine.applyLevelUpRewards(old, candidate)
-    val rewardedProfile = result.updatedProfile
+    val rewarded = result.updatedProfile
 
-    // If rewards include coins, push them to statsRepository
+    // Persist reward coins to Firestore
     if (result.summary.coinsGranted > 0) {
       viewModelScope.launch { userStatsRepository.updateCoins(result.summary.coinsGranted) }
     }
 
-    // Final profile = reward result + FIRESTORE stats overlay
+    // Update tracking - include ALL coins (Pomodoro + level rewards)
+    lastProcessedPoints = newPoints
+    lastProcessedCoins = stats.coins + result.summary.coinsGranted
+
     val final =
-        rewardedProfile.copy(
+        rewarded.copy(
             coins = stats.coins + result.summary.coinsGranted,
             streak = stats.streak,
             studyStats =
@@ -310,18 +416,44 @@ class ProfileViewModel(
                     totalTimeMin = stats.totalStudyMinutes,
                     dailyGoalMin = old.studyStats.dailyGoalMin))
 
-    // Update profile
     _userProfile.value = final
     pushProfile(final)
 
-    // Emit level-up snackbar event
-    if (!result.summary.isEmpty) {
+    // Only show level-up event after initial syncs
+    if (!result.summary.isEmpty && globalSyncCount > 2) {
+      val event =
+          LevelUpRewardUiEvent.RewardsGranted(newLevel = safeNewLevel, summary = result.summary)
       viewModelScope.launch {
-        _rewardEvents.emit(
-            LevelUpRewardUiEvent.RewardsGranted(newLevel = final.level, summary = result.summary))
+        _rewardEvents.emit(event)
+        ToastNotifier.showLevelUpEvent(event)
       }
     }
   }
+
+  // ----- Profile Persistence -----
+
+  private fun updateLocal(edit: (UserProfile) -> UserProfile) {
+    _userProfile.update(edit)
+    pushProfile()
+  }
+
+  private fun pushProfile(updated: UserProfile = _userProfile.value) {
+    if (!profileLoaded) {
+      Log.d("ProfileViewModel", "pushProfile: skipped (profile not loaded yet)")
+      return
+    }
+
+    viewModelScope.launch {
+      try {
+        profileRepository.updateProfile(updated)
+        Log.d("ProfileViewModel", "pushProfile: saved")
+      } catch (e: Exception) {
+        Log.e("ProfileViewModel", "pushProfile failed", e)
+      }
+    }
+  }
+
+  // ----- ICS Import -----
 
   fun importIcs(context: Context, uri: Uri) {
     viewModelScope.launch {

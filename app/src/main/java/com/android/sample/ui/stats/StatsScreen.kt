@@ -6,11 +6,28 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -23,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,12 +56,14 @@ import com.android.sample.ui.theme.AccentMint
 import com.android.sample.ui.theme.EventColorDefault
 import com.android.sample.ui.theme.EventViolet
 import com.android.sample.ui.theme.StudyGreen
+import java.time.LocalDate
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
 private const val DAYS_IN_WEEK = 7
 private const val GRID_ALPHA = 0.08f
 private const val AXIS_ALPHA = 0.2f
+private const val SECONDARY_TEXT_ALPHA = 0.8f
 private val DEFAULT_BAR_SPACING = 8.dp
 
 // --- Route: ViewModel wiring -------------------------------------------------
@@ -51,6 +71,7 @@ private val DEFAULT_BAR_SPACING = 8.dp
 @Composable
 fun StatsRoute(viewModel: StatsViewModel = viewModel()) {
   val stats by viewModel.stats.collectAsState()
+  val userStats by viewModel.userStats.collectAsState()
   val selected by viewModel.scenarioIndex.collectAsState()
   val titles = viewModel.scenarioTitles
 
@@ -65,6 +86,7 @@ fun StatsRoute(viewModel: StatsViewModel = viewModel()) {
 
   StatsScreen(
       stats = stats!!,
+      totalStudyMinutes = userStats.totalStudyMinutes,
       selectedIndex = selected,
       titles = titles,
       onSelectScenario = viewModel::selectScenario,
@@ -76,6 +98,7 @@ fun StatsRoute(viewModel: StatsViewModel = viewModel()) {
 @Composable
 fun StatsScreen(
     stats: StudyStats,
+    totalStudyMinutes: Int,
     selectedIndex: Int,
     titles: List<String>,
     onSelectScenario: (Int) -> Unit,
@@ -102,13 +125,15 @@ fun StatsScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        ScenarioSelector(
-            titles = titles, selectedIndex = selectedIndex, onSelect = onSelectScenario)
+        if (titles.size > 1) {
+          ScenarioSelector(
+              titles = titles, selectedIndex = selectedIndex, onSelect = onSelectScenario)
+        }
 
         Spacer(Modifier.height(12.dp))
 
         SummaryRow(
-            totalTimeMin = stats.totalTimeMin,
+            totalTimeMin = totalStudyMinutes,
             completedGoals = stats.completedGoals,
             weeklyGoalMin = stats.weeklyGoalMin)
 
@@ -122,7 +147,17 @@ fun StatsScreen(
                     text = stringResource(R.string.stats_section_subject_distribution),
                     fontWeight = FontWeight.SemiBold,
                     color = onSurf)
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.stats_subjects_this_week_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA),
+                )
+
                 Spacer(Modifier.height(12.dp))
+
                 PieChart(
                     data = stats.courseTimesMin,
                     colors = colorMap,
@@ -153,7 +188,9 @@ fun StatsScreen(
                             grid = onSurf.copy(alpha = GRID_ALPHA),
                             axis = onSurf.copy(alpha = AXIS_ALPHA)),
                     unitLabel = stringResource(R.string.stats_unit_minutes_short),
-                    perDayGoal = stats.weeklyGoalMin / DAYS_IN_WEEK)
+                    perDayGoal = stats.weeklyGoalMin / DAYS_IN_WEEK,
+                    todayIndex = LocalDate.now().dayOfWeek.value - 1,
+                )
               }
             }
 
@@ -214,14 +251,14 @@ private fun SummaryCard(title: String, value: String, modifier: Modifier = Modif
       Text(
           title,
           style = MaterialTheme.typography.labelLarge,
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA))
       Spacer(Modifier.height(6.dp))
       Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
     }
   }
 }
 
-// --- Colors for pie chart (from theme, no hardcoded Color(...)) --------------
+// --- Colors for pie chart (Edumon theme colors) ------------------------------
 
 private val SliceColors =
     listOf(
@@ -274,6 +311,8 @@ private fun PieChart(
 @Composable
 private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
   val total = data.values.sum().coerceAtLeast(1)
+  val fallbackColor = MaterialTheme.colorScheme.outlineVariant
+
   Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
     data.entries
         .sortedByDescending { it.value }
@@ -286,7 +325,7 @@ private fun Legend(data: Map<String, Int>, colors: Map<String, Color>) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(10.dp)
-                    .background(colors[label] ?: Color.LightGray, RoundedCornerShape(2.dp)))
+                    .background(colors[label] ?: fallbackColor, RoundedCornerShape(2.dp)))
             Spacer(Modifier.width(8.dp))
             Text(
                 line,
@@ -323,6 +362,7 @@ private fun BarChart7Days(
     unitLabel: String,
     perDayGoal: Int? = null,
     barSpacing: Dp = DEFAULT_BAR_SPACING,
+    todayIndex: Int,
 ) {
   val maxValRaw = (values.maxOrNull() ?: 0).coerceAtLeast(1)
   val step = niceStep(maxValRaw)
@@ -330,23 +370,26 @@ private fun BarChart7Days(
 
   val labelsX =
       listOf(
-          stringResource(R.string.stats_label_day_minus_6),
-          stringResource(R.string.stats_label_day_minus_5),
-          stringResource(R.string.stats_label_day_minus_4),
-          stringResource(R.string.stats_label_day_minus_3),
-          stringResource(R.string.stats_label_day_minus_2),
-          stringResource(R.string.stats_label_day_minus_1),
-          stringResource(R.string.stats_label_today),
+          stringResource(R.string.stats_label_day_mon),
+          stringResource(R.string.stats_label_day_tue),
+          stringResource(R.string.stats_label_day_wed),
+          stringResource(R.string.stats_label_day_thu),
+          stringResource(R.string.stats_label_day_fri),
+          stringResource(R.string.stats_label_day_sat),
+          stringResource(R.string.stats_label_day_sun),
       )
-  val todayIndex = values.lastIndex
+
+  val clampedTodayIndex = if (values.isEmpty()) 0 else todayIndex.coerceIn(0, values.lastIndex)
+
   val goalColor = MaterialTheme.colorScheme.tertiary
+  val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
 
   val goalLabel: String? =
       perDayGoal?.let { stringResource(R.string.stats_goal_per_day_format, it, unitLabel) }
 
   Column(modifier = modifier) {
     Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
-      val layout = createBarChartLayout()
+      val layout = createBarChartLayout(labelColor)
 
       drawYAxisGrid(
           yMax = yMax,
@@ -361,7 +404,7 @@ private fun BarChart7Days(
               yMax = yMax,
               barSpacing = barSpacing,
               unitLabel = unitLabel,
-              todayIndex = todayIndex,
+              todayIndex = clampedTodayIndex,
               colors = colors,
               layout = layout,
           ))
@@ -379,11 +422,11 @@ private fun BarChart7Days(
       drawBottomAxis(axisColor = colors.axis, layout = layout)
     }
 
-    BarChartDayLabels(labelsX = labelsX, todayIndex = todayIndex)
+    BarChartDayLabels(labelsX = labelsX, todayIndex = clampedTodayIndex)
   }
 }
 
-// layout + parameter holders (all private so we do not expose internal types)
+// layout + parameter holders
 
 private data class BarChartLayout(
     val leftPad: Float,
@@ -413,7 +456,7 @@ private data class BarDrawingParams(
 
 // --- DrawScope helpers -------------------------------------------------------
 
-private fun DrawScope.createBarChartLayout(): BarChartLayout {
+private fun DrawScope.createBarChartLayout(labelColor: Color): BarChartLayout {
   val leftPad = 36.dp.toPx()
   val bottomPad = 18.dp.toPx()
   val topPad = 8.dp.toPx()
@@ -426,7 +469,7 @@ private fun DrawScope.createBarChartLayout(): BarChartLayout {
       android.graphics.Paint().apply {
         isAntiAlias = true
         textSize = 11.dp.toPx()
-        color = android.graphics.Color.argb(180, 220, 225, 235)
+        color = labelColor.toArgb()
       }
 
   return BarChartLayout(
@@ -582,7 +625,7 @@ private fun BarChartDayLabels(labelsX: List<String>, todayIndex: Int) {
   Text(
       text = stringResource(R.string.stats_bar_chart_caption),
       style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+      color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA))
 }
 
 // --- Encouragement + formatting ----------------------------------------------

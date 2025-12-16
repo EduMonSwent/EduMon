@@ -19,4 +19,13 @@ interface UserStatsRepository {
 
   /** Sets the weekly goal in minutes. */
   suspend fun setWeeklyGoal(minutes: Int)
+
+  /** Adds all pomodoro rewards in a single atomic update. */
+  suspend fun addReward(minutes: Int = 0, points: Int = 0, coins: Int = 0) {
+    // Default implementation calls individual methods
+    // Production repo should override for single atomic write
+    if (minutes > 0) addStudyMinutes(minutes)
+    if (points != 0) addPoints(points)
+    if (coins != 0) updateCoins(coins)
+  }
 }
