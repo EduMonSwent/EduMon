@@ -617,7 +617,7 @@ private fun StudyMap(
 }
 
 @Composable
-private fun GoBackToMeChip(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun GoBackToMeChip(onClick: () -> Unit, modifier: Modifier = Modifier) {
   val cs = MaterialTheme.colorScheme
 
   Card(
@@ -857,7 +857,7 @@ private fun EdumonFriendsDropdown(
 }
 
 @Composable
-private fun CampusStatusChip(onCampus: Boolean, modifier: Modifier = Modifier) {
+fun CampusStatusChip(onCampus: Boolean, modifier: Modifier = Modifier) {
   val cs = MaterialTheme.colorScheme
   val dotColor = if (onCampus) ON_CAMPUS_GREEN else OFF_CAMPUS_RED
   val label = if (onCampus) "On campus" else "Off campus"
@@ -889,7 +889,7 @@ private fun CampusStatusChip(onCampus: Boolean, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FriendDropdownRow(
+fun FriendDropdownRow(
     friend: FriendStatus,
     onClick: () -> Unit,
     onFindClick: () -> Unit,
@@ -1001,7 +1001,7 @@ private fun OnCampusIndicatorCompact(modifier: Modifier = Modifier, onCampus: Bo
 }
 
 @Composable
-private fun StatusChip(mode: FriendMode) {
+fun StatusChip(mode: FriendMode) {
   val cs = MaterialTheme.colorScheme
   val (label, baseColor) =
       when (mode) {
