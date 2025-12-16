@@ -71,41 +71,70 @@ class NavigationAdditionnalTests {
     composeTestRule.waitForIdle()
 
     // Verify we're on Profile
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
-
-    // Scroll down to reveal the SettingsCard.
-    // Target the LazyColumn itself using its testTag.
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
-      val size = this@performTouchInput.visibleSize
-      val width = size.width
-      val height = size.height
-
-      val startY = (height * 0.80).toFloat()
-      val endY = (height * 0.20).toFloat()
-      val centerX = (width / 2.0).toFloat()
-
-      swipe(start = Offset(centerX, startY), end = Offset(centerX, endY))
-    }
-    composeTestRule.waitForIdle() // Wait for scroll animation/composition
-
-    // Now that we've scrolled, try to find and click the "Manage notifications" button.
-    // It has the testTag "open_notifications_screen".
-    composeTestRule.onNodeWithTag("open_notifications_screen").performClick()
-    composeTestRule.waitForIdle() // Wait for navigation initiation
-
-    // We should now be on the Notifications screen.
-    // The Notifications screen has its own HeaderBar which sets the title.
-    // The HeaderBar applies the tag "notifications_title" to its title Text.
-    // Use waitUntil with a reasonable timeout.
-    composeTestRule.waitUntil(timeoutMillis = 8000) {
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
       try {
-        // The HeaderBar in NotificationsScreen applies this tag.
-        composeTestRule.onNodeWithTag("notifications_title").assertExists()
-        true // Condition met
+        composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
+        true
       } catch (e: AssertionError) {
-        false // Condition not met yet, keep waiting
+        false
       }
     }
+
+    // Wait for the profile screen to be fully loaded
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).assertExists()
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+
+    // Perform multiple scrolls to ensure we reach the bottom
+    repeat(3) {
+      composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
+        val size = this@performTouchInput.visibleSize
+        val width = size.width
+        val height = size.height
+
+        val startY = (height * 0.80).toFloat()
+        val endY = (height * 0.20).toFloat()
+        val centerX = (width / 2.0).toFloat()
+
+        swipe(start = Offset(centerX, startY), end = Offset(centerX, endY), durationMillis = 500)
+      }
+      composeTestRule.waitForIdle()
+      Thread.sleep(300) // Give time for scroll to settle
+    }
+
+    // Wait for the notifications button to be visible and clickable
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        composeTestRule.onNodeWithTag("open_notifications_screen").assertExists()
+        composeTestRule.onNodeWithTag("open_notifications_screen").assertIsDisplayed()
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+
+    // Click the button
+    composeTestRule.onNodeWithTag("open_notifications_screen").performClick()
+    composeTestRule.waitForIdle()
+    Thread.sleep(500) // Give navigation time to complete
+
+    // Wait for navigation to complete
+    composeTestRule.waitUntil(timeoutMillis = 10000) {
+      try {
+        composeTestRule.onNodeWithTag("notifications_title").assertExists()
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+
+    // Final assertion
+    composeTestRule.onNodeWithTag("notifications_title").assertIsDisplayed()
   }
 
   /**
@@ -127,43 +156,72 @@ class NavigationAdditionnalTests {
     composeTestRule.waitForIdle()
 
     // Verify we're on Profile
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
-
-    // Scroll down to reveal the SettingsCard.
-    // Target the LazyColumn itself using its testTag.
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
-      val size = this@performTouchInput.visibleSize
-      val width = size.width
-      val height = size.height
-
-      val startY = (height * 0.80).toFloat()
-      val endY = (height * 0.20).toFloat()
-      val centerX = (width / 2.0).toFloat()
-
-      swipe(start = Offset(centerX, startY), end = Offset(centerX, endY))
-    }
-    composeTestRule.waitForIdle() // Wait for scroll animation/composition
-
-    // Now that we've scrolled, try to find and click the Focus Mode switch.
-    // It's tagged with ProfileScreenTestTags.SWITCH_FOCUS_MODE.
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-    composeTestRule.waitForIdle() // Wait for navigation initiation
-
-    // We should now be on the Focus Mode screen.
-    // The NavHost defines the "focus_mode" route wrapped by ScreenWithTopBar.
-    // Therefore, the TOP_BAR_TITLE tag should show "Focus Mode".
-    // Use waitUntil with a reasonable timeout.
-    composeTestRule.waitUntil(timeoutMillis = 8000) {
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
       try {
-        // The title in ScreenWithTopBar for the "focus_mode" route is "Focus Mode".
+        composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+
+    // Wait for the profile screen to be fully loaded
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).assertExists()
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+
+    // Perform multiple scrolls to ensure we reach the bottom
+    repeat(3) {
+      composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
+        val size = this@performTouchInput.visibleSize
+        val width = size.width
+        val height = size.height
+
+        val startY = (height * 0.80).toFloat()
+        val endY = (height * 0.20).toFloat()
+        val centerX = (width / 2.0).toFloat()
+
+        swipe(start = Offset(centerX, startY), end = Offset(centerX, endY), durationMillis = 500)
+      }
+      composeTestRule.waitForIdle()
+      Thread.sleep(300) // Give time for scroll to settle
+    }
+
+    // Wait for the focus mode switch to be visible and clickable
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).assertExists()
+        composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).assertIsDisplayed()
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+
+    // Click the switch
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
+    composeTestRule.waitForIdle()
+    Thread.sleep(500) // Give navigation time to complete
+
+    // Wait for navigation to complete
+    composeTestRule.waitUntil(timeoutMillis = 10000) {
+      try {
         composeTestRule
             .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
             .assertTextEquals("Focus Mode")
-        true // Condition met
+        true
       } catch (e: AssertionError) {
-        false // Condition not met yet, keep waiting
+        false
       }
     }
+
+    // Final assertion
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
   }
 
   // ==================== EXISTING TESTS (Can be kept or removed if redundant) ====================
