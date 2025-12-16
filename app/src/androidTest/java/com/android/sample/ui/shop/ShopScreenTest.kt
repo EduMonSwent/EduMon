@@ -981,6 +981,7 @@ data class FakeShopViewModel(val success: Boolean) {
  * Test wrapper composable that directly injects a PurchaseResult to test the LaunchedEffect logic.
  * This mimics the ShopScreen structure but allows direct control over the purchase result.
  */
+@Suppress("UNUSED_PARAMETER")
 @androidx.compose.runtime.Composable
 fun TestShopScreenWithPurchaseResult(
     purchaseResult: PurchaseResult,
@@ -1011,9 +1012,10 @@ fun TestShopScreenWithPurchaseResult(
   }
 
   androidx.compose.material3.Scaffold(
-      snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) }) { _ ->
-        androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier)
-      }
+      snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) }) @Suppress(
+      "UNUSED_PARAMETER") { _ ->
+    androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier)
+  }
 }
 
 /**
