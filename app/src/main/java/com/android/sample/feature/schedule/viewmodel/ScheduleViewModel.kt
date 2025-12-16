@@ -13,8 +13,10 @@ import com.android.sample.feature.schedule.data.planner.DayScheduleItem
 import com.android.sample.feature.schedule.data.planner.ScheduleClassItem
 import com.android.sample.feature.schedule.data.planner.ScheduleEventItem
 import com.android.sample.feature.schedule.data.planner.ScheduleGapItem
+import com.android.sample.feature.schedule.data.schedule.AcademicWeekType
 import com.android.sample.feature.schedule.data.schedule.EventKind
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SemesterConfig
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
 import com.android.sample.repos_providors.AppRepositories
@@ -37,6 +39,7 @@ data class ScheduleUiState(
     val isAdjustingPlan: Boolean = false,
     val todayClasses: List<Class> = emptyList(),
     val todaySchedule: List<DayScheduleItem> = emptyList(),
+    val allClasses: List<Class> = emptyList(),
     val attendanceRecords: List<ClassAttendance> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -109,6 +112,7 @@ class ScheduleViewModel(
             _uiState.update {
               it.copy(
                   allEvents = events,
+                  allClasses = classes,
                   todayClasses = todayClasses,
                   todaySchedule = fullSchedule,
                   attendanceRecords = attendance,
@@ -487,4 +491,37 @@ class ScheduleViewModel(
   fun onDeleteScheduleEvent(event: ScheduleEvent) {
     delete(event.id)
   }
+
+  fun classesForDate(date: LocalDate): List<Class> {
+    val day = date.dayOfWeek
+    return _uiState.value.todayClasses.filter { it.daysOfWeek.contains(day) }
+  }
+
+  fun academicWeekType(date: LocalDate, config: SemesterConfig): AcademicWeekType {
+
+    val week = weeksSinceStart(date, config.semesterStart)
+
+    val breakWeek = config.teachingWeeksBeforeBreak + 1
+    val teachingEnd =
+        config.teachingWeeksBeforeBreak + config.teachingWeeksAfterBreak + 1 // includes break week
+
+    return when {
+      week < 1 -> AcademicWeekType.TEACHING
+      week <= config.teachingWeeksBeforeBreak -> AcademicWeekType.TEACHING
+      week == breakWeek -> AcademicWeekType.MID_SEMESTER_BREAK
+      week <= teachingEnd -> AcademicWeekType.TEACHING
+      week <= teachingEnd + config.revisionWeeks -> AcademicWeekType.REVISION
+      else -> AcademicWeekType.EXAMS
+    }
+  }
+
+  fun academicWeekType(date: LocalDate): AcademicWeekType {
+    return academicWeekType(date, semesterConfig)
+  }
+
+  fun weeksSinceStart(date: LocalDate, start: LocalDate): Int {
+    return java.time.temporal.ChronoUnit.WEEKS.between(start, date).toInt() + 1
+  }
+
+  private val semesterConfig = SemesterConfig(semesterStart = LocalDate.of(2025, 9, 8))
 }

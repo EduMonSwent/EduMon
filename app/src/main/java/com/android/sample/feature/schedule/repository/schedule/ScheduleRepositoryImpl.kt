@@ -76,7 +76,6 @@ class ScheduleRepositoryImpl(
       taskRepo.deleteTask(eventId)
       return
     }
-    // Future: Add class deletion when classes become mutable
   }
 
   override suspend fun getEventsBetween(start: LocalDate, end: LocalDate): List<ScheduleEvent> =

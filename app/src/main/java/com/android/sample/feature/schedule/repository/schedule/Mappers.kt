@@ -72,7 +72,7 @@ object StudyItemMapper {
           TaskType.WORK to (priority ?: Priority.MEDIUM).toModelPriority()
       EventKind.CLASS_LECTURE,
       EventKind.CLASS_EXERCISE,
-      EventKind.CLASS_LAB -> TaskType.WORK to (priority ?: Priority.MEDIUM).toModelPriority()
+      EventKind.CLASS_LAB -> TaskType.STUDY to (priority ?: Priority.MEDIUM).toModelPriority()
       EventKind.ACTIVITY_SPORT,
       EventKind.ACTIVITY_ASSOCIATION -> TaskType.PERSONAL to ModelPriority.MEDIUM
     }
@@ -207,6 +207,11 @@ object ClassMapper {
 
     val time = event.time ?: return null
     val endTime = time.plusMinutes((event.durationMinutes?.toLong() ?: 60L))
+    val priority =
+        when {
+          event.isImportant -> Priority.HIGH
+          else -> event.priority ?: Priority.MEDIUM
+        }
 
     return PlannerClass(
         id = event.id,

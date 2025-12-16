@@ -16,7 +16,10 @@ import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.rewards.LevelRewardEngine
+import com.android.sample.feature.schedule.repository.schedule.IcsExamImporter
+import com.android.sample.feature.schedule.repository.schedule.IcsHolidayImporter
 import com.android.sample.feature.schedule.repository.schedule.IcsImporter
+import com.android.sample.feature.schedule.repository.schedule.KeywordMatcher
 import com.android.sample.profile.FirestoreProfileRepository
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repos_providors.AppRepositories
@@ -458,9 +461,20 @@ class ProfileViewModel(
   fun importIcs(context: Context, uri: Uri) {
     viewModelScope.launch {
       try {
-        val stream = context.contentResolver.openInputStream(uri) ?: return@launch
-        val importer = IcsImporter(AppRepositories.plannerRepository, context)
-        importer.importFromStream(stream)
+        val input = context.contentResolver.openInputStream(uri) ?: return@launch
+        val bytes = input.readBytes()
+        input.close()
+
+        val matcher = KeywordMatcher(context)
+
+        IcsImporter(AppRepositories.plannerRepository, context)
+            .importFromStream(bytes.inputStream())
+
+        IcsExamImporter(scheduleRepository = AppRepositories.scheduleRepository, matcher = matcher)
+            .importFromStream(bytes.inputStream())
+        IcsHolidayImporter(
+                scheduleRepository = AppRepositories.scheduleRepository, matcher = matcher)
+            .importFromStream(bytes.inputStream())
       } catch (e: Exception) {
         e.printStackTrace()
       }

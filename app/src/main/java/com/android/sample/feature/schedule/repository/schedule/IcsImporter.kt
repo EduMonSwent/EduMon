@@ -22,6 +22,9 @@ class IcsImporter(private val plannerRepository: PlannerRepository, context: Con
       val representative = events.first()
       // Skip exam events
       if (matcher.isExam(representative.categories)) continue
+
+      val isAllDay = representative.start == null && representative.end == null
+      if (isAllDay) continue
       val daysOfWeek = events.map { it.date.dayOfWeek }.distinct()
 
       val classItem =

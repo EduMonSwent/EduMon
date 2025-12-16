@@ -26,4 +26,17 @@ class KeywordMatcher(private val context: Context) {
     val keywords = list(R.array.ics_keywords_exam)
     return categories.any { cat -> contains(cat, keywords) }
   }
+
+  fun isHoliday(textOrCategories: Any): Boolean {
+    val all =
+        when (textOrCategories) {
+          is String -> textOrCategories
+          is List<*> -> textOrCategories.joinToString(" ")
+          else -> ""
+        }.lowercase()
+
+    return listOf("holiday", "vacances", "jour férié", "feries", "noël", "christmas").any {
+      it in all
+    }
+  }
 }
