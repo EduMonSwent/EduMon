@@ -40,7 +40,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -84,6 +83,8 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.ui.theme.OFF_CAMPUS_RED
+import com.android.sample.ui.theme.ON_CAMPUS_GREEN
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationCallback
@@ -127,7 +128,6 @@ private const val TODO_MARKER_SIZE_DP = 52f
 // Icon sizes (in dp)
 private const val ICON_SIZE_SMALL_DP = 6
 private const val ICON_SIZE_MEDIUM_DP = 10
-private const val ICON_SIZE_REGULAR_DP = 18
 
 // Corner radius (in dp)
 private const val CORNER_RADIUS_CARD_DP = 24
@@ -136,18 +136,11 @@ private const val CORNER_RADIUS_ROW_DP = 18
 
 // Padding values (in dp)
 private const val PADDING_SMALL_DP = 4
-private const val PADDING_MEDIUM_DP = 8
-private const val PADDING_STANDARD_DP = 12
+
 private const val PADDING_LARGE_DP = 16
-private const val PADDING_TOP_INDICATOR_DP = 12
 
 // Spacing values (in dp)
 private const val SPACING_TINY_DP = 6
-private const val SPACING_SMALL_DP = 8
-
-// Elevation (in dp)
-private const val ELEVATION_CARD_DP = 6
-private const val ELEVATION_INFO_CARD_DP = 8
 
 // Size constraints (in dp)
 private const val MIN_BUTTON_HEIGHT_DP = 36
@@ -160,9 +153,6 @@ private const val ALPHA_STATUS_CHIP_BG = 0.18f
 
 // Z-index for map markers
 private const val USER_MARKER_Z_INDEX = 1f
-
-private val ON_CAMPUS_GREEN = Color(0xFF2E7D32) // Material Green 800
-private val OFF_CAMPUS_RED = Color(0xFFC62828) // Material Red 800
 
 @Stable
 private data class AddFriendUiState(

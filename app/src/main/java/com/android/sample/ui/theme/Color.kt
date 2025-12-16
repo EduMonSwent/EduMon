@@ -63,6 +63,9 @@ val VioletSoft = Color(0xFFBB86FC)
 val EventViolet = Color(0xFFBBA8F9)
 // === Study Together colors ===
 
+val ON_CAMPUS_GREEN = Color(0xFF2E7D32) // Material Green 800
+val OFF_CAMPUS_RED = Color(0xFFC62828) // Material Red 800
+
 val StudyGreen = Color(0xFF4CAF50) // Pour le mode "study"
 val BreakYellow = Color(0xFFFFB300) // Pour le mode "break"
 val IdleBlue = Color(0xFF2196F3) // Pour le mode "idle"
