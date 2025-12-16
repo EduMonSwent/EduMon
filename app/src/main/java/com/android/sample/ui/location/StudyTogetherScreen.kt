@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PersonAdd
@@ -79,7 +80,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.core.content.edit
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
@@ -113,7 +113,6 @@ private const val TAG_FAB_ADD = "fab_add_friend"
 private const val TAG_FIELD_UID = "field_friend_uid"
 private const val TAG_BTN_FRIENDS = "btn_friends"
 private const val TAG_MAP_STUB = "map_stub"
-private const val ON_CAMPUS = "on_campus_indicator"
 
 // Map and camera constants
 private const val DEFAULT_MAP_ZOOM = 16f
@@ -394,8 +393,6 @@ private fun StudyTogetherContent(
                 permissionsGranted = permissionsGranted,
                 uiState = uiState,
                 // clicking your own edumon should do nothing UI-wise
-                onUserSelected = { /* no-op */},
-                onFriendSelected = { friend -> actions.onFriendSelected(friend) },
                 userMarkerResId = userEdumonResId,
                 modifier = Modifier.matchParentSize())
           } else {
@@ -455,30 +452,15 @@ private fun StudyTogetherContent(
       }
 }
 
-@Composable
-private fun OnCampusIndicatorTopRight(onCampus: Boolean) {
-  val color = if (onCampus) ON_CAMPUS_GREEN else OFF_CAMPUS_RED
-  val text = if (onCampus) "On campus" else "Off campus"
+private const val ON_CAMPUS = "On campus"
 
-  Card(
-      shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
-      colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.95f)),
-      elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
-      }
-}
+private const val OFF_CAMPUS = "Off campus"
 
 @Composable
 private fun StudyMap(
     cameraPositionState: CameraPositionState,
     permissionsGranted: Boolean,
     uiState: StudyTogetherUiState,
-    onUserSelected: () -> Unit,
-    onFriendSelected: (FriendStatus) -> Unit,
     @DrawableRes userMarkerResId: Int,
     modifier: Modifier = Modifier,
 ) {
@@ -607,10 +589,7 @@ private fun StudyMap(
             state = state,
             icon = friendIcon,
             anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
-            onClick = {
-              // ❌ friend edumon does nothing
-              true
-            })
+            onClick = { true })
       }
     }
   }
@@ -860,7 +839,7 @@ private fun EdumonFriendsDropdown(
 fun CampusStatusChip(onCampus: Boolean, modifier: Modifier = Modifier) {
   val cs = MaterialTheme.colorScheme
   val dotColor = if (onCampus) ON_CAMPUS_GREEN else OFF_CAMPUS_RED
-  val label = if (onCampus) "On campus" else "Off campus"
+  val label = if (onCampus) ON_CAMPUS else OFF_CAMPUS
 
   Row(
       modifier =
@@ -939,64 +918,10 @@ fun FriendDropdownRow(
 
         // Find arrow button
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "Find on map",
             modifier = Modifier.size(28.dp).clip(CircleShape).clickable(onClick = onFindClick),
             tint = cs.primary)
-      }
-}
-
-@Composable
-private fun OnCampusIndicator(modifier: Modifier = Modifier, onCampus: Boolean) {
-  val cs = MaterialTheme.colorScheme
-  val statusColor = if (onCampus) cs.tertiary else cs.error
-  val label = if (onCampus) "On EPFL campus" else "Outside of EPFL campus"
-
-  Card(
-      modifier = modifier,
-      shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
-      colors = CardDefaults.cardColors(containerColor = cs.surface.copy(alpha = 0.60f)),
-      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
-        Row(
-            modifier =
-                Modifier.padding(
-                    horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                  modifier =
-                      Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
-                          .clip(CircleShape)
-                          .background(statusColor))
-              Spacer(Modifier.width(SPACING_SMALL_DP.dp))
-              Text(text = label, style = MaterialTheme.typography.labelLarge)
-            }
-      }
-}
-
-@Composable
-private fun OnCampusIndicatorCompact(modifier: Modifier = Modifier, onCampus: Boolean) {
-  val cs = MaterialTheme.colorScheme
-  val statusColor = if (onCampus) ON_CAMPUS_GREEN else OFF_CAMPUS_RED
-  val label = if (onCampus) "On campus" else "Off campus"
-
-  Card(
-      modifier = modifier,
-      shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
-      colors = CardDefaults.cardColors(containerColor = cs.surface.copy(alpha = 0.60f)),
-      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
-        Row(
-            modifier =
-                Modifier.padding(
-                    horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                  modifier =
-                      Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
-                          .clip(CircleShape)
-                          .background(statusColor))
-              Spacer(Modifier.width(SPACING_SMALL_DP.dp))
-              Text(text = label, style = MaterialTheme.typography.labelLarge)
-            }
       }
 }
 
@@ -1049,12 +974,5 @@ private suspend fun CameraPositionState.safeAnimateTo(
     animate(CameraUpdateFactory.newLatLngZoom(latLng, zoom), durationMs)
   } catch (e: Exception) {
     Log.w(TAG, "Camera Problem", e)
-  }
-}
-
-internal fun persistLastLocation(ctx: Context, lat: Double, lon: Double) {
-  ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE).edit {
-    putFloat("lat", lat.toFloat())
-    putFloat("lon", lon.toFloat())
   }
 }
