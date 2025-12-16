@@ -18,6 +18,8 @@ class StudyKickoffWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Study kickoff")
             .setContentText("Time to start your first study block 📚")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
             .build()
     NotificationManagerCompat.from(applicationContext).notify(NotificationUtils.ID_STUDY_KICKOFF, n)
     return Result.success()

@@ -43,6 +43,8 @@ class StudyAlarmReceiver : BroadcastReceiver() {
             .setContentText(context.getString(R.string.study_alarm_text))
             .setContentIntent(pi)
             .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH) // Important notification
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
             .build()
 
     NotificationManagerCompat.from(context).notify(eventId.hashCode(), n)

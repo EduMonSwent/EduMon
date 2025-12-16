@@ -319,6 +319,8 @@ class NotificationsViewModel(
               .setContentText(ctx.getString(com.android.sample.R.string.demo_notification_text))
               .setContentIntent(pi)
               .setAutoCancel(true)
+              .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+              .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
               .build()
 
       NotificationManagerCompat.from(ctx).notify(DEMO_NOTIFICATION_ID, n)
