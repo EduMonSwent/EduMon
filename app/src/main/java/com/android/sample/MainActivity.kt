@@ -6,12 +6,16 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +23,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.media3.common.util.UnstableApi
@@ -32,10 +39,12 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 enum class AppScreen {
+  SPLASH,
   TAP_TO_START,
   LOGGING_IN,
   APP
@@ -51,8 +60,8 @@ class MainActivity : ComponentActivity() {
 
     // Start friend study mode polling chain if user enabled (stored in notifications prefs)
     val friendStudyModeEnabled =
-        getSharedPreferences("notifications", MODE_PRIVATE)
-            .getBoolean("friend_study_mode_enabled", false)
+      getSharedPreferences("notifications", MODE_PRIVATE)
+        .getBoolean("friend_study_mode_enabled", false)
     if (friendStudyModeEnabled) {
       com.android.sample.data.notifications.FriendStudyModeWorker.startChain(this)
     }
@@ -60,66 +69,90 @@ class MainActivity : ComponentActivity() {
     // Capture the intent data (deep link) if present
     val startUri: Uri? = intent?.data
 
-    // Compute start destination based on deep link
+    // Compute start destination based on deep link (unchanged)
     val (startRoute, _) =
-        if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
-          val id = startUri.pathSegments.firstOrNull()
-          if (!id.isNullOrEmpty()) {
-            "study/$id" to id
-          } else {
-            AppDestination.Home.route to null
-          }
+      if (startUri?.scheme == "edumon" && startUri.host == "study_session") {
+        val id = startUri.pathSegments.firstOrNull()
+        if (!id.isNullOrEmpty()) {
+          "study/$id" to id
         } else {
           AppDestination.Home.route to null
         }
+      } else {
+        AppDestination.Home.route to null
+      }
 
     setContent {
       EduMonTheme {
-        val initialScreen =
-            if (auth.currentUser != null) {
-              Log.d("MainActivity", "User already logged in: ${auth.currentUser?.uid}")
-              AppScreen.APP
-            } else {
-              Log.d("MainActivity", "No user, showing TapToStart")
-              AppScreen.TAP_TO_START
-            }
 
-        var currentScreen by remember { mutableStateOf(initialScreen) }
+        val nextScreen =
+          if (auth.currentUser != null) {
+            Log.d("MainActivity", "User already logged in: ${auth.currentUser?.uid}")
+            AppScreen.APP
+          } else {
+            Log.d("MainActivity", "No user, showing TapToStart")
+            AppScreen.TAP_TO_START
+          }
+
+        var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
         val scope = rememberCoroutineScope()
         val activity = this@MainActivity
+
+        // Show the full logo briefly on launch (tweak/remove delay as you like)
+        LaunchedEffect(Unit) {
+          delay(600)
+          currentScreen = nextScreen
+        }
 
         Scaffold { padding ->
           Box(Modifier.fillMaxSize().padding(padding)) {
             when (currentScreen) {
+
+              AppScreen.SPLASH -> {
+                Box(
+                  modifier =
+                    Modifier.fillMaxSize()
+                      .background(colorResource(id = R.color.ic_launcher_background)),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "EduMon logo",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp)
+                  )
+                }
+              }
+
               AppScreen.TAP_TO_START -> {
                 LoginTapToStartScreen(
-                    onTap = {
-                      currentScreen = AppScreen.LOGGING_IN
-                      scope.launch {
-                        val success = performGoogleSignIn(activity)
-                        Log.d("MainActivity", "SignIn result: $success")
-                        currentScreen = if (success) AppScreen.APP else AppScreen.TAP_TO_START
-                      }
-                    })
+                  onTap = {
+                    currentScreen = AppScreen.LOGGING_IN
+                    scope.launch {
+                      val success = performGoogleSignIn(activity)
+                      Log.d("MainActivity", "SignIn result: $success")
+                      currentScreen = if (success) AppScreen.APP else AppScreen.TAP_TO_START
+                    }
+                  })
               }
-              AppScreen.LOGGING_IN -> {
 
+              AppScreen.LOGGING_IN -> {
                 Box(modifier = Modifier.fillMaxSize()) {
                   LoopingVideoBackgroundFromAssets(
-                      assetFileName = "onboarding_background_epfl.mp4",
-                      modifier = Modifier.fillMaxSize())
+                    assetFileName = "onboarding_background_epfl.mp4",
+                    modifier = Modifier.fillMaxSize())
 
                   Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                   }
                 }
               }
+
               AppScreen.APP -> {
                 EduMonNavHost(
-                    onSignOut = {
-                      signOutAll()
-                      currentScreen = AppScreen.TAP_TO_START
-                    })
+                  onSignOut = {
+                    signOutAll()
+                    currentScreen = AppScreen.TAP_TO_START
+                  })
               }
             }
           }
@@ -133,7 +166,7 @@ class MainActivity : ComponentActivity() {
       val credentialManager = CredentialManager.create(activity)
 
       val googleIdOption =
-          GetSignInWithGoogleOption.Builder(getString(R.string.default_web_client_id)).build()
+        GetSignInWithGoogleOption.Builder(getString(R.string.default_web_client_id)).build()
 
       val request = GetCredentialRequest.Builder().addCredentialOption(googleIdOption).build()
 
@@ -157,10 +190,10 @@ class MainActivity : ComponentActivity() {
   fun signOutAll() {
     Log.d("MainActivity", "SignOut")
     val gso =
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
+      GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(getString(R.string.default_web_client_id))
+        .requestEmail()
+        .build()
     val googleClient = GoogleSignIn.getClient(this, gso)
     googleClient.revokeAccess().addOnCompleteListener { auth.signOut() }
   }
