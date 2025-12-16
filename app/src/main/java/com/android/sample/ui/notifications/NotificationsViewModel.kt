@@ -115,6 +115,9 @@ class NotificationsViewModel(
   private val _streakEnabled = MutableStateFlow(false)
   override val streakEnabled: StateFlow<Boolean> = _streakEnabled.asStateFlow()
 
+  private val _campusEntryEnabled = MutableStateFlow(false)
+  override val campusEntryEnabled: StateFlow<Boolean> = _campusEntryEnabled.asStateFlow()
+
   private val DEFAULT_STREAK_HOUR = 19
 
   override fun scheduleTestNotification(ctx: Context) = repo.scheduleOneMinuteFromNow(ctx)
@@ -164,6 +167,21 @@ class NotificationsViewModel(
   override fun setStreakEnabled(ctx: Context, on: Boolean) {
     _streakEnabled.value = on
     repo.setDailyEnabled(ctx, NotificationKind.KEEP_STREAK, on, DEFAULT_STREAK_HOUR)
+  }
+
+  override fun setCampusEntryEnabled(ctx: Context, on: Boolean) {
+    _campusEntryEnabled.value = on
+    // Persist user preference for CampusEntryPollWorker to check
+    try {
+      ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+          .edit()
+          .putBoolean("campus_entry_enabled", on)
+          .apply()
+    } catch (e: Exception) {
+      Log.e("NotificationsVM", "Failed to save campus entry preference", e)
+    }
+    // Note: Worker chain runs continuously regardless of this setting.
+    // This preference only controls whether notifications are sent.
   }
 
   @SuppressLint("ScheduleExactAlarm")

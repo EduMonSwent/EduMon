@@ -42,10 +42,13 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
 
   override suspend fun doWork(): Result {
-    // Sustain chain (unless disabled by tests)
+    // IMPORTANT: Always schedule the next run FIRST, before any permission checks.
+    // This ensures the polling chain continues indefinitely, even if permissions
+    // are temporarily missing or the device is in battery-saving mode.
     if (!inputData.getBoolean(KEY_DISABLE_CHAIN, false)) scheduleNext(applicationContext)
 
     // Guard: location permission
+    // If permission is missing, we log and skip this run, but the chain continues
     if (!hasLocationPermission(applicationContext)) {
       Log.w(TAG, "Location permission not granted, skipping campus detection")
       return Result.success()
@@ -65,8 +68,13 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
 
     val onCampus = isOnEpflCampus(position)
 
+    // Check if user has enabled campus entry notifications
+    val prefs = applicationContext.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+    val campusNotificationsEnabled = prefs.getBoolean("campus_entry_enabled", false)
+
     // Check if we should send a notification (transitioned from OFF → ON campus)
-    if (shouldPostCampusEntryNotification(applicationContext, onCampus)) {
+    if (campusNotificationsEnabled &&
+        shouldPostCampusEntryNotification(applicationContext, onCampus)) {
       // Send notification if permission is granted (API 33+) or pre-Tiramisu
       if (hasNotificationPermission(applicationContext)) {
         try {
@@ -260,6 +268,10 @@ class CampusEntryPollWorker(appContext: Context, params: WorkerParameters) :
           OneTimeWorkRequestBuilder<CampusEntryPollWorker>()
               .setInitialDelay(DELAY_MINUTES, TimeUnit.MINUTES)
               .addTag(UNIQUE_WORK_NAME)
+              // Note: We deliberately do NOT add .setConstraints() to allow this work to run
+              // even when battery-optimized, in Doze mode, or without network. This ensures
+              // the polling chain continues uninterrupted. Individual permission checks
+              // happen inside doWork() where we gracefully skip operations if needed.
               .build()
       WorkManager.getInstance(ctx)
           .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.REPLACE, request)

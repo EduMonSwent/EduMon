@@ -129,19 +129,15 @@ class BootReceiverTest {
   }
 
   @Test
-  fun `onReceive starts campus chain when preference enabled`() {
-    context
-        .getSharedPreferences("notifications", Context.MODE_PRIVATE)
-        .edit()
-        .putBoolean("campus_entry_enabled", true)
-        .commit()
+  fun `onReceive starts campus chain unconditionally on boot`() {
+    // Campus chain should start regardless of preference setting
     WorkManagerTestInitHelper.initializeTestWorkManager(context)
     val repo = FakeCalendarRepository()
     val receiver = BootReceiver(repo) // default scope sufficient
     val intent = Intent(Intent.ACTION_BOOT_COMPLETED)
     receiver.onReceive(context, intent)
     val workInfos = WorkManager.getInstance(context).getWorkInfosByTag("campus_entry_poll").get()
-    assertTrue(workInfos.isNotEmpty())
+    assertTrue("Campus entry polling should be scheduled after boot", workInfos.isNotEmpty())
   }
 
   @Test
