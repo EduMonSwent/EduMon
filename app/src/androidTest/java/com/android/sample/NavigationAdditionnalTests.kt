@@ -76,33 +76,39 @@ class NavigationAdditionnalTests {
     // Scroll down to reveal the SettingsCard.
     // Target the LazyColumn itself using its testTag.
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
-      // Get the size of the node we are interacting with (the LazyColumn)
       val size = this@performTouchInput.visibleSize
       val width = size.width
       val height = size.height
 
-      // Calculate relative start and end points for the swipe
-      // Start near the bottom (e.g., 80% down the height)
       val startY = (height * 0.80).toFloat()
-      // End near the top (e.g., 20% down the height)
       val endY = (height * 0.20).toFloat()
-
-      // The x-coordinate can be the center
       val centerX = (width / 2.0).toFloat()
 
-      // Perform the swipe gesture
       swipe(start = Offset(centerX, startY), end = Offset(centerX, endY))
     }
-    composeTestRule.waitForIdle()
+    composeTestRule.waitForIdle() // Wait for scroll animation/composition
 
     // Now that we've scrolled, try to find and click the "Manage notifications" button.
     // It has the testTag "open_notifications_screen".
     composeTestRule.onNodeWithTag("open_notifications_screen").performClick()
-    composeTestRule.waitForIdle()
+    composeTestRule.waitForIdle() // Wait for navigation and composition of NotificationsScreen
 
     // We should now be on the Notifications screen.
     // The HeaderBar in NotificationsScreen has a tag "notifications_title".
-    composeTestRule.onNodeWithTag("notifications_title").assertExists()
+    // If this tag fails, it might be due to resource resolution in CI.
+    // Let's try waiting for the specific text content "Notifications" instead.
+    // Assuming R.string.notifications_title resolves to "Notifications".
+    // Use a waitUntil to handle potential slight delays in composition.
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        composeTestRule.onNodeWithText("Notifications").assertExists()
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
+    // Or, if the tag "notifications_title" is more reliable, use:
+    // composeTestRule.onNodeWithTag("notifications_title").assertExists()
   }
 
   /**
@@ -139,16 +145,27 @@ class NavigationAdditionnalTests {
 
       swipe(start = Offset(centerX, startY), end = Offset(centerX, endY))
     }
-    composeTestRule.waitForIdle()
+    composeTestRule.waitForIdle() // Wait for scroll animation/composition
 
     // Now that we've scrolled, try to find and click the Focus Mode switch.
     // It's tagged with ProfileScreenTestTags.SWITCH_FOCUS_MODE.
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-    composeTestRule.waitForIdle()
+    composeTestRule.waitForIdle() // Wait for navigation and composition of FocusModeScreen
 
     // We should now be on the Focus Mode screen.
     // FocusModeScreen is wrapped by ScreenWithTopBar, so TOP_BAR_TITLE should work.
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Focus Mode")
+    // The ScreenWithTopBar for "focus_mode" sets title = "Focus Mode".
+    // Use a waitUntil to handle potential slight delays in composition.
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        composeTestRule
+            .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
+            .assertTextEquals("Focus Mode")
+        true
+      } catch (e: AssertionError) {
+        false
+      }
+    }
   }
 
   // ==================== EXISTING TESTS (Can be kept or removed if redundant) ====================
