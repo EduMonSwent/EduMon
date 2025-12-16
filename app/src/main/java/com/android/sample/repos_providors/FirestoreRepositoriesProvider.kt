@@ -43,21 +43,15 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
     FirestoreObjectivesRepository(db, auth)
   }
 
-  override val weeksRepository: WeeksRepository by lazy {
-    FirestoreWeeksRepository(db, auth)
-  }
+  override val weeksRepository: WeeksRepository by lazy { FirestoreWeeksRepository(db, auth) }
 
-  override val statsRepository: StatsRepository by lazy {
-    FirestoreStatsRepository(db, auth)
-  }
+  override val statsRepository: StatsRepository by lazy { FirestoreStatsRepository(db, auth) }
 
   override val userStatsRepository: UserStatsRepository by lazy {
     FirestoreUserStatsRepository(auth, db)
   }
 
-  override val friendRepository: FriendRepository by lazy {
-    ProfilesFriendRepository(db, auth)
-  }
+  override val friendRepository: FriendRepository by lazy { ProfilesFriendRepository(db, auth) }
 
   override val flashcardsRepository: FlashcardsRepository by lazy {
     FirestoreFlashcardsRepository(db, auth)
@@ -71,25 +65,17 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
     FirestorePlannerRepository(db, auth)
   }
 
-  override val homeRepository: HomeRepository by lazy {
-    FakeHomeRepository()
-  }
+  override val homeRepository: HomeRepository by lazy { FakeHomeRepository() }
 
   override val studySessionRepository: StudySessionRepository by lazy {
     ToDoBackedStudySessionRepository()
   }
 
-  override val calendarRepository: CalendarRepositoryImpl by lazy {
-    CalendarRepositoryImpl()
-  }
+  override val calendarRepository: CalendarRepositoryImpl by lazy { CalendarRepositoryImpl() }
 
-  override val toDoRepository: ToDoRepository by lazy {
-    ToDoRepositoryLocal()
-  }
+  override val toDoRepository: ToDoRepository by lazy { ToDoRepositoryLocal() }
 
-  override val profileRepository: ProfileRepository by lazy {
-    FirestoreProfileRepository(db, auth)
-  }
+  override val profileRepository: ProfileRepository by lazy { FirestoreProfileRepository(db, auth) }
 
   override val subjectsRepository: SubjectsRepository by lazy {
     FirestoreSubjectsRepository(auth, db)
@@ -100,5 +86,4 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   }
 }
 
-@Volatile
-var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider
+@Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider

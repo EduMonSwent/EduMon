@@ -32,11 +32,11 @@ import com.android.sample.ui.theme.TextLight
 import com.android.sample.ui.theme.UiValues
 
 private object AvatarConstants {
-    const val ACCESSORY_SEPARATOR = ":"
-    const val EXPECTED_PARTS_COUNT = 2
-    const val SLOT_INDEX = 0
-    const val ID_INDEX = 1
-    const val NO_RESOURCE = 0
+  const val ACCESSORY_SEPARATOR = ":"
+  const val EXPECTED_PARTS_COUNT = 2
+  const val SLOT_INDEX = 0
+  const val ID_INDEX = 1
+  const val NO_RESOURCE = 0
 }
 
 @Composable
@@ -46,69 +46,61 @@ fun EduMonAvatar(
     showLevelLabel: Boolean = true,
     avatarSize: Dp = UiValues.AvatarSize,
 ) {
-    val user by viewModel.userProfile.collectAsState()
-    val accent by viewModel.accentEffective.collectAsState()
+  val user by viewModel.userProfile.collectAsState()
+  val accent by viewModel.accentEffective.collectAsState()
 
-    val equipped = remember(user.accessories) {
+  val equipped =
+      remember(user.accessories) {
         user.accessories
             .mapNotNull { entry ->
-                val parts = entry.split(AvatarConstants.ACCESSORY_SEPARATOR)
-                if (parts.size == AvatarConstants.EXPECTED_PARTS_COUNT) {
-                    parts[AvatarConstants.SLOT_INDEX] to parts[AvatarConstants.ID_INDEX]
-                } else {
-                    null
-                }
+              val parts = entry.split(AvatarConstants.ACCESSORY_SEPARATOR)
+              if (parts.size == AvatarConstants.EXPECTED_PARTS_COUNT) {
+                parts[AvatarConstants.SLOT_INDEX] to parts[AvatarConstants.ID_INDEX]
+              } else {
+                null
+              }
             }
             .toMap()
-    }
+      }
 
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+  Column(
+      modifier = modifier,
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
         Box(
-            modifier = Modifier
-                .size(avatarSize * UiValues.AvatarScale)
-                .clip(RoundedCornerShape(UiValues.AvatarCornerRadius)),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                accent.copy(alpha = UiValues.AuraAlpha),
-                                Color.Transparent
-                            )
-                        )
-                    )
-                    .size(avatarSize * UiValues.AvatarScale)
-            )
+            modifier =
+                Modifier.size(avatarSize * UiValues.AvatarScale)
+                    .clip(RoundedCornerShape(UiValues.AvatarCornerRadius)),
+            contentAlignment = Alignment.Center) {
+              Box(
+                  modifier =
+                      Modifier.background(
+                              Brush.radialGradient(
+                                  colors =
+                                      listOf(
+                                          accent.copy(alpha = UiValues.AuraAlpha),
+                                          Color.Transparent)))
+                          .size(avatarSize * UiValues.AvatarScale))
 
-            Image(
-                painter = painterResource(id = viewModel.starterDrawable()),
-                contentDescription = stringResource(id = R.string.edumon_content_description),
-                modifier = Modifier
-                    .size(avatarSize)
-                    .zIndex(UiValues.ZBase)
-            )
+              Image(
+                  painter = painterResource(id = viewModel.starterDrawable()),
+                  contentDescription = stringResource(id = R.string.edumon_content_description),
+                  modifier = Modifier.size(avatarSize).zIndex(UiValues.ZBase))
 
-            AccessoryLayer(viewModel, equipped, AccessorySlot.BACK, avatarSize, UiValues.ZBack)
-            AccessoryLayer(viewModel, equipped, AccessorySlot.TORSO, avatarSize, UiValues.ZTorso)
-            AccessoryLayer(viewModel, equipped, AccessorySlot.HEAD, avatarSize, UiValues.ZHead)
-        }
+              AccessoryLayer(viewModel, equipped, AccessorySlot.BACK, avatarSize, UiValues.ZBack)
+              AccessoryLayer(viewModel, equipped, AccessorySlot.TORSO, avatarSize, UiValues.ZTorso)
+              AccessoryLayer(viewModel, equipped, AccessorySlot.HEAD, avatarSize, UiValues.ZHead)
+            }
 
         if (showLevelLabel) {
-            Spacer(Modifier.height(UiValues.AvatarLevelSpacing))
-            Text(
-                text = stringResource(R.string.level_label, user.level),
-                color = TextLight,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = UiValues.LevelTextSize
-            )
+          Spacer(Modifier.height(UiValues.AvatarLevelSpacing))
+          Text(
+              text = stringResource(R.string.level_label, user.level),
+              color = TextLight,
+              fontWeight = FontWeight.SemiBold,
+              fontSize = UiValues.LevelTextSize)
         }
-    }
+      }
 }
 
 @Composable
@@ -119,16 +111,13 @@ private fun AccessoryLayer(
     size: Dp,
     zIndex: Float
 ) {
-    val accessoryId = equipped[slot.name.lowercase()] ?: return
-    val resId = viewModel.accessoryResId(slot, accessoryId)
+  val accessoryId = equipped[slot.name.lowercase()] ?: return
+  val resId = viewModel.accessoryResId(slot, accessoryId)
 
-    if (resId != AvatarConstants.NO_RESOURCE) {
-        Image(
-            painter = painterResource(resId),
-            contentDescription = null,
-            modifier = Modifier
-                .size(size)
-                .zIndex(zIndex)
-        )
-    }
+  if (resId != AvatarConstants.NO_RESOURCE) {
+    Image(
+        painter = painterResource(resId),
+        contentDescription = null,
+        modifier = Modifier.size(size).zIndex(zIndex))
+  }
 }

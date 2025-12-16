@@ -2,14 +2,14 @@
 package com.android.sample.domain.model
 
 enum class EduMonType(val id: String) {
-    PYROMON("pyromon"),
-    AQUAMON("aquamon"),
-    FLORAMON("floramon");
+  PYROMON("pyromon"),
+  AQUAMON("aquamon"),
+  FLORAMON("floramon");
 
-    companion object {
-        private val idMap = values().associateBy { it.id }
-        private val DEFAULT = PYROMON
+  companion object {
+    private val idMap = values().associateBy { it.id }
+    private val DEFAULT = PYROMON
 
-        fun fromId(id: String?): EduMonType = idMap[id] ?: DEFAULT
-    }
+    fun fromId(id: String?): EduMonType = idMap[id] ?: DEFAULT
+  }
 }

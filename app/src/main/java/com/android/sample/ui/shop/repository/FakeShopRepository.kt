@@ -9,9 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class FakeShopRepository(
-  private val profileRepository: ProfileRepository? = null
-) : ShopRepository {
+class FakeShopRepository(private val profileRepository: ProfileRepository? = null) :
+    ShopRepository {
 
   private object ItemIds {
     const val GLASSES = "glasses"
@@ -50,9 +49,7 @@ class FakeShopRepository(
 
   override suspend fun purchaseItem(itemId: String): Boolean {
     _items.update { list ->
-      list.map { item ->
-        if (item.id == itemId) item.copy(owned = true) else item
-      }
+      list.map { item -> if (item.id == itemId) item.copy(owned = true) else item }
     }
     return true
   }
@@ -63,59 +60,32 @@ class FakeShopRepository(
 
   override suspend fun refreshOwnedStatus() {
     val ownedIds = getOwnedIdsFromProfile()
-    _items.update { list ->
-      list.map { item ->
-        item.copy(owned = ownedIds.contains(item.id))
-      }
-    }
+    _items.update { list -> list.map { item -> item.copy(owned = ownedIds.contains(item.id)) } }
   }
 
   private fun getOwnedIdsFromProfile(): Set<String> {
     val profile = profileRepository?.profile?.value ?: return emptySet()
     return profile.accessories
-      .filter { it.startsWith(Prefixes.OWNED) }
-      .map { it.removePrefix(Prefixes.OWNED) }
-      .toSet()
+        .filter { it.startsWith(Prefixes.OWNED) }
+        .map { it.removePrefix(Prefixes.OWNED) }
+        .toSet()
   }
 
   companion object {
-    fun defaultCosmetics(): List<CosmeticItem> = listOf(
-      CosmeticItem(
-        ItemIds.GLASSES,
-        ItemNames.GLASSES,
-        Prices.STANDARD,
-        R.drawable.shop_cosmetic_glasses
-      ),
-      CosmeticItem(
-        ItemIds.HAT,
-        ItemNames.HAT,
-        Prices.STANDARD,
-        R.drawable.shop_cosmetic_hat
-      ),
-      CosmeticItem(
-        ItemIds.SCARF,
-        ItemNames.SCARF,
-        Prices.STANDARD,
-        R.drawable.shop_cosmetic_scarf
-      ),
-      CosmeticItem(
-        ItemIds.WINGS,
-        ItemNames.WINGS,
-        Prices.STANDARD,
-        R.drawable.shop_cosmetic_wings
-      ),
-      CosmeticItem(
-        ItemIds.AURA,
-        ItemNames.AURA,
-        Prices.EPIC,
-        R.drawable.shop_cosmetic_aura
-      ),
-      CosmeticItem(
-        ItemIds.CAPE,
-        ItemNames.CAPE,
-        Prices.STANDARD,
-        R.drawable.shop_cosmetic_cape
-      )
-    )
+    fun defaultCosmetics(): List<CosmeticItem> =
+        listOf(
+            CosmeticItem(
+                ItemIds.GLASSES,
+                ItemNames.GLASSES,
+                Prices.STANDARD,
+                R.drawable.shop_cosmetic_glasses),
+            CosmeticItem(ItemIds.HAT, ItemNames.HAT, Prices.STANDARD, R.drawable.shop_cosmetic_hat),
+            CosmeticItem(
+                ItemIds.SCARF, ItemNames.SCARF, Prices.STANDARD, R.drawable.shop_cosmetic_scarf),
+            CosmeticItem(
+                ItemIds.WINGS, ItemNames.WINGS, Prices.STANDARD, R.drawable.shop_cosmetic_wings),
+            CosmeticItem(ItemIds.AURA, ItemNames.AURA, Prices.EPIC, R.drawable.shop_cosmetic_aura),
+            CosmeticItem(
+                ItemIds.CAPE, ItemNames.CAPE, Prices.STANDARD, R.drawable.shop_cosmetic_cape))
   }
 }

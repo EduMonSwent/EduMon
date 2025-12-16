@@ -17,50 +17,47 @@ class ShopViewModel(
     private val shopRepository: ShopRepository = AppRepositories.shopRepository
 ) : ViewModel() {
 
-    private object Constants {
-        const val FLOW_TIMEOUT_MS = 5000L
-        const val INITIAL_COINS = 0
-        const val OWNED_PREFIX = "owned:"
+  private object Constants {
+    const val FLOW_TIMEOUT_MS = 5000L
+    const val INITIAL_COINS = 0
+    const val OWNED_PREFIX = "owned:"
+  }
+
+  val userCoins: StateFlow<Int> =
+      profileRepository.profile
+          .map { it.coins }
+          .stateIn(
+              viewModelScope,
+              SharingStarted.WhileSubscribed(Constants.FLOW_TIMEOUT_MS),
+              Constants.INITIAL_COINS)
+
+  val items: StateFlow<List<CosmeticItem>> = shopRepository.items
+
+  init {
+    viewModelScope.launch {
+      shopRepository.getItems()
+      shopRepository.refreshOwnedStatus()
+    }
+  }
+
+  fun buyItem(item: CosmeticItem): Boolean {
+    val profile = profileRepository.profile.value
+
+    if (profile.coins < item.price || item.owned) return false
+
+    val ownedEntry = Constants.OWNED_PREFIX + item.id
+    val alreadyOwned = profile.accessories.contains(ownedEntry)
+    if (alreadyOwned) return false
+
+    val updatedAccessories = profile.accessories + ownedEntry
+    val updatedProfile =
+        profile.copy(coins = profile.coins - item.price, accessories = updatedAccessories)
+
+    viewModelScope.launch {
+      profileRepository.updateProfile(updatedProfile)
+      shopRepository.refreshOwnedStatus()
     }
 
-    val userCoins: StateFlow<Int> =
-        profileRepository.profile
-            .map { it.coins }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(Constants.FLOW_TIMEOUT_MS),
-                Constants.INITIAL_COINS
-            )
-
-    val items: StateFlow<List<CosmeticItem>> = shopRepository.items
-
-    init {
-        viewModelScope.launch {
-            shopRepository.getItems()
-            shopRepository.refreshOwnedStatus()
-        }
-    }
-
-    fun buyItem(item: CosmeticItem): Boolean {
-        val profile = profileRepository.profile.value
-
-        if (profile.coins < item.price || item.owned) return false
-
-        val ownedEntry = Constants.OWNED_PREFIX + item.id
-        val alreadyOwned = profile.accessories.contains(ownedEntry)
-        if (alreadyOwned) return false
-
-        val updatedAccessories = profile.accessories + ownedEntry
-        val updatedProfile = profile.copy(
-            coins = profile.coins - item.price,
-            accessories = updatedAccessories
-        )
-
-        viewModelScope.launch {
-            profileRepository.updateProfile(updatedProfile)
-            shopRepository.refreshOwnedStatus()
-        }
-
-        return true
-    }
+    return true
+  }
 }

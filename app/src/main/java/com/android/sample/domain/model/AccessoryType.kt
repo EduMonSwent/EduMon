@@ -2,16 +2,16 @@
 package com.android.sample.domain.model
 
 enum class AccessoryType(val id: String) {
-    HAT("hat"),
-    GLASSES("glasses"),
-    SCARF("scarf"),
-    WINGS("wings"),
-    AURA("aura"),
-    CAPE("cape");
+  HAT("hat"),
+  GLASSES("glasses"),
+  SCARF("scarf"),
+  WINGS("wings"),
+  AURA("aura"),
+  CAPE("cape");
 
-    companion object {
-        private val idMap = values().associateBy { it.id }
+  companion object {
+    private val idMap = values().associateBy { it.id }
 
-        fun fromId(id: String?): AccessoryType? = idMap[id]
-    }
+    fun fromId(id: String?): AccessoryType? = idMap[id]
+  }
 }

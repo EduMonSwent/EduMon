@@ -58,7 +58,7 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val toDoRepository: ToDoRepository = ToDoRepositoryLocal()
 
   override val profileRepository: ProfileRepository =
-    FakeProfileRepository(initial = UserProfile(starterId = Defaults.STARTER_ID))
+      FakeProfileRepository(initial = UserProfile(starterId = Defaults.STARTER_ID))
 
   override val flashcardsRepository: FlashcardsRepository = InMemoryFlashcardsRepository
 
@@ -67,5 +67,4 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val shopRepository: ShopRepository = FakeShopRepository(profileRepository)
 }
 
-@Volatile
-var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider
+@Volatile var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider
