@@ -133,6 +133,48 @@ class DayTabContentAllAndroidTest {
     rule.onNodeWithText(ctx.getString(R.string.completion_not_done)).assertIsDisplayed()
   }
 
+  // ---- Wellness block ----
+  @Test
+  fun rendersWellnessEvents() {
+    val vm = buildScheduleVM(ctx)
+    val clazz = fakeClass("c9", "AI")
+    val state = ScheduleUiState(todayClasses = listOf(clazz))
+
+    rule.setContent {
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false))
+      }
+    }
+
+    // Wait for UI to settle
+    rule.waitForIdle()
+
+    // Verify wellness events label with more flexible matching
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_events_label), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+
+    // Wait after scroll
+    rule.waitForIdle()
+
+    // Verify yoga title
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_title), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+
+    // Wait after scroll
+    rule.waitForIdle()
+
+    // Verify lecture title
+    rule
+        .onNodeWithText(
+            ctx.getString(R.string.wellness_event_lecture_title), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+  }
+
   @Test
   fun showsEmptyTodosMessage() {
     val vm = buildScheduleVM(ctx)
@@ -307,6 +349,83 @@ class DayTabContentAllAndroidTest {
     rule.onNodeWithText(ctx.getString(R.string.completion_not_done)).assertIsDisplayed()
   }
 
+  // ---- Wellness events block texts ----
+  @Test
+  fun rendersWellnessEvents_withCorrectTexts() {
+    val ctx = rule.activity
+    val vm = buildScheduleVM(ctx)
+    val clazz = fakeClass(id = "c9", name = "AI") // any class to render the card
+
+    val state = ScheduleUiState(todayClasses = listOf(clazz))
+
+    rule.setContent {
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        DayTabContent(
+            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      }
+    }
+
+    // Wait for UI to settle
+    rule.waitForIdle()
+
+    // Scroll to the Wellness section header first
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_events_label), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+
+    rule.waitForIdle()
+
+    // Yoga item
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_title), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+
+    rule.waitForIdle()
+
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_time), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+
+    rule.waitForIdle()
+
+    rule
+        .onNodeWithText(
+            ctx.getString(R.string.wellness_event_yoga_description),
+            useUnmergedTree = true,
+            substring = true)
+        .performScrollTo()
+        .assertExists()
+
+    rule.waitForIdle()
+
+    // Lecture item
+    rule
+        .onNodeWithText(
+            ctx.getString(R.string.wellness_event_lecture_title), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+
+    rule.waitForIdle()
+
+    rule
+        .onNodeWithText(ctx.getString(R.string.wellness_event_lecture_time), useUnmergedTree = true)
+        .performScrollTo()
+        .assertExists()
+
+    rule.waitForIdle()
+
+    rule
+        .onNodeWithText(
+            ctx.getString(R.string.wellness_event_lecture_description),
+            useUnmergedTree = true,
+            substring = true)
+        .performScrollTo()
+        .assertExists()
+  }
+
   @Test
   fun dayTab_showsEmptyTodosMessage_whenNoTodosForToday() {
     val ctx = rule.activity
@@ -477,7 +596,6 @@ class DayTabContentAllAndroidTest {
 
   @Test
   fun clickingEventItem_triggersEventClickCallback() {
-    var clicked = false
     val vm = buildScheduleVM(rule.activity)
     val event =
         ScheduleEvent(

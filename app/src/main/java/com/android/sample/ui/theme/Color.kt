@@ -78,3 +78,8 @@ val SliceOrange = Color(0xFFF59E0B)
 val SliceBlue = Color(0xFF3B82F6)
 val SliceRed = Color(0xFFE11D48)
 val SliceCyan = Color(0xFF06B6D4)
+
+// === Shop Screen colors ===
+val ShopOfflineBanner = Color(0xFFE53935) // Red banner for offline state
+val ShopConnectionOnline = Color(0xFF43A047) // Green for online status
+val ShopConnectionOffline = Color(0xFF757575) // Gray for offline status
