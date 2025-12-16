@@ -89,9 +89,19 @@ private fun HeaderBar(onBack: () -> Unit, onGoHome: () -> Unit) {
             modifier = Modifier.testTag("notifications_title"))
       },
       navigationIcon = {
-        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null) }
+        // Added testTag to the IconButton containing the back icon
+        IconButton(onClick = onBack, modifier = Modifier.testTag("notification_back_button")) {
+          Icon(
+              Icons.AutoMirrored.Outlined.ArrowBack,
+              contentDescription = "Back") // Added contentDescription
+        }
       },
-      actions = { IconButton(onClick = onGoHome) { Icon(Icons.Outlined.Home, null) } })
+      actions = {
+        // Added testTag to the IconButton containing the home icon
+        IconButton(onClick = onGoHome, modifier = Modifier.testTag("notification_home_button")) {
+          Icon(Icons.Outlined.Home, contentDescription = "Home") // Added contentDescription
+        }
+      })
 }
 
 @Composable

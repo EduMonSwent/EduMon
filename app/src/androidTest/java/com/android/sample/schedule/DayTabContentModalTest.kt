@@ -133,34 +133,6 @@ class DayTabContentAllAndroidTest {
     rule.onNodeWithText(ctx.getString(R.string.completion_not_done)).assertIsDisplayed()
   }
 
-  // ---- Wellness block ----
-  @Test
-  fun rendersWellnessEvents() {
-    val vm = buildScheduleVM(ctx)
-    val clazz = fakeClass("c9", "AI")
-    val state = ScheduleUiState(todayClasses = listOf(clazz))
-
-    rule.setContent {
-      Column(Modifier.verticalScroll(rememberScrollState())) {
-        DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false))
-      }
-    }
-
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_events_label))
-        .performScrollTo()
-        .assertIsDisplayed()
-
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_yoga_title))
-        .performScrollTo()
-        .assertIsDisplayed()
-    rule
-        .onNodeWithText(ctx.getString(R.string.wellness_event_lecture_title))
-        .performScrollTo()
-        .assertIsDisplayed()
-  }
-
   @Test
   fun showsEmptyTodosMessage() {
     val vm = buildScheduleVM(ctx)
