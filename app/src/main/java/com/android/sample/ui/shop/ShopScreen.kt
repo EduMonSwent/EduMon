@@ -122,10 +122,7 @@ private const val OPACITY_FULL = 1f
 private const val PARTICLE_COUNT = 20
 private const val PARTICLE_MAX_OFFSET = 200f
 
-// Colors
-private val OFFLINE_BANNER_COLOR = Color(0xFFE53935)
-private val CONNECTION_ONLINE_COLOR = Color(0xFF43A047)
-private val CONNECTION_OFFLINE_COLOR = Color(0xFF757575)
+// Alpha values
 private const val CONNECTION_CHIP_ALPHA = 0.2f
 private const val OWNED_TEXT_ALPHA = 0.8f
 private const val COIN_TEXT_ALPHA = 0.8f
@@ -206,7 +203,7 @@ fun ShopScreen(viewModel: ShopViewModel = androidx.lifecycle.viewmodel.compose.v
 @Composable
 private fun OfflineBanner() {
   Surface(
-      color = OFFLINE_BANNER_COLOR,
+      color = ShopOfflineBanner,
       shape =
           RoundedCornerShape(
               bottomStart = OFFLINE_BANNER_CORNER_SIZE, bottomEnd = OFFLINE_BANNER_CORNER_SIZE),
@@ -307,7 +304,7 @@ fun ShopContent(
 /** Small chip showing online/offline status. */
 @Composable
 private fun ConnectionStatusChip(isOnline: Boolean) {
-  val backgroundColor = if (isOnline) CONNECTION_ONLINE_COLOR else CONNECTION_OFFLINE_COLOR
+  val backgroundColor = if (isOnline) ShopConnectionOnline else ShopConnectionOffline
   val icon = if (isOnline) Icons.Outlined.Wifi else Icons.Outlined.CloudOff
   val text = if (isOnline) ONLINE_TEXT else OFFLINE_TEXT
   val testTagValue = if (isOnline) "connection_status_online" else "connection_status_offline"
@@ -383,7 +380,7 @@ fun ShopItemCard(
     isPurchasing: Boolean,
     onBuy: ((() -> Unit), (() -> Unit)) -> Unit
 ) {
-  var scale by remember { mutableStateOf(SCALE_NORMAL) }
+  var scale by remember { mutableFloatStateOf(SCALE_NORMAL) }
   var particles by remember { mutableStateOf(emptyList<Offset>()) }
 
   // Determine if purchase is allowed
