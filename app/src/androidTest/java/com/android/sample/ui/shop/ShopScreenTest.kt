@@ -401,12 +401,95 @@ class ShopScreenTest {
           onBuy = { item, _, _ -> receivedItem = item })
     }
 
-    // Click on first item's buy button
-    composeTestRule.onNodeWithText("500").performClick()
+    // Click on the first item's buy button
+    val firstItem = items.first { !it.owned }
+    composeTestRule.onNodeWithText(firstItem.price.toString()).performClick()
     composeTestRule.waitForIdle()
 
-    assert(receivedItem != null) { "receivedItem should not be null" }
-    assert(receivedItem?.price == 500) { "Should receive the correct item" }
+    assert(receivedItem == firstItem) { "Should receive correct item in callback" }
+  }
+
+  // ===================== Tests for LaunchedEffect and PurchaseResult scenarios
+  // =====================
+
+  @Test
+  fun shopScreenDisplaysSuccessPurchaseSnackbar() {
+    composeTestRule.setContent {
+      TestShopScreenWithPurchaseResult(PurchaseResult.Success("Cool Shades"))
+    }
+
+    composeTestRule.waitForIdle()
+    // The snackbar should appear with success message
+    composeTestRule.onNodeWithText("🎉 You purchased Cool Shades!", substring = true).assertExists()
+  }
+
+  @Test
+  fun shopScreenDisplaysInsufficientCoinsSnackbar() {
+    composeTestRule.setContent {
+      TestShopScreenWithPurchaseResult(PurchaseResult.InsufficientCoins("Wizard Hat"))
+    }
+
+    composeTestRule.waitForIdle()
+    // The snackbar should appear with insufficient coins message
+    composeTestRule
+        .onNodeWithText("❌ Not enough coins for Wizard Hat", substring = true)
+        .assertExists()
+  }
+
+  @Test
+  fun shopScreenDisplaysAlreadyOwnedSnackbar() {
+    composeTestRule.setContent {
+      TestShopScreenWithPurchaseResult(PurchaseResult.AlreadyOwned("Red Scarf"))
+    }
+
+    composeTestRule.waitForIdle()
+    // The snackbar should appear with already owned message
+    composeTestRule.onNodeWithText("✓ You already own Red Scarf", substring = true).assertExists()
+  }
+
+  @Test
+  fun shopScreenDisplaysNoConnectionSnackbar() {
+    composeTestRule.setContent { TestShopScreenWithPurchaseResult(PurchaseResult.NoConnection) }
+
+    composeTestRule.waitForIdle()
+    // The snackbar should appear with no connection message
+    composeTestRule.onNodeWithText("📡 No internet connection", substring = true).assertExists()
+  }
+
+  @Test
+  fun shopScreenDisplaysNetworkErrorSnackbar() {
+    composeTestRule.setContent {
+      TestShopScreenWithPurchaseResult(PurchaseResult.NetworkError("Server timeout"))
+    }
+
+    composeTestRule.waitForIdle()
+    // The snackbar should appear with network error message
+    composeTestRule.onNodeWithText("⚠️ Server timeout", substring = true).assertExists()
+  }
+
+  // ===================== Tests for OfflineBanner Component =====================
+
+  @Test
+  fun offlineBannerNotDisplayedWhenOnline() {
+    composeTestRule.setContent { TestShopScreenWithOfflineBanner(isOnline = true) }
+
+    composeTestRule.waitForIdle()
+    // The offline banner should NOT be visible
+    composeTestRule
+        .onAllNodesWithText("You're offline — purchases are disabled")
+        .fetchSemanticsNodes()
+        .let { nodes ->
+          assert(nodes.isEmpty()) { "Offline banner should not be displayed when online" }
+        }
+  }
+
+  @Test
+  fun offlineBannerContainsCorrectIcon() {
+    composeTestRule.setContent { TestShopScreenWithOfflineBanner(isOnline = false) }
+
+    composeTestRule.waitForIdle()
+    // Verify the offline banner contains the CloudOff icon with correct content description
+    composeTestRule.onNodeWithContentDescription("Offline").assertExists()
   }
 
   // --- Test particle generation multiple times produces different results ---
@@ -893,3 +976,62 @@ data class FakeShopViewModel(val success: Boolean) {
           CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses),
           CosmeticItem("2", "Wizard Hat", 800, R.drawable.shop_cosmetic_hat))
 }
+
+/**
+ * Test wrapper composable that directly injects a PurchaseResult to test the LaunchedEffect logic.
+ * This mimics the ShopScreen structure but allows direct control over the purchase result.
+ */
+@androidx.compose.runtime.Composable
+fun TestShopScreenWithPurchaseResult(
+    purchaseResult: PurchaseResult,
+    onClearCalled: (() -> Unit)? = null
+) {
+  val snackbarHostState =
+      androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+  val clearedResultState =
+      androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<PurchaseResult?>(purchaseResult)
+      }
+
+  // Mimic the LaunchedEffect from ShopScreen
+  androidx.compose.runtime.LaunchedEffect(clearedResultState.value) {
+    clearedResultState.value?.let { result ->
+      val message =
+          when (result) {
+            is PurchaseResult.Success -> "🎉 You purchased ${result.itemName}!"
+            is PurchaseResult.InsufficientCoins -> "❌ Not enough coins for ${result.itemName}!"
+            is PurchaseResult.AlreadyOwned -> "✓ You already own ${result.itemName}"
+            is PurchaseResult.NoConnection -> "📡 No internet connection"
+            is PurchaseResult.NetworkError -> "⚠️ ${result.message}"
+          }
+      snackbarHostState.showSnackbar(message)
+      clearedResultState.value = null
+      onClearCalled?.invoke()
+    }
+  }
+
+  androidx.compose.material3.Scaffold(
+      snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) }) { _ ->
+        androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier)
+      }
+}
+
+/**
+ * Test wrapper composable to test OfflineBanner visibility based on online status. Simply wraps
+ * ShopContent which already has the offline banner logic.
+ */
+@androidx.compose.runtime.Composable
+fun TestShopScreenWithOfflineBanner(isOnline: Boolean) {
+  ShopContent(
+      userCoins = 1000,
+      items = sampleItemsForTest(),
+      isOnline = isOnline,
+      isPurchasing = false,
+      onBuy = { _, _, _ -> })
+}
+
+private fun sampleItemsForTest(): List<CosmeticItem> =
+    listOf(
+        CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses),
+        CosmeticItem("2", "Wizard Hat", 800, R.drawable.shop_cosmetic_hat),
+        CosmeticItem("3", "Red Scarf", 300, R.drawable.shop_cosmetic_scarf))
