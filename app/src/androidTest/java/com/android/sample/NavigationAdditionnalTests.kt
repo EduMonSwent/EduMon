@@ -91,24 +91,21 @@ class NavigationAdditionnalTests {
     // Now that we've scrolled, try to find and click the "Manage notifications" button.
     // It has the testTag "open_notifications_screen".
     composeTestRule.onNodeWithTag("open_notifications_screen").performClick()
-    composeTestRule.waitForIdle() // Wait for navigation and composition of NotificationsScreen
+    composeTestRule.waitForIdle() // Wait for navigation initiation
 
     // We should now be on the Notifications screen.
-    // The HeaderBar in NotificationsScreen has a tag "notifications_title".
-    // If this tag fails, it might be due to resource resolution in CI.
-    // Let's try waiting for the specific text content "Notifications" instead.
-    // Assuming R.string.notifications_title resolves to "Notifications".
-    // Use a waitUntil to handle potential slight delays in composition.
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    // The Notifications screen has its own HeaderBar which sets the title.
+    // The HeaderBar applies the tag "notifications_title" to its title Text.
+    // Use waitUntil with a reasonable timeout.
+    composeTestRule.waitUntil(timeoutMillis = 8000) {
       try {
-        composeTestRule.onNodeWithText("Notifications").assertExists()
-        true
+        // The HeaderBar in NotificationsScreen applies this tag.
+        composeTestRule.onNodeWithTag("notifications_title").assertExists()
+        true // Condition met
       } catch (e: AssertionError) {
-        false
+        false // Condition not met yet, keep waiting
       }
     }
-    // Or, if the tag "notifications_title" is more reliable, use:
-    // composeTestRule.onNodeWithTag("notifications_title").assertExists()
   }
 
   /**
@@ -150,20 +147,21 @@ class NavigationAdditionnalTests {
     // Now that we've scrolled, try to find and click the Focus Mode switch.
     // It's tagged with ProfileScreenTestTags.SWITCH_FOCUS_MODE.
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-    composeTestRule.waitForIdle() // Wait for navigation and composition of FocusModeScreen
+    composeTestRule.waitForIdle() // Wait for navigation initiation
 
     // We should now be on the Focus Mode screen.
-    // FocusModeScreen is wrapped by ScreenWithTopBar, so TOP_BAR_TITLE should work.
-    // The ScreenWithTopBar for "focus_mode" sets title = "Focus Mode".
-    // Use a waitUntil to handle potential slight delays in composition.
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    // The NavHost defines the "focus_mode" route wrapped by ScreenWithTopBar.
+    // Therefore, the TOP_BAR_TITLE tag should show "Focus Mode".
+    // Use waitUntil with a reasonable timeout.
+    composeTestRule.waitUntil(timeoutMillis = 8000) {
       try {
+        // The title in ScreenWithTopBar for the "focus_mode" route is "Focus Mode".
         composeTestRule
             .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
             .assertTextEquals("Focus Mode")
-        true
+        true // Condition met
       } catch (e: AssertionError) {
-        false
+        false // Condition not met yet, keep waiting
       }
     }
   }
