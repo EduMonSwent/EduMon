@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 
-// The assistance of an AI tool (ChatGPT) was solicited in writing this test file.
+// The assistance of an AI tool (ClaudeAI) was solicited in writing this test file.
 class StudyTogetherScreenFullTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -25,58 +25,46 @@ class StudyTogetherScreenFullTest {
     assert(f.mode == FriendMode.STUDY)
   }
 
-  // --- 2️⃣-A Test UserStatusCard (Study Mode)
+  // --- Test StatusChip (Study Mode)
   @Test
-  fun userStatusCard_displaysStudyMode() {
-    composeTestRule.setContent {
-      UserStatusCard(isStudyMode = true, modifier = Modifier.testTag("study_card"))
-    }
+  fun statusChip_displaysStudyMode() {
+    composeTestRule.setContent { StatusChip(mode = FriendMode.STUDY) }
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithText("You're studying").assertExists()
-  }
-
-  // --- 2️⃣-B Test UserStatusCard (Break Mode)
-  @Test
-  fun userStatusCard_displaysBreakMode() {
-    composeTestRule.setContent {
-      UserStatusCard(isStudyMode = false, modifier = Modifier.testTag("break_card"))
-    }
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithText("You're on a break").assertExists()
-  }
-
-  @Test
-  fun friendInfoCard_displaysStudyStatus() {
-    composeTestRule.setContent {
-      FriendInfoCard(
-          name = "Alae", mode = FriendMode.STUDY, modifier = Modifier.testTag("friend_study"))
-    }
-    composeTestRule.waitForIdle()
-    // Shows name and chip text
-    composeTestRule.onNodeWithText("Alae").assertExists()
     composeTestRule.onNodeWithText("Studying").assertExists()
   }
 
+  // --- Test StatusChip (Break Mode)
   @Test
-  fun friendInfoCard_displaysBreakStatus() {
-    composeTestRule.setContent {
-      FriendInfoCard(
-          name = "Florian", mode = FriendMode.BREAK, modifier = Modifier.testTag("friend_break"))
-    }
+  fun statusChip_displaysBreakMode() {
+    composeTestRule.setContent { StatusChip(mode = FriendMode.BREAK) }
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithText("Florian").assertExists()
     composeTestRule.onNodeWithText("Break").assertExists()
   }
 
+  // --- Test StatusChip (Idle Mode)
   @Test
-  fun friendInfoCard_displaysIdleStatus() {
+  fun statusChip_displaysIdleMode() {
+    composeTestRule.setContent { StatusChip(mode = FriendMode.IDLE) }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("Idle").assertExists()
+  }
+
+  @Test
+  fun campusStatusChip_displaysOnCampus() {
     composeTestRule.setContent {
-      FriendInfoCard(
-          name = "Khalil", mode = FriendMode.IDLE, modifier = Modifier.testTag("friend_idle"))
+      CampusStatusChip(onCampus = true, modifier = Modifier.testTag("campus_chip"))
     }
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithText("Khalil").assertExists()
-    composeTestRule.onNodeWithText("Idle").assertExists()
+    composeTestRule.onNodeWithText("On campus").assertExists()
+  }
+
+  @Test
+  fun campusStatusChip_displaysOffCampus() {
+    composeTestRule.setContent {
+      CampusStatusChip(onCampus = false, modifier = Modifier.testTag("campus_chip"))
+    }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("Off campus").assertExists()
   }
 
   @Test
@@ -87,31 +75,26 @@ class StudyTogetherScreenFullTest {
     composeTestRule.waitForIdle()
   }
 
-  // --- 5️⃣ Composable interne pour tester AnimatedVisibility
+  // --- Test AnimatedVisibility with FriendDropdownRow
   @Composable
-  private fun TestAnimatedVisibilitySample(selected: FriendStatus?, isUserSelected: Boolean) {
+  private fun TestAnimatedVisibilitySample(selected: FriendStatus?, visible: Boolean) {
     androidx.compose.animation.AnimatedVisibility(
-        visible = selected != null || isUserSelected,
+        visible = visible,
         modifier = Modifier.testTag("animated_visibility"),
         enter = androidx.compose.animation.fadeIn(),
         exit = androidx.compose.animation.fadeOut()) {
-          when {
-            isUserSelected -> {
-              UserStatusCard(isStudyMode = true, modifier = Modifier.padding(16.dp))
-            }
-            selected != null -> {
-              FriendInfoCard(
-                  name = selected.name, mode = selected.mode, modifier = Modifier.padding(16.dp))
-            }
+          selected?.let { friend ->
+            FriendDropdownRow(
+                friend = friend, onClick = {}, onFindClick = {}, modifier = Modifier.padding(16.dp))
           }
         }
   }
 
-  // --- 6️⃣ AnimatedVisibility tests séparés
+  // --- AnimatedVisibility tests
   @Test
-  fun animatedVisibility_displaysFriendCard() {
+  fun animatedVisibility_displaysFriendRow() {
     composeTestRule.setContent {
-      TestAnimatedVisibilitySample(FriendStatus("U1", "Alae", 0.0, 0.0, FriendMode.STUDY), false)
+      TestAnimatedVisibilitySample(FriendStatus("U1", "Alae", 0.0, 0.0, FriendMode.STUDY), true)
     }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("Alae").assertExists()
@@ -119,9 +102,35 @@ class StudyTogetherScreenFullTest {
   }
 
   @Test
-  fun animatedVisibility_displaysUserCard() {
-    composeTestRule.setContent { TestAnimatedVisibilitySample(null, true) }
+  fun animatedVisibility_hidesWhenNotVisible() {
+    composeTestRule.setContent {
+      TestAnimatedVisibilitySample(FriendStatus("U1", "Alae", 0.0, 0.0, FriendMode.STUDY), false)
+    }
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithText("You're studying").assertExists()
+    composeTestRule.onNodeWithText("Alae").assertDoesNotExist()
+  }
+
+  @Test
+  fun friendDropdownRow_displaysAllModes() {
+    // Test Study mode
+    composeTestRule.setContent {
+      FriendDropdownRow(
+          friend = FriendStatus("U1", "Alae", 0.0, 0.0, FriendMode.STUDY),
+          onClick = {},
+          onFindClick = {},
+          modifier = Modifier.testTag("friend_row"))
+    }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("Alae").assertExists()
+    composeTestRule.onNodeWithText("Studying").assertExists()
+  }
+
+  @Test
+  fun goBackToMeChip_displays() {
+    composeTestRule.setContent {
+      GoBackToMeChip(onClick = {}, modifier = Modifier.testTag("go_back_chip"))
+    }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText("Go back to my location").assertExists()
   }
 }
