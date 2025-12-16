@@ -123,7 +123,7 @@ fun EduMonHomeScreen(
         // Creature + environment fully driven by parameters (no hard-coded sprite)
         CreatureHouseCard(
             creatureResId = creatureResId,
-            level = state.creatureStats.level,
+            level = LevelingConfig.levelForPoints(state.userStats.points),
             environmentResId = environmentResId,
         )
 

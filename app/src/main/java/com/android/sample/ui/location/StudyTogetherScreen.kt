@@ -10,24 +10,42 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -36,17 +54,32 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import androidx.core.content.edit
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
@@ -70,6 +103,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlin.math.abs
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
 // Parts of this code were written with ChatGPT assistance
@@ -107,13 +141,10 @@ private const val PADDING_MEDIUM_DP = 8
 private const val PADDING_STANDARD_DP = 12
 private const val PADDING_LARGE_DP = 16
 private const val PADDING_TOP_INDICATOR_DP = 12
-private const val PADDING_TOP_FRIENDS_BUTTON_DP = 72
-private const val PADDING_TOP_DROPDOWN_DP = 44
 
 // Spacing values (in dp)
 private const val SPACING_TINY_DP = 6
 private const val SPACING_SMALL_DP = 8
-private const val SPACING_MEDIUM_DP = 9
 
 // Elevation (in dp)
 private const val ELEVATION_CARD_DP = 6
@@ -121,17 +152,18 @@ private const val ELEVATION_INFO_CARD_DP = 8
 
 // Size constraints (in dp)
 private const val MIN_BUTTON_HEIGHT_DP = 36
-private const val MIN_DROPDOWN_WIDTH_DP = 220
-private const val MAX_DROPDOWN_WIDTH_DP = 320
 
-// Alpha (transparency) ratios
-private const val ALPHA_SURFACE_HIGH = 0.95f
-private const val ALPHA_SURFACE_VERY_HIGH = 0.98f
-private const val ALPHA_SURFACE_MEDIUM = 0.6f
+// Transparency
+private const val ALPHA_MENU_BG = 0.62f // menu background (more transparent)
+private const val ALPHA_PILL_BG = 0.48f // top pill (more transparent)
+private const val ALPHA_ITEM_BG = 0.96f // list items (opaque)
 private const val ALPHA_STATUS_CHIP_BG = 0.18f
 
 // Z-index for map markers
 private const val USER_MARKER_Z_INDEX = 1f
+
+private val ON_CAMPUS_GREEN = Color(0xFF2E7D32) // Material Green 800
+private val OFF_CAMPUS_RED = Color(0xFFC62828) // Material Red 800
 
 @Stable
 private data class AddFriendUiState(
@@ -142,7 +174,6 @@ private data class AddFriendUiState(
 @Stable
 private data class StudyTogetherActions(
     val onFriendUidChange: (String) -> Unit,
-    val onUserSelected: () -> Unit,
     val onFriendSelected: (FriendStatus) -> Unit,
     val onAddFriendFabClick: () -> Unit,
     val onDismissAddFriendDialog: () -> Unit,
@@ -168,12 +199,13 @@ fun StudyTogetherScreen(
     showMap: Boolean = true,
     chooseLocation: Boolean = false,
     chosenLocation: LatLng = DEFAULT_LOCATION,
-    @DrawableRes userEdumonResId: Int = R.drawable.edumon, // <- overridable user sprite
+    @DrawableRes userEdumonResId: Int = R.drawable.edumon,
 ) {
   val permissions =
       rememberMultiplePermissionsState(
           listOf(
               Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+
   val uiState by viewModel.uiState.collectAsState()
 
   var showAddDialog by remember { mutableStateOf(false) }
@@ -210,7 +242,6 @@ fun StudyTogetherScreen(
   val actions =
       StudyTogetherActions(
           onFriendUidChange = { friendUidInput = it },
-          onUserSelected = { viewModel.selectUser() },
           onFriendSelected = { viewModel.selectFriend(it) },
           onAddFriendFabClick = { showAddDialog = true },
           onDismissAddFriendDialog = { showAddDialog = false },
@@ -239,11 +270,7 @@ private fun RequestLocationPermissions(
     permissionsAlreadyGranted: Boolean,
     requestPermissions: () -> Unit
 ) {
-  LaunchedEffect(Unit) {
-    if (!permissionsAlreadyGranted) {
-      requestPermissions()
-    }
-  }
+  LaunchedEffect(Unit) { if (!permissionsAlreadyGranted) requestPermissions() }
 }
 
 @SuppressLint("MissingPermission")
@@ -344,6 +371,18 @@ private fun StudyTogetherContent(
 ) {
   val showAddDialog = addFriendUiState.showDialog
   val friendUidInput = addFriendUiState.friendUidInput
+  val scope = rememberCoroutineScope()
+
+  // List click: center camera on friend (no bottom bar)
+  val onFriendPickedFromList: (FriendStatus) -> Unit = { friend ->
+    actions.onFriendSelected(friend)
+    scope.launch {
+      cameraPositionState.safeAnimateTo(
+          LatLng(friend.latitude, friend.longitude),
+          zoom = DEFAULT_MAP_ZOOM,
+          durationMs = CAMERA_ANIMATION_DURATION_MS)
+    }
+  }
 
   Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -354,8 +393,9 @@ private fun StudyTogetherContent(
                 cameraPositionState = cameraPositionState,
                 permissionsGranted = permissionsGranted,
                 uiState = uiState,
-                onUserSelected = actions.onUserSelected,
-                onFriendSelected = actions.onFriendSelected,
+                // clicking your own edumon should do nothing UI-wise
+                onUserSelected = { /* no-op */},
+                onFriendSelected = { friend -> actions.onFriendSelected(friend) },
                 userMarkerResId = userEdumonResId,
                 modifier = Modifier.matchParentSize())
           } else {
@@ -366,29 +406,43 @@ private fun StudyTogetherContent(
                         .testTag(TAG_MAP_STUB))
           }
 
-          if (uiState.isLocationInitialized) {
-            OnCampusIndicator(
-                modifier =
-                    Modifier.align(Alignment.TopCenter)
-                        .padding(top = PADDING_TOP_INDICATOR_DP.dp)
-                        .testTag(ON_CAMPUS),
-                onCampus = uiState.isOnCampus)
-          }
-
           EdumonFriendsDropdown(
               friends = uiState.friends,
-              onPick = actions.onFriendSelected,
+              onPick = onFriendPickedFromList,
               modifier =
                   Modifier.align(Alignment.TopStart)
-                      .padding(PADDING_STANDARD_DP.dp, top = PADDING_TOP_FRIENDS_BUTTON_DP.dp)
+                      .zIndex(1f)
+                      .padding(start = 12.dp, top = 12.dp)
                       .testTag(TAG_BTN_FRIENDS))
 
-          BottomSelectionPanel(
-              isUserSelected = uiState.isUserSelected,
-              selectedFriend = uiState.selectedFriend,
-          )
+          if (uiState.isLocationInitialized) {
+            Box(
+                modifier =
+                    Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 12.dp).zIndex(1f)) {
+                  CampusStatusChip(onCampus = uiState.isOnCampus)
+                }
+          }
 
-          AddFriendFab(onClick = actions.onAddFriendFabClick)
+          // Add friend FAB bottom-left
+          Box(
+              modifier = Modifier.fillMaxSize().padding(PADDING_LARGE_DP.dp),
+              contentAlignment = Alignment.BottomStart) {
+                AddFriendFab(onClick = actions.onAddFriendFabClick)
+              }
+
+          Box(
+              modifier = Modifier.fillMaxSize().padding(bottom = 96.dp),
+              contentAlignment = Alignment.BottomCenter) {
+                GoBackToMeChip(
+                    onClick = {
+                      scope.launch {
+                        cameraPositionState.safeAnimateTo(
+                            uiState.effectiveUserLatLng,
+                            zoom = DEFAULT_MAP_ZOOM,
+                            durationMs = CAMERA_ANIMATION_DURATION_MS)
+                      }
+                    })
+              }
 
           if (showAddDialog) {
             AddFriendDialog(
@@ -398,6 +452,23 @@ private fun StudyTogetherContent(
                 onDismiss = actions.onDismissAddFriendDialog)
           }
         }
+      }
+}
+
+@Composable
+private fun OnCampusIndicatorTopRight(onCampus: Boolean) {
+  val color = if (onCampus) ON_CAMPUS_GREEN else OFF_CAMPUS_RED
+  val text = if (onCampus) "On campus" else "Off campus"
+
+  Card(
+      shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
+      colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.95f)),
+      elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
       }
 }
 
@@ -459,101 +530,156 @@ private fun StudyMap(
     (markerStates.keys - ids).forEach { markerStates.remove(it) }
   }
 
+  // ✅ NEW BEHAVIOR:
+  // - status appears above head ONLY for the selected friend marker
+  // - disappears when you click on the map / elsewhere
+  var selectedFriendId by remember { mutableStateOf<String?>(null) }
+
+  fun clearSelection() {
+    val id = selectedFriendId ?: return
+    markerStates[id]?.hideInfoWindow()
+    selectedFriendId = null
+  }
+
   GoogleMap(
       modifier = modifier,
       cameraPositionState = cameraPositionState,
       properties =
-          MapProperties(mapType = MapType.NORMAL, isMyLocationEnabled = permissionsGranted)) {
-        val userIcon =
-            remember(userMarkerResId) {
+          MapProperties(mapType = MapType.NORMAL, isMyLocationEnabled = permissionsGranted),
+      onMapClick = { clearSelection() },
+      onPOIClick = { clearSelection() },
+  ) {
+    val userIcon =
+        remember(userMarkerResId) {
+          BitmapDescriptorFactory.fromBitmap(
+              loadDrawableAsBitmap(context, userMarkerResId, sizeDp = USER_MARKER_SIZE_DP))
+        }
+    val userMarkerState = remember { MarkerState(position = userLatLng) }
+    // --- USER EDUMON MARKER (PLAIN, ALWAYS VISIBLE) ---
+    Marker(
+        state = userMarkerState,
+        icon = userIcon,
+        anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
+        zIndex = USER_MARKER_Z_INDEX,
+        onClick = {
+          // No UI action — campus status is shown top-right
+          true
+        })
+
+    LaunchedEffect(Unit) { userMarkerState.showInfoWindow() }
+
+    LaunchedEffect(userLatLng) { userMarkerState.position = userLatLng }
+
+    val todoIcon = remember {
+      BitmapDescriptorFactory.fromBitmap(
+          loadDrawableAsBitmap(context, R.drawable.marker, sizeDp = TODO_MARKER_SIZE_DP))
+    }
+    todoMarkers.forEach { marker ->
+      Marker(
+          state = MarkerState(position = marker.position),
+          title = marker.title,
+          snippet = marker.deadlineText,
+          icon = todoIcon,
+          anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
+          onClick = {
+            clearSelection()
+            false
+          })
+    }
+
+    val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }
+
+    friendsDistinct.forEach { friend ->
+      key(friend.id) {
+        val target = LatLng(friend.latitude, friend.longitude)
+        val state = markerStates.getOrPut(friend.id) { MarkerState(position = target) }
+
+        LaunchedEffect(friend.latitude, friend.longitude) { state.position = target }
+
+        val friendIcon =
+            remember(friend.id) {
               BitmapDescriptorFactory.fromBitmap(
-                  loadDrawableAsBitmap(context, userMarkerResId, sizeDp = USER_MARKER_SIZE_DP))
+                  loadDrawableAsBitmap(
+                      context, edumonFor(friend.id), sizeDp = FRIEND_MARKER_SIZE_DP))
             }
-        val userMarkerState = remember { MarkerState(position = userLatLng) }
-        LaunchedEffect(userLatLng) { userMarkerState.position = userLatLng }
 
         Marker(
-            state = userMarkerState,
-            title = "You",
-            icon = userIcon,
+            state = state,
+            icon = friendIcon,
             anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
-            zIndex = USER_MARKER_Z_INDEX,
             onClick = {
-              onUserSelected()
+              // ❌ friend edumon does nothing
               true
             })
+      }
+    }
+  }
+}
 
-        val todoIcon = remember {
-          BitmapDescriptorFactory.fromBitmap(
-              loadDrawableAsBitmap(context, R.drawable.marker, sizeDp = TODO_MARKER_SIZE_DP))
-        }
-        todoMarkers.forEach { marker ->
-          Marker(
-              state = MarkerState(position = marker.position),
-              title = marker.title,
-              snippet = marker.deadlineText,
-              icon = todoIcon,
-              anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
-          )
-        }
+@Composable
+private fun GoBackToMeChip(onClick: () -> Unit, modifier: Modifier = Modifier) {
+  val cs = MaterialTheme.colorScheme
 
-        val friendsDistinct = remember(friends) { friends.distinctBy { it.id } }
-
-        friendsDistinct.forEach { friend ->
-          key(friend.id) {
-            val target = LatLng(friend.latitude, friend.longitude)
-            val state = markerStates.getOrPut(friend.id) { MarkerState(position = target) }
-            LaunchedEffect(friend.id, friend.latitude, friend.longitude) { state.position = target }
-            val iconRes = edumonFor(friend.id)
-            val friendIcon =
-                remember(friend.id) {
-                  val bmp = loadDrawableAsBitmap(context, iconRes, sizeDp = FRIEND_MARKER_SIZE_DP)
-                  BitmapDescriptorFactory.fromBitmap(bmp)
-                }
-            Marker(
-                state = state,
-                title = friend.name,
-                icon = friendIcon,
-                anchor = Offset(MARKER_ANCHOR_CENTER, MARKER_ANCHOR_CENTER),
-                onClick = {
-                  onFriendSelected(friend)
-                  true
-                })
-          }
-        }
+  Card(
+      modifier = modifier.clickable(onClick = onClick),
+      shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
+      colors = CardDefaults.cardColors(containerColor = cs.surface.copy(alpha = 0.7f)),
+      elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+              Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(cs.primary))
+              Spacer(Modifier.width(10.dp))
+              Text(text = "Go back to my location", style = MaterialTheme.typography.labelLarge)
+            }
       }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
+/**
+ * Visually appealing status pill in-app theme:
+ * - surface background
+ * - soft border using the mode color
+ * - readable text + small colored dot
+ * - subtle scale/alpha animation
+ */
 @Composable
-private fun BoxScope.BottomSelectionPanel(
-    isUserSelected: Boolean,
-    selectedFriend: FriendStatus?,
-) {
-  AnimatedVisibility(
-      visible = selectedFriend != null || isUserSelected,
-      enter = slideInVertically { it } + fadeIn(),
-      exit = slideOutVertically { it } + fadeOut(),
-      modifier = Modifier.align(Alignment.BottomCenter).padding(PADDING_LARGE_DP.dp)) {
-        when {
-          isUserSelected -> UserStatusCard(isStudyMode = true, modifier = Modifier.fillMaxWidth())
-          selectedFriend != null ->
-              FriendInfoCard(
-                  name = selectedFriend.name,
-                  mode = selectedFriend.mode,
-                  modifier = Modifier.fillMaxWidth())
-        }
+private fun FriendStatusPill(mode: FriendMode, alpha: Float, scale: Float) {
+  val cs = MaterialTheme.colorScheme
+  val (label, accent) =
+      when (mode) {
+        FriendMode.STUDY -> "Studying" to cs.tertiary
+        FriendMode.BREAK -> "Break" to cs.secondary
+        FriendMode.IDLE -> "Idle" to cs.primary
+      }
+
+  val shape = RoundedCornerShape(14.dp)
+
+  Row(
+      modifier =
+          Modifier.graphicsLayer {
+                this.alpha = alpha
+                scaleX = scale
+                scaleY = scale
+              }
+              .shadow(6.dp, shape, clip = false)
+              .clip(shape)
+              .background(cs.surface.copy(alpha = 0.94f))
+              .border(1.dp, accent.copy(alpha = 0.55f), shape)
+              .padding(horizontal = 10.dp, vertical = 7.dp),
+      verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(accent))
+        Spacer(Modifier.width(8.dp))
+        Text(text = label, style = MaterialTheme.typography.labelLarge, color = cs.onSurface)
       }
 }
 
 @Composable
-private fun BoxScope.AddFriendFab(onClick: () -> Unit) {
+private fun AddFriendFab(onClick: () -> Unit) {
   ExtendedFloatingActionButton(
       onClick = onClick,
       icon = { Icon(Icons.Filled.PersonAdd, contentDescription = null) },
       text = { Text("Add friend") },
-      modifier =
-          Modifier.align(Alignment.BottomEnd).padding(PADDING_LARGE_DP.dp).testTag(TAG_FAB_ADD),
+      modifier = Modifier.testTag(TAG_FAB_ADD),
       shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
       containerColor = MaterialTheme.colorScheme.primary,
       contentColor = MaterialTheme.colorScheme.onPrimary)
@@ -586,126 +712,277 @@ private fun AddFriendDialog(
       dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
+/**
+ * Friends pill + menu:
+ * - menu background transparent
+ * - list background transparent
+ * - list items opaque
+ */
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun EdumonFriendsDropdown(
     friends: List<FriendStatus>,
     onPick: (FriendStatus) -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "Friends"
+    label: String = "Friends",
 ) {
   var expanded by remember { mutableStateOf(false) }
+  val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "arrowRotation")
+
+  val cs = MaterialTheme.colorScheme
+  val pillShape = RoundedCornerShape(CORNER_RADIUS_PILL_DP)
+
+  val borderBrush =
+      remember(cs) {
+        Brush.linearGradient(
+            listOf(
+                cs.primary.copy(alpha = 0.16f),
+                cs.tertiary.copy(alpha = 0.12f),
+                cs.secondary.copy(alpha = 0.12f),
+            ))
+      }
 
   Box(modifier = modifier) {
-    FilledTonalButton(
-        onClick = { expanded = !expanded },
-        contentPadding =
-            PaddingValues(horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
-        modifier = Modifier.defaultMinSize(minHeight = MIN_BUTTON_HEIGHT_DP.dp),
-        shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
-        colors =
-            ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = ALPHA_SURFACE_HIGH),
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            )) {
+    Row(
+        modifier =
+            Modifier.defaultMinSize(minHeight = MIN_BUTTON_HEIGHT_DP.dp)
+                .shadow(5.dp, pillShape, clip = false)
+                .clip(pillShape)
+                .background(cs.surface.copy(alpha = ALPHA_PILL_BG))
+                .border(1.dp, borderBrush, pillShape)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }) {
+                      expanded = !expanded
+                    }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+          Box(
+              modifier =
+                  Modifier.size(26.dp)
+                      .clip(CircleShape)
+                      .background(cs.surfaceVariant.copy(alpha = 0.26f))
+                      .border(1.dp, cs.outline.copy(alpha = 0.10f), CircleShape),
+              contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(id = R.drawable.edumon1),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = cs.onSurface)
+              }
+
+          Spacer(Modifier.width(8.dp))
+
+          Text(
+              text = "$label ${friends.size}",
+              style = MaterialTheme.typography.labelLarge,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis)
+
+          Spacer(Modifier.width(6.dp))
+
           Icon(
-              painter = painterResource(id = R.drawable.edumon1),
+              imageVector = Icons.Filled.ExpandMore,
               contentDescription = null,
-              modifier = Modifier.size(ICON_SIZE_REGULAR_DP.dp))
-          Spacer(Modifier.width(SPACING_TINY_DP.dp))
-          Text("$label (${friends.size})")
+              modifier = Modifier.graphicsLayer { rotationZ = rotation },
+              tint = cs.onSurfaceVariant)
         }
 
-    if (expanded) {
-      Card(
-          modifier =
-              Modifier.align(Alignment.TopStart)
-                  .padding(top = PADDING_TOP_DROPDOWN_DP.dp)
-                  .widthIn(min = MIN_DROPDOWN_WIDTH_DP.dp, max = MAX_DROPDOWN_WIDTH_DP.dp),
-          shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
-          colors =
-              CardDefaults.cardColors(
-                  containerColor =
-                      MaterialTheme.colorScheme.surface.copy(alpha = ALPHA_SURFACE_VERY_HIGH)),
-          elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
-            if (friends.isEmpty()) {
-              Text(
-                  text = "No friends yet",
-                  modifier =
-                      Modifier.padding(
-                          horizontal = PADDING_LARGE_DP.dp, vertical = PADDING_STANDARD_DP.dp),
-                  style = MaterialTheme.typography.bodyMedium)
-            } else {
-              Column(
-                  modifier =
-                      Modifier.padding(
-                          vertical = PADDING_MEDIUM_DP.dp, horizontal = PADDING_MEDIUM_DP.dp)) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier =
-                            Modifier.padding(
-                                start = PADDING_SMALL_DP.dp, bottom = PADDING_SMALL_DP.dp))
+    AnimatedVisibility(
+        visible = expanded,
+        enter = slideInVertically { -it / 6 } + fadeIn(),
+        exit = slideOutVertically { -it / 6 } + fadeOut(),
+        modifier = Modifier.align(Alignment.TopCenter).padding(top = 52.dp).fillMaxWidth()) {
+          Card(
+              modifier = Modifier.padding(horizontal = 12.dp),
+              shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
+              colors =
+                  CardDefaults.cardColors(containerColor = cs.surface.copy(alpha = ALPHA_MENU_BG)),
+              elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+          ) {
+            Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Friends",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f))
+                TextButton(onClick = { expanded = false }) { Text("Close") }
+              }
 
-                    friends.forEach { friend ->
-                      FriendDropdownRow(
-                          friend = friend,
-                          onClick = {
-                            expanded = false
-                            onPick(friend)
-                          },
-                          modifier = Modifier.fillMaxWidth())
-                      Spacer(Modifier.height(SPACING_MEDIUM_DP.dp))
-                    }
+              Spacer(Modifier.height(8.dp))
+
+              if (friends.isEmpty()) {
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = cs.surfaceVariant.copy(alpha = 0.20f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                ) {
+                  Column(modifier = Modifier.padding(14.dp)) {
+                    Text("No friends yet", style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Tap “Add friend” to share your study status.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cs.onSurfaceVariant)
                   }
+                }
+              } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(0.dp)) {
+                      itemsIndexed(friends) { _, friend ->
+                        FriendDropdownRow(
+                            friend = friend,
+                            onClick = {
+                              expanded = false
+                              onPick(friend)
+                            },
+                            onFindClick = {
+                              expanded = false
+                              onPick(friend)
+                            },
+                            modifier = Modifier.fillMaxWidth())
+                      }
+                    }
+              }
+
+              Spacer(Modifier.height(8.dp))
             }
           }
-    }
+        }
   }
+}
+
+@Composable
+private fun CampusStatusChip(onCampus: Boolean, modifier: Modifier = Modifier) {
+  val cs = MaterialTheme.colorScheme
+  val dotColor = if (onCampus) ON_CAMPUS_GREEN else OFF_CAMPUS_RED
+  val label = if (onCampus) "On campus" else "Off campus"
+
+  Row(
+      modifier =
+          modifier
+              .clip(RoundedCornerShape(CORNER_RADIUS_PILL_DP))
+              .background(cs.surfaceVariant.copy(alpha = 0.75f))
+              .padding(horizontal = 12.dp, vertical = 8.dp),
+      verticalAlignment = Alignment.CenterVertically) {
+        // ● Status dot
+        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(dotColor))
+
+        Spacer(Modifier.width(8.dp))
+
+        // Text
+        Text(text = label, style = MaterialTheme.typography.labelLarge, color = cs.onSurface)
+
+        Spacer(Modifier.width(8.dp))
+
+        // EPFL logo
+        Icon(
+            painter = painterResource(id = R.drawable.epfl),
+            contentDescription = "EPFL",
+            modifier = Modifier.size(24.dp),
+            tint = Color.Unspecified)
+      }
 }
 
 @Composable
 private fun FriendDropdownRow(
     friend: FriendStatus,
     onClick: () -> Unit,
+    onFindClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+  val cs = MaterialTheme.colorScheme
+  val rowShape = RoundedCornerShape(CORNER_RADIUS_ROW_DP.dp)
+
   Row(
       modifier =
           modifier
-              .clip(RoundedCornerShape(CORNER_RADIUS_ROW_DP.dp))
+              .shadow(4.dp, rowShape, clip = false)
+              .clip(rowShape)
+              .background(cs.surfaceVariant.copy(alpha = ALPHA_ITEM_BG))
               .clickable(onClick = onClick)
-              .background(
-                  MaterialTheme.colorScheme.surfaceVariant.copy(alpha = ALPHA_SURFACE_MEDIUM))
-              .padding(horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
+              .padding(horizontal = 10.dp, vertical = 10.dp),
       verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            painter = painterResource(id = edumonFor(friend.id)),
-            contentDescription = null,
-            modifier = Modifier.size(ICON_SIZE_REGULAR_DP.dp))
-        Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+        // Avatar
+        Box(
+            modifier =
+                Modifier.size(36.dp)
+                    .clip(CircleShape)
+                    .background(cs.surface.copy(alpha = 0.92f))
+                    .border(1.dp, cs.outline.copy(alpha = 0.16f), CircleShape),
+            contentAlignment = Alignment.Center) {
+              Icon(
+                  painter = painterResource(id = edumonFor(friend.id)),
+                  contentDescription = null,
+                  modifier = Modifier.size(20.dp),
+                  tint = cs.onSurface)
+            }
+
+        Spacer(Modifier.width(10.dp))
+
+        // Name
         Text(
-            friend.name,
+            text = friend.name,
+            style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis)
-        Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+
+        // ✅ Status back on the right
         StatusChip(mode = friend.mode)
+
+        Spacer(Modifier.width(8.dp))
+
+        // Find arrow button
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowRight,
+            contentDescription = "Find on map",
+            modifier = Modifier.size(28.dp).clip(CircleShape).clickable(onClick = onFindClick),
+            tint = cs.primary)
       }
 }
 
 @Composable
 private fun OnCampusIndicator(modifier: Modifier = Modifier, onCampus: Boolean) {
-  val colorScheme = MaterialTheme.colorScheme
-  val statusColor = if (onCampus) colorScheme.tertiary else colorScheme.error
+  val cs = MaterialTheme.colorScheme
+  val statusColor = if (onCampus) cs.tertiary else cs.error
   val label = if (onCampus) "On EPFL campus" else "Outside of EPFL campus"
 
   Card(
       modifier = modifier,
       shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
-      colors =
-          CardDefaults.cardColors(
-              containerColor = colorScheme.surface.copy(alpha = ALPHA_SURFACE_HIGH)),
+      colors = CardDefaults.cardColors(containerColor = cs.surface.copy(alpha = 0.60f)),
+      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    horizontal = PADDING_STANDARD_DP.dp, vertical = PADDING_MEDIUM_DP.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+              Box(
+                  modifier =
+                      Modifier.size(ICON_SIZE_MEDIUM_DP.dp)
+                          .clip(CircleShape)
+                          .background(statusColor))
+              Spacer(Modifier.width(SPACING_SMALL_DP.dp))
+              Text(text = label, style = MaterialTheme.typography.labelLarge)
+            }
+      }
+}
+
+@Composable
+private fun OnCampusIndicatorCompact(modifier: Modifier = Modifier, onCampus: Boolean) {
+  val cs = MaterialTheme.colorScheme
+  val statusColor = if (onCampus) ON_CAMPUS_GREEN else OFF_CAMPUS_RED
+  val label = if (onCampus) "On campus" else "Off campus"
+
+  Card(
+      modifier = modifier,
+      shape = RoundedCornerShape(CORNER_RADIUS_PILL_DP),
+      colors = CardDefaults.cardColors(containerColor = cs.surface.copy(alpha = 0.60f)),
       elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_CARD_DP.dp)) {
         Row(
             modifier =
@@ -725,12 +1002,12 @@ private fun OnCampusIndicator(modifier: Modifier = Modifier, onCampus: Boolean) 
 
 @Composable
 private fun StatusChip(mode: FriendMode) {
-  val colorScheme = MaterialTheme.colorScheme
+  val cs = MaterialTheme.colorScheme
   val (label, baseColor) =
       when (mode) {
-        FriendMode.STUDY -> "Studying" to colorScheme.tertiary
-        FriendMode.BREAK -> "Break" to colorScheme.secondary
-        FriendMode.IDLE -> "Idle" to colorScheme.primary
+        FriendMode.STUDY -> "Studying" to cs.tertiary
+        FriendMode.BREAK -> "Break" to cs.secondary
+        FriendMode.IDLE -> "Idle" to cs.primary
       }
 
   Box(
@@ -744,35 +1021,6 @@ private fun StatusChip(mode: FriendMode) {
                   Modifier.size(ICON_SIZE_SMALL_DP.dp).clip(CircleShape).background(baseColor))
           Spacer(Modifier.width(SPACING_TINY_DP.dp))
           Text(text = label, style = MaterialTheme.typography.labelMedium)
-        }
-      }
-}
-
-@Composable
-fun UserStatusCard(isStudyMode: Boolean, modifier: Modifier = Modifier) {
-  Card(
-      modifier = modifier,
-      shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_INFO_CARD_DP.dp)) {
-        Text(
-            text = if (isStudyMode) "You're studying" else "You're on a break",
-            modifier = Modifier.padding(PADDING_LARGE_DP.dp),
-            style = MaterialTheme.typography.bodyMedium)
-      }
-}
-
-@Composable
-fun FriendInfoCard(name: String, mode: FriendMode, modifier: Modifier = Modifier) {
-  Card(
-      modifier = modifier,
-      shape = RoundedCornerShape(CORNER_RADIUS_CARD_DP.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-      elevation = CardDefaults.cardElevation(defaultElevation = ELEVATION_INFO_CARD_DP.dp)) {
-        Row(Modifier.padding(PADDING_LARGE_DP.dp)) {
-          Text(text = name, style = MaterialTheme.typography.titleMedium)
-          Spacer(Modifier.height(SPACING_TINY_DP.dp))
-          StatusChip(mode)
         }
       }
 }
@@ -805,9 +1053,8 @@ private suspend fun CameraPositionState.safeAnimateTo(
 }
 
 internal fun persistLastLocation(ctx: Context, lat: Double, lon: Double) {
-  ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE)
-      .edit()
-      .putFloat("lat", lat.toFloat())
-      .putFloat("lon", lon.toFloat())
-      .apply()
+  ctx.getSharedPreferences("last_location", Context.MODE_PRIVATE).edit {
+    putFloat("lat", lat.toFloat())
+    putFloat("lon", lon.toFloat())
+  }
 }
