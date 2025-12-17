@@ -39,6 +39,8 @@ class FakeShopRepository(private val profileRepository: ProfileRepository? = nul
     const val OWNED = "owned:"
   }
 
+  private val localOwnedIds = mutableSetOf<String>()
+
   private val _items = MutableStateFlow(defaultCosmetics())
   override val items: StateFlow<List<CosmeticItem>> = _items.asStateFlow()
 
@@ -48,6 +50,11 @@ class FakeShopRepository(private val profileRepository: ProfileRepository? = nul
   }
 
   override suspend fun purchaseItem(itemId: String): Boolean {
+    val currentOwnedIds = getOwnedItemIds()
+    if (currentOwnedIds.contains(itemId)) return false
+
+    localOwnedIds.add(itemId)
+
     _items.update { list ->
       list.map { item -> if (item.id == itemId) item.copy(owned = true) else item }
     }
@@ -55,11 +62,12 @@ class FakeShopRepository(private val profileRepository: ProfileRepository? = nul
   }
 
   override suspend fun getOwnedItemIds(): Set<String> {
-    return getOwnedIdsFromProfile()
+    val profileOwnedIds = getOwnedIdsFromProfile()
+    return localOwnedIds + profileOwnedIds
   }
 
   override suspend fun refreshOwnedStatus() {
-    val ownedIds = getOwnedIdsFromProfile()
+    val ownedIds = getOwnedItemIds()
     _items.update { list -> list.map { item -> item.copy(owned = ownedIds.contains(item.id)) } }
   }
 
