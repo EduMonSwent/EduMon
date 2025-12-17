@@ -2,9 +2,11 @@ package com.android.sample.ui.schedule
 
 import android.content.res.Resources
 import androidx.test.core.app.ApplicationProvider
+import com.android.sample.feature.schedule.data.planner.AttendanceStatus
 import com.android.sample.feature.schedule.data.planner.Class
 import com.android.sample.feature.schedule.data.planner.ClassAttendance
 import com.android.sample.feature.schedule.data.planner.ClassType
+import com.android.sample.feature.schedule.data.planner.CompletionStatus
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
@@ -43,6 +45,42 @@ class ScheduleViewModelMoreBranchesTest {
   fun tearDown() {
     Dispatchers.resetMain()
   }
+
+  @Test
+  fun saveClassAttendance_failure_emitsSnackbarEvent() =
+      runTest(dispatcher) {
+        plannerRepo.shouldFail = true
+
+        var event: ScheduleViewModel.UiEvent? = null
+        val job = launch {
+          vm.eventFlow.collect {
+            event = it
+            cancel()
+          }
+        }
+
+        val klass =
+            Class(
+                id = "1",
+                courseName = "Networks",
+                startTime = LocalTime.NOON,
+                endTime = LocalTime.NOON.plusHours(1),
+                type = ClassType.LECTURE)
+
+        vm.saveClassAttendance(klass, AttendanceStatus.YES, CompletionStatus.YES)
+
+        advanceUntilIdle()
+
+        Assert.assertTrue(event is ScheduleViewModel.UiEvent.ShowSnackbar)
+        job.cancel()
+      }
+
+  @Test
+  fun clearError_setsErrorMessageToNull() =
+      runTest(dispatcher) {
+        vm.clearError()
+        Assert.assertNull(vm.uiState.value.errorMessage)
+      }
 
   @Test
   fun toggles_and_helpers() =
@@ -113,6 +151,7 @@ class ScheduleViewModelMoreBranchesTest {
   }
 
   private class FakePlannerRepo : PlannerRepository() {
+    var shouldFail = false
     private val classes = MutableStateFlow<List<Class>>(emptyList())
     private val attendance = MutableStateFlow<List<ClassAttendance>>(emptyList())
 
@@ -121,6 +160,6 @@ class ScheduleViewModelMoreBranchesTest {
     override fun getTodayAttendanceFlow(): Flow<List<ClassAttendance>> = attendance
 
     override suspend fun saveAttendance(attendance: ClassAttendance): Result<Unit> =
-        Result.success(Unit)
+        if (shouldFail) Result.failure(Exception("offline")) else Result.success(Unit)
   }
 }
