@@ -3,14 +3,11 @@ package com.android.sample.ui.calendar
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,7 +19,6 @@ import com.android.sample.ui.theme.Blue
 import com.android.sample.ui.theme.CustomGreen
 import com.android.sample.ui.theme.EventViolet
 import com.android.sample.ui.theme.Pink
-import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletLilas
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -31,7 +27,6 @@ import java.time.format.DateTimeFormatter
 fun UpcomingEventsSection(
     tasks: List<StudyItem>,
     selectedDate: LocalDate,
-    onAddTaskClick: (LocalDate) -> Unit,
     onTaskClick: (StudyItem) -> Unit,
     title: String = stringResource(R.string.upcoming_events)
 ) {
@@ -50,18 +45,6 @@ fun UpcomingEventsSection(
                   MaterialTheme.typography.titleLarge.copy(
                       fontWeight = FontWeight.ExtraBold, color = cs.onSurface),
               modifier = Modifier.weight(1f))
-          FilledTonalButton(
-              onClick = { onAddTaskClick(selectedDate) },
-              shape = RoundedCornerShape(14.dp),
-              colors =
-                  ButtonDefaults.filledTonalButtonColors(
-                      containerColor = PurplePrimary, contentColor = Color.White),
-              contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-              modifier = Modifier.height(44.dp)) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_event))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.add_event))
-              }
         }
 
     if (sortedTasks.isEmpty()) {

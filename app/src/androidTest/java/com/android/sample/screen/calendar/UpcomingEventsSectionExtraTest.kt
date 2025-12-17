@@ -24,7 +24,6 @@ class UpcomingEventsSectionExtraTest {
       UpcomingEventsSection(
           tasks = emptyList(),
           selectedDate = LocalDate.now(),
-          onAddTaskClick = {},
           onTaskClick = {},
           title = "Upcoming Events")
     }
@@ -54,11 +53,7 @@ class UpcomingEventsSectionExtraTest {
 
     composeTestRule.setContent {
       UpcomingEventsSection(
-          tasks = tasks,
-          selectedDate = today,
-          onAddTaskClick = {},
-          onTaskClick = {},
-          title = "Upcoming Events")
+          tasks = tasks, selectedDate = today, onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("Study Math").assertIsDisplayed()

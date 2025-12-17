@@ -37,19 +37,13 @@ class UpcomingEventsSectionTest {
 
     composeTestRule.setContent {
       UpcomingEventsSection(
-          tasks = tasks,
-          selectedDate = today,
-          onAddTaskClick = {},
-          onTaskClick = {},
-          title = "Upcoming Events")
+          tasks = tasks, selectedDate = today, onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("Upcoming Events").assertIsDisplayed()
 
     composeTestRule.onNodeWithText("Math Revision").assertIsDisplayed()
     composeTestRule.onNodeWithText("Team Meeting").assertIsDisplayed()
-
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists().performClick()
   }
 
   @Test
@@ -58,12 +52,10 @@ class UpcomingEventsSectionTest {
       UpcomingEventsSection(
           tasks = emptyList(),
           selectedDate = LocalDate.now(),
-          onAddTaskClick = {},
           onTaskClick = {},
           title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("No upcoming events", ignoreCase = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists()
   }
 }
