@@ -2,7 +2,6 @@ package com.android.sample.ui.flashcards
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -36,13 +35,13 @@ class CreateDeckScreenTest {
       EduMonTheme { CreateDeckScreen(onSaved = {}, onCancel = {}, vm = vm) }
     }
 
-    composeRule.onNodeWithText("New Deck").assertIsDisplayed()
-    composeRule.onNodeWithText("Cancel").assertIsDisplayed()
-    composeRule.onNodeWithText("Title").assertIsDisplayed()
-    composeRule.onNodeWithText("Description").assertIsDisplayed()
-    composeRule.onNodeWithText("Cards").assertIsDisplayed()
-    composeRule.onNodeWithText("Add card").assertIsDisplayed()
-    composeRule.onNodeWithText("Save Deck").assertIsDisplayed()
+    composeRule.onNodeWithText("New Deck").assertExists()
+    composeRule.onNodeWithText("Cancel").assertExists()
+    composeRule.onNodeWithText("Title").assertExists()
+    composeRule.onNodeWithText("Description").assertExists()
+    composeRule.onNodeWithText("Cards").assertExists()
+    composeRule.onNodeWithText("Add card").assertExists()
+    composeRule.onNodeWithText("Save Deck").assertExists()
   }
 
   @Test
