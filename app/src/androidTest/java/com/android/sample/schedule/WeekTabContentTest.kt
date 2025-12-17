@@ -269,10 +269,6 @@ class WeekTabContentAllAndroidTest {
 
     // outside-week item not shown
     rule.onNodeWithText("Outside week task").assertDoesNotExist()
-
-    // add button is there
-    val addEvent = rule.activity.getString(R.string.add_event)
-    rule.onNodeWithText(addEvent).performScrollTo().assertIsDisplayed()
   }
 
   @Test

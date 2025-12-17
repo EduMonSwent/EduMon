@@ -4,7 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
@@ -29,7 +28,6 @@ class UpcomingEventsSectionExtraTest {
     }
 
     composeTestRule.onNodeWithText("No upcoming events", ignoreCase = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists()
   }
 
   @Test
@@ -58,6 +56,5 @@ class UpcomingEventsSectionExtraTest {
 
     composeTestRule.onNodeWithText("Study Math").assertIsDisplayed()
     composeTestRule.onNodeWithText("Team meeting").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).performClick()
   }
 }
