@@ -51,8 +51,20 @@ class StudySessionViewModelFirebaseTest {
     auth = FirebaseAuth.getInstance()
     firestore = FirebaseFirestore.getInstance()
 
-    // Sign out any existing user
-    runBlocking { auth.signOut() }
+    // Ensure clean state: sign out and wait
+    runBlocking {
+      try {
+        val uid = auth.currentUser?.uid
+        if (uid != null) {
+          firestore.collection("profiles").document(uid).delete().await()
+        }
+      } catch (e: Exception) {
+        android.util.Log.w("StudySessionVMFirebaseTest", "Setup cleanup failed", e)
+      }
+      auth.signOut()
+      // Give Firebase time to process the signout
+      kotlinx.coroutines.delay(200)
+    }
   }
 
   @After
@@ -63,12 +75,41 @@ class StudySessionViewModelFirebaseTest {
       if (uid != null) {
         try {
           firestore.collection("profiles").document(uid).delete().await()
-        } catch (_: Exception) {
-          // Ignore cleanup errors
+        } catch (e: Exception) {
+          android.util.Log.w("StudySessionVMFirebaseTest", "Teardown cleanup failed", e)
         }
         auth.signOut()
+        // Give Firebase time to process
+        kotlinx.coroutines.delay(200)
       }
     }
+  }
+
+  /**
+   * Helper function to wait for Firebase to update the mode field. Polls every 100ms for up to 3
+   * seconds.
+   */
+  private suspend fun waitForModeUpdate(uid: String, expectedMode: FriendMode) {
+    val maxAttempts = 30 // 3 seconds total (30 * 100ms)
+    var attempts = 0
+
+    while (attempts < maxAttempts) {
+      val snapshot = firestore.collection("profiles").document(uid).get().await()
+      val currentMode = snapshot.getString("mode")
+
+      if (currentMode == expectedMode.name) {
+        return // Success!
+      }
+
+      kotlinx.coroutines.delay(100)
+      attempts++
+    }
+
+    // If we get here, timeout occurred
+    val snapshot = firestore.collection("profiles").document(uid).get().await()
+    val actualMode = snapshot.getString("mode")
+    throw AssertionError(
+        "Timeout waiting for mode update. Expected: ${expectedMode.name}, Actual: $actualMode")
   }
 
   @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,17 +140,21 @@ class StudySessionViewModelFirebaseTest {
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun updateUserMode_whenProfileDoesNotExist_doesNothing() = runTest {
-    // Create a test user without a profile document
-    val result =
-        auth.signInWithEmailAndPassword("test-noprofile@example.com", "testpass123").await()
+    // Create an anonymous test user without a profile document
+    val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
-    assertNotNull(uid)
+    assertNotNull("Anonymous auth should create a user", uid)
+
+    // Verify user is actually signed in
+    assertNotNull("User should be signed in after anonymous auth", auth.currentUser)
+    assertEquals("UID should match", uid, auth.currentUser?.uid)
 
     // Ensure no profile document exists
     try {
       firestore.collection("profiles").document(uid!!).delete().await()
-    } catch (_: Exception) {
-      // Document may not exist, that's fine
+    } catch (e: Exception) {
+      android.util.Log.d(
+          "StudySessionVMFirebaseTest", "Profile document didn't exist, nothing to delete", e)
     }
 
     viewModel =
@@ -125,6 +170,9 @@ class StudySessionViewModelFirebaseTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
     advanceUntilIdle()
 
+    // Give time for any async operations
+    kotlinx.coroutines.delay(500)
+
     // Verify profile document still doesn't exist (updateUserMode should return early)
     val snapshot = firestore.collection("profiles").document(uid!!).get().await()
     assert(!snapshot.exists())
@@ -133,9 +181,8 @@ class StudySessionViewModelFirebaseTest {
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun updateUserMode_whenProfileExists_updatesMode() = runTest {
-    // Create a test user with a profile document
-    val result =
-        auth.signInWithEmailAndPassword("test-withprofile@example.com", "testpass123").await()
+    // Create an anonymous test user with a profile document
+    val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
     assertNotNull(uid)
 
@@ -159,6 +206,9 @@ class StudySessionViewModelFirebaseTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
     advanceUntilIdle()
 
+    // Wait for Firebase to update the mode
+    waitForModeUpdate(uid, FriendMode.STUDY)
+
     // Verify mode was updated to STUDY
     val snapshot = firestore.collection("profiles").document(uid).get().await()
     assertEquals(FriendMode.STUDY.name, snapshot.getString("mode"))
@@ -166,6 +216,9 @@ class StudySessionViewModelFirebaseTest {
     // Simulate stopping the study session (should update mode to IDLE)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
     advanceUntilIdle()
+
+    // Wait for Firebase to update the mode
+    waitForModeUpdate(uid, FriendMode.IDLE)
 
     // Verify mode was updated back to IDLE
     val snapshot2 = firestore.collection("profiles").document(uid).get().await()
@@ -175,8 +228,8 @@ class StudySessionViewModelFirebaseTest {
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun updateUserMode_whenSessionStarts_setsModeToStudy() = runTest {
-    // Create a test user with a profile
-    val result = auth.signInWithEmailAndPassword("test-study@example.com", "testpass123").await()
+    // Create an anonymous test user with a profile
+    val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
     assertNotNull(uid)
 
@@ -200,6 +253,9 @@ class StudySessionViewModelFirebaseTest {
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
     advanceUntilIdle()
 
+    // Wait for Firebase to update the mode
+    waitForModeUpdate(uid, FriendMode.STUDY)
+
     // Verify mode is STUDY
     val snapshot = firestore.collection("profiles").document(uid).get().await()
     assertEquals(FriendMode.STUDY.name, snapshot.getString("mode"))
@@ -208,8 +264,8 @@ class StudySessionViewModelFirebaseTest {
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun updateUserMode_whenSessionPauses_setsModeToIdle() = runTest {
-    // Create a test user with a profile in STUDY mode
-    val result = auth.signInWithEmailAndPassword("test-pause@example.com", "testpass123").await()
+    // Create an anonymous test user with a profile in STUDY mode
+    val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
     assertNotNull(uid)
 
@@ -236,6 +292,9 @@ class StudySessionViewModelFirebaseTest {
     // Then pause (transition from RUNNING to PAUSED)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
     advanceUntilIdle()
+
+    // Wait for Firebase to update the mode
+    waitForModeUpdate(uid, FriendMode.IDLE)
 
     // Verify mode is IDLE
     val snapshot = firestore.collection("profiles").document(uid).get().await()
