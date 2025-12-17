@@ -58,6 +58,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -154,8 +155,8 @@ fun ProfileScreen(
 
   val snackbarHostState = remember { SnackbarHostState() }
 
-  // IMPORTANT: must be enabled for snackbar to ever show (tests + real UX).
-  // LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
+  // IMPORTANT: keep this enabled (tests + real UX).
+  LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
   Scaffold(
       snackbarHost = {
@@ -668,5 +669,28 @@ fun LevelProgressBar(level: Int, points: Int) {
         text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
         color = TextLight.copy(alpha = 0.7f),
         fontSize = 11.sp)
+  }
+}
+
+// This code has been written partially using A.I (LLM).
+@Composable
+private fun LevelUpRewardSnackbarHandler(
+    viewModel: ProfileViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+  LaunchedEffect(viewModel) {
+    viewModel.rewardEvents.collect { event ->
+      when (event) {
+        is LevelUpRewardUiEvent.RewardsGranted -> {
+          // Keep the message deterministic for tests.
+          val message = "Level ${event.newLevel}"
+
+          // Avoid re-showing after recompositions (rewardEvents can be replayed).
+          viewModel.clearRewardEventsReplayCache()
+
+          snackbarHostState.showSnackbar(message)
+        }
+      }
+    }
   }
 }

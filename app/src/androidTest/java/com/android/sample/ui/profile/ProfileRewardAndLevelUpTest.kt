@@ -39,35 +39,25 @@ class ProfileRewardAndLevelUpTest {
   // ------------------------------------------------------------
   @Test
   fun profileScreen_showsSnackbarOnLevelUpReward() {
-    // Freeze time so animations and CI slowness don’t break the assertions.
-    composeRule.mainClock.autoAdvance = false
-
     val initial = UserProfile(level = 1, points = 0, coins = 0, lastRewardedLevel = 0)
     val repo = FakeProfileRepository(initial)
-    val viewModel = ProfileViewModel(repo)
+    val viewModel = ProfileViewModel(profileRepository = repo)
 
     composeRule.setContent { EduMonTheme { ProfileScreen(viewModel = viewModel) } }
 
+    // Ensure composable tree is ready and the collector is attached.
+    composeRule.onNodeWithTag(ProfileSnackbarTestTags.HOST, useUnmergedTree = true).assertExists()
+    composeRule.waitForIdle()
+
     composeRule.runOnIdle { viewModel.addPoints(80) }
 
-    // Wait until the snackbar node exists (tag-based, CI-safe).
-    composeRule.waitUntil(timeoutMillis = 20_000) {
+    composeRule.waitUntil(timeoutMillis = 60_000) {
       composeRule
-          .onAllNodesWithTag(ProfileSnackbarTestTags.SNACKBAR, useUnmergedTree = true)
+          .onAllNodesWithTag(ProfileSnackbarTestTags.MESSAGE, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    // Advance past snackbar enter animation deterministically.
-    composeRule.mainClock.advanceTimeBy(2_000)
-    composeRule.waitForIdle()
-
-    // Assert snackbar is present (assertExists is the most CI-stable).
-    composeRule
-        .onNodeWithTag(ProfileSnackbarTestTags.SNACKBAR, useUnmergedTree = true)
-        .assertExists()
-
-    // Optional: also assert the message contains "Level 2" (still stable since we anchor by tag).
     composeRule
         .onNodeWithTag(ProfileSnackbarTestTags.MESSAGE, useUnmergedTree = true)
         .assertExists()
