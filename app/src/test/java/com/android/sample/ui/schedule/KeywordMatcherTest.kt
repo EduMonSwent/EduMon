@@ -53,4 +53,21 @@ class KeywordMatcherTest {
     val cats = listOf("Horaires examinés", "other")
     assertTrue(matcher.isExam(cats))
   }
+
+  @Test
+  fun `isExam returns false on empty categories`() {
+    assertFalse(matcher.isExam(emptyList()))
+  }
+
+  @Test
+  fun `isExercise handles null safely`() {
+    assertFalse(matcher.isExercise(null))
+  }
+
+  @Test
+  fun `holiday detection matches mixed input`() {
+    assertTrue(matcher.isHoliday("Vacances d'hiver"))
+    assertTrue(matcher.isHoliday(listOf("Jour Férié", "Autre")))
+    assertFalse(matcher.isHoliday("Regular class"))
+  }
 }

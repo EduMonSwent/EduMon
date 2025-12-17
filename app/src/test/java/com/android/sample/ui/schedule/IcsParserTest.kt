@@ -70,4 +70,82 @@ class IcsParserTest {
     // 1 Dec, 8 Dec, 15 Dec
     assertEquals(3, events.size)
   }
+
+  @Test
+  fun `duration is used to compute end time when DTEND is missing`() {
+    val ics =
+        """
+        BEGIN:VEVENT
+        SUMMARY:Duration Class
+        DTSTART:20241201T100000
+        DURATION:PT90M
+        END:VEVENT
+      """
+
+    val e = IcsParser.parse(stream(ics)).single()
+
+    assertEquals(LocalTime.of(10, 0), e.start)
+    assertEquals(LocalTime.of(11, 30), e.end)
+  }
+
+  @Test
+  fun `event missing summary or start is ignored`() {
+    val ics = """
+        BEGIN:VEVENT
+        DTSTART:20241201T100000
+        END:VEVENT
+      """
+
+    val events = IcsParser.parse(stream(ics))
+    assertEquals(0, events.size)
+  }
+
+  @Test
+  fun `weekly RRULE without until expands to default weeks`() {
+    val ics =
+        """
+        BEGIN:VEVENT
+        SUMMARY:Weekly No Until
+        DTSTART:20241201T080000
+        RRULE:FREQ=WEEKLY
+        END:VEVENT
+      """
+
+    val events = IcsParser.parse(stream(ics))
+
+    // base week + 12 weeks = 13 total
+    assertEquals(13, events.size)
+  }
+
+  @Test
+  fun `categories are parsed correctly`() {
+    val ics =
+        """
+        BEGIN:VEVENT
+        SUMMARY:Categorized Event
+        DTSTART:20241201T080000
+        CATEGORIES:Exam
+        CATEGORIES:Written
+        END:VEVENT
+      """
+
+    val e = IcsParser.parse(stream(ics)).single()
+    assertEquals(listOf("Exam", "Written"), e.categories)
+  }
+
+  @Test
+  fun `all day event has null start and end`() {
+    val ics =
+        """
+        BEGIN:VEVENT
+        SUMMARY:All Day
+        DTSTART;VALUE=DATE:20241201
+        END:VEVENT
+      """
+
+    val e = IcsParser.parse(stream(ics)).single()
+
+    assertEquals(null, e.start)
+    assertEquals(null, e.end)
+  }
 }

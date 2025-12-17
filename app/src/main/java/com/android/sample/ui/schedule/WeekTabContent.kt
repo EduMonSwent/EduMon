@@ -170,9 +170,7 @@ fun WeekTabContent(
 
           // ---- Frame: Upcoming events (embedded; no inner GlassSurface) ----
           SectionBox(title = null) {
-            val end = weekStart.plusDays(6)
-            val from = if (selectedDate.isBefore(weekStart)) weekStart else selectedDate
-            val weekTasks = allTasks.filter { it.date in from..end }
+            val weekTasks = allTasks.filter { it.date == selectedDate }
 
             UpcomingEventsSection(
                 tasks =

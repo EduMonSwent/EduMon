@@ -34,6 +34,16 @@ data class ScheduleEvent(
   val isAllDay: Boolean
     get() = time == null
 
+  val isImportant: Boolean
+    get() =
+        kind in
+            listOf(
+                EventKind.EXAM_FINAL,
+                EventKind.EXAM_MIDTERM,
+                EventKind.SUBMISSION_PROJECT,
+                EventKind.SUBMISSION_MILESTONE,
+                EventKind.SUBMISSION_WEEKLY)
+
   // Duration display helper
   val durationDisplay: String
     get() =
@@ -86,3 +96,18 @@ enum class ScheduleTab {
   WEEK,
   MONTH
 }
+
+enum class AcademicWeekType {
+  TEACHING,
+  MID_SEMESTER_BREAK,
+  REVISION,
+  EXAMS
+}
+
+data class SemesterConfig(
+    val semesterStart: LocalDate, // Monday of week 1
+    val teachingWeeksBeforeBreak: Int = 6,
+    val teachingWeeksAfterBreak: Int = 8,
+    val revisionWeeks: Int = 1,
+    val examWeeks: Int = 3
+)

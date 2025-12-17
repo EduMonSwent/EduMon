@@ -16,6 +16,7 @@ object IcsParser {
   private const val FIELD_DESCRIPTION = "DESCRIPTION:"
   private const val FIELD_RRULE = "RRULE:"
   private const val FIELD_CATEGORIES = "CATEGORIES:"
+  private const val FIELD_DURATION = "DURATION:"
 
   data class IcsClass(
       val title: String,
@@ -44,6 +45,7 @@ object IcsParser {
                     title = title,
                     dtStart = start,
                     dtEnd = state.dtEnd,
+                    durationMinutes = state.durationMinutes,
                     location = state.location,
                     description = state.description,
                     categories = state.categories)
@@ -75,6 +77,7 @@ object IcsParser {
       var title: String? = null,
       var dtStart: String? = null,
       var dtEnd: String? = null,
+      var durationMinutes: Int? = null,
       var location: String? = null,
       var description: String? = null,
       var rrule: String? = null,
@@ -99,13 +102,25 @@ object IcsParser {
             .takeIf { it.isNotBlank() }
             ?.let { state.categories.add(it) }
       }
+      line.startsWith(FIELD_DURATION) -> {
+        val raw = line.substringAfter(FIELD_DURATION)
+        state.durationMinutes = parseDurationMinutes(raw)
+      }
     }
+  }
+
+  private fun parseDurationMinutes(raw: String): Int? {
+    if (!raw.startsWith("PT")) return null
+
+    val minutesPart = raw.removePrefix("PT").removeSuffix("M")
+    return minutesPart.toIntOrNull()
   }
 
   private fun buildIcsClass(
       title: String,
       dtStart: String,
       dtEnd: String?,
+      durationMinutes: Int?,
       location: String?,
       description: String?,
       categories: List<String>
@@ -129,15 +144,21 @@ object IcsParser {
         }
 
     val endTime =
-        dtEnd?.let { end ->
-          val endTimePart = end.substringAfter('T', missingDelimiterValue = "")
-          if (endTimePart.length >= 4) {
-            val hh = endTimePart.substring(0, 2)
-            val mm = endTimePart.substring(2, 4)
-            runCatching { LocalTime.parse("$hh:$mm") }.getOrNull()
-          } else {
-            null
+        when {
+          dtEnd != null -> {
+            dtEnd
+                .substringAfter('T')
+                .takeIf { it.length >= 4 }
+                ?.let { raw ->
+                  val hh = raw.substring(0, 2)
+                  val mm = raw.substring(2, 4)
+                  runCatching { LocalTime.of(hh.toInt(), mm.toInt()) }.getOrNull()
+                }
           }
+          durationMinutes != null && startTime != null -> {
+            startTime.plusMinutes(durationMinutes.toLong())
+          }
+          else -> null
         }
 
     return IcsClass(
