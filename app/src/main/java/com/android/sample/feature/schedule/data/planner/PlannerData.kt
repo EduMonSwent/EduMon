@@ -8,7 +8,6 @@ import com.android.sample.ui.theme.EventColorLecture
 import com.android.sample.ui.theme.EventColorMusic
 import com.android.sample.ui.theme.EventColorSocial
 import com.android.sample.ui.theme.EventColorSports
-import com.android.sample.ui.theme.EventColorYoga
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
@@ -85,29 +84,20 @@ enum class CompletionStatus {
   PARTIALLY
 }
 
-enum class WellnessEventType(val iconRes: Int, val primaryColor: Color) {
-  YOGA(R.drawable.ic_yoga, EventColorYoga),
-  LECTURE(R.drawable.ic_event, EventColorLecture), // Reusing ic_event, or add specific for lecture
-  SPORTS(R.drawable.ic_yoga, EventColorSports), // Assuming you have an ic_sports
-  SOCIAL(R.drawable.ic_star, EventColorSocial), // Assuming you have an ic_social
-  MUSIC(R.drawable.ic_sparkle, EventColorMusic), // Assuming you have an ic_music
-  DEFAULT(R.drawable.ic_event, EventColorDefault); // Default if type isn't matched
+enum class WellnessEventType(val iconRes: Int, val primaryColor: Color, val url: String? = null) {
 
-  // You might want to provide a way to get the type from a string, if needed
-  companion object {
-    fun fromTitle(title: String): WellnessEventType {
-      return when {
-        title.contains("Yoga", ignoreCase = true) -> YOGA
-        title.contains("Lecture", ignoreCase = true) || title.contains("Talk", ignoreCase = true) ->
-            LECTURE
-        title.contains("Sports", ignoreCase = true) ||
-            title.contains("Fitness", ignoreCase = true) -> SPORTS
-        title.contains("Social", ignoreCase = true) || title.contains("Party", ignoreCase = true) ->
-            SOCIAL
-        title.contains("Music", ignoreCase = true) ||
-            title.contains("Concert", ignoreCase = true) -> MUSIC
-        else -> DEFAULT
-      }
-    }
-  }
+  // External campus activities
+  SPORTS(
+      iconRes = R.drawable.ic_yoga,
+      primaryColor = EventColorSports,
+      url = "https://sport.unil.ch/?pid=24"),
+  LECTURE(
+      iconRes = R.drawable.ic_event,
+      primaryColor = EventColorLecture,
+      url = "https://www.epfl.ch/campus/events/"),
+
+  // Internal / future use
+  SOCIAL(R.drawable.ic_star, EventColorSocial),
+  MUSIC(R.drawable.ic_sparkle, EventColorMusic),
+  DEFAULT(R.drawable.ic_event, EventColorDefault)
 }

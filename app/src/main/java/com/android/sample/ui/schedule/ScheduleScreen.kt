@@ -198,6 +198,7 @@ fun ScheduleScreen(
                   objectivesVm = objectivesVm,
                   allTasks = allTasks,
                   weekTodos = weekTodos,
+                  snackbarHostState = snackbarHostState,
                   onOpenTodo = onOpenTodo,
                   onSelectObjective = { activeObjective = it },
               )
@@ -228,6 +229,7 @@ private fun ScheduleMainContent(
     objectivesVm: ObjectivesViewModel,
     allTasks: List<StudyItem>,
     weekTodos: List<ToDo>,
+    snackbarHostState: SnackbarHostState,
     onOpenTodo: (String) -> Unit,
     onSelectObjective: (Objective?) -> Unit
 ) {
@@ -238,13 +240,13 @@ private fun ScheduleMainContent(
               vm = vm,
               state = state,
               objectivesVm = objectivesVm,
+              snackbarHostState = snackbarHostState,
               onObjectiveNavigation = { nav ->
                 if (nav is ObjectiveNavigation.ToCourseExercises) {
                   onSelectObjective(nav.objective)
                 }
               },
-              onTodoClicked = onOpenTodo,
-          )
+              onTodoClicked = onOpenTodo)
         }
     ScheduleTab.WEEK ->
         Box(Modifier.testTag(ScheduleScreenTestTags.CONTENT_WEEK)) {
