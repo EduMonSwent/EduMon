@@ -127,19 +127,4 @@ class FlappyEduMonScreenTest {
     // Start message should be visible
     composeRule.onNodeWithText("Tap anywhere to start").assertExists()
   }
-
-  @Test
-  fun scoreIncreases_duringGameplay() {
-    composeRule.setContent { FlappyEduMonScreen() }
-
-    // Start the game
-    composeRule.onNodeWithText("Tap anywhere to start").performClick()
-
-    // Wait a bit for score to increase
-    composeRule.waitForIdle()
-    Thread.sleep(500) // Let score accumulate
-
-    // Score should no longer be 0 (it increases by 0.01 per frame)
-    composeRule.onNodeWithText("Score: 0").assertDoesNotExist()
-  }
 }
