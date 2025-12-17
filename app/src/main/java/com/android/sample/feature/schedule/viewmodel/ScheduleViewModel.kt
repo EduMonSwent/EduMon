@@ -492,11 +492,6 @@ class ScheduleViewModel(
     delete(event.id)
   }
 
-  fun classesForDate(date: LocalDate): List<Class> {
-    val day = date.dayOfWeek
-    return _uiState.value.todayClasses.filter { it.daysOfWeek.contains(day) }
-  }
-
   fun academicWeekType(date: LocalDate, config: SemesterConfig): AcademicWeekType {
 
     val week = weeksSinceStart(date, config.semesterStart)
