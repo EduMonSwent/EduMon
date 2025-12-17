@@ -359,7 +359,6 @@ class ProfileViewModel(
               points = newPoints,
               level = computed,
               coins = stats.coins,
-              streak = stats.streak,
               lastRewardedLevel = computed,
               studyStats =
                   old.studyStats.copy(
@@ -389,7 +388,6 @@ class ProfileViewModel(
           old.copy(
               points = newPoints,
               coins = stats.coins,
-              streak = stats.streak,
               studyStats =
                   old.studyStats.copy(
                       totalTimeMin = stats.totalStudyMinutes,
@@ -426,7 +424,6 @@ class ProfileViewModel(
     val final =
         rewarded.copy(
             coins = stats.coins + result.summary.coinsGranted,
-            streak = stats.streak,
             studyStats =
                 old.studyStats.copy(
                     totalTimeMin = stats.totalStudyMinutes,
