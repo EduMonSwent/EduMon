@@ -50,7 +50,7 @@ object HomeTestTags {
 
   const val QUICK_STUDY = "quick_study"
   const val QUICK_BREAK = "quick_break"
-  const val QUICK_EXERCISE = "quick_exercise"
+  const val QUICK_FLASHCARDS = "quick_flashacards"
   const val QUICK_SOCIAL = "quick_social"
 
   // ✅ Carousel
@@ -150,7 +150,7 @@ fun EduMonHomeScreen(
         QuickActionsCard(
             onStudy = { onNavigate(AppDestination.Study.route) },
             onTakeBreak = { onNavigate(AppDestination.Games.route) },
-            onExercise = { /* open exercise tips */},
+            onFlashcards = { onNavigate(AppDestination.Flashcards.route) },
             onSocial = { onNavigate(AppDestination.StudyTogether.route) },
         )
 
@@ -249,7 +249,7 @@ fun AffirmationsAndRemindersCard(
 fun QuickActionsCard(
     onStudy: () -> Unit,
     onTakeBreak: () -> Unit,
-    onExercise: () -> Unit,
+    onFlashcards: () -> Unit,
     onSocial: () -> Unit,
 ) {
   ElevatedCard(
@@ -276,10 +276,10 @@ fun QuickActionsCard(
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
               QuickButton(
-                  "Exercise",
-                  Icons.Outlined.FitnessCenter,
-                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_EXERCISE),
-                  onExercise)
+                  "Flashcards",
+                  Icons.Outlined.FlashOn,
+                  Modifier.weight(1f).testTag(HomeTestTags.QUICK_FLASHCARDS),
+                  onFlashcards)
               QuickButton(
                   "Social Time",
                   Icons.Outlined.Groups2,

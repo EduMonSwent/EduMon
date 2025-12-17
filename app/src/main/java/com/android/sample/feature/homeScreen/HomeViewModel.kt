@@ -10,6 +10,7 @@ import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.repos_providors.AppRepositories
+import com.android.sample.repositories.ToDoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -29,6 +30,7 @@ data class HomeUiState(
 class HomeViewModel(
     private val repository: HomeRepository = AppRepositories.homeRepository,
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
+    private val toDoRepository: ToDoRepository = AppRepositories.toDoRepository, // ✅ shared repo
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(HomeUiState())
@@ -43,13 +45,18 @@ class HomeViewModel(
       userStatsRepository.stats.collect { stats -> _uiState.update { it.copy(userStats = stats) } }
     }
 
+    // ✅ Keep Home screen in sync with REAL todos (same repo as Todo screen)
+    viewModelScope.launch {
+      // Assumes your ToDoRepository exposes a Flow/StateFlow called "todos"
+      toDoRepository.todos.collect { todos -> _uiState.update { it.copy(todos = todos) } }
+    }
+
     refresh()
   }
 
   fun refresh() {
     _uiState.update { it.copy(isLoading = true) }
     viewModelScope.launch {
-      val todos = repository.fetchTodos()
       val objectives = repository.fetchObjectives()
       val creature = repository.fetchCreatureStats()
       val quote = repository.dailyQuote()
@@ -57,7 +64,6 @@ class HomeViewModel(
       _uiState.update {
         it.copy(
             isLoading = false,
-            todos = todos,
             creatureStats = creature,
             quote = quote,
             objectives = objectives,
