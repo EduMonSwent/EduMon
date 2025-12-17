@@ -44,12 +44,12 @@ class StudyTogetherScreenTest {
     composeTestRule.onNodeWithText("Add").assertIsEnabled().performClick()
 
     composeTestRule.waitForIdle()
-    // Dropdown should now reflect one friend
-    composeTestRule.onNodeWithText("Friends (1)").assertExists()
+    // Dropdown should now reflect one friend (updated format)
+    composeTestRule.onNodeWithText("Friends 1").assertExists()
   }
 
   @Test
-  fun friendsDropdown_selectFriend_showsFriendInfoCard() {
+  fun friendsDropdown_selectFriend_showsStatusInDropdown() {
     val seed =
         listOf(
             FriendStatus("U1", "Alae", 46.52, 6.56, FriendMode.STUDY),
@@ -61,13 +61,19 @@ class StudyTogetherScreenTest {
 
     composeTestRule.setContent { StudyTogetherScreen(viewModel = vm) }
 
-    // Open dropdown and pick Khalil
-    composeTestRule.onNodeWithText("Friends (${seed.size})").performClick()
-    composeTestRule.onNodeWithText("Khalil").performClick()
+    // Open dropdown and verify all friends are listed with their status
+    composeTestRule.onNodeWithText("Friends ${seed.size}").performClick()
+    composeTestRule.waitForIdle()
 
-    // Bottom card shows name and the Idle status chip
+    // Verify all friends are shown with their status chips
     composeTestRule.onNodeWithText("Khalil").assertExists()
     composeTestRule.onNodeWithText("Idle").assertExists()
+
+    composeTestRule.onNodeWithText("Alae").assertExists()
+    composeTestRule.onNodeWithText("Studying").assertExists()
+
+    composeTestRule.onNodeWithText("Florian").assertExists()
+    composeTestRule.onNodeWithText("Break").assertExists()
   }
 
   @Test
@@ -91,27 +97,11 @@ class StudyTogetherScreenTest {
   }
 
   @Test
-  fun selectUser_showsUserStatusCard() {
-    val repo = FakeFriendRepository(emptyList())
-    val vm = buildViewModel(repo)
-
-    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm) }
-
-    // Simulate clicking the user marker by invoking VM helper directly
-    composeTestRule.runOnUiThread { vm.selectUser() }
-    // Wait for AnimatedVisibility animation to complete
-    composeTestRule.waitForIdle()
-
-    // Expect the user status card text
-    composeTestRule.onNodeWithText("You're studying").assertExists()
-  }
-
-  @Test
-  fun onCampusIndicator_shows_onCampus_when_location_inside_epfl_bbox() {
+  fun campusStatusChip_shows_onCampus_when_location_inside_epfl_bbox() {
     val repo = FakeFriendRepository(emptyList())
     val vm = StudyTogetherViewModel(friendRepository = repo)
 
-    // Disable map to avoid GoogleMap swallowing test input; indicator still renders.
+    // Disable map to avoid GoogleMap swallowing test input
     composeTestRule.setContent {
       StudyTogetherScreen(viewModel = vm, showMap = false, chooseLocation = true)
     }
@@ -123,14 +113,12 @@ class StudyTogetherScreenTest {
     // Wait for state update and recomposition
     composeTestRule.waitForIdle()
 
-    // Indicator composable should always exist
-    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
-    // Text for on-campus state
-    composeTestRule.onNodeWithText("On EPFL campus").assertExists()
+    // New campus status chip should show "On campus"
+    composeTestRule.onNodeWithText("On campus").assertExists()
   }
 
   @Test
-  fun onCampusIndicator_shows_offCampus_when_location_outside_epfl_bbox() {
+  fun campusStatusChip_shows_offCampus_when_location_outside_epfl_bbox() {
     val repo = FakeFriendRepository(emptyList())
     val vm = StudyTogetherViewModel(friendRepository = repo)
 
@@ -142,8 +130,8 @@ class StudyTogetherScreenTest {
     // Wait for state update and recomposition
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
-    composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
+    // New campus status chip should show "Off campus"
+    composeTestRule.onNodeWithText("Off campus").assertExists()
   }
 
   @Test
@@ -153,8 +141,8 @@ class StudyTogetherScreenTest {
 
     composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
 
-    // Should show "Friends (0)" button
-    composeTestRule.onNodeWithText("Friends (0)").assertExists()
+    // Should show "Friends 0" button (updated format)
+    composeTestRule.onNodeWithText("Friends 0").assertExists()
 
     // Open the dropdown
     composeTestRule.onNodeWithTag("btn_friends").performClick()
@@ -187,21 +175,6 @@ class StudyTogetherScreenTest {
   }
 
   @Test
-  fun userStatusCard_showsCorrectStatus_whenUserSelected() {
-    val repo = FakeFriendRepository(emptyList())
-    val vm = buildViewModel(repo)
-
-    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
-
-    // Select user
-    composeTestRule.runOnUiThread { vm.selectUser() }
-    composeTestRule.waitForIdle()
-
-    // Should show studying status
-    composeTestRule.onNodeWithText("You're studying").assertExists()
-  }
-
-  @Test
   fun locationCallback_usesActualLocation_whenChooseLocationIsFalse() {
     // Create a completely fresh repository and ViewModel instance
     val repo = FakeFriendRepository(emptyList())
@@ -228,9 +201,8 @@ class StudyTogetherScreenTest {
 
     composeTestRule.waitForIdle()
 
-    // Should show outside campus since Zurich is far from EPFL
-    composeTestRule.onNodeWithTag("on_campus_indicator").assertExists()
-    composeTestRule.onNodeWithText("Outside of EPFL campus").assertExists()
+    // Should show off campus since Zurich is far from EPFL
+    composeTestRule.onNodeWithText("Off campus").assertExists()
 
     // Verify the GPS location was used and state was updated correctly
     composeTestRule.runOnUiThread {
@@ -256,7 +228,7 @@ class StudyTogetherScreenTest {
   }
 
   @Test
-  fun friendInfoCard_showsCorrectInfo_whenFriendSelected() {
+  fun friendsDropdown_showsFriendWithStatus() {
     val seed =
         listOf(
             FriendStatus("U1", "Alice", 46.52, 6.56, FriendMode.BREAK),
@@ -266,11 +238,11 @@ class StudyTogetherScreenTest {
 
     composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
 
-    // Select friend
-    composeTestRule.runOnUiThread { vm.selectFriend(seed[0]) }
+    // Open dropdown
+    composeTestRule.onNodeWithTag("btn_friends").performClick()
     composeTestRule.waitForIdle()
 
-    // Should show friend name and status
+    // Should show friend name and status in the dropdown row
     composeTestRule.onNodeWithText("Alice").assertExists()
     composeTestRule.onNodeWithText("Break").assertExists()
   }
@@ -292,7 +264,7 @@ class StudyTogetherScreenTest {
     composeTestRule.waitForIdle()
 
     // Dialog should close and no friend added
-    composeTestRule.onNodeWithText("Friends (0)").assertExists()
+    composeTestRule.onNodeWithText("Friends 0").assertExists()
   }
 
   @Test
@@ -334,7 +306,7 @@ class StudyTogetherScreenTest {
     composeTestRule.waitForIdle()
 
     // Should use the chosen location (on campus)
-    composeTestRule.onNodeWithText("On EPFL campus").assertExists()
+    composeTestRule.onNodeWithText("On campus").assertExists()
   }
 
   @Test
@@ -350,12 +322,11 @@ class StudyTogetherScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("Bob").assertExists()
 
-    // Select friend
+    // Select friend - click on the row
     composeTestRule.onNodeWithText("Bob").performClick()
     composeTestRule.waitForIdle()
 
-    // Dropdown should collapse - the friend name in dropdown should no longer be visible
-    // (only in the bottom card)
+    // Dropdown should collapse automatically after selection
   }
 
   @Test
@@ -378,5 +349,56 @@ class StudyTogetherScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithText("You're already friends.").assertExists()
+  }
+
+  @Test
+  fun goBackToMeChip_isVisible() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    composeTestRule.waitForIdle()
+
+    // The "Go back to my location" chip should be visible
+    composeTestRule.onNodeWithText("Go back to my location").assertExists()
+  }
+
+  @Test
+  fun campusStatusChip_showsEPFLLogo() {
+    val repo = FakeFriendRepository(emptyList())
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Set location to trigger campus status
+    composeTestRule.runOnUiThread { vm.consumeLocation(46.520, 6.565) }
+    composeTestRule.waitForIdle()
+
+    // Campus status chip should be visible (it includes EPFL logo)
+    composeTestRule.onNodeWithText("On campus").assertExists()
+  }
+
+  @Test
+  fun friendsDropdown_closesWithCloseButton() {
+    val seed = listOf(FriendStatus("U1", "Charlie", 46.52, 6.56, FriendMode.STUDY))
+    val repo = FakeFriendRepository(seed)
+    val vm = buildViewModel(repo)
+
+    composeTestRule.setContent { StudyTogetherScreen(viewModel = vm, showMap = false) }
+
+    // Open dropdown
+    composeTestRule.onNodeWithTag("btn_friends").performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify dropdown is open
+    composeTestRule.onNodeWithText("Friends").assertExists()
+    composeTestRule.onNodeWithText("Close").assertExists()
+
+    // Click Close button
+    composeTestRule.onNodeWithText("Close").performClick()
+    composeTestRule.waitForIdle()
+
+    // Dropdown should close - "Close" button should no longer be visible
   }
 }
