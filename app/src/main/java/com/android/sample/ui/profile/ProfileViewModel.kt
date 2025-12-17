@@ -1,20 +1,23 @@
+// This code was written with the assistance of an AI (LLM).
 package com.android.sample.ui.profile
 
 import LevelingConfig.levelForPoints
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.R
 import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
+import com.android.sample.domain.model.EduMonType
+import com.android.sample.domain.ressources.EduMonResourceRegistry
 import com.android.sample.feature.rewards.LevelRewardEngine
 import com.android.sample.feature.schedule.repository.schedule.IcsExamImporter
 import com.android.sample.feature.schedule.repository.schedule.IcsImporter
@@ -38,18 +41,54 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// This code has been written partially using A.I (LLM).
 class ProfileViewModel(
     private val profileRepository: ProfileRepository = AppRepositories.profileRepository,
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
 ) : ViewModel() {
 
+  private object Constants {
+    const val LOG_TAG = "ProfileViewModel"
+    const val FLOW_TIMEOUT_MS = 5_000L
+    const val STARTUP_SYNC_THRESHOLD = 2
+    const val OWNED_PREFIX = "owned:"
+    const val SLOT_SEPARATOR = ":"
+    const val ACCESSORY_NONE = "none"
+    const val MIN_DELTA = 0
+    const val MIN_AMOUNT = 0
+    const val COLOR_LIGHT_FACTOR = 0.25f
+    const val COLOR_DARK_FACTOR = 0.75f
+    const val COLOR_VIBRANT_FACTOR = 1.1f
+    const val COLOR_MIN = 0f
+    const val COLOR_MAX = 1f
+    val DEFAULT_ACCENT_COLOR = Color(0xFF7C4DFF)
+  }
+
+  private object AccessoryIds {
+    const val NONE = "none"
+    const val HAT = "hat"
+    const val GLASSES = "glasses"
+    const val SCARF = "scarf"
+    const val CAPE = "cape"
+    const val WINGS = "wings"
+    const val AURA = "aura"
+  }
+
+  private object AccessoryLabels {
+    const val NONE = "None"
+    const val HAT = "Hat"
+    const val GLASSES = "Glasses"
+    const val SCARF = "Scarf"
+    const val CAPE = "Cape"
+    const val WINGS = "Wings"
+    const val AURA = "Aura"
+  }
+
   companion object {
-    // Global state shared across all instances to handle the multiple-instance bug
     private var globalSyncCount = 0
     private var globalStartupComplete = false
     private var globalLastProcessedPoints = 0
@@ -57,7 +96,6 @@ class ProfileViewModel(
     private var globalJustLeveledUp = false
   }
 
-  // ----- State Flows -----
   private val _userProfile = MutableStateFlow(UserProfile())
   val userProfile: StateFlow<UserProfile> = _userProfile
 
@@ -70,7 +108,14 @@ class ProfileViewModel(
   private val accentVariant = MutableStateFlow(AccentVariant.Base)
   val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
 
-  // ----- Startup synchronization flags -----
+  val eduMonType: StateFlow<EduMonType> =
+      _userProfile
+          .map { EduMonType.fromId(it.starterId) }
+          .stateIn(
+              viewModelScope,
+              SharingStarted.WhileSubscribed(Constants.FLOW_TIMEOUT_MS),
+              EduMonType.PYROMON)
+
   private var startupCompleted: Boolean
     get() = globalStartupComplete
     set(value) {
@@ -95,13 +140,9 @@ class ProfileViewModel(
       globalJustLeveledUp = value
     }
 
-  // Flag to know if profile has been loaded from Firestore
   private var profileLoaded = false
-
-  // ----- Reward engine -----
   private val rewardEngine = LevelRewardEngine()
 
-  // ----- Theme palette -----
   val accentPalette: List<Color> =
       listOf(
           AccentViolet,
@@ -117,26 +158,27 @@ class ProfileViewModel(
       combine(userProfile, accentVariantFlow) { user, variant ->
             applyAccentVariant(Color(user.avatarAccent.toInt()), variant)
           }
-          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Color(0xFF7C4DFF))
+          .stateIn(
+              viewModelScope,
+              SharingStarted.WhileSubscribed(Constants.FLOW_TIMEOUT_MS),
+              Constants.DEFAULT_ACCENT_COLOR)
 
   init {
-    Log.d("ProfileViewModel", "=== ProfileViewModel INIT ===")
+    Log.d(Constants.LOG_TAG, "=== ProfileViewModel INIT ===")
 
-    // Collect profile from repository
     viewModelScope.launch {
       profileRepository.profile.collect { profile ->
-        Log.d("ProfileViewModel", "Profile from repo: starterId='${profile.starterId}'")
+        Log.d(Constants.LOG_TAG, "Profile from repo: starterId='${profile.starterId}'")
         _userProfile.value = profile
         profileLoaded = true
       }
     }
 
-    // Wait for Firestore to load, then start stats collection
     viewModelScope.launch {
       if (profileRepository is FirestoreProfileRepository) {
-        Log.d("ProfileViewModel", "Waiting for Firestore profile to load...")
+        Log.d(Constants.LOG_TAG, "Waiting for Firestore profile to load...")
         profileRepository.isLoaded.first { it }
-        Log.d("ProfileViewModel", "Firestore profile loaded")
+        Log.d(Constants.LOG_TAG, "Firestore profile loaded")
       }
 
       userStatsRepository.start()
@@ -149,65 +191,58 @@ class ProfileViewModel(
     }
   }
 
-  // ----- Accessory Management -----
+  @DrawableRes
+  fun starterDrawable(): Int {
+    val type = EduMonType.fromId(_userProfile.value.starterId)
+    return EduMonResourceRegistry.getBaseDrawable(type)
+  }
+
+  @DrawableRes
+  fun accessoryResId(slot: AccessorySlot, accessoryId: String): Int {
+    val type = EduMonType.fromId(_userProfile.value.starterId)
+    return EduMonResourceRegistry.getAccessoryDrawable(type, slot, accessoryId)
+  }
 
   private fun fullCatalog(): List<AccessoryItem> =
       listOf(
-          AccessoryItem("none", AccessorySlot.HEAD, "None"),
-          AccessoryItem("hat", AccessorySlot.HEAD, "Hat"),
-          AccessoryItem("glasses", AccessorySlot.HEAD, "Glasses"),
-          AccessoryItem("none", AccessorySlot.TORSO, "None"),
-          AccessoryItem("scarf", AccessorySlot.TORSO, "Scarf"),
-          AccessoryItem("cape", AccessorySlot.TORSO, "Cape"),
-          AccessoryItem("none", AccessorySlot.BACK, "None"),
-          AccessoryItem("wings", AccessorySlot.BACK, "Wings"),
-          AccessoryItem("aura", AccessorySlot.BACK, "Aura"))
+          AccessoryItem(AccessoryIds.NONE, AccessorySlot.HEAD, AccessoryLabels.NONE),
+          AccessoryItem(AccessoryIds.HAT, AccessorySlot.HEAD, AccessoryLabels.HAT),
+          AccessoryItem(AccessoryIds.GLASSES, AccessorySlot.HEAD, AccessoryLabels.GLASSES),
+          AccessoryItem(AccessoryIds.NONE, AccessorySlot.TORSO, AccessoryLabels.NONE),
+          AccessoryItem(AccessoryIds.SCARF, AccessorySlot.TORSO, AccessoryLabels.SCARF),
+          AccessoryItem(AccessoryIds.CAPE, AccessorySlot.TORSO, AccessoryLabels.CAPE),
+          AccessoryItem(AccessoryIds.NONE, AccessorySlot.BACK, AccessoryLabels.NONE),
+          AccessoryItem(AccessoryIds.WINGS, AccessorySlot.BACK, AccessoryLabels.WINGS),
+          AccessoryItem(AccessoryIds.AURA, AccessorySlot.BACK, AccessoryLabels.AURA))
 
   val accessoryCatalog: List<AccessoryItem>
     get() {
       val owned = ownedIds()
-      return fullCatalog().filter { item -> item.id == "none" || owned.contains(item.id) }
+      return fullCatalog().filter { item ->
+        item.id == Constants.ACCESSORY_NONE || owned.contains(item.id)
+      }
     }
-
-  fun accessoryResId(slot: AccessorySlot, id: String): Int {
-    return when (slot) {
-      AccessorySlot.HEAD ->
-          when (id) {
-            "hat" -> R.drawable.cosmetic_hat
-            "glasses" -> R.drawable.cosmetic_glasses
-            else -> 0
-          }
-      AccessorySlot.TORSO ->
-          when (id) {
-            "scarf" -> R.drawable.cosmetic_scarf
-            "cape" -> R.drawable.cosmetic_cape
-            else -> 0
-          }
-      AccessorySlot.BACK ->
-          when (id) {
-            "wings" -> R.drawable.cosmetic_wings
-            "aura" -> R.drawable.cosmetic_aura
-            else -> 0
-          }
-      else -> 0
-    }
-  }
 
   private fun ownedIds(): Set<String> {
     return _userProfile.value.accessories
-        .filter { it.startsWith("owned:") }
-        .map { it.removePrefix("owned:") }
+        .filter { it.startsWith(Constants.OWNED_PREFIX) }
+        .map { it.removePrefix(Constants.OWNED_PREFIX) }
         .toSet()
   }
 
   fun equip(slot: AccessorySlot, id: String) {
     val owned = ownedIds()
-    if (id != "none" && !owned.contains(id)) return
+    if (id != Constants.ACCESSORY_NONE && !owned.contains(id)) return
 
     val cur = _userProfile.value
-    val prefix = slot.name.lowercase() + ":"
+    val prefix = slot.name.lowercase() + Constants.SLOT_SEPARATOR
     val cleaned = cur.accessories.filterNot { it.startsWith(prefix) }
-    val updatedAccessories = if (id == "none") cleaned else cleaned + (prefix + id)
+    val updatedAccessories =
+        if (id == Constants.ACCESSORY_NONE) {
+          cleaned
+        } else {
+          cleaned + (prefix + id)
+        }
     val updated = cur.copy(accessories = updatedAccessories)
 
     _userProfile.value = updated
@@ -216,19 +251,17 @@ class ProfileViewModel(
 
   fun unequip(slot: AccessorySlot) {
     val cur = _userProfile.value
-    val prefix = slot.name.lowercase() + ":"
+    val prefix = slot.name.lowercase() + Constants.SLOT_SEPARATOR
     val updated = cur.copy(accessories = cur.accessories.filterNot { it.startsWith(prefix) })
     _userProfile.value = updated
     pushProfile(updated)
   }
 
   fun equippedId(slot: AccessorySlot): String? {
-    val prefix = slot.name.lowercase() + ":"
+    val prefix = slot.name.lowercase() + Constants.SLOT_SEPARATOR
     val entry = _userProfile.value.accessories.firstOrNull { it.startsWith(prefix) } ?: return null
     return entry.removePrefix(prefix)
   }
-
-  // ----- Theme and Accent Management -----
 
   fun setAvatarAccent(color: Color) {
     val argb = color.toArgb().toLong()
@@ -245,21 +278,26 @@ class ProfileViewModel(
         AccentVariant.Base -> base
         AccentVariant.Light ->
             Color(
-                (base.red + (1f - base.red) * 0.25f),
-                (base.green + (1f - base.green) * 0.25f),
-                (base.blue + (1f - base.blue) * 0.25f),
+                (base.red + (Constants.COLOR_MAX - base.red) * Constants.COLOR_LIGHT_FACTOR),
+                (base.green + (Constants.COLOR_MAX - base.green) * Constants.COLOR_LIGHT_FACTOR),
+                (base.blue + (Constants.COLOR_MAX - base.blue) * Constants.COLOR_LIGHT_FACTOR),
                 base.alpha)
         AccentVariant.Dark ->
-            Color(base.red * 0.75f, base.green * 0.75f, base.blue * 0.75f, base.alpha)
+            Color(
+                base.red * Constants.COLOR_DARK_FACTOR,
+                base.green * Constants.COLOR_DARK_FACTOR,
+                base.blue * Constants.COLOR_DARK_FACTOR,
+                base.alpha)
         AccentVariant.Vibrant ->
             Color(
-                (base.red * 1.1f).coerceIn(0f, 1f),
-                (base.green * 1.1f).coerceIn(0f, 1f),
-                (base.blue * 1.1f).coerceIn(0f, 1f),
+                (base.red * Constants.COLOR_VIBRANT_FACTOR).coerceIn(
+                    Constants.COLOR_MIN, Constants.COLOR_MAX),
+                (base.green * Constants.COLOR_VIBRANT_FACTOR).coerceIn(
+                    Constants.COLOR_MIN, Constants.COLOR_MAX),
+                (base.blue * Constants.COLOR_VIBRANT_FACTOR).coerceIn(
+                    Constants.COLOR_MIN, Constants.COLOR_MAX),
                 base.alpha)
       }
-
-  // ----- Settings Management -----
 
   fun toggleNotifications() = updateLocal {
     it.copy(notificationsEnabled = !it.notificationsEnabled)
@@ -269,15 +307,13 @@ class ProfileViewModel(
 
   fun toggleFocusMode() = updateLocal { it.copy(focusModeEnabled = !it.focusModeEnabled) }
 
-  // ----- Starter Selection -----
-
   fun setStarter(starterId: String) {
     if (starterId.isBlank()) {
-      Log.w("ProfileViewModel", "setStarter: blank id ignored")
+      Log.w(Constants.LOG_TAG, "setStarter: blank id ignored")
       return
     }
 
-    Log.d("ProfileViewModel", "=== setStarter CALLED: '$starterId' ===")
+    Log.d(Constants.LOG_TAG, "=== setStarter CALLED: '$starterId' ===")
 
     val updated = _userProfile.value.copy(starterId = starterId)
     _userProfile.value = updated
@@ -286,35 +322,22 @@ class ProfileViewModel(
     viewModelScope.launch {
       try {
         profileRepository.updateProfile(updated)
-        Log.d("ProfileViewModel", "=== setStarter SUCCESS ===")
+        Log.d(Constants.LOG_TAG, "=== setStarter SUCCESS ===")
       } catch (e: Exception) {
-        Log.e("ProfileViewModel", "=== setStarter FAILED ===", e)
+        Log.e(Constants.LOG_TAG, "=== setStarter FAILED ===", e)
       }
     }
   }
 
-  fun starterDrawable(): Int {
-    return when (_userProfile.value.starterId) {
-      "pyromon" -> R.drawable.edumon
-      "aquamon" -> R.drawable.edumon2
-      "floramon" -> R.drawable.edumon1
-      else -> R.drawable.edumon
-    }
-  }
-
-  // ----- Points and Coins Management -----
-
   fun addCoins(amount: Int) {
-    if (amount <= 0) return
+    if (amount <= Constants.MIN_AMOUNT) return
     viewModelScope.launch { userStatsRepository.updateCoins(amount) }
   }
 
   fun addPoints(amount: Int) {
-    if (amount <= 0) return
+    if (amount <= Constants.MIN_AMOUNT) return
     viewModelScope.launch { userStatsRepository.addPoints(amount) }
   }
-
-  // ----- Level and Rewards Management -----
 
   private fun computeLevelFromPoints(points: Int): Int = levelForPoints(points)
 
@@ -322,7 +345,7 @@ class ProfileViewModel(
     globalSyncCount++
 
     if (!profileLoaded) {
-      Log.d("ProfileViewModel", "syncProfileWithStats: skipped (profile not loaded yet)")
+      Log.d(Constants.LOG_TAG, "syncProfileWithStats: skipped (profile not loaded yet)")
       return
     }
 
@@ -330,7 +353,6 @@ class ProfileViewModel(
     val newPoints = stats.points
     val computed = computeLevelFromPoints(newPoints)
 
-    // First sync - establish baseline
     if (!startupCompleted) {
       val initial =
           old.copy(
@@ -351,17 +373,14 @@ class ProfileViewModel(
       lastProcessedPoints = newPoints
       lastProcessedCoins = stats.coins
 
-      Log.d("ProfileViewModel", "Baseline set: level=$computed, points=$newPoints")
+      Log.d(Constants.LOG_TAG, "Baseline set: level=$computed, points=$newPoints")
       return
     }
 
     val safeNewLevel = maxOf(computed, old.level)
+    val pointsDelta = (newPoints - lastProcessedPoints).coerceAtLeast(Constants.MIN_DELTA)
+    val coinsDelta = (stats.coins - lastProcessedCoins).coerceAtLeast(Constants.MIN_DELTA)
 
-    // Calculate deltas BEFORE updating tracking variables
-    val pointsDelta = (newPoints - lastProcessedPoints).coerceAtLeast(0)
-    val coinsDelta = (stats.coins - lastProcessedCoins).coerceAtLeast(0)
-
-    // NO LEVEL CHANGE
     if (safeNewLevel == old.level) {
       lastProcessedPoints = newPoints
       lastProcessedCoins = stats.coins
@@ -378,14 +397,12 @@ class ProfileViewModel(
       _userProfile.value = updated
       pushProfile(updated)
 
-      // Show toast for stat gains ONLY if:
-      // 1. After startup (globalSyncCount > 2)
-      // 2. Not right after a level-up (justLeveledUp = false)
-      if ((pointsDelta > 0 || coinsDelta > 0) && globalSyncCount > 2 && !justLeveledUp) {
+      val hasGains = pointsDelta > Constants.MIN_DELTA || coinsDelta > Constants.MIN_DELTA
+      val afterStartup = globalSyncCount > Constants.STARTUP_SYNC_THRESHOLD
+      if (hasGains && afterStartup && !justLeveledUp) {
         ToastNotifier.showStatGain(pointsDelta, coinsDelta)
       }
 
-      // Reset level-up flag AFTER we've blocked the follow-up sync
       if (justLeveledUp) {
         justLeveledUp = false
       }
@@ -393,19 +410,16 @@ class ProfileViewModel(
       return
     }
 
-    // LEVEL UP
     justLeveledUp = true
 
     val candidate = old.copy(points = newPoints, level = safeNewLevel)
     val result = rewardEngine.applyLevelUpRewards(old, candidate)
     val rewarded = result.updatedProfile
 
-    // Persist reward coins to Firestore
-    if (result.summary.coinsGranted > 0) {
+    if (result.summary.coinsGranted > Constants.MIN_DELTA) {
       viewModelScope.launch { userStatsRepository.updateCoins(result.summary.coinsGranted) }
     }
 
-    // Update tracking - include ALL coins (Pomodoro + level rewards)
     lastProcessedPoints = newPoints
     lastProcessedCoins = stats.coins + result.summary.coinsGranted
 
@@ -421,8 +435,7 @@ class ProfileViewModel(
     _userProfile.value = final
     pushProfile(final)
 
-    // Only show level-up event after initial syncs
-    if (!result.summary.isEmpty && globalSyncCount > 2) {
+    if (!result.summary.isEmpty && globalSyncCount > Constants.STARTUP_SYNC_THRESHOLD) {
       val event =
           LevelUpRewardUiEvent.RewardsGranted(newLevel = safeNewLevel, summary = result.summary)
       viewModelScope.launch {
@@ -432,8 +445,6 @@ class ProfileViewModel(
     }
   }
 
-  // ----- Profile Persistence -----
-
   private fun updateLocal(edit: (UserProfile) -> UserProfile) {
     _userProfile.update(edit)
     pushProfile()
@@ -441,21 +452,19 @@ class ProfileViewModel(
 
   private fun pushProfile(updated: UserProfile = _userProfile.value) {
     if (!profileLoaded) {
-      Log.d("ProfileViewModel", "pushProfile: skipped (profile not loaded yet)")
+      Log.d(Constants.LOG_TAG, "pushProfile: skipped (profile not loaded yet)")
       return
     }
 
     viewModelScope.launch {
       try {
         profileRepository.updateProfile(updated)
-        Log.d("ProfileViewModel", "pushProfile: saved")
+        Log.d(Constants.LOG_TAG, "pushProfile: saved")
       } catch (e: Exception) {
-        Log.e("ProfileViewModel", "pushProfile failed", e)
+        Log.e(Constants.LOG_TAG, "pushProfile failed", e)
       }
     }
   }
-
-  // ----- ICS Import -----
 
   fun importIcs(context: Context, uri: Uri) {
     viewModelScope.launch {

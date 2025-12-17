@@ -1,6 +1,5 @@
+// This code was written with the assistance of an AI (LLM).
 package com.android.sample.repos_providors
-
-// This code has been written partially using A.I (LLM).
 
 import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.data.UserProfile
@@ -30,18 +29,26 @@ import com.android.sample.ui.shop.repository.ShopRepository
 import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.ui.stats.repository.StatsRepository
 
-/** Provider of in-memory fake repositories (no Firebase). */
 object FakeRepositoriesProvider : RepositoriesProvider {
 
+  private object Defaults {
+    const val STARTER_ID = "pyromon"
+  }
+
   override val objectivesRepository: ObjectivesRepository = FakeObjectivesRepository
+
   override val weeksRepository: WeeksRepository = FakeWeeksRepository()
+
   override val statsRepository: StatsRepository = FakeStatsRepository()
 
   override val userStatsRepository: UserStatsRepository = FakeUserStatsRepository()
 
   override val plannerRepository: PlannerRepository = PlannerRepository()
+
   override val scheduleRepository = FakeScheduleRepository
+
   override val studySessionRepository: StudySessionRepository = ToDoBackedStudySessionRepository()
+
   override val homeRepository: HomeRepository = FakeHomeRepository()
 
   override val calendarRepository: CalendarRepositoryImpl = CalendarRepositoryImpl()
@@ -51,11 +58,13 @@ object FakeRepositoriesProvider : RepositoriesProvider {
   override val toDoRepository: ToDoRepository = ToDoRepositoryLocal()
 
   override val profileRepository: ProfileRepository =
-      FakeProfileRepository(initial = UserProfile(starterId = "pyromon"))
+      FakeProfileRepository(initial = UserProfile(starterId = Defaults.STARTER_ID))
 
   override val flashcardsRepository: FlashcardsRepository = InMemoryFlashcardsRepository
+
   override val subjectsRepository: SubjectsRepository = FakeSubjectsRepository()
-  override val shopRepository: ShopRepository = FakeShopRepository()
+
+  override val shopRepository: ShopRepository = FakeShopRepository(profileRepository)
 }
 
 @Volatile var FakeRepositories: RepositoriesProvider = FakeRepositoriesProvider
