@@ -3,7 +3,6 @@ package com.android.sample.feature.weeks.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.UserStatsRepository
-import com.android.sample.feature.weeks.model.DefaultObjectives
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
@@ -16,7 +15,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -52,12 +51,21 @@ class ObjectivesViewModel(
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
+  private val _autoObjectives = MutableStateFlow<List<Objective>>(emptyList())
 
   val todayObjectives =
-      _uiState.map { state ->
+      combine(_uiState, _autoObjectives) { state, auto ->
         val today = LocalDate.now().dayOfWeek
-        state.objectives.filter { it.day == today }
+        (state.objectives + auto).filter { it.day == today }
       }
+
+  fun replaceAutoObjectives(objs: List<Objective>) {
+    _autoObjectives.update {
+      val persistedSourceIds = _uiState.value.objectives.mapNotNull { it.sourceId }.toSet()
+
+      objs.filter { it.sourceId !in persistedSourceIds }
+    }
+  }
 
   private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
   val navigationEvents = _navigationEvents.asSharedFlow()
@@ -78,12 +86,7 @@ class ObjectivesViewModel(
   fun refresh() {
     viewModelScope.launch {
       val objs = repository.getObjectives()
-      if (objs.isEmpty()) {
-        val seeded = repository.setObjectives(DefaultObjectives.get())
-        _uiState.update { it.copy(objectives = seeded) }
-      } else {
-        _uiState.update { it.copy(objectives = objs) }
-      }
+      _uiState.update { it.copy(objectives = objs) }
     }
   }
 
@@ -142,6 +145,19 @@ class ObjectivesViewModel(
 
   fun markObjectiveCompleted(objective: Objective) {
     viewModelScope.launch {
+      if (objective.isAuto) {
+        val stored = objective.copy(completed = true, isAuto = false)
+        repository.addObjective(stored)
+
+        _autoObjectives.update { autos -> autos.filterNot { it.sourceId == objective.sourceId } }
+
+        refresh()
+
+        val (points, coins) = calculateRewards(objective)
+        userStatsRepository.addReward(points, coins)
+
+        return@launch
+      }
       val current = _uiState.value.objectives
       val index = current.indexOf(objective)
       if (index == -1) return@launch
@@ -164,5 +180,16 @@ class ObjectivesViewModel(
   fun startObjective(index: Int = 0) {
     val obj = _uiState.value.objectives.getOrNull(index) ?: return
     viewModelScope.launch { _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(obj)) }
+  }
+
+  fun startObjective(objective: Objective) {
+    viewModelScope.launch {
+      when (objective.type) {
+        ObjectiveType.QUIZ -> _navigationEvents.emit(ObjectiveNavigation.ToQuiz(objective))
+        ObjectiveType.COURSE_OR_EXERCISES ->
+            _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(objective))
+        ObjectiveType.RESUME -> _navigationEvents.emit(ObjectiveNavigation.ToResume(objective))
+      }
+    }
   }
 }

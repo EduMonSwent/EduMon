@@ -1,72 +1,58 @@
+// This code was written with the assistance of an AI (LLM).
 package com.android.sample.ui.shop.repository
 
-import com.android.sample.R
+import com.android.sample.profile.ProfileRepository
 import com.android.sample.ui.shop.CosmeticItem
+import com.android.sample.ui.shop.ShopConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/**
- * In-memory fake implementation of [ShopRepository] for testing purposes. Does not persist data
- * beyond the current session.
- */
-class FakeShopRepository : ShopRepository {
+class FakeShopRepository(private val profileRepository: ProfileRepository? = null) :
+    ShopRepository {
 
-  private val ownedIds = mutableSetOf<String>()
+  private val localOwnedIds = mutableSetOf<String>()
 
-  private val _items = MutableStateFlow(defaultCosmetics())
+  private val _items = MutableStateFlow(ShopConstants.defaultCosmetics())
   override val items: StateFlow<List<CosmeticItem>> = _items.asStateFlow()
 
-  override suspend fun getItems(): List<CosmeticItem> = _items.value
+  override suspend fun getItems(): List<CosmeticItem> {
+    refreshOwnedStatus()
+    return _items.value
+  }
 
   override suspend fun purchaseItem(itemId: String): Boolean {
-    if (ownedIds.contains(itemId)) return false
-    ownedIds.add(itemId)
-    updateItemsOwnedStatus()
+    val currentOwnedIds = getOwnedItemIds()
+    if (currentOwnedIds.contains(itemId)) return false
+
+    localOwnedIds.add(itemId)
+
+    _items.update { list ->
+      list.map { item -> if (item.id == itemId) item.copy(owned = true) else item }
+    }
     return true
   }
 
-  override suspend fun getOwnedItemIds(): Set<String> = ownedIds.toSet()
-
-  override suspend fun refreshOwnedStatus() {
-    updateItemsOwnedStatus()
+  override suspend fun getOwnedItemIds(): Set<String> {
+    val profileOwnedIds = getOwnedIdsFromProfile()
+    return localOwnedIds + profileOwnedIds
   }
 
-  private fun updateItemsOwnedStatus() {
+  override suspend fun refreshOwnedStatus() {
+    val ownedIds = getOwnedItemIds()
     _items.update { list -> list.map { item -> item.copy(owned = ownedIds.contains(item.id)) } }
   }
 
+  private fun getOwnedIdsFromProfile(): Set<String> {
+    val profile = profileRepository?.profile?.value ?: return emptySet()
+    return profile.accessories
+        .filter { it.startsWith(ShopConstants.OWNED_PREFIX) }
+        .map { it.removePrefix(ShopConstants.OWNED_PREFIX) }
+        .toSet()
+  }
+
   companion object {
-    // Item IDs
-    private const val ID_GLASSES = "glasses"
-    private const val ID_HAT = "hat"
-    private const val ID_SCARF = "scarf"
-    private const val ID_WINGS = "wings"
-    private const val ID_AURA = "aura"
-    private const val ID_CAPE = "cape"
-
-    // Item names
-    private const val NAME_GLASSES = "Cool Shades"
-    private const val NAME_HAT = "Wizard Hat"
-    private const val NAME_SCARF = "Red Scarf"
-    private const val NAME_WINGS = "Cyber Wings"
-    private const val NAME_AURA = "Epic Aura"
-    private const val NAME_CAPE = "Hero Cape"
-
-    // Prices
-    private const val STANDARD_PRICE = 200
-    private const val EPIC_PRICE = 1500
-
-    /** Default cosmetic items available in the shop. */
-    fun defaultCosmetics(): List<CosmeticItem> =
-        listOf(
-            CosmeticItem(
-                ID_GLASSES, NAME_GLASSES, STANDARD_PRICE, R.drawable.shop_cosmetic_glasses),
-            CosmeticItem(ID_HAT, NAME_HAT, STANDARD_PRICE, R.drawable.shop_cosmetic_hat),
-            CosmeticItem(ID_SCARF, NAME_SCARF, STANDARD_PRICE, R.drawable.shop_cosmetic_scarf),
-            CosmeticItem(ID_WINGS, NAME_WINGS, STANDARD_PRICE, R.drawable.shop_cosmetic_wings),
-            CosmeticItem(ID_AURA, NAME_AURA, EPIC_PRICE, R.drawable.shop_cosmetic_aura),
-            CosmeticItem(ID_CAPE, NAME_CAPE, STANDARD_PRICE, R.drawable.shop_cosmetic_cape))
+    fun defaultCosmetics(): List<CosmeticItem> = ShopConstants.defaultCosmetics()
   }
 }

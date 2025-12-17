@@ -12,6 +12,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.io.ByteArrayInputStream
+import java.time.LocalTime
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -141,5 +142,49 @@ class IcsImporterTest {
     // Should save an empty list
     val saved = slot.captured
     assertTrue("Exam event should be skipped", saved.isEmpty())
+  }
+
+  @Test
+  fun `all-day event is skipped`() = runBlocking {
+    val ics =
+        """
+        BEGIN:VCALENDAR
+        BEGIN:VEVENT
+        SUMMARY:All Day Event
+        DTSTART;VALUE=DATE:20250101
+        END:VEVENT
+        END:VCALENDAR
+      """
+            .trimIndent()
+
+    val slot = slot<List<Class>>()
+    coEvery { plannerRepository.saveClasses(capture(slot)) } returns Result.success(Unit)
+
+    importer.importFromStream(ByteArrayInputStream(ics.toByteArray()))
+
+    assertTrue(slot.captured.isEmpty())
+  }
+
+  @Test
+  fun `missing end time defaults to plus one hour`() = runBlocking {
+    val ics =
+        """
+        BEGIN:VCALENDAR
+        BEGIN:VEVENT
+        SUMMARY:Short Class
+        DTSTART:20250101T100000
+        END:VEVENT
+        END:VCALENDAR
+      """
+            .trimIndent()
+
+    val slot = slot<List<Class>>()
+    coEvery { plannerRepository.saveClasses(capture(slot)) } returns Result.success(Unit)
+
+    importer.importFromStream(ByteArrayInputStream(ics.toByteArray()))
+
+    val saved = slot.captured.first()
+    assertEquals(LocalTime.of(10, 0), saved.startTime)
+    assertEquals(LocalTime.of(11, 0), saved.endTime)
   }
 }

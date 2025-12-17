@@ -1,19 +1,13 @@
 package com.android.sample.feature.schedule.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.repository.calendar.CalendarRepository
 import com.android.sample.repos_providors.AppRepositories
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 /** This class was implemented with the help of ai (chatgbt) */
 class CalendarViewModel(
@@ -28,19 +22,6 @@ class CalendarViewModel(
 
   private val _isMonthView = MutableStateFlow(true)
   val isMonthView: StateFlow<Boolean> = _isMonthView.asStateFlow()
-
-  private val _taskToEdit = MutableStateFlow<StudyItem?>(null)
-  val taskToEdit: StateFlow<StudyItem?> = _taskToEdit.asStateFlow()
-
-  private val _showAddEditModal = MutableStateFlow(false)
-  val showAddEditModal: StateFlow<Boolean> = _showAddEditModal.asStateFlow()
-
-  val allTasks: StateFlow<List<StudyItem>> =
-      repository.tasksFlow.stateIn(viewModelScope, SharingStarted.Companion.Lazily, emptyList())
-
-  val tasksForSelectedDate: StateFlow<List<StudyItem>> =
-      combine(selectedDate, allTasks) { date, tasks -> tasks.filter { it.date == date } }
-          .stateIn(viewModelScope, SharingStarted.Companion.Eagerly, emptyList())
 
   // ---- Calendar navigation ----
   fun onNavigateMonthWeek(forward: Boolean) {
@@ -59,49 +40,10 @@ class CalendarViewModel(
 
   fun onPreviousMonthWeekClicked() = onNavigateMonthWeek(forward = false)
 
-  fun onTodayClicked() {
-    _selectedDate.value = LocalDate.now()
-    _currentDisplayMonth.value = YearMonth.now()
-  }
-
   fun toggleMonthWeekView() {
     _isMonthView.value = !_isMonthView.value
     if (_isMonthView.value) {
       _currentDisplayMonth.value = YearMonth.from(_selectedDate.value)
-    }
-  }
-
-  // ---- Modal logic ----
-  fun onAddTaskClicked(date: LocalDate = _selectedDate.value) {
-    _taskToEdit.value = null
-    _selectedDate.value = date
-    _showAddEditModal.value = true
-  }
-
-  fun onEditTaskClicked(task: StudyItem) {
-    _taskToEdit.value = task
-    _selectedDate.value = task.date
-    _currentDisplayMonth.value = YearMonth.from(task.date)
-    _showAddEditModal.value = true
-  }
-
-  fun onDismissAddEditModal() {
-    _showAddEditModal.value = false
-    _taskToEdit.value = null
-  }
-
-  // ---- Save/Delete logic ----
-  fun saveTask(task: StudyItem) {
-    viewModelScope.launch {
-      repository.saveTask(task)
-      onDismissAddEditModal()
-    }
-  }
-
-  fun deleteTask(task: StudyItem) {
-    viewModelScope.launch {
-      repository.deleteTask(task.id)
-      onDismissAddEditModal()
     }
   }
 

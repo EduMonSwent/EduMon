@@ -23,7 +23,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.calendar.StudyItem
+import com.android.sample.feature.schedule.data.schedule.AcademicWeekType
+import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.data.schedule.ScheduleTab
+import com.android.sample.feature.schedule.repository.schedule.ClassMapper
 import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
 import com.android.sample.feature.schedule.viewmodel.ScheduleNavEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
@@ -36,6 +39,7 @@ import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.ui.planner.AddStudyTaskModal
 import com.android.sample.ui.planner.PetHeader
 import java.time.LocalDate
+import kotlin.collections.map
 
 /** This class was implemented with the help of ai (ChatGPT) */
 object ScheduleScreenTestTags {
@@ -94,14 +98,38 @@ fun ScheduleScreen(
   val objectivesVm: ObjectivesViewModel = viewModel()
   val state by vm.uiState.collectAsState()
 
+  LaunchedEffect(state.generatedObjectives) {
+    objectivesVm.replaceAutoObjectives(state.generatedObjectives)
+  }
+
   var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
   var activeObjective by remember { mutableStateOf<Objective?>(null) }
 
   val snackbarHostState = remember { SnackbarHostState() }
+  val classEvents: List<ScheduleEvent> =
+      remember(state.allClasses, state.selectedDate) {
+        val weekStart = vm.startOfWeek(state.selectedDate)
+        val weekDates = (0..6).map { weekStart.plusDays(it.toLong()) }
+
+        state.allClasses
+            .flatMap { clazz ->
+              weekDates
+                  .filter { date ->
+                    date.dayOfWeek in clazz.daysOfWeek &&
+                        vm.academicWeekType(date) == AcademicWeekType.TEACHING
+                  }
+                  .map { date -> ClassMapper.toScheduleEvent(clazz, resources).copy(date = date) }
+            }
+            .distinctBy { event -> Triple(event.title, event.date, event.time) }
+      }
 
   val allTasks: List<StudyItem> =
-      remember(state.allEvents) {
-        state.allEvents.map { StudyItemMapper.fromScheduleEvent(it, resources) }
+      remember(state.allEvents, classEvents) {
+        val eventTasks = state.allEvents.map { StudyItemMapper.fromScheduleEvent(it, resources) }
+
+        val classTasks = classEvents.map { StudyItemMapper.fromScheduleEvent(it, resources) }
+
+        eventTasks + classTasks
       }
 
   val weekStart = vm.startOfWeek(state.selectedDate)

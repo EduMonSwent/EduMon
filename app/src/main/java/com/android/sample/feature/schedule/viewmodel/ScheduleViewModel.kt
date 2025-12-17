@@ -13,10 +13,14 @@ import com.android.sample.feature.schedule.data.planner.DayScheduleItem
 import com.android.sample.feature.schedule.data.planner.ScheduleClassItem
 import com.android.sample.feature.schedule.data.planner.ScheduleEventItem
 import com.android.sample.feature.schedule.data.planner.ScheduleGapItem
+import com.android.sample.feature.schedule.data.schedule.AcademicWeekType
 import com.android.sample.feature.schedule.data.schedule.EventKind
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.data.schedule.SemesterConfig
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.feature.schedule.usecase.DailyClassObjectiveGenerator
+import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.ui.schedule.AdaptivePlanner
@@ -29,6 +33,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /** This class was implemented with the help of ai (chatgbt) */
+private val SEMESTERSTARTDATE: LocalDate = LocalDate.of(2025, 9, 15)
+
 data class ScheduleUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val currentDisplayMonth: YearMonth = YearMonth.now(),
@@ -37,6 +43,7 @@ data class ScheduleUiState(
     val isAdjustingPlan: Boolean = false,
     val todayClasses: List<Class> = emptyList(),
     val todaySchedule: List<DayScheduleItem> = emptyList(),
+    val allClasses: List<Class> = emptyList(),
     val attendanceRecords: List<ClassAttendance> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -48,7 +55,8 @@ data class ScheduleUiState(
     val selectedGap: ScheduleGapItem? = null,
     val selectedClass: Class? = null,
     val todos: List<ToDo> = emptyList(),
-    val allClassesFinished: Boolean = false
+    val allClassesFinished: Boolean = false,
+    val generatedObjectives: List<Objective> = emptyList(),
 )
 // Navigation events triggered by smart gap logic
 sealed class ScheduleNavEvent {
@@ -106,15 +114,27 @@ class ScheduleViewModel(
             val fullSchedule = computeFullSchedule(sortedBlocks)
             val allFinished = computeAllClassesFinished(todayClasses, now)
 
+            val week = AcademicWeekCalculator.currentWeek(SEMESTERSTARTDATE)
+            val generator = DailyClassObjectiveGenerator()
+            val generatedObjectives = generator.generate(todayClasses, week)
+
             _uiState.update {
               it.copy(
                   allEvents = events,
+                  allClasses = classes,
                   todayClasses = todayClasses,
                   todaySchedule = fullSchedule,
                   attendanceRecords = attendance,
-                  allClassesFinished = allFinished)
+                  allClassesFinished = allFinished,
+                  generatedObjectives = generatedObjectives)
             }
           }
+    }
+  }
+
+  object AcademicWeekCalculator {
+    fun currentWeek(startDate: LocalDate): Int {
+      return ((LocalDate.now().toEpochDay() - startDate.toEpochDay()) / 7 + 1).toInt()
     }
   }
 
@@ -487,4 +507,32 @@ class ScheduleViewModel(
   fun onDeleteScheduleEvent(event: ScheduleEvent) {
     delete(event.id)
   }
+
+  fun academicWeekType(date: LocalDate, config: SemesterConfig): AcademicWeekType {
+
+    val week = weeksSinceStart(date, config.semesterStart)
+
+    val breakWeek = config.teachingWeeksBeforeBreak + 1
+    val teachingEnd =
+        config.teachingWeeksBeforeBreak + config.teachingWeeksAfterBreak + 1 // includes break week
+
+    return when {
+      week < 1 -> AcademicWeekType.TEACHING
+      week <= config.teachingWeeksBeforeBreak -> AcademicWeekType.TEACHING
+      week == breakWeek -> AcademicWeekType.MID_SEMESTER_BREAK
+      week <= teachingEnd -> AcademicWeekType.TEACHING
+      week <= teachingEnd + config.revisionWeeks -> AcademicWeekType.REVISION
+      else -> AcademicWeekType.EXAMS
+    }
+  }
+
+  fun academicWeekType(date: LocalDate): AcademicWeekType {
+    return academicWeekType(date, semesterConfig)
+  }
+
+  fun weeksSinceStart(date: LocalDate, start: LocalDate): Int {
+    return java.time.temporal.ChronoUnit.WEEKS.between(start, date).toInt() + 1
+  }
+
+  private val semesterConfig = SemesterConfig(semesterStart = LocalDate.of(2025, 9, 8))
 }

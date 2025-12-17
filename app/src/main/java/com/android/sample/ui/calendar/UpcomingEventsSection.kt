@@ -18,9 +18,9 @@ import com.android.sample.R
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
 import com.android.sample.feature.weeks.ui.GlassSurface
-import com.android.sample.ui.theme.Blue
 import com.android.sample.ui.theme.CustomGreen
 import com.android.sample.ui.theme.EventViolet
+import com.android.sample.ui.theme.LightBlue
 import com.android.sample.ui.theme.Pink
 import com.android.sample.ui.theme.PurplePrimary
 import com.android.sample.ui.theme.VioletLilas
@@ -83,7 +83,7 @@ private fun EventRowGlass(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
   val cs = MaterialTheme.colorScheme
   val tagColor =
       when (task.type) {
-        TaskType.STUDY -> Blue
+        TaskType.STUDY -> LightBlue
         TaskType.WORK -> Pink
         TaskType.PERSONAL -> VioletLilas
       }
@@ -116,14 +116,21 @@ private fun EventRowGlass(task: StudyItem, onTaskClick: (StudyItem) -> Unit) {
                   MaterialTheme.typography.bodyLarge.copy(
                       color = cs.onSurface, fontWeight = FontWeight.SemiBold))
 
-          task.time
-              ?.toString()
-              ?.takeIf { it.isNotBlank() }
-              ?.let { t ->
-                Spacer(Modifier.height(1.dp))
-                Text(
-                    text = t, style = MaterialTheme.typography.labelSmall.copy(color = CustomGreen))
-              }
+          task.time?.let { start ->
+            val end = task.durationMinutes?.let { minutes -> start.plusMinutes(minutes.toLong()) }
+
+            val formatter = DateTimeFormatter.ofPattern("HH:mm")
+
+            Spacer(Modifier.height(1.dp))
+            Text(
+                text =
+                    if (end != null) {
+                      "${start.format(formatter)} – ${end.format(formatter)}"
+                    } else {
+                      start.format(formatter)
+                    },
+                style = MaterialTheme.typography.labelSmall.copy(color = CustomGreen))
+          }
         }
       }
 }
