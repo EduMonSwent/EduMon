@@ -3,10 +3,7 @@ package com.android.sample.feature.schedule.data.planner
 import androidx.compose.ui.graphics.Color
 import com.android.sample.R
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
-import com.android.sample.ui.theme.EventColorDefault
 import com.android.sample.ui.theme.EventColorLecture
-import com.android.sample.ui.theme.EventColorMusic
-import com.android.sample.ui.theme.EventColorSocial
 import com.android.sample.ui.theme.EventColorSports
 import java.time.DayOfWeek
 import java.time.Duration
@@ -95,9 +92,4 @@ enum class WellnessEventType(val iconRes: Int, val primaryColor: Color, val url:
       iconRes = R.drawable.ic_event,
       primaryColor = EventColorLecture,
       url = "https://www.epfl.ch/campus/events/"),
-
-  // Internal / future use
-  SOCIAL(R.drawable.ic_star, EventColorSocial),
-  MUSIC(R.drawable.ic_sparkle, EventColorMusic),
-  DEFAULT(R.drawable.ic_event, EventColorDefault)
 }
