@@ -8,6 +8,7 @@ import com.android.sample.data.CreatureStats
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserStats
 import com.android.sample.data.UserStatsRepository
+import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val isLoading: Boolean = true,
     val todos: List<ToDo> = emptyList(),
+    val objectives: List<Objective> = emptyList(),
     val creatureStats: CreatureStats = CreatureStats(),
     val userStats: UserStats = UserStats(),
     val quote: String = "",
@@ -48,11 +50,18 @@ class HomeViewModel(
     _uiState.update { it.copy(isLoading = true) }
     viewModelScope.launch {
       val todos = repository.fetchTodos()
+      val objectives = repository.fetchObjectives()
       val creature = repository.fetchCreatureStats()
       val quote = repository.dailyQuote()
 
       _uiState.update {
-        it.copy(isLoading = false, todos = todos, creatureStats = creature, quote = quote)
+        it.copy(
+            isLoading = false,
+            todos = todos,
+            creatureStats = creature,
+            quote = quote,
+            objectives = objectives,
+        )
       }
     }
   }
