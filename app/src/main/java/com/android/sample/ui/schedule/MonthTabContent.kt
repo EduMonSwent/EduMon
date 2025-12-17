@@ -83,7 +83,7 @@ fun MonthTabContent(
                       currentMonth = currentMonth,
                       selectedDate = selectedDate,
                       allTasks = allTasks,
-                      onDateClick = { onDateSelected })
+                      onDateClick = { date -> onDateSelected(date) })
                 }
           }
 

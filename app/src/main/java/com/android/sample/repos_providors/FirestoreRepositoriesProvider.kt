@@ -1,6 +1,5 @@
+// This code was written with the assistance of an AI (LLM).
 package com.android.sample.repos_providors
-
-// This code has been written partially using A.I (LLM).
 
 import com.android.sample.data.FirestoreUserStatsRepository
 import com.android.sample.data.UserStatsRepository
@@ -35,7 +34,6 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
-/** Firebase-backed provider with LAZY init to prevent accidental Firebase loading. */
 object FirestoreRepositoriesProvider : RepositoriesProvider {
 
   private val db by lazy { Firebase.firestore }
@@ -58,14 +56,15 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
   override val flashcardsRepository: FlashcardsRepository by lazy {
     FirestoreFlashcardsRepository(db, auth)
   }
+
   override val scheduleRepository: ScheduleRepository by lazy {
     FirestoreScheduleRepository(db, auth)
   }
+
   override val plannerRepository: PlannerRepoForPlanner by lazy {
     FirestorePlannerRepository(db, auth)
   }
 
-  // Local implementations until remote backends exist
   override val homeRepository: HomeRepository by lazy { FakeHomeRepository() }
 
   override val studySessionRepository: StudySessionRepository by lazy {
@@ -82,7 +81,9 @@ object FirestoreRepositoriesProvider : RepositoriesProvider {
     FirestoreSubjectsRepository(auth, db)
   }
 
-  override val shopRepository: ShopRepository by lazy { FirestoreShopRepository(db, auth) }
+  override val shopRepository: ShopRepository by lazy {
+    FirestoreShopRepository(db, auth, profileRepository)
+  }
 }
 
 @Volatile var AppRepositories: RepositoriesProvider = FirestoreRepositoriesProvider

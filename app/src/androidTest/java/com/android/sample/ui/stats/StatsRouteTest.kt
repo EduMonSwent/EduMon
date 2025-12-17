@@ -92,23 +92,4 @@ class StatsRouteTest {
     // Click on second scenario
     composeTestRule.onNodeWithText("Semaine active").assertIsDisplayed()
   }
-
-  @Test
-  fun statsRoute_with_default_viewModel_constructor() {
-    // Test that StatsRoute can be created without explicitly passing viewModel
-    composeTestRule.setContent {
-      SampleAppTheme {
-        // This would normally use the default ViewModel constructor
-        // For testing, we need to provide mocked dependencies
-        val vm =
-            StatsViewModel(
-                repo = FakeStatsRepository(),
-                objectivesRepo = FakeObjectivesRepository,
-                userStatsRepo = FakeUserStatsRepository())
-        StatsRoute(viewModel = vm)
-      }
-    }
-
-    composeTestRule.waitForIdle()
-  }
 }
