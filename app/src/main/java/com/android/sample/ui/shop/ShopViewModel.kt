@@ -3,7 +3,6 @@ package com.android.sample.ui.shop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.sample.R
 import com.android.sample.profile.ProfileRepository
 import com.android.sample.repos_providors.AppRepositories
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,31 +33,7 @@ class ShopViewModel(
   private object Constants {
     const val FLOW_TIMEOUT_MS = 5000L
     const val INITIAL_COINS = 0
-    const val OWNED_PREFIX = "owned:"
     const val DEFAULT_ERROR_MESSAGE = "Purchase failed. Please try again."
-  }
-
-  private object ItemIds {
-    const val GLASSES = "glasses"
-    const val HAT = "hat"
-    const val SCARF = "scarf"
-    const val WINGS = "wings"
-    const val AURA = "aura"
-    const val CAPE = "cape"
-  }
-
-  private object ItemNames {
-    const val GLASSES = "Cool Shades"
-    const val HAT = "Wizard Hat"
-    const val SCARF = "Red Scarf"
-    const val WINGS = "Cyber Wings"
-    const val AURA = "Epic Aura"
-    const val CAPE = "Hero Cape"
-  }
-
-  private object Prices {
-    const val STANDARD = 200
-    const val EPIC = 1500
   }
 
   val userCoins: StateFlow<Int> =
@@ -69,7 +44,7 @@ class ShopViewModel(
               SharingStarted.WhileSubscribed(Constants.FLOW_TIMEOUT_MS),
               Constants.INITIAL_COINS)
 
-  private val _items = MutableStateFlow(initialCosmetics())
+  private val _items = MutableStateFlow(ShopConstants.defaultCosmetics())
   val items: StateFlow<List<CosmeticItem>> = _items.asStateFlow()
 
   private val _isOnline = MutableStateFlow(true)
@@ -86,8 +61,8 @@ class ShopViewModel(
       profileRepository.profile.collect { profile ->
         val ownedItemIds =
             profile.accessories
-                .filter { it.startsWith(Constants.OWNED_PREFIX) }
-                .map { it.removePrefix(Constants.OWNED_PREFIX) }
+                .filter { it.startsWith(ShopConstants.OWNED_PREFIX) }
+                .map { it.removePrefix(ShopConstants.OWNED_PREFIX) }
                 .toSet()
 
         _items.update { currentItems ->
@@ -123,7 +98,7 @@ class ShopViewModel(
 
     _isPurchasing.value = true
 
-    val ownedEntry = Constants.OWNED_PREFIX + item.id
+    val ownedEntry = ShopConstants.OWNED_PREFIX + item.id
     val updatedProfile =
         profile.copy(
             coins = profile.coins - item.price, accessories = profile.accessories + ownedEntry)
@@ -151,20 +126,4 @@ class ShopViewModel(
   fun clearPurchaseResult() {
     _lastPurchaseResult.value = null
   }
-
-  private fun initialCosmetics(): List<CosmeticItem> =
-      listOf(
-          CosmeticItem(
-              ItemIds.GLASSES,
-              ItemNames.GLASSES,
-              Prices.STANDARD,
-              R.drawable.shop_cosmetic_glasses),
-          CosmeticItem(ItemIds.HAT, ItemNames.HAT, Prices.STANDARD, R.drawable.shop_cosmetic_hat),
-          CosmeticItem(
-              ItemIds.SCARF, ItemNames.SCARF, Prices.STANDARD, R.drawable.shop_cosmetic_scarf),
-          CosmeticItem(
-              ItemIds.WINGS, ItemNames.WINGS, Prices.STANDARD, R.drawable.shop_cosmetic_wings),
-          CosmeticItem(ItemIds.AURA, ItemNames.AURA, Prices.EPIC, R.drawable.shop_cosmetic_aura),
-          CosmeticItem(
-              ItemIds.CAPE, ItemNames.CAPE, Prices.STANDARD, R.drawable.shop_cosmetic_cape))
 }
