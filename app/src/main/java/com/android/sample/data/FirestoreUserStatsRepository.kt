@@ -121,13 +121,8 @@ class FirestoreUserStatsRepository(
       val today = LocalDate.now()
       val current = _stats.value
 
-      android.util.Log.d("STREAK_DEBUG", "=== addStudyMinutes START ===")
-      android.util.Log.d("STREAK_DEBUG", "Current: $current")
-      android.util.Log.d("STREAK_DEBUG", "Today epochDay: ${today.toEpochDay()}")
-
       // Determine what kind of study session this is
       val sessionType = determineSessionType(current, today)
-      android.util.Log.d("STREAK_DEBUG", "Session type: $sessionType")
 
       val newStreak =
           when (sessionType) {
@@ -136,8 +131,6 @@ class FirestoreUserStatsRepository(
             SessionType.CONSECUTIVE_DAY -> current.streak + 1
             SessionType.AFTER_GAP -> 1 // Reset to 1 (start new streak)
           }
-
-      android.util.Log.d("STREAK_DEBUG", "New streak: $newStreak")
 
       // Reset todayStudyMinutes if it's a new day
       val baseTodayMinutes =
@@ -154,20 +147,13 @@ class FirestoreUserStatsRepository(
               streak = newStreak,
               lastStudyDateEpochDay = today.toEpochDay())
 
-      android.util.Log.d("STREAK_DEBUG", "Updated stats: $updated")
-      android.util.Log.d("STREAK_DEBUG", "Map to save: ${updated.toMap()}")
-
       // Update local state immediately
       _stats.value = updated
 
       // Save to Firestore
       doc.set(updated.toMap(), SetOptions.merge())
-          .addOnSuccessListener {
-            android.util.Log.d("STREAK_DEBUG", "=== Firestore save SUCCESS ===")
-          }
-          .addOnFailureListener { e ->
-            android.util.Log.e("STREAK_DEBUG", "=== Firestore save FAILED ===", e)
-          }
+          .addOnSuccessListener {}
+          .addOnFailureListener { e -> }
     }
   }
 
