@@ -11,6 +11,11 @@ import java.time.LocalDate
  * Generates daily learning objectives from today's planner classes. Pure domain logic – no Android,
  * no Firestore, no UI dependencies.
  */
+private const val LECTURE_REVIEW_MINUTES = 45
+private const val EXERCISE_SET_MINUTES = 60
+private const val LAB_PREPARATION_MINUTES = 90
+private const val PROJECT_WORK_MINUTES = 60
+
 class DailyClassObjectiveGenerator {
 
   fun generate(
@@ -32,7 +37,7 @@ class DailyClassObjectiveGenerator {
     return Objective(
         title = "Review ${clazz.courseName} lecture",
         course = clazz.courseName,
-        estimateMinutes = 45,
+        estimateMinutes = LECTURE_REVIEW_MINUTES,
         completed = false,
         day = day,
         type = ObjectiveType.COURSE_OR_EXERCISES,
@@ -44,7 +49,7 @@ class DailyClassObjectiveGenerator {
     return Objective(
         title = "Do ${clazz.courseName} exercise set $week",
         course = clazz.courseName,
-        estimateMinutes = 60,
+        estimateMinutes = EXERCISE_SET_MINUTES,
         completed = false,
         day = day,
         type = ObjectiveType.COURSE_OR_EXERCISES,
@@ -56,7 +61,7 @@ class DailyClassObjectiveGenerator {
     return Objective(
         title = "Prepare ${clazz.courseName} lab (week $week)",
         course = clazz.courseName,
-        estimateMinutes = 90,
+        estimateMinutes = LAB_PREPARATION_MINUTES,
         completed = false,
         day = day,
         type = ObjectiveType.COURSE_OR_EXERCISES,
@@ -68,7 +73,7 @@ class DailyClassObjectiveGenerator {
     return Objective(
         title = "Work on ${clazz.courseName} project",
         course = clazz.courseName,
-        estimateMinutes = 60,
+        estimateMinutes = PROJECT_WORK_MINUTES,
         completed = false,
         day = day,
         type = ObjectiveType.COURSE_OR_EXERCISES,

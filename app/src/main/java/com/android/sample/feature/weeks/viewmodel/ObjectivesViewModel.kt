@@ -51,12 +51,6 @@ class ObjectivesViewModel(
 
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
-
-  /*val todayObjectives =
-  _uiState.map { state ->
-    val today = LocalDate.now().dayOfWeek
-    state.objectives.filter { it.day == today }
-  }*/
   private val _autoObjectives = MutableStateFlow<List<Objective>>(emptyList())
 
   val todayObjectives =

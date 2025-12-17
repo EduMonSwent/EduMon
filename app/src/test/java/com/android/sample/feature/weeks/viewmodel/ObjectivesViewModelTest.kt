@@ -8,6 +8,7 @@ import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.feature.weeks.repository.FakeObjectivesRepository
 import com.android.sample.login.MainDispatcherRule
 import java.time.DayOfWeek
+import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -452,6 +453,82 @@ class ObjectivesViewModelTest {
     val resumeRewards = calculateRewardsMethod.invoke(viewModel, resumeObj) as Pair<Int, Int>
     assertEquals(2, resumeRewards.first) // POINTS_RESUME
     assertEquals(1, resumeRewards.second) // COINS_RESUME
+  }
+
+  @Test
+  fun markObjectiveCompleted_autoObjective_is_promoted_and_removed_from_autoList() = runTest {
+    val auto =
+        Objective(
+            title = "Auto task",
+            course = "CS101",
+            estimateMinutes = 30,
+            completed = false,
+            day = DayOfWeek.MONDAY,
+            isAuto = true,
+            sourceId = "AUTO:CS101:EXERCISE:2")
+
+    viewModel.replaceAutoObjectives(listOf(auto))
+    advanceUntilIdle()
+
+    viewModel.markObjectiveCompleted(auto)
+    advanceUntilIdle()
+
+    // Auto objective should be removed
+    viewModel.todayObjectives.test {
+      val list = awaitItem()
+      assertTrue(list.none { it.isAuto })
+    }
+
+    // Persisted version should exist and be completed
+    val stored = viewModel.uiState.value.objectives.first { it.title == "Auto task" }
+    assertTrue(stored.completed)
+  }
+
+  @Test
+  fun startObjective_emits_ToResume_for_resume_type() = runTest {
+    val resumeObj =
+        Objective(
+            title = "Update CV",
+            course = "CAREER",
+            estimateMinutes = 15,
+            completed = false,
+            day = DayOfWeek.THURSDAY,
+            type = ObjectiveType.RESUME)
+
+    viewModel.addObjective(resumeObj)
+    advanceUntilIdle()
+
+    viewModel.navigationEvents.test {
+      viewModel.startObjective(resumeObj)
+      advanceUntilIdle()
+
+      val event = awaitItem()
+      assertTrue(event is ObjectiveNavigation.ToResume)
+      assertEquals("Update CV", (event as ObjectiveNavigation.ToResume).objective.title)
+    }
+  }
+
+  @Test
+  fun todayObjectives_includes_auto_objectives_for_today() = runTest {
+    val today = LocalDate.now().dayOfWeek
+
+    val auto =
+        Objective(
+            title = "Auto today",
+            course = "CS101",
+            estimateMinutes = 20,
+            completed = false,
+            day = today,
+            isAuto = true,
+            sourceId = "AUTO:CS101:LECTURE:99")
+
+    viewModel.replaceAutoObjectives(listOf(auto))
+    advanceUntilIdle()
+
+    viewModel.todayObjectives.test {
+      val list = awaitItem()
+      assertTrue(list.any { it.title == "Auto today" })
+    }
   }
 
   private fun defaultObjectives(): List<Objective> =
