@@ -290,14 +290,15 @@ private fun PieChart(
   val isInspectionMode = LocalInspectionMode.current
   val total = data.values.sum().coerceAtLeast(1)
   val sweepFractions = data.values.map { it.toFloat() / total }
-  
+
   // Disable animations during test/inspection mode to prevent compose from never being idle
-  val animatedFractions = if (!isInspectionMode) {
-    sweepFractions.map { animateFloatAsState(targetValue = it, label = "") }
-  } else {
-    sweepFractions.map { remember { mutableStateOf(it) } }
-  }
-  
+  val animatedFractions =
+      if (!isInspectionMode) {
+        sweepFractions.map { animateFloatAsState(targetValue = it, label = "") }
+      } else {
+        sweepFractions.map { remember { mutableStateOf(it) } }
+      }
+
   Canvas(modifier = modifier) {
     val diameter = size.minDimension
     val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
