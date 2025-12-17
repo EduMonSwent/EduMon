@@ -103,7 +103,7 @@ fun DailyObjectivesSection(
           index = firstObjIndex.coerceAtLeast(0),
           objective = todayObjectives.first(),
           showWhy = showWhy) {
-            viewModel.startObjective(firstObjIndex.coerceAtLeast(0))
+            viewModel.startObjective(todayObjectives.first())
           }
 
       val remaining = todayObjectives.drop(1)
@@ -121,7 +121,7 @@ fun DailyObjectivesSection(
                   val actualIndex = ui.objectives.indexOf(obj)
                   ObjectiveRow(
                       index = actualIndex.coerceAtLeast(0), objective = obj, showWhy = showWhy) {
-                        viewModel.startObjective(actualIndex.coerceAtLeast(0))
+                        viewModel.startObjective(obj)
                       }
                 }
               }
@@ -148,12 +148,12 @@ private fun ObjectiveRow(index: Int, objective: Objective, showWhy: Boolean, onS
   val cs = MaterialTheme.colorScheme
   Column(Modifier.fillMaxWidth().testTag(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX + index)) {
     Text(
-        objective.title,
+        text = objective.title,
         style =
             MaterialTheme.typography.titleLarge.copy(
                 color = cs.onSurface, fontWeight = FontWeight.Bold),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
+        maxLines = Int.MAX_VALUE,
+        overflow = TextOverflow.Visible,
         modifier =
             Modifier.padding(bottom = 6.dp)
                 .testTag(WeekProgDailyObjTags.OBJECTIVE_TITLE_PREFIX + index))

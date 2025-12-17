@@ -40,6 +40,8 @@ class FirestoreObjectivesRepository(
           "exercisePdfUrl" to exercisePdfUrl,
           "order" to (order ?: 0L),
           "updatedAt" to FieldValue.serverTimestamp(),
+          "isAuto" to isAuto,
+          "sourceId" to sourceId,
       )
 
   private fun DocumentSnapshot.toDomain(): Objective {
@@ -49,6 +51,8 @@ class FirestoreObjectivesRepository(
     val completed = getBoolean("completed") ?: false
     val dayStr = getString("day") ?: DayOfWeek.MONDAY.name
     val dow = runCatching { DayOfWeek.valueOf(dayStr) }.getOrElse { DayOfWeek.MONDAY }
+    val isAuto = getBoolean("isAuto") ?: false
+    val sourceId = getString("sourceId")
 
     // Safely read the type; default to COURSE_OR_EXERCISES for old documents
     val typeStr = getString("type") ?: ObjectiveType.COURSE_OR_EXERCISES.name
@@ -68,7 +72,9 @@ class FirestoreObjectivesRepository(
         day = dow,
         type = type,
         coursePdfUrl = coursePdfUrl,
-        exercisePdfUrl = exercisePdfUrl)
+        exercisePdfUrl = exercisePdfUrl,
+        isAuto = isAuto,
+        sourceId = sourceId)
   }
 
   private suspend fun fetchOrdered(): MutableList<Pair<DocumentSnapshot, Objective>> =

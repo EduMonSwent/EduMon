@@ -98,6 +98,10 @@ fun ScheduleScreen(
   val objectivesVm: ObjectivesViewModel = viewModel()
   val state by vm.uiState.collectAsState()
 
+  LaunchedEffect(state.generatedObjectives) {
+    objectivesVm.replaceAutoObjectives(state.generatedObjectives)
+  }
+
   var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
   var activeObjective by remember { mutableStateOf<Objective?>(null) }
 
