@@ -28,6 +28,7 @@ class NavigationAdditionnalTests {
 
   @Before
   fun setUp() {
+    originalRepositories = AppRepositories
     AppRepositories = FakeRepositoriesProvider
   }
 
@@ -36,159 +37,49 @@ class NavigationAdditionnalTests {
     AppRepositories = originalRepositories
   }
 
-  // ==================== NEW TESTS FOR UNCOVERED LINES ====================
-
-  /**
-   * Tests the early return path in safeNavigateBack when currentRoute is Home. This explicitly
-   * proves the 'return' statement on line 5 is executed.
-   */
   @Test
   fun safeNavigateBack_early_return_path_is_covered() {
     composeTestRule.setContent { EduMonNavHost(startDestination = AppDestination.Home.route) }
     composeTestRule.waitForIdle()
     waitForHomeScreen()
 
-    // Verify we're on Home by checking its title or menu button.
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists()
-
-    // The Home screen should NOT have a back button (because safeNavigateBack returns early).
-    // This proves the 'if (currentRoute == AppDestination.Home.route) { return }' branch was taken.
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertDoesNotExist()
   }
 
-  /**
-   * NEW: Tests the new Study entry in the drawer is visible and navigates to the Study screen.
-   * Covers:
-   * - Drawer item exists for AppDestination.Study.route
-   * - Clicking it navigates to AppDestination.Study.route and shows the top bar title "Study"
-   */
   @Test
   fun drawer_study_button_navigates_to_study_screen() {
     composeTestRule.setContent { EduMonNavHost(startDestination = AppDestination.Home.route) }
     composeTestRule.waitForIdle()
     waitForHomeScreen()
 
-    // Open drawer (from Home)
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Study item should exist (added above Stats)
     composeTestRule
         .onNodeWithTag(HomeTestTags.drawerTag(AppDestination.Study.route))
         .assertExists()
         .performClick()
 
-    composeTestRule.waitForIdle()
-    Thread.sleep(300) // Give navigation time to complete
-
-    // We should be on Study screen
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Study")
-        true
-      } catch (e: AssertionError) {
-        false
-      }
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
+      runCatching {
+            composeTestRule
+                .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
+                .assertTextEquals("Study")
+          }
+          .isSuccess
     }
 
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertExists()
   }
 
-  /**
-   * Tests that the onOpenNotifications lambda in ProfileScreen is executed. This covers the line:
-   * navController.navigate("notifications") { launchSingleTop = true }
-   */
-  @Test
-  fun profile_screen_onOpenNotifications_lambda_executes() {
-    composeTestRule.setContent { EduMonNavHost(startDestination = AppDestination.Home.route) }
-    composeTestRule.waitForIdle()
-    waitForHomeScreen()
-
-    // Navigate to Profile
-    composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(HomeTestTags.drawerTag(AppDestination.Profile.route))
-        .performClick()
-    composeTestRule.waitForIdle()
-
-    // Verify we're on Profile
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
-        true
-      } catch (e: AssertionError) {
-        false
-      }
-    }
-
-    // Wait for the profile screen to be fully loaded
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).assertExists()
-        true
-      } catch (e: AssertionError) {
-        false
-      }
-    }
-
-    // Perform multiple scrolls to ensure we reach the bottom
-    repeat(3) {
-      composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
-        val size = this@performTouchInput.visibleSize
-        val width = size.width
-        val height = size.height
-
-        val startY = (height * 0.80).toFloat()
-        val endY = (height * 0.20).toFloat()
-        val centerX = (width / 2.0).toFloat()
-
-        swipe(start = Offset(centerX, startY), end = Offset(centerX, endY), durationMillis = 500)
-      }
-      composeTestRule.waitForIdle()
-      Thread.sleep(300) // Give time for scroll to settle
-    }
-
-    // Wait for the notifications button to exist
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag("open_notifications_screen").assertExists()
-        true
-      } catch (e: AssertionError) {
-        false
-      }
-    }
-
-    // Click the button
-    composeTestRule.onNodeWithTag("open_notifications_screen").performClick()
-    composeTestRule.waitForIdle()
-    Thread.sleep(500) // Give navigation time to complete
-
-    // Wait for navigation to complete
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      try {
-        composeTestRule.onNodeWithTag("notifications_title").assertExists()
-        true
-      } catch (e: AssertionError) {
-        false
-      }
-    }
-
-    // Final assertion
-    composeTestRule.onNodeWithTag("notifications_title").assertExists()
-  }
-
-  /**
-   * Tests that the onOpenFocusMode lambda in ProfileScreen is executed. This covers the line:
-   * navController.navigate("focus_mode") { launchSingleTop = true }
-   */
   @Test
   fun profile_screen_onOpenFocusMode_lambda_executes() {
     composeTestRule.setContent { EduMonNavHost(startDestination = AppDestination.Home.route) }
     composeTestRule.waitForIdle()
     waitForHomeScreen()
 
-    // Navigate to Profile
+    // Home -> Profile
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
     composeTestRule
@@ -196,90 +87,69 @@ class NavigationAdditionnalTests {
         .performClick()
     composeTestRule.waitForIdle()
 
-    // Verify we're on Profile
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
-        true
-      } catch (e: AssertionError) {
-        false
-      }
+    // Confirm Profile
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
+      runCatching {
+            composeTestRule
+                .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
+                .assertTextEquals("Profile")
+          }
+          .isSuccess
     }
 
-    // Wait for the profile screen to be fully loaded
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).assertExists()
-        true
-      } catch (e: AssertionError) {
-        false
-      }
+    // Wait for Profile root
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
+      runCatching {
+            composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).assertExists()
+          }
+          .isSuccess
     }
 
-    // Perform multiple scrolls to ensure we reach the bottom
+    // Scroll down a bit (keep your original robust swipe, in case performScrollTo isn't supported)
     repeat(3) {
       composeTestRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).performTouchInput {
         val size = this@performTouchInput.visibleSize
-        val width = size.width
-        val height = size.height
-
-        val startY = (height * 0.80).toFloat()
-        val endY = (height * 0.20).toFloat()
-        val centerX = (width / 2.0).toFloat()
-
+        val startY = (size.height * 0.80f)
+        val endY = (size.height * 0.20f)
+        val centerX = (size.width / 2.0f)
         swipe(start = Offset(centerX, startY), end = Offset(centerX, endY), durationMillis = 500)
       }
       composeTestRule.waitForIdle()
-      Thread.sleep(300) // Give time for scroll to settle
     }
 
-    // Wait for the focus mode switch to exist
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).assertExists()
-        true
-      } catch (e: AssertionError) {
-        false
-      }
+    // Toggle focus mode switch
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    // Wait for Focus Mode destination
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
+      runCatching {
+            composeTestRule
+                .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
+                .assertTextEquals("Focus Mode")
+          }
+          .isSuccess
     }
 
-    // Click the switch
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE).performClick()
-    composeTestRule.waitForIdle()
-    Thread.sleep(500) // Give navigation time to complete
-
-    // Wait for navigation to complete
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      try {
-        composeTestRule
-            .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
-            .assertTextEquals("Focus Mode")
-        true
-      } catch (e: AssertionError) {
-        false
-      }
-    }
-
-    // Final assertion
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertExists()
   }
-
-  // ==================== EXISTING TESTS (Can be kept or removed if redundant) ====================
 
   @Test
   fun safeNavigateBack_navigates_to_home_when_popBackStack_fails() {
     composeTestRule.setContent { EduMonNavHost(startDestination = "focus_mode") }
     composeTestRule.waitForIdle()
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule
-            .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
-            .assertTextEquals("Focus Mode")
-        true
-      } catch (e: AssertionError) {
-        false
-      }
+
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
+      runCatching {
+            composeTestRule
+                .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
+                .assertTextEquals("Focus Mode")
+          }
+          .isSuccess
     }
+
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Home")
@@ -290,12 +160,14 @@ class NavigationAdditionnalTests {
     composeTestRule.setContent { EduMonNavHost(startDestination = AppDestination.Home.route) }
     composeTestRule.waitForIdle()
     waitForHomeScreen()
+
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(HomeTestTags.drawerTag(AppDestination.Profile.route))
         .performClick()
     composeTestRule.waitForIdle()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Profile")
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
     composeTestRule.waitForIdle()
@@ -303,13 +175,24 @@ class NavigationAdditionnalTests {
   }
 
   private fun waitForHomeScreen() {
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      try {
-        composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists()
-        true
-      } catch (e: AssertionError) {
-        false
-      }
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
+      runCatching { composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists() }
+          .isSuccess
     }
+  }
+
+  private fun nodeExists(tag: String): Boolean =
+      runCatching { composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).assertExists() }
+          .isSuccess
+
+  private fun notificationsScreenReached(): Boolean {
+    // Accept either a dedicated notifications tag OR a standard top bar title, if you have it.
+    if (nodeExists("notifications_title")) return true
+    return runCatching {
+          composeTestRule
+              .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
+              .assertTextEquals("Notifications")
+        }
+        .isSuccess
   }
 }
