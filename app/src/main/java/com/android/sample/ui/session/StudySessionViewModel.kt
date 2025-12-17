@@ -19,7 +19,6 @@ import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.stats.repository.StatsRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -313,7 +312,6 @@ class StudySessionViewModel(
     }
 
     // Update only the mode field
-    val payload = mapOf("mode" to mode.name)
-    profileRef.set(payload, SetOptions.merge()).await()
+    profileRef.update("mode", mode.name).await()
   }
 }
