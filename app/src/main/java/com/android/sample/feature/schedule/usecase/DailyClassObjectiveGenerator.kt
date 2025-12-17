@@ -20,22 +20,24 @@ class DailyClassObjectiveGenerator {
   ): List<Objective> {
     return todayClasses.mapNotNull { clazz ->
       when (clazz.type) {
-        ClassType.LECTURE -> createLectureObjective(clazz, day)
+        ClassType.LECTURE -> createLectureObjective(clazz, currentWeek, day)
         ClassType.EXERCISE -> createExerciseObjective(clazz, currentWeek, day)
         ClassType.LAB -> createLabObjective(clazz, currentWeek, day)
-        ClassType.PROJECT -> createProjectObjective(clazz, day)
+        ClassType.PROJECT -> createProjectObjective(clazz, currentWeek, day)
       }
     }
   }
 
-  private fun createLectureObjective(clazz: Class, day: DayOfWeek): Objective {
+  private fun createLectureObjective(clazz: Class, week: Int, day: DayOfWeek): Objective {
     return Objective(
         title = "Review ${clazz.courseName} lecture",
         course = clazz.courseName,
         estimateMinutes = 45,
         completed = false,
         day = day,
-        type = ObjectiveType.COURSE_OR_EXERCISES)
+        type = ObjectiveType.COURSE_OR_EXERCISES,
+        isAuto = true,
+        sourceId = "AUTO:${clazz.courseName}:${clazz.type}:$week")
   }
 
   private fun createExerciseObjective(clazz: Class, week: Int, day: DayOfWeek): Objective {
@@ -45,7 +47,9 @@ class DailyClassObjectiveGenerator {
         estimateMinutes = 60,
         completed = false,
         day = day,
-        type = ObjectiveType.COURSE_OR_EXERCISES)
+        type = ObjectiveType.COURSE_OR_EXERCISES,
+        isAuto = true,
+        sourceId = "AUTO:${clazz.courseName}:${clazz.type}:$week")
   }
 
   private fun createLabObjective(clazz: Class, week: Int, day: DayOfWeek): Objective {
@@ -55,16 +59,20 @@ class DailyClassObjectiveGenerator {
         estimateMinutes = 90,
         completed = false,
         day = day,
-        type = ObjectiveType.COURSE_OR_EXERCISES)
+        type = ObjectiveType.COURSE_OR_EXERCISES,
+        isAuto = true,
+        sourceId = "AUTO:${clazz.courseName}:${clazz.type}:$week")
   }
 
-  private fun createProjectObjective(clazz: Class, day: DayOfWeek): Objective {
+  private fun createProjectObjective(clazz: Class, week: Int, day: DayOfWeek): Objective {
     return Objective(
         title = "Work on ${clazz.courseName} project",
         course = clazz.courseName,
         estimateMinutes = 60,
         completed = false,
         day = day,
-        type = ObjectiveType.COURSE_OR_EXERCISES)
+        type = ObjectiveType.COURSE_OR_EXERCISES,
+        isAuto = true,
+        sourceId = "AUTO:${clazz.courseName}:${clazz.type}:$week")
   }
 }

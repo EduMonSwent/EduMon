@@ -3,7 +3,6 @@ package com.android.sample.feature.weeks.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.sample.data.UserStatsRepository
-import com.android.sample.feature.weeks.model.DefaultObjectives
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.feature.weeks.repository.ObjectivesRepository
@@ -67,7 +66,11 @@ class ObjectivesViewModel(
       }
 
   fun replaceAutoObjectives(objs: List<Objective>) {
-    _autoObjectives.value = objs
+    _autoObjectives.update {
+      val persistedSourceIds = _uiState.value.objectives.mapNotNull { it.sourceId }.toSet()
+
+      objs.filter { it.sourceId !in persistedSourceIds }
+    }
   }
 
   private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
@@ -89,12 +92,7 @@ class ObjectivesViewModel(
   fun refresh() {
     viewModelScope.launch {
       val objs = repository.getObjectives()
-      if (objs.isEmpty()) {
-        val seeded = repository.setObjectives(DefaultObjectives.get())
-        _uiState.update { it.copy(objectives = seeded) }
-      } else {
-        _uiState.update { it.copy(objectives = objs) }
-      }
+      _uiState.update { it.copy(objectives = objs) }
     }
   }
 
@@ -153,6 +151,19 @@ class ObjectivesViewModel(
 
   fun markObjectiveCompleted(objective: Objective) {
     viewModelScope.launch {
+      if (objective.isAuto) {
+        val stored = objective.copy(completed = true, isAuto = false)
+        repository.addObjective(stored)
+
+        _autoObjectives.update { autos -> autos.filterNot { it.sourceId == objective.sourceId } }
+
+        refresh()
+
+        val (points, coins) = calculateRewards(objective)
+        userStatsRepository.addReward(points, coins)
+
+        return@launch
+      }
       val current = _uiState.value.objectives
       val index = current.indexOf(objective)
       if (index == -1) return@launch
@@ -175,5 +186,16 @@ class ObjectivesViewModel(
   fun startObjective(index: Int = 0) {
     val obj = _uiState.value.objectives.getOrNull(index) ?: return
     viewModelScope.launch { _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(obj)) }
+  }
+
+  fun startObjective(objective: Objective) {
+    viewModelScope.launch {
+      when (objective.type) {
+        ObjectiveType.QUIZ -> _navigationEvents.emit(ObjectiveNavigation.ToQuiz(objective))
+        ObjectiveType.COURSE_OR_EXERCISES ->
+            _navigationEvents.emit(ObjectiveNavigation.ToCourseExercises(objective))
+        ObjectiveType.RESUME -> _navigationEvents.emit(ObjectiveNavigation.ToResume(objective))
+      }
+    }
   }
 }
