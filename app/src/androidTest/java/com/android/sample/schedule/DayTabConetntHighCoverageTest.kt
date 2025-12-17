@@ -8,9 +8,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
-import com.android.sample.R
 import com.android.sample.data.Priority
 import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.planner.*
