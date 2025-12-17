@@ -17,6 +17,8 @@ import com.android.sample.feature.schedule.data.schedule.EventKind
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.repository.planner.PlannerRepository
 import com.android.sample.feature.schedule.repository.schedule.ScheduleRepository
+import com.android.sample.feature.schedule.usecase.DailyClassObjectiveGenerator
+import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repositories.ToDoRepository
 import com.android.sample.ui.schedule.AdaptivePlanner
@@ -29,6 +31,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /** This class was implemented with the help of ai (chatgbt) */
+private val SEMESTERSTARTDATE: LocalDate = LocalDate.of(2025, 9, 15)
+
 data class ScheduleUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val currentDisplayMonth: YearMonth = YearMonth.now(),
@@ -48,7 +52,8 @@ data class ScheduleUiState(
     val selectedGap: ScheduleGapItem? = null,
     val selectedClass: Class? = null,
     val todos: List<ToDo> = emptyList(),
-    val allClassesFinished: Boolean = false
+    val allClassesFinished: Boolean = false,
+    val generatedObjectives: List<Objective> = emptyList(),
 )
 // Navigation events triggered by smart gap logic
 sealed class ScheduleNavEvent {
@@ -106,15 +111,26 @@ class ScheduleViewModel(
             val fullSchedule = computeFullSchedule(sortedBlocks)
             val allFinished = computeAllClassesFinished(todayClasses, now)
 
+            val week = AcademicWeekCalculator.currentWeek(SEMESTERSTARTDATE)
+            val generator = DailyClassObjectiveGenerator()
+            val generatedObjectives = generator.generate(todayClasses, week)
+
             _uiState.update {
               it.copy(
                   allEvents = events,
                   todayClasses = todayClasses,
                   todaySchedule = fullSchedule,
                   attendanceRecords = attendance,
-                  allClassesFinished = allFinished)
+                  allClassesFinished = allFinished,
+                  generatedObjectives = generatedObjectives)
             }
           }
+    }
+  }
+
+  object AcademicWeekCalculator {
+    fun currentWeek(startDate: LocalDate): Int {
+      return ((LocalDate.now().toEpochDay() - startDate.toEpochDay()) / 7 + 1).toInt()
     }
   }
 

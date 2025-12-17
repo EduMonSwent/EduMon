@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -53,11 +53,22 @@ class ObjectivesViewModel(
   private val _uiState = MutableStateFlow(ObjectivesUiState())
   val uiState = _uiState.asStateFlow()
 
+  /*val todayObjectives =
+  _uiState.map { state ->
+    val today = LocalDate.now().dayOfWeek
+    state.objectives.filter { it.day == today }
+  }*/
+  private val _autoObjectives = MutableStateFlow<List<Objective>>(emptyList())
+
   val todayObjectives =
-      _uiState.map { state ->
+      combine(_uiState, _autoObjectives) { state, auto ->
         val today = LocalDate.now().dayOfWeek
-        state.objectives.filter { it.day == today }
+        (state.objectives + auto).filter { it.day == today }
       }
+
+  fun replaceAutoObjectives(objs: List<Objective>) {
+    _autoObjectives.value = objs
+  }
 
   private val _navigationEvents = MutableSharedFlow<ObjectiveNavigation>()
   val navigationEvents = _navigationEvents.asSharedFlow()
