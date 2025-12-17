@@ -81,15 +81,13 @@ enum class CompletionStatus {
   PARTIALLY
 }
 
-enum class WellnessEventType(val iconRes: Int, val primaryColor: Color, val url: String? = null) {
+enum class WellnessEventType(val iconRes: Int, val primaryColor: Color, val url: Int? = null) {
 
   // External campus activities
   SPORTS(
-      iconRes = R.drawable.ic_yoga,
-      primaryColor = EventColorSports,
-      url = "https://sport.unil.ch/?pid=24"),
+      iconRes = R.drawable.ic_yoga, primaryColor = EventColorSports, url = R.string.url_unil_sport),
   LECTURE(
       iconRes = R.drawable.ic_event,
       primaryColor = EventColorLecture,
-      url = "https://www.epfl.ch/campus/events/"),
+      url = R.string.url_epfl_events),
 }

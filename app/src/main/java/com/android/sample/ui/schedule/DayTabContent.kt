@@ -353,6 +353,17 @@ private fun WellnessSection(snackbarHostState: SnackbarHostState) {
   val scope = rememberCoroutineScope()
 
   val cs = MaterialTheme.colorScheme
+  fun openIfOnline(eventType: WellnessEventType) {
+    if (context.isOnline()) {
+      eventType.url?.let {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(context.getString(it))))
+      }
+    } else {
+      scope.launch {
+        snackbarHostState.showSnackbar(context.getString(R.string.wellness_event_offline))
+      }
+    }
+  }
 
   SectionBox(
       header = {
@@ -366,17 +377,7 @@ private fun WellnessSection(snackbarHostState: SnackbarHostState) {
               time = stringResource(R.string.wellness_event_yoga_time),
               description = stringResource(R.string.wellness_event_yoga_description),
               eventType = WellnessEventType.SPORTS,
-              onClick = {
-                if (context.isOnline()) {
-                  context.startActivity(
-                      Intent(Intent.ACTION_VIEW, Uri.parse(WellnessEventType.SPORTS.url)))
-                } else {
-                  scope.launch {
-                    snackbarHostState.showSnackbar(
-                        context.getString(R.string.wellness_event_offline))
-                  }
-                }
-              })
+              onClick = { openIfOnline(WellnessEventType.SPORTS) })
 
           HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
 
@@ -385,17 +386,7 @@ private fun WellnessSection(snackbarHostState: SnackbarHostState) {
               time = stringResource(R.string.wellness_event_lecture_time),
               description = stringResource(R.string.wellness_event_lecture_description),
               eventType = WellnessEventType.LECTURE,
-              onClick = {
-                if (context.isOnline()) {
-                  context.startActivity(
-                      Intent(Intent.ACTION_VIEW, Uri.parse(WellnessEventType.LECTURE.url)))
-                } else {
-                  scope.launch {
-                    snackbarHostState.showSnackbar(
-                        context.getString(R.string.wellness_event_offline))
-                  }
-                }
-              })
+              onClick = { openIfOnline(WellnessEventType.LECTURE) })
         }
       }
 }

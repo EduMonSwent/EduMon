@@ -5,7 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
+import com.android.sample.R
 import com.android.sample.data.Priority
 import com.android.sample.data.ToDo
 import com.android.sample.feature.schedule.data.planner.*
@@ -183,5 +188,62 @@ class DayTabContentHighCoverageTest {
           objectivesVm = objectivesVm,
           snackbarHostState = snackbarHostState)
     }
+  }
+
+  @Test
+  fun clickingDeleteEvent_executesDeletePath() {
+    val vm = buildScheduleVM(rule.activity)
+    val event = ScheduleEvent(title = "Delete me", date = LocalDate.now(), kind = EventKind.STUDY)
+
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
+
+    rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithContentDescription("Remove event").performClick()
+  }
+
+  @Test
+  fun clickingGap_executesGapClick() {
+    val vm = buildScheduleVM(rule.activity)
+    val gap = ScheduleGapItem(LocalTime.of(10, 0), LocalTime.of(10, 20))
+
+    val state = ScheduleUiState(todaySchedule = listOf(gap))
+
+    rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText("Free Time (20 min)").performClick()
+  }
+
+  @Test
+  fun clickingClass_executesClassClick() {
+    val vm = buildScheduleVM(rule.activity)
+    val clazz = fakeClass(name = "Click Me")
+
+    val state = ScheduleUiState(todaySchedule = listOf(ScheduleClassItem(clazz)))
+
+    rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
+
+    rule.onNodeWithText("Click Me").performClick()
   }
 }

@@ -476,6 +476,8 @@
     <string name="wellness_event_lecture_description">Browse today’s guest lectures and events at EPFL.</string>
 
     <string name="wellness_event_offline">Connect to the internet to view today’s activities.</string>
+    <string name="url_unil_sport">https://sport.unil.ch/?pid=24</string>
+    <string name="url_epfl_events">https://www.epfl.ch/campus/events/</string>
 
 
 
