@@ -117,6 +117,8 @@ class NotificationsScreenComposeTest {
 
     override fun setCampusEntryEnabled(ctx: android.content.Context, on: Boolean) {
       _campusEntryEnabled.value = on
+    }
+
     override fun setFriendStudyModeEnabled(ctx: android.content.Context, on: Boolean) {
       _friendStudyModeEnabled.value = on
     }

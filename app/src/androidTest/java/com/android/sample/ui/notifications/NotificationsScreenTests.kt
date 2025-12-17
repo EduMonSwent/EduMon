@@ -74,6 +74,8 @@ class NotificationsUnifiedTest {
 
     override fun setCampusEntryEnabled(ctx: Context, on: Boolean) {
       _campusEntryEnabled.value = on
+    }
+
     override fun setFriendStudyModeEnabled(ctx: Context, on: Boolean) {
       _friendStudyModeEnabled.value = on
     }

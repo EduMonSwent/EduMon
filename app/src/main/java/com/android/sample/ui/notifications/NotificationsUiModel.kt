@@ -37,6 +37,7 @@ interface NotificationsUiModel {
   fun setTaskNotificationsEnabled(ctx: Context, on: Boolean)
 
   fun setCampusEntryEnabled(ctx: Context, on: Boolean)
+
   fun setFriendStudyModeEnabled(ctx: Context, on: Boolean)
 
   fun startObservingSchedule(ctx: Context)

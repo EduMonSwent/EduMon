@@ -184,6 +184,8 @@ class NotificationsViewModel(
     }
     // Note: Worker chain runs continuously regardless of this setting.
     // This preference only controls whether notifications are sent.
+  }
+
   override fun setFriendStudyModeEnabled(ctx: Context, on: Boolean) {
     _friendStudyModeEnabled.value = on
     // persist user preference
