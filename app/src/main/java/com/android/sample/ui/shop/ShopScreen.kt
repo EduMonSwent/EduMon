@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -241,16 +242,24 @@ fun ShopContent(
     modifier: Modifier = Modifier
 ) {
   val localColorScheme = MaterialTheme.colorScheme
+  val isInspectionMode = LocalInspectionMode.current
+
+  // Only run infinite animation when not in inspection/test mode
   val glowAlpha by
-      rememberInfiniteTransition(label = "glow")
-          .animateFloat(
-              initialValue = GLOW_ALPHA_MIN,
-              targetValue = GLOW_ALPHA_MAX,
-              animationSpec =
-                  infiniteRepeatable(
-                      animation = tween(GLOW_ANIMATION_DURATION, easing = LinearEasing),
-                      repeatMode = RepeatMode.Reverse),
-              label = "glowAlpha")
+      if (!isInspectionMode) {
+        rememberInfiniteTransition(label = "glow")
+            .animateFloat(
+                initialValue = GLOW_ALPHA_MIN,
+                targetValue = GLOW_ALPHA_MAX,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(GLOW_ANIMATION_DURATION, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse),
+                label = "glowAlpha")
+      } else {
+        // In test/preview mode, use a static value
+        remember { mutableStateOf(GLOW_ALPHA_MIN) }
+      }
 
   Column(
       modifier =
