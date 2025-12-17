@@ -11,11 +11,15 @@ import com.android.sample.feature.subjects.model.StudySubject
 import com.android.sample.feature.subjects.repository.SubjectsRepository
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.session.StudySessionRepository
+import com.android.sample.ui.location.FriendMode
 import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
 import com.android.sample.ui.pomodoro.PomodoroViewModel
 import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.stats.repository.StatsRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +28,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 private const val POMODORO_MINUTES = 25
 private const val POINTS_PER_COMPLETED_POMODORO = 10
@@ -115,6 +120,16 @@ class StudySessionViewModel(
                 timeLeft = timeLeft,
                 isSessionActive = state == PomodoroState.RUNNING,
             )
+          }
+
+          // When study session starts (transition to RUNNING), set mode to STUDY
+          if (lastState != PomodoroState.RUNNING && state == PomodoroState.RUNNING) {
+            updateUserModeToStudy()
+          }
+
+          // When study session stops/pauses (transition away from RUNNING), set mode to IDLE
+          if (lastState == PomodoroState.RUNNING && state != PomodoroState.RUNNING) {
+            updateUserModeToIdle()
           }
 
           // End of a work session -> increment stats
@@ -253,5 +268,52 @@ class StudySessionViewModel(
     viewModelScope.launch {
       subjectsRepository.createSubject(name = name.trim(), colorIndex = DEFAULT_SUBJECT_COLOR_INDEX)
     }
+  }
+
+  /**
+   * Updates the user's mode to STUDY in their Firestore profile so friends can see they're
+   * studying.
+   */
+  private fun updateUserModeToStudy() {
+    viewModelScope.launch {
+      try {
+        updateUserMode(FriendMode.STUDY)
+      } catch (e: Exception) {
+        // Silently fail - don't interrupt the study session if mode update fails
+        android.util.Log.w("StudySessionVM", "Failed to update mode to STUDY", e)
+      }
+    }
+  }
+
+  /** Updates the user's mode to IDLE in their Firestore profile when they stop studying. */
+  private fun updateUserModeToIdle() {
+    viewModelScope.launch {
+      try {
+        updateUserMode(FriendMode.IDLE)
+      } catch (e: Exception) {
+        // Silently fail
+        android.util.Log.w("StudySessionVM", "Failed to update mode to IDLE", e)
+      }
+    }
+  }
+
+  /** Updates the user's mode in their Firestore profile. Only updates if user is signed in. */
+  private suspend fun updateUserMode(mode: FriendMode) {
+    val auth = FirebaseAuth.getInstance()
+    val uid = auth.currentUser?.uid ?: return // Not signed in, skip
+
+    val db = FirebaseFirestore.getInstance()
+    val profileRef = db.collection("profiles").document(uid)
+
+    // Check if profile exists
+    val snapshot = profileRef.get().await()
+    if (!snapshot.exists()) {
+      // Profile doesn't exist yet, can't update mode
+      return
+    }
+
+    // Update only the mode field
+    val payload = mapOf("mode" to mode.name)
+    profileRef.set(payload, SetOptions.merge()).await()
   }
 }
