@@ -244,9 +244,10 @@ private fun CampusEntrySection(
         }
       },
       switchTag = "campus_entry_switch") {
+        val colorScheme = MaterialTheme.colorScheme
         Text(
             stringResource(R.string.campus_entry_toggle_desc),
-            color = TextLight.copy(0.75f),
+            color = colorScheme.onSurfaceVariant.copy(0.75f),
             style = MaterialTheme.typography.bodySmall)
 
         // Show warning if enabled but no permission
@@ -254,7 +255,7 @@ private fun CampusEntrySection(
           Spacer(modifier = Modifier.height(8.dp))
           Text(
               stringResource(R.string.location_permission_needed),
-              color = Color.Red,
+              color = colorScheme.error,
               style = MaterialTheme.typography.bodySmall,
               fontWeight = FontWeight.Bold)
           if (!testMode) {
