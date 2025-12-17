@@ -2,8 +2,6 @@ package com.android.sample.feature.homeScreen
 
 // This code has been written partially using A.I (LLM).
 
-// 🔽 Only dependency on creature UI:
-
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -54,6 +52,18 @@ object HomeTestTags {
   const val QUICK_BREAK = "quick_break"
   const val QUICK_EXERCISE = "quick_exercise"
   const val QUICK_SOCIAL = "quick_social"
+
+  // ✅ Carousel
+  const val CAROUSEL_CARD = "home_todo_objective_carousel"
+  const val CAROUSEL_PAGER = "home_todo_objective_pager"
+  const val CAROUSEL_DOTS = "home_todo_objective_dots"
+  const val CAROUSEL_DOT_PREFIX = "home_todo_objective_dot_" // + index
+
+  const val CAROUSEL_PAGE_TODOS = "home_carousel_page_todos"
+  const val CAROUSEL_PAGE_OBJECTIVES = "home_carousel_page_objectives"
+
+  const val CAROUSEL_TODO_ROW_PREFIX = "home_carousel_todo_" // + index
+  const val CAROUSEL_OBJECTIVE_ROW_PREFIX = "home_carousel_objective_" // + index
 }
 
 // ---------- Destinations ----------
@@ -112,7 +122,6 @@ fun EduMonHomeScreen(
           .verticalScroll(rememberScrollState())
           .padding(horizontal = 16.dp, vertical = 8.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Creature + environment fully driven by parameters (no hard-coded sprite)
         CreatureHouseCard(
             creatureResId = creatureResId,
             level = state.creatureStats.level,
@@ -132,12 +141,10 @@ fun EduMonHomeScreen(
         )
 
         TodosObjectivesCarouselCard(
-            todos = state.todos, // <-- use your actual HomeUiState field
-            objectives = state.objectives, // <-- use your actual HomeUiState field
+            todos = state.todos,
+            objectives = state.objectives,
             onOpenTodos = { onNavigate(AppDestination.Todo.route) },
-            onOpenObjectives = {
-              onNavigate(AppDestination.Schedule.route)
-            }, // adjust to your objectives screen
+            onOpenObjectives = { onNavigate(AppDestination.Schedule.route) },
         )
 
         QuickActionsCard(
@@ -208,7 +215,7 @@ private fun BigNumber(text: String) {
 fun AffirmationsAndRemindersCard(
     quote: String,
     onOpenPlanner: () -> Unit,
-    onOpenMood: () -> Unit, // NEW
+    onOpenMood: () -> Unit,
     modifier: Modifier = Modifier
 ) {
   ElevatedCard(
@@ -321,7 +328,7 @@ fun TodosObjectivesCarouselCard(
   val pagerState = rememberPagerState(pageCount = { 2 })
 
   ElevatedCard(
-      modifier = modifier.fillMaxWidth().testTag("home_todo_objective_carousel"),
+      modifier = modifier.fillMaxWidth().testTag(HomeTestTags.CAROUSEL_CARD),
       colors =
           CardDefaults.elevatedCardColors(
               containerColor = MaterialTheme.colorScheme.surface,
@@ -329,8 +336,11 @@ fun TodosObjectivesCarouselCard(
       shape = RoundedCornerShape(20.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
           HorizontalPager(
-              state = pagerState, modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp)) { page
-                ->
+              state = pagerState,
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .heightIn(min = 160.dp)
+                      .testTag(HomeTestTags.CAROUSEL_PAGER)) { page ->
                 when (page) {
                   0 -> PendingTodosSlide(todos = pendingTodos, onSeeAll = onOpenTodos)
                   1 -> ObjectivesSlide(objectives = pendingObjectives, onSeeAll = onOpenObjectives)
@@ -340,26 +350,30 @@ fun TodosObjectivesCarouselCard(
           PagerDots(
               count = 2,
               selectedIndex = pagerState.currentPage,
-              modifier = Modifier.align(Alignment.CenterHorizontally))
+              modifier =
+                  Modifier.align(Alignment.CenterHorizontally).testTag(HomeTestTags.CAROUSEL_DOTS))
         }
       }
 }
 
 @Composable
 private fun PendingTodosSlide(todos: List<ToDo>, onSeeAll: () -> Unit) {
-  Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-    SlideHeader(title = "To-dos (Pending)", actionText = "See all", onAction = onSeeAll)
+  Column(
+      modifier = Modifier.testTag(HomeTestTags.CAROUSEL_PAGE_TODOS),
+      verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SlideHeader(title = "To-dos (Pending)", actionText = "See all", onAction = onSeeAll)
 
-    if (todos.isEmpty()) {
-      Text("No pending to-dos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    } else {
-      todos.forEach { todo ->
-        CompactRow(
-            title = todo.title, // uses your ToDoForm field
-            subtitle = todo.status.name.replace('_', ' '))
+        if (todos.isEmpty()) {
+          Text("No pending to-dos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+          todos.forEachIndexed { index, todo ->
+            CompactRow(
+                title = todo.title,
+                subtitle = todo.status.name.replace('_', ' '),
+                modifier = Modifier.testTag(HomeTestTags.CAROUSEL_TODO_ROW_PREFIX + index))
+          }
+        }
       }
-    }
-  }
 }
 
 @Composable
@@ -367,22 +381,27 @@ private fun ObjectivesSlide(
     objectives: List<com.android.sample.feature.weeks.model.Objective>,
     onSeeAll: () -> Unit
 ) {
-  Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-    SlideHeader(title = "Objectives", actionText = "See all", onAction = onSeeAll)
+  Column(
+      modifier = Modifier.testTag(HomeTestTags.CAROUSEL_PAGE_OBJECTIVES),
+      verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SlideHeader(title = "Objectives", actionText = "See all", onAction = onSeeAll)
 
-    if (objectives.isEmpty()) {
-      Text("No objectives to show.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    } else {
-      objectives.forEach { obj ->
-        val subtitle = buildString {
-          append(obj.course)
-          if (obj.estimateMinutes > 0) append(" • ${obj.estimateMinutes} min")
-          append(" • ${obj.day.name.lowercase().replaceFirstChar { it.titlecase() }}")
+        if (objectives.isEmpty()) {
+          Text("No objectives to show.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+          objectives.forEachIndexed { index, obj ->
+            val subtitle = buildString {
+              append(obj.course)
+              if (obj.estimateMinutes > 0) append(" • ${obj.estimateMinutes} min")
+              append(" • ${obj.day.name.lowercase().replaceFirstChar { it.titlecase() }}")
+            }
+            CompactRow(
+                title = obj.title,
+                subtitle = subtitle,
+                modifier = Modifier.testTag(HomeTestTags.CAROUSEL_OBJECTIVE_ROW_PREFIX + index))
+          }
         }
-        CompactRow(title = obj.title, subtitle = subtitle)
       }
-    }
-  }
 }
 
 @Composable
@@ -400,9 +419,10 @@ private fun SlideHeader(title: String, actionText: String, onAction: () -> Unit)
 private fun CompactRow(
     title: String,
     subtitle: String,
+    modifier: Modifier = Modifier,
 ) {
   Surface(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = modifier.fillMaxWidth(),
       color = MaterialTheme.colorScheme.surfaceVariant,
       contentColor = MaterialTheme.colorScheme.onSurface,
       shape = RoundedCornerShape(14.dp)) {
@@ -425,7 +445,8 @@ private fun PagerDots(count: Int, selectedIndex: Int, modifier: Modifier = Modif
     repeat(count) { i ->
       val selected = i == selectedIndex
       Box(
-          Modifier.size(if (selected) 10.dp else 8.dp)
+          Modifier.testTag(HomeTestTags.CAROUSEL_DOT_PREFIX + i)
+              .size(if (selected) 10.dp else 8.dp)
               .clip(CircleShape)
               .background(
                   if (selected) MaterialTheme.colorScheme.primary
