@@ -305,6 +305,7 @@ fun ShopContent(
                     item = item,
                     isOnline = isOnline,
                     isPurchasing = isPurchasing,
+                    enableAnimations = enableAnimations,
                     onBuy = { success, fail -> onBuy(item, success, fail) })
               }
             }
@@ -388,7 +389,8 @@ fun ShopItemCard(
     item: CosmeticItem,
     isOnline: Boolean,
     isPurchasing: Boolean,
-    onBuy: ((() -> Unit), (() -> Unit)) -> Unit
+    onBuy: ((() -> Unit), (() -> Unit)) -> Unit,
+    enableAnimations: Boolean = true
 ) {
   var scale by remember { mutableFloatStateOf(SCALE_NORMAL) }
   var particles by remember { mutableStateOf(emptyList<Offset>()) }
@@ -402,12 +404,18 @@ fun ShopItemCard(
   val textColor = localColorScheme.onSurface
   val surfaceColor = localColorScheme.surface
 
-  // Animation callbacks
+  // Animation callbacks - only change scale/particles if animations enabled
   val onSuccess = {
-    scale = SCALE_SUCCESS
-    particles = generateParticles()
+    if (enableAnimations) {
+      scale = SCALE_SUCCESS
+      particles = generateParticles()
+    }
   }
-  val onFail = { scale = SCALE_FAIL }
+  val onFail = {
+    if (enableAnimations) {
+      scale = SCALE_FAIL
+    }
+  }
 
   Card(
       colors = CardDefaults.cardColors(containerColor = surfaceColor),

@@ -1,5 +1,6 @@
 package com.android.sample.ui.session
 
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.sample.data.FakeUserStatsRepository
 import com.android.sample.feature.subjects.model.StudySubject
@@ -10,6 +11,7 @@ import com.android.sample.ui.pomodoro.PomodoroPhase
 import com.android.sample.ui.pomodoro.PomodoroState
 import com.android.sample.ui.pomodoro.PomodoroViewModelContract
 import com.android.sample.ui.stats.repository.FakeStatsRepository
+import com.android.sample.util.FirebaseEmulator
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -19,13 +21,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,16 +50,21 @@ class StudySessionViewModelFirebaseTest {
   fun setup() {
     Dispatchers.setMain(testDispatcher)
 
-    // Configure Firebase emulator BEFORE getting instances
-    try {
-      FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
-      FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
-    } catch (e: IllegalStateException) {
-      android.util.Log.d("StudySessionVMFirebaseTest", "Firebase emulator already configured", e)
-    }
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
 
-    auth = FirebaseAuth.getInstance()
-    firestore = FirebaseFirestore.getInstance()
+    // Initialize and connect to emulator using the proper helper
+    FirebaseEmulator.initIfNeeded(context)
+    FirebaseEmulator.connectIfRunning()
+
+    // Verify emulator is running
+    assertTrue(
+        "Firebase emulators not reachable (firestore:8080, auth:9099). " +
+            "Start with: firebase emulators:start --only firestore,auth",
+        FirebaseEmulator.isRunning)
+
+    // Use emulator instances
+    auth = FirebaseEmulator.auth
+    firestore = FirebaseEmulator.firestore
 
     // Ensure clean state: sign out and wait
     runBlocking {
@@ -121,12 +127,10 @@ class StudySessionViewModelFirebaseTest {
         "Timeout waiting for mode update. Expected: ${expectedMode.name}, Actual: $actualMode")
   }
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun updateUserMode_whenNotSignedIn_doesNothing() = runTest {
+  fun updateUserMode_whenNotSignedIn_doesNothing() = runBlocking {
     // Ensure no user is signed in
     auth.signOut()
-    advanceUntilIdle()
 
     viewModel =
         StudySessionViewModel(
@@ -139,16 +143,14 @@ class StudySessionViewModelFirebaseTest {
     // Simulate starting a study session which triggers updateUserModeToStudy
     val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    advanceUntilIdle()
 
     // No user signed in, so no profile document should exist
     // Test passes if no exception is thrown
     assertNull(auth.currentUser)
   }
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun updateUserMode_whenProfileDoesNotExist_doesNothing() = runTest {
+  fun updateUserMode_whenProfileDoesNotExist_doesNothing() = runBlocking {
     // Create an anonymous test user without a profile document
     val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
@@ -177,7 +179,6 @@ class StudySessionViewModelFirebaseTest {
     // Simulate starting a study session
     val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    advanceUntilIdle()
 
     // Give time for any async operations
     kotlinx.coroutines.delay(500)
@@ -213,9 +214,6 @@ class StudySessionViewModelFirebaseTest {
     val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
-    // Give time for ViewModel to react
-    kotlinx.coroutines.delay(1000)
-
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
 
@@ -225,9 +223,6 @@ class StudySessionViewModelFirebaseTest {
 
     // Simulate stopping the study session (should update mode to IDLE)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
-
-    // Give time for ViewModel to react
-    kotlinx.coroutines.delay(1000)
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)
@@ -262,7 +257,6 @@ class StudySessionViewModelFirebaseTest {
 
     // Start pomodoro timer (transition to RUNNING)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    kotlinx.coroutines.delay(1000)
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
@@ -297,11 +291,9 @@ class StudySessionViewModelFirebaseTest {
 
     // First set to RUNNING
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    kotlinx.coroutines.delay(1000)
 
     // Then pause (transition from RUNNING to PAUSED)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
-    kotlinx.coroutines.delay(1000)
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)
