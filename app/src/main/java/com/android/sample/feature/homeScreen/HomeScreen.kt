@@ -124,7 +124,7 @@ fun EduMonHomeScreen(
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CreatureHouseCard(
             creatureResId = creatureResId,
-            level = state.creatureStats.level,
+            level = LevelingConfig.levelForPoints(state.userStats.points),
             environmentResId = environmentResId,
         )
 
