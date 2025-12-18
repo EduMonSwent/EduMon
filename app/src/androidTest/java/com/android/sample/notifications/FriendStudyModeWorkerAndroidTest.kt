@@ -24,6 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Rule
@@ -58,22 +59,16 @@ class FriendStudyModeWorkerAndroidTest {
         FirebaseApp.initializeApp(context)
       }
 
-      // Check if emulator is running
+      // Check if emulator is running and connect
       FirebaseEmulator.initIfNeeded(context)
       if (!FirebaseEmulator.isRunning) {
-        // Emulator not running - tests will be skipped via assertion in setup()
+        // Emulator not running - tests will be skipped via assumeTrue in setup()
         return
       }
 
-      // Configure DEFAULT instances to use emulator (required for worker to function)
-      try {
-        FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
-        FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
-        configured = true
-      } catch (_: IllegalStateException) {
-        // Already configured
-        configured = true
-      }
+      // Connect to emulator using dedicated FirebaseApp (avoids IllegalStateException)
+      FirebaseEmulator.connectIfRunning()
+      configured = true
     }
   }
 
@@ -100,15 +95,15 @@ class FriendStudyModeWorkerAndroidTest {
     notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    // Verify emulator is running
-    assertTrue(
+    // Verify emulator is running - skip test if not available (e.g., in CI)
+    assumeTrue(
         "Firebase emulators not reachable (firestore:8080, auth:9099). " +
             "Start with: firebase emulators:start --only firestore,auth",
         FirebaseEmulator.isRunning)
 
-    // Use default instances (now configured to use emulator)
-    auth = FirebaseAuth.getInstance()
-    db = FirebaseFirestore.getInstance()
+    // Use emulator-connected instances (not default instances which may hit production)
+    auth = FirebaseEmulator.auth
+    db = FirebaseEmulator.firestore
 
     // Clear notifications
     notificationManager.cancelAll()
