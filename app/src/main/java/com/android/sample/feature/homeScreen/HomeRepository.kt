@@ -4,12 +4,17 @@ import com.android.sample.data.CreatureStats
 import com.android.sample.data.Priority
 import com.android.sample.data.ToDo
 import com.android.sample.data.UserProfile
+import com.android.sample.feature.weeks.model.Objective
+import com.android.sample.feature.weeks.model.ObjectiveType
 import com.android.sample.profile.ProfileRepositoryProvider
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 // ---------- Repository ----------
 interface HomeRepository {
   suspend fun fetchTodos(): List<ToDo>
+
+  suspend fun fetchObjectives(): List<Objective>
 
   suspend fun fetchCreatureStats(): CreatureStats
 
@@ -39,6 +44,30 @@ class FakeHomeRepository : HomeRepository {
               priority = Priority.LOW),
       )
 
+  private val sampleObjectives =
+      listOf(
+          Objective(
+              title = "Revise Week 3 – Calculus",
+              course = "Math",
+              estimateMinutes = 45,
+              completed = false,
+              day = DayOfWeek.MONDAY,
+              type = ObjectiveType.COURSE_OR_EXERCISES),
+          Objective(
+              title = "Quiz practice – Algorithms basics",
+              course = "CS-101",
+              estimateMinutes = 25,
+              completed = false,
+              day = DayOfWeek.WEDNESDAY,
+              type = ObjectiveType.QUIZ),
+          Objective(
+              title = "Write resume draft",
+              course = "Career",
+              estimateMinutes = 30,
+              completed = true,
+              day = DayOfWeek.FRIDAY,
+              type = ObjectiveType.RESUME))
+
   private val quotes =
       listOf(
           "Small consistent steps beat intense sprints.",
@@ -51,6 +80,8 @@ class FakeHomeRepository : HomeRepository {
   override suspend fun fetchTodos(): List<ToDo> {
     return sampleTodos
   }
+
+  override suspend fun fetchObjectives(): List<Objective> = sampleObjectives
 
   override suspend fun fetchCreatureStats(): CreatureStats {
     return CreatureStats()
