@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -238,19 +239,28 @@ fun ShopContent(
     isOnline: Boolean,
     isPurchasing: Boolean,
     onBuy: (CosmeticItem, () -> Unit, () -> Unit) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enableAnimations: Boolean = true
 ) {
   val localColorScheme = MaterialTheme.colorScheme
+  val isInspectionMode = LocalInspectionMode.current
+
+  // Only run infinite animation when animations are enabled and not in inspection mode
   val glowAlpha by
-      rememberInfiniteTransition(label = "glow")
-          .animateFloat(
-              initialValue = GLOW_ALPHA_MIN,
-              targetValue = GLOW_ALPHA_MAX,
-              animationSpec =
-                  infiniteRepeatable(
-                      animation = tween(GLOW_ANIMATION_DURATION, easing = LinearEasing),
-                      repeatMode = RepeatMode.Reverse),
-              label = "glowAlpha")
+      if (enableAnimations && !isInspectionMode) {
+        rememberInfiniteTransition(label = "glow")
+            .animateFloat(
+                initialValue = GLOW_ALPHA_MIN,
+                targetValue = GLOW_ALPHA_MAX,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(GLOW_ANIMATION_DURATION, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse),
+                label = "glowAlpha")
+      } else {
+        // In test/preview mode, use a static value
+        remember { mutableFloatStateOf(GLOW_ALPHA_MIN) }
+      }
 
   Column(
       modifier =
@@ -295,6 +305,7 @@ fun ShopContent(
                     item = item,
                     isOnline = isOnline,
                     isPurchasing = isPurchasing,
+                    enableAnimations = enableAnimations,
                     onBuy = { success, fail -> onBuy(item, success, fail) })
               }
             }
@@ -378,10 +389,12 @@ fun ShopItemCard(
     item: CosmeticItem,
     isOnline: Boolean,
     isPurchasing: Boolean,
-    onBuy: ((() -> Unit), (() -> Unit)) -> Unit
+    onBuy: ((() -> Unit), (() -> Unit)) -> Unit,
+    enableAnimations: Boolean = true
 ) {
   var scale by remember { mutableFloatStateOf(SCALE_NORMAL) }
-  var particles by remember { mutableStateOf(emptyList<Offset>()) }
+  // Store particles with their alpha values to avoid Random on every recomposition
+  var particles by remember { mutableStateOf(emptyList<Pair<Offset, Float>>()) }
 
   // Determine if purchase is allowed
   val canPurchase = isOnline && !item.owned && !isPurchasing
@@ -392,12 +405,19 @@ fun ShopItemCard(
   val textColor = localColorScheme.onSurface
   val surfaceColor = localColorScheme.surface
 
-  // Animation callbacks
+  // Animation callbacks - only change scale/particles if animations enabled
   val onSuccess = {
-    scale = SCALE_SUCCESS
-    particles = generateParticles()
+    if (enableAnimations) {
+      scale = SCALE_SUCCESS
+      // Generate particles with stable alpha values
+      particles = generateParticles().map { offset -> offset to Random.nextFloat() }
+    }
   }
-  val onFail = { scale = SCALE_FAIL }
+  val onFail = {
+    if (enableAnimations) {
+      scale = SCALE_FAIL
+    }
+  }
 
   Card(
       colors = CardDefaults.cardColors(containerColor = surfaceColor),
@@ -416,11 +436,11 @@ fun ShopItemCard(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
           // Particles canvas
           Canvas(modifier = Modifier.matchParentSize()) {
-            particles.forEach { p ->
+            particles.forEach { (position, alpha) ->
               drawCircle(
-                  color = particleColor.copy(alpha = Random.nextFloat()),
+                  color = particleColor.copy(alpha = alpha),
                   radius = ITEM_PARTICLE_RADIUS,
-                  center = p)
+                  center = position)
             }
           }
 

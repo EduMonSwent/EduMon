@@ -22,6 +22,7 @@ class ShopScreenTest {
           items = sampleItems(),
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -39,6 +40,7 @@ class ShopScreenTest {
           items = sampleItems(),
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -58,6 +60,7 @@ class ShopScreenTest {
           item = testItem,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { success, fail ->
             successTriggered = true
             success()
@@ -82,7 +85,12 @@ class ShopScreenTest {
     val item = CosmeticItem("1", "Red Scarf", 300, R.drawable.shop_cosmetic_scarf, owned = true)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = true, isPurchasing = false, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = true,
+          isPurchasing = false,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     composeTestRule.onNodeWithText("✓ Owned").assertExists()
@@ -99,6 +107,7 @@ class ShopScreenTest {
           items = fakeViewModel.items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -117,6 +126,7 @@ class ShopScreenTest {
           items = fakeViewModel.items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -147,7 +157,12 @@ class ShopScreenTest {
         CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = false, isPurchasing = false, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = false,
+          isPurchasing = false,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -253,7 +268,12 @@ class ShopScreenTest {
         CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = true, isPurchasing = true, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = true,
+          isPurchasing = true,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -267,7 +287,12 @@ class ShopScreenTest {
     val item = CosmeticItem("1", "Red Scarf", 300, R.drawable.shop_cosmetic_scarf, owned = true)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = true, isPurchasing = false, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = true,
+          isPurchasing = false,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     // Try to click - should not trigger callback since item is owned
@@ -286,7 +311,12 @@ class ShopScreenTest {
         CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = false, isPurchasing = false, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = false,
+          isPurchasing = false,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -301,7 +331,12 @@ class ShopScreenTest {
     val item = CosmeticItem("1", "Wizard Hat", 800, R.drawable.shop_cosmetic_hat, owned = true)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = false, isPurchasing = false, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = false,
+          isPurchasing = false,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -356,6 +391,7 @@ class ShopScreenTest {
           items = mixedItems,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -376,6 +412,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _ -> onBuyCalled = true })
     }
 
@@ -398,6 +435,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { item, _, _ -> receivedItem = item })
     }
 
@@ -458,6 +496,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { success, _ ->
             success()
             successExecuted = true
@@ -482,6 +521,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, fail ->
             fail()
             failExecuted = true
@@ -506,6 +546,7 @@ class ShopScreenTest {
           items = singleItem,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -520,7 +561,12 @@ class ShopScreenTest {
         CosmeticItem("1", "Cool Shades", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = true, isPurchasing = false, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = true,
+          isPurchasing = false,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     // The image should be displayed (we can verify the item name is there as proxy)
@@ -558,6 +604,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, triggerSuccess, _ ->
             // Simulate initiated = true
             successCalled = true
@@ -584,6 +631,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, triggerFail ->
             // Simulate initiated = false
             failCalled = true
@@ -603,7 +651,12 @@ class ShopScreenTest {
     val item = CosmeticItem("1", "Test Item", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = true, isPurchasing = true, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = true,
+          isPurchasing = true,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -618,7 +671,12 @@ class ShopScreenTest {
     val item = CosmeticItem("1", "Test Item", 500, R.drawable.shop_cosmetic_glasses, owned = false)
 
     composeTestRule.setContent {
-      ShopItemCard(item = item, isOnline = true, isPurchasing = false, onBuy = { _, _ -> })
+      ShopItemCard(
+          item = item,
+          isOnline = true,
+          isPurchasing = false,
+          enableAnimations = false,
+          onBuy = { _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -703,6 +761,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { success, fail ->
             onBuyTriggered = true
             success()
@@ -728,6 +787,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { success, fail ->
             // Execute both to ensure they're wired correctly
             success()
@@ -756,6 +816,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = true,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -774,6 +835,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { success, _ ->
             scaleApplied = true
             success() // This triggers scale = 1.1f
@@ -797,6 +859,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { success, _ ->
             particlesGenerated = true
             success() // This triggers particles generation
@@ -819,6 +882,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, fail ->
             failAnimationTriggered = true
             fail() // This triggers scale = 0.95f
@@ -848,6 +912,7 @@ class ShopScreenTest {
           items = multipleItems,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -866,6 +931,7 @@ class ShopScreenTest {
           item = item,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { success, _ ->
             success() // Generate particles
           })
@@ -894,6 +960,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, triggerSuccess, triggerFail ->
             callOrder.add("onBuy_called")
             triggerSuccess()
@@ -1010,6 +1077,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -1111,6 +1179,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 

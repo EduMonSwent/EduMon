@@ -28,6 +28,8 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
+// Parts of this code were written with the assistance of Copilot tool
+
 class StudySessionViewModelTest {
 
   private lateinit var fakePomodoro: FakePomodoroViewModel
@@ -241,6 +243,52 @@ class StudySessionViewModelTest {
     assertEquals(PomodoroState.IDLE, fakePomodoro.state.value)
     assertEquals(PomodoroPhase.WORK, fakePomodoro.phase.value)
   }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun `createSubject with blank name does nothing`() = runTest {
+    val initialSize = viewModel.uiState.value.subjects.size
+
+    viewModel.createSubject("")
+    advanceUntilIdle()
+
+    assertEquals(initialSize, viewModel.uiState.value.subjects.size)
+    assertEquals(0, fakeSubjectsRepo.createSubjectCallCount)
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun `createSubject with whitespace only name does nothing`() = runTest {
+    val initialSize = viewModel.uiState.value.subjects.size
+
+    viewModel.createSubject("   ")
+    advanceUntilIdle()
+
+    assertEquals(initialSize, viewModel.uiState.value.subjects.size)
+    assertEquals(0, fakeSubjectsRepo.createSubjectCallCount)
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun `createSubject with valid name trims and creates subject`() = runTest {
+    viewModel.createSubject("  Math  ")
+    advanceUntilIdle()
+
+    assertEquals(1, fakeSubjectsRepo.createSubjectCallCount)
+    assertEquals("Math", fakeSubjectsRepo.lastCreatedName)
+    assertEquals(0, fakeSubjectsRepo.lastCreatedColorIndex)
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun `selectSubject updates selectedSubject in state`() = runTest {
+    val subject = StudySubject(id = "sub1", name = "Physics", colorIndex = 1, totalStudyMinutes = 0)
+
+    viewModel.selectSubject(subject)
+    advanceUntilIdle()
+
+    assertEquals(subject, viewModel.uiState.value.selectedSubject)
+  }
 }
 
 /** Fake Pomodoro VM used by the tests. */
@@ -316,12 +364,18 @@ private class FakeSubjectsRepository : SubjectsRepository {
   private val _subjects = MutableStateFlow<List<StudySubject>>(emptyList())
   override val subjects: StateFlow<List<StudySubject>> = _subjects
 
+  var createSubjectCallCount = 0
+  var lastCreatedName: String? = null
+  var lastCreatedColorIndex: Int? = null
+
   override suspend fun start() {
     // no-op
   }
 
   override suspend fun createSubject(name: String, colorIndex: Int) {
-    // no-op for tests
+    createSubjectCallCount++
+    lastCreatedName = name
+    lastCreatedColorIndex = colorIndex
   }
 
   override suspend fun renameSubject(id: String, newName: String) {
