@@ -48,6 +48,15 @@ class StudySessionViewModelFirebaseTest {
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
+
+    // Configure Firebase emulator BEFORE getting instances
+    try {
+      FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
+      FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
+    } catch (e: IllegalStateException) {
+      android.util.Log.d("StudySessionVMFirebaseTest", "Firebase emulator already configured", e)
+    }
+
     auth = FirebaseAuth.getInstance()
     firestore = FirebaseFirestore.getInstance()
 
@@ -178,9 +187,8 @@ class StudySessionViewModelFirebaseTest {
     assert(!snapshot.exists())
   }
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun updateUserMode_whenProfileExists_updatesMode() = runTest {
+  fun updateUserMode_whenProfileExists_updatesMode() = runBlocking {
     // Create an anonymous test user with a profile document
     val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
@@ -204,7 +212,9 @@ class StudySessionViewModelFirebaseTest {
     // Simulate starting a study session (should update mode to STUDY)
     val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    advanceUntilIdle()
+
+    // Give time for ViewModel to react
+    kotlinx.coroutines.delay(1000)
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
@@ -215,7 +225,9 @@ class StudySessionViewModelFirebaseTest {
 
     // Simulate stopping the study session (should update mode to IDLE)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
-    advanceUntilIdle()
+
+    // Give time for ViewModel to react
+    kotlinx.coroutines.delay(1000)
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)
@@ -225,9 +237,8 @@ class StudySessionViewModelFirebaseTest {
     assertEquals(FriendMode.IDLE.name, snapshot2.getString("mode"))
   }
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun updateUserMode_whenSessionStarts_setsModeToStudy() = runTest {
+  fun updateUserMode_whenSessionStarts_setsModeToStudy() = runBlocking {
     // Create an anonymous test user with a profile
     val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
@@ -251,7 +262,7 @@ class StudySessionViewModelFirebaseTest {
 
     // Start pomodoro timer (transition to RUNNING)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    advanceUntilIdle()
+    kotlinx.coroutines.delay(1000)
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
@@ -261,9 +272,8 @@ class StudySessionViewModelFirebaseTest {
     assertEquals(FriendMode.STUDY.name, snapshot.getString("mode"))
   }
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun updateUserMode_whenSessionPauses_setsModeToIdle() = runTest {
+  fun updateUserMode_whenSessionPauses_setsModeToIdle() = runBlocking {
     // Create an anonymous test user with a profile in STUDY mode
     val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
@@ -287,11 +297,11 @@ class StudySessionViewModelFirebaseTest {
 
     // First set to RUNNING
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    advanceUntilIdle()
+    kotlinx.coroutines.delay(1000)
 
     // Then pause (transition from RUNNING to PAUSED)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
-    advanceUntilIdle()
+    kotlinx.coroutines.delay(1000)
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)
