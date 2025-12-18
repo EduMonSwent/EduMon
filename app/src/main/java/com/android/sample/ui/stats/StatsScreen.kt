@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -296,7 +295,7 @@ private fun PieChart(
       if (!isInspectionMode) {
         sweepFractions.map { animateFloatAsState(targetValue = it, label = "") }
       } else {
-        sweepFractions.map { remember { mutableStateOf(it) } }
+        sweepFractions.map { remember { mutableFloatStateOf(it) } }
       }
 
   Canvas(modifier = modifier) {

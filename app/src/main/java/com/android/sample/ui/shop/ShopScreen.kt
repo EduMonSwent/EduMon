@@ -259,7 +259,7 @@ fun ShopContent(
                 label = "glowAlpha")
       } else {
         // In test/preview mode, use a static value
-        remember { mutableStateOf(GLOW_ALPHA_MIN) }
+        remember { mutableFloatStateOf(GLOW_ALPHA_MIN) }
       }
 
   Column(
