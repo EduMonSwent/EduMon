@@ -96,19 +96,13 @@ class DayTabContentAllAndroidTest {
     auth = FirebaseAuth.getInstance()
 
     // Sign in anonymously to avoid permission errors
+    // Note: We don't sign out in @After because:
+    // 1. This test doesn't create Firebase data that needs cleanup
+    // 2. auth.signOut() would affect the SHARED default instance used by
+    // FriendStudyModeWorkerAndroidTest
+    // 3. Each test signs in fresh here anyway
     if (auth.currentUser == null) {
       auth.signInAnonymously().await()
-    }
-  }
-
-  @org.junit.After
-  fun tearDown() = runBlocking {
-    // Sign out to prevent auth state leaking between tests
-    // Note: We do NOT call FirebaseEmulator.clearAll() here because:
-    // 1. This is a UI test that doesn't create Firebase data
-    // 2. clearAll() would interfere with FriendStudyModeWorkerAndroidTest running in parallel
-    if (::auth.isInitialized) {
-      auth.signOut()
     }
   }
 
