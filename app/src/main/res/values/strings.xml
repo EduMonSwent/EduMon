@@ -303,6 +303,9 @@
     <string name="campus_entry_text">You have arrived on campus</string>
     <string name="campus_entry_toggle_title">Campus entry notifications</string>
     <string name="campus_entry_toggle_subtitle">Notify when you arrive on campus (every entry)</string>
+    <string name="campus_entry_toggle_desc">Location tracking runs continuously in the background. Enable this to receive a notification when you arrive on campus.</string>
+    <string name="location_permission_needed">Location permission required</string>
+    <string name="grant_location_permission">Grant Permission</string>
 
     <!-- Friend Study Mode Notifications -->
     <string name="friend_study_mode_title">Friend started studying</string>

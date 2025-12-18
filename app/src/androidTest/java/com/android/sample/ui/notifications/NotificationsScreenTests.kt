@@ -31,6 +31,7 @@ class NotificationsUnifiedTest {
     val _kickoffTimes = MutableStateFlow(mapOf<Int, Pair<Int, Int>>())
     val _taskEnabled = MutableStateFlow(false)
     val _streakEnabled = MutableStateFlow(false)
+    val _campusEntryEnabled = MutableStateFlow(false)
     val _friendStudyModeEnabled = MutableStateFlow(false)
     var needsNotif = false
     var lastUpdateKickoff: Pair<Int, Pair<Int, Int>>? = null
@@ -43,6 +44,7 @@ class NotificationsUnifiedTest {
     override val kickoffTimes: StateFlow<Map<Int, Pair<Int, Int>>> = _kickoffTimes
     override val taskNotificationsEnabled: StateFlow<Boolean> = _taskEnabled
     override val streakEnabled: StateFlow<Boolean> = _streakEnabled
+    override val campusEntryEnabled: StateFlow<Boolean> = _campusEntryEnabled
     override val friendStudyModeEnabled: StateFlow<Boolean> = _friendStudyModeEnabled
 
     override fun setKickoffEnabled(ctx: Context, enabled: Boolean) {
@@ -68,6 +70,10 @@ class NotificationsUnifiedTest {
 
     override fun setTaskNotificationsEnabled(ctx: Context, enabled: Boolean) {
       _taskEnabled.value = enabled
+    }
+
+    override fun setCampusEntryEnabled(ctx: Context, on: Boolean) {
+      _campusEntryEnabled.value = on
     }
 
     override fun setFriendStudyModeEnabled(ctx: Context, on: Boolean) {

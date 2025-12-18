@@ -25,6 +25,7 @@ internal fun buildOneShotNotification(
           .setContentText("⏰ Your scheduled test notification is here!")
           .setPriority(NotificationCompat.PRIORITY_DEFAULT)
           .setAutoCancel(true)
+          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
 
   if (contentIntent != null) {
     builder.setContentIntent(contentIntent)

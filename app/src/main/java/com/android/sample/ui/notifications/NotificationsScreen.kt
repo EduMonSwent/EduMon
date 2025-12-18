@@ -1,6 +1,7 @@
 package com.android.sample.ui.notifications
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
 import java.util.Calendar
@@ -209,6 +211,63 @@ private fun TaskNotificationsSection(taskEnabled: Boolean, onToggle: (Boolean) -
 }
 
 @Composable
+private fun CampusEntrySection(
+    campusEnabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+    requestLocationPermission: () -> Unit,
+    testMode: Boolean = false
+) {
+  val ctx = LocalContext.current
+
+  // Check if location permission is granted
+  val hasLocationPermission =
+      remember(campusEnabled) {
+        val hasFine =
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        val hasCoarse =
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        hasFine || hasCoarse
+      }
+
+  SectionCard(
+      title = stringResource(R.string.campus_entry_toggle_title),
+      subtitle = stringResource(R.string.campus_entry_toggle_subtitle),
+      enabled = campusEnabled,
+      onToggle = { on ->
+        if (on && !hasLocationPermission && !testMode) {
+          // Request permission when user tries to enable
+          requestLocationPermission()
+        } else {
+          onToggle(on)
+        }
+      },
+      switchTag = "campus_entry_switch") {
+        val colorScheme = MaterialTheme.colorScheme
+        Text(
+            stringResource(R.string.campus_entry_toggle_desc),
+            color = colorScheme.onSurfaceVariant.copy(0.75f),
+            style = MaterialTheme.typography.bodySmall)
+
+        // Show warning if enabled but no permission
+        if (campusEnabled && !hasLocationPermission) {
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+              stringResource(R.string.location_permission_needed),
+              color = colorScheme.error,
+              style = MaterialTheme.typography.bodySmall,
+              fontWeight = FontWeight.Bold)
+          if (!testMode) {
+            TextButton(onClick = requestLocationPermission) {
+              Text(stringResource(R.string.grant_location_permission))
+            }
+          }
+        }
+      }
+}
+
+@Composable
 internal fun TestNotificationButton(
     vm: NotificationsUiModel,
     ctx: android.content.Context,
@@ -305,10 +364,26 @@ fun NotificationsScreen(
   val kickoffTimes by vm.kickoffTimes.collectAsState()
   val taskNotificationsEnabled by vm.taskNotificationsEnabled.collectAsState()
   val streakEnabled by vm.streakEnabled.collectAsState()
+  val campusEntryEnabled by vm.campusEntryEnabled.collectAsState()
   val friendStudyModeEnabled by vm.friendStudyModeEnabled.collectAsState()
 
   var kickoffPickDay by remember { mutableStateOf<Int?>(null) }
   var startupError by remember { mutableStateOf<String?>(null) }
+
+  // Location permission launcher for campus entry
+  var requestLocationPermission: () -> Unit = {}
+  if (!testMode) {
+    val locationLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+          if (granted) {
+            // Permission granted, now enable campus notifications
+            vm.setCampusEntryEnabled(ctx, true)
+          }
+        }
+    requestLocationPermission = {
+      locationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+  }
 
   StartScheduleObserver(taskNotificationsEnabled, vm, ctx) { startupError = it }
 
@@ -341,6 +416,12 @@ fun NotificationsScreen(
           TaskNotificationsSection(
               taskEnabled = taskNotificationsEnabled,
               onToggle = { on -> vm.setTaskNotificationsEnabled(ctx, on) })
+
+          CampusEntrySection(
+              campusEnabled = campusEntryEnabled,
+              onToggle = { on -> vm.setCampusEntryEnabled(ctx, on) },
+              requestLocationPermission = requestLocationPermission,
+              testMode = testMode)
 
           TestNotificationButton(vm, ctx, requestNotifPermissionForTest)
           DeepLinkDemoButton(vm, ctx, requestNotifPermissionForDemo)

@@ -12,6 +12,7 @@ interface NotificationsUiModel {
   val kickoffTimes: StateFlow<Map<Int, Pair<Int, Int>>>
   val taskNotificationsEnabled: StateFlow<Boolean>
   val streakEnabled: StateFlow<Boolean>
+  val campusEntryEnabled: StateFlow<Boolean>
   val friendStudyModeEnabled: StateFlow<Boolean>
 
   // UI actions
@@ -34,6 +35,8 @@ interface NotificationsUiModel {
   fun sendDeepLinkDemoNotification(ctx: Context)
 
   fun setTaskNotificationsEnabled(ctx: Context, on: Boolean)
+
+  fun setCampusEntryEnabled(ctx: Context, on: Boolean)
 
   fun setFriendStudyModeEnabled(ctx: Context, on: Boolean)
 

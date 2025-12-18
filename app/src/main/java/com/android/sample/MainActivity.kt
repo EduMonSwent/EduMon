@@ -58,6 +58,11 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
+    // Start campus entry polling unconditionally on app launch
+    // This ensures the worker chain is always active, even if the user hasn't
+    // explicitly enabled it in settings. The worker itself will gracefully handle
+    // missing permissions by logging and continuing the chain.
+    com.android.sample.data.notifications.CampusEntryPollWorker.startChain(this)
     // Start friend study mode polling chain if user enabled (stored in notifications prefs)
     val friendStudyModeEnabled =
         getSharedPreferences("notifications", MODE_PRIVATE)

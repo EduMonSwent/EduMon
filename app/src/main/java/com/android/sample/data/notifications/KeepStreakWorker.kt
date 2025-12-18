@@ -24,6 +24,8 @@ internal fun buildKeepStreakNotification(ctx: Context, days: Int): Notification 
         .setContentTitle("Keep your streak 🔥")
         .setContentText(buildKeepStreakMessage(days))
         .setAutoCancel(true)
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
         .build()
 
 @RequiresPermission(value = "android.permission.POST_NOTIFICATIONS", conditional = true)

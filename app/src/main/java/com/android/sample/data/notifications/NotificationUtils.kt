@@ -1,6 +1,7 @@
 // app/src/main/java/com/android/sample/data/notifications/NotificationUtils.kt
 package com.android.sample.data.notifications
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -17,8 +18,20 @@ object NotificationUtils {
   fun ensureChannel(ctx: Context) {
     val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     if (mgr.getNotificationChannel(CHANNEL_ID) == null) {
-      mgr.createNotificationChannel(
-          NotificationChannel(CHANNEL_ID, "EduMon", NotificationManager.IMPORTANCE_DEFAULT))
+      val channel =
+          NotificationChannel(
+                  CHANNEL_ID,
+                  "EduMon",
+                  NotificationManager.IMPORTANCE_HIGH // Changed from DEFAULT to HIGH
+                  )
+              .apply {
+                description = "EduMon notifications including campus entry alerts"
+                setShowBadge(true)
+                // Allow notifications to show on lock screen (minSdk is 28, so this is always
+                // available)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+              }
+      mgr.createNotificationChannel(channel)
     }
   }
 }

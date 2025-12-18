@@ -115,6 +115,8 @@ class NotificationsViewModel(
   private val _streakEnabled = MutableStateFlow(false)
   override val streakEnabled: StateFlow<Boolean> = _streakEnabled.asStateFlow()
 
+  private val _campusEntryEnabled = MutableStateFlow(false)
+  override val campusEntryEnabled: StateFlow<Boolean> = _campusEntryEnabled.asStateFlow()
   private val _friendStudyModeEnabled = MutableStateFlow(false)
   override val friendStudyModeEnabled: StateFlow<Boolean> = _friendStudyModeEnabled.asStateFlow()
 
@@ -167,6 +169,21 @@ class NotificationsViewModel(
   override fun setStreakEnabled(ctx: Context, on: Boolean) {
     _streakEnabled.value = on
     repo.setDailyEnabled(ctx, NotificationKind.KEEP_STREAK, on, DEFAULT_STREAK_HOUR)
+  }
+
+  override fun setCampusEntryEnabled(ctx: Context, on: Boolean) {
+    _campusEntryEnabled.value = on
+    // Persist user preference for CampusEntryPollWorker to check
+    try {
+      ctx.getSharedPreferences("notifications", Context.MODE_PRIVATE)
+          .edit()
+          .putBoolean("campus_entry_enabled", on)
+          .apply()
+    } catch (e: Exception) {
+      Log.e("NotificationsVM", "Failed to save campus entry preference", e)
+    }
+    // Note: Worker chain runs continuously regardless of this setting.
+    // This preference only controls whether notifications are sent.
   }
 
   override fun setFriendStudyModeEnabled(ctx: Context, on: Boolean) {
@@ -304,6 +321,8 @@ class NotificationsViewModel(
               .setContentText(ctx.getString(com.android.sample.R.string.demo_notification_text))
               .setContentIntent(pi)
               .setAutoCancel(true)
+              .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+              .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show on lock screen
               .build()
 
       NotificationManagerCompat.from(ctx).notify(DEMO_NOTIFICATION_ID, n)
