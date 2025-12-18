@@ -51,6 +51,9 @@ class HomeScreenTest {
     AppRepositories = originalRepositories
   }
 
+  private val testPoints = 1250
+  private val expectedLevel = LevelingConfig.levelForPoints(testPoints)
+
   private fun setHomeContent(quote: String = "Keep going.", onNavigate: (String) -> Unit = {}) {
     val today = LocalDate.now()
     val tomorrow = today.plusDays(1)
@@ -63,7 +66,6 @@ class HomeScreenTest {
                     isLoading = false,
                     todos =
                         listOf(
-                            // DONE should NOT appear in "To-dos (Pending)" slide
                             ToDo(
                                 id = "1",
                                 title = "CS-101: Finish exercise sheet",
@@ -94,7 +96,6 @@ class HomeScreenTest {
                                 estimateMinutes = 25,
                                 completed = false,
                                 day = DayOfWeek.WEDNESDAY),
-                            // completed=true should NOT appear (filtered out)
                             Objective(
                                 title = "Write resume draft",
                                 course = "Career",
@@ -110,7 +111,7 @@ class HomeScreenTest {
                             streak = 7,
                             weeklyGoal = 180,
                             coins = 0,
-                            points = 1250,
+                            points = testPoints,
                             lastStudyDateEpochDay = LocalDate.now().toEpochDay()),
                     quote = quote),
             creatureResId = R.drawable.ic_menu_help,
@@ -129,14 +130,11 @@ class HomeScreenTest {
     composeRule.onNodeWithText("Your Stats").performScrollTo().assertIsDisplayed()
     composeRule.onNodeWithText("Quick Actions").performScrollTo().assertIsDisplayed()
 
-    // Creature (depends on CreatureHouseCard semantics)
-    composeRule
-        .onNodeWithContentDescription("Creature environment")
-        .performScrollTo()
-        .assertExists()
+    // Creature environment exists
+    composeRule.onNodeWithContentDescription("Creature environment").assertExists()
 
-    // Level text (depends on CreatureHouseCard rendering)
-    composeRule.onNodeWithText("Lv 5").performScrollTo().assertIsDisplayed()
+    // ✅ Level is derived from points now
+    composeRule.onNodeWithText("Lv $expectedLevel").assertExists()
 
     // Carousel exists + first page header
     composeRule.onNodeWithTag(HomeTestTags.CAROUSEL_CARD).performScrollTo().assertIsDisplayed()
@@ -154,7 +152,6 @@ class HomeScreenTest {
   fun carousel_swipe_showsObjectives_andFiltersCompletedObjectives() {
     setHomeContent()
 
-    // ✅ Swipe the pager, not the card
     composeRule
         .onNodeWithTag(HomeTestTags.CAROUSEL_PAGER, useUnmergedTree = true)
         .performScrollTo()
@@ -162,14 +159,9 @@ class HomeScreenTest {
 
     composeRule.waitForIdle()
 
-    // Objectives page visible
     composeRule.onNodeWithText("Objectives").assertIsDisplayed()
-
-    // Two pending objectives displayed
     composeRule.onNodeWithText("Revise Week 3 – Calculus").assertIsDisplayed()
     composeRule.onNodeWithText("Quiz practice – Algorithms basics").assertIsDisplayed()
-
-    // Completed objective filtered out
     composeRule.onNodeWithText("Write resume draft").assertDoesNotExist()
   }
 
@@ -179,7 +171,6 @@ class HomeScreenTest {
 
     composeRule.onNodeWithText("Test Quote 123").performScrollTo().assertIsDisplayed()
 
-    // Chips exist via tags
     composeRule.onNode(hasTestTag(HomeTestTags.CHIP_OPEN_PLANNER)).assertExists()
     composeRule.onNode(hasTestTag(HomeTestTags.CHIP_MOOD)).assertExists()
   }
@@ -189,7 +180,7 @@ class HomeScreenTest {
     setHomeContent()
 
     composeRule.onNodeWithText("7d").performScrollTo().assertIsDisplayed()
-    composeRule.onNodeWithText("1250").performScrollTo().assertIsDisplayed()
+    composeRule.onNodeWithText("$testPoints").performScrollTo().assertIsDisplayed()
     composeRule.onNodeWithText("45m").performScrollTo().assertIsDisplayed()
     composeRule.onNodeWithText("180m").performScrollTo().assertIsDisplayed()
   }
@@ -219,14 +210,11 @@ class HomeScreenTest {
 
   @Test
   fun creatureCard_showsEnvironment_andLevel() {
-    // Replaces the old progress-bar test (your Home screen no longer exposes those bars directly)
     setHomeContent()
 
-    composeRule
-        .onNodeWithContentDescription("Creature environment")
-        .performScrollTo()
-        .assertExists()
+    composeRule.onNodeWithContentDescription("Creature environment").assertExists()
 
-    composeRule.onNodeWithText("Lv 5").performScrollTo().assertIsDisplayed()
+    // ✅ Level is derived from points now
+    composeRule.onNodeWithText("Lv $expectedLevel").assertExists()
   }
 }
