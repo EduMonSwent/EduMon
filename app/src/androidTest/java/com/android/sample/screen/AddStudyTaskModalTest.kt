@@ -1,7 +1,6 @@
 package com.android.sample.screen
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -72,7 +71,9 @@ class AddStudyTaskModalTest {
 
     // Fill in required fields
     composeTestRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD).performTextInput("Math")
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD).performTextInput("Homework")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
+        .performTextInput("Homework")
     // Duration already has default value "60"
 
     composeTestRule.waitForIdle()
@@ -106,11 +107,17 @@ class AddStudyTaskModalTest {
     composeTestRule.waitForIdle()
 
     // Fill in required fields
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD).performTextInput("Data Structures")
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD).performTextInput("Complete exercises")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
+        .performTextInput("Data Structures")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
+        .performTextInput("Complete exercises")
     // Clear duration and set new value
     composeTestRule.onNodeWithTag(PlannerScreenTestTags.DURATION_FIELD).performTextInput("90")
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.DEADLINE_FIELD).performTextInput("25.12.2025")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.DEADLINE_FIELD)
+        .performTextInput("25.12.2025")
 
     composeTestRule.waitForIdle()
 
@@ -133,17 +140,18 @@ class AddStudyTaskModalTest {
 
     composeTestRule.setContent {
       AddStudyTaskModal(
-          onDismiss = {},
-          onAddTask = { _, _, _, _, priority ->
-            capturedPriority = priority
-          })
+          onDismiss = {}, onAddTask = { _, _, _, _, priority -> capturedPriority = priority })
     }
 
     composeTestRule.waitForIdle()
 
     // Fill required fields first
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD).performTextInput("Test Subject")
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD).performTextInput("Test Task")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
+        .performTextInput("Test Subject")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
+        .performTextInput("Test Task")
 
     composeTestRule.waitForIdle()
 
@@ -168,17 +176,18 @@ class AddStudyTaskModalTest {
 
     composeTestRule.setContent {
       AddStudyTaskModal(
-          onDismiss = {},
-          onAddTask = { _, _, _, _, priority ->
-            capturedPriority = priority
-          })
+          onDismiss = {}, onAddTask = { _, _, _, _, priority -> capturedPriority = priority })
     }
 
     composeTestRule.waitForIdle()
 
     // Fill required fields first
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD).performTextInput("Test Subject")
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD).performTextInput("Test Task")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
+        .performTextInput("Test Subject")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
+        .performTextInput("Test Task")
 
     composeTestRule.waitForIdle()
 
@@ -203,17 +212,18 @@ class AddStudyTaskModalTest {
 
     composeTestRule.setContent {
       AddStudyTaskModal(
-          onDismiss = {},
-          onAddTask = { _, _, _, _, priority ->
-            capturedPriority = priority
-          })
+          onDismiss = {}, onAddTask = { _, _, _, _, priority -> capturedPriority = priority })
     }
 
     composeTestRule.waitForIdle()
 
     // Fill required fields first
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD).performTextInput("Test Subject")
-    composeTestRule.onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD).performTextInput("Test Task")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.SUBJECT_FIELD)
+        .performTextInput("Test Subject")
+    composeTestRule
+        .onNodeWithTag(PlannerScreenTestTags.TASK_TITLE_FIELD)
+        .performTextInput("Test Task")
 
     composeTestRule.waitForIdle()
 
@@ -245,9 +255,7 @@ class AddStudyTaskModalTest {
     var onDismissCalled = false
 
     composeTestRule.setContent {
-      AddStudyTaskModal(
-          onDismiss = { onDismissCalled = true },
-          onAddTask = { _, _, _, _, _ -> })
+      AddStudyTaskModal(onDismiss = { onDismissCalled = true }, onAddTask = { _, _, _, _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -264,9 +272,7 @@ class AddStudyTaskModalTest {
     var onDismissCalled = false
 
     composeTestRule.setContent {
-      AddStudyTaskModal(
-          onDismiss = { onDismissCalled = true },
-          onAddTask = { _, _, _, _, _ -> })
+      AddStudyTaskModal(onDismiss = { onDismissCalled = true }, onAddTask = { _, _, _, _, _ -> })
     }
 
     composeTestRule.waitForIdle()
@@ -284,10 +290,7 @@ class AddStudyTaskModalTest {
 
     composeTestRule.setContent {
       AddStudyTaskModal(
-          onDismiss = {},
-          onAddTask = { _, _, duration, _, _ ->
-            capturedDuration = duration
-          })
+          onDismiss = {}, onAddTask = { _, _, duration, _, _ -> capturedDuration = duration })
     }
 
     composeTestRule.waitForIdle()
@@ -313,4 +316,3 @@ class AddStudyTaskModalTest {
 private fun androidx.compose.ui.test.SemanticsNodeInteractionsProvider.onNodeWithContentDescription(
     label: String
 ) = onNode(androidx.compose.ui.test.hasContentDescription(label))
-
