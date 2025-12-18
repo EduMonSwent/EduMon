@@ -239,14 +239,15 @@ fun ShopContent(
     isOnline: Boolean,
     isPurchasing: Boolean,
     onBuy: (CosmeticItem, () -> Unit, () -> Unit) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enableAnimations: Boolean = true
 ) {
   val localColorScheme = MaterialTheme.colorScheme
   val isInspectionMode = LocalInspectionMode.current
 
-  // Only run infinite animation when not in inspection/test mode
+  // Only run infinite animation when animations are enabled and not in inspection mode
   val glowAlpha by
-      if (!isInspectionMode) {
+      if (enableAnimations && !isInspectionMode) {
         rememberInfiniteTransition(label = "glow")
             .animateFloat(
                 initialValue = GLOW_ALPHA_MIN,

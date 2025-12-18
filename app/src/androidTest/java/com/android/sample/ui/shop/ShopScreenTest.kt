@@ -22,6 +22,7 @@ class ShopScreenTest {
           items = sampleItems(),
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -39,6 +40,7 @@ class ShopScreenTest {
           items = sampleItems(),
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -99,6 +101,7 @@ class ShopScreenTest {
           items = fakeViewModel.items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -117,6 +120,7 @@ class ShopScreenTest {
           items = fakeViewModel.items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -356,6 +360,7 @@ class ShopScreenTest {
           items = mixedItems,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -398,6 +403,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { item, _, _ -> receivedItem = item })
     }
 
@@ -506,6 +512,7 @@ class ShopScreenTest {
           items = singleItem,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -558,6 +565,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, triggerSuccess, _ ->
             // Simulate initiated = true
             successCalled = true
@@ -584,6 +592,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, triggerFail ->
             // Simulate initiated = false
             failCalled = true
@@ -756,6 +765,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = true,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -848,6 +858,7 @@ class ShopScreenTest {
           items = multipleItems,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -894,6 +905,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, triggerSuccess, triggerFail ->
             callOrder.add("onBuy_called")
             triggerSuccess()
@@ -1010,6 +1022,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
@@ -1111,6 +1124,7 @@ class ShopScreenTest {
           items = items,
           isOnline = true,
           isPurchasing = false,
+          enableAnimations = false,
           onBuy = { _, _, _ -> })
     }
 
