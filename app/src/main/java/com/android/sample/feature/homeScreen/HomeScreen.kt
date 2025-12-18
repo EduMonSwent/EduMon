@@ -131,7 +131,6 @@ fun EduMonHomeScreen(
         Row(
             Modifier.fillMaxWidth().height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-              UserStatsCard(stats = state.userStats, modifier = Modifier.weight(1f).fillMaxHeight())
             }
 
         AffirmationsAndRemindersCard(
