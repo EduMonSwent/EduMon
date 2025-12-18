@@ -85,7 +85,13 @@ private fun CourseExercisesScreen(
 ) {
   val cs = MaterialTheme.colorScheme
   val context = androidx.compose.ui.platform.LocalContext.current
-  var selectedTab by remember { mutableIntStateOf(0) } // 0 = Course, 1 = Exercises
+  val initialTabIndex =
+      when {
+        objective.sourceId?.contains(":EXERCISE:") == true -> 1
+        objective.sourceId?.contains(":LAB:") == true -> 1
+        else -> 0 // LECTURE (default)
+      }
+  var selectedTab by remember { mutableIntStateOf(initialTabIndex) } // 0 = Course, 1 = Exercises
 
   Scaffold(
       topBar = {

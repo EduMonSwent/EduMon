@@ -31,6 +31,7 @@ import com.android.sample.feature.schedule.repository.schedule.StudyItemMapper
 import com.android.sample.feature.schedule.viewmodel.ScheduleNavEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
+import com.android.sample.feature.weeks.data.Ba1Week14Materials
 import com.android.sample.feature.weeks.model.Objective
 import com.android.sample.feature.weeks.ui.CourseExercisesRoute
 import com.android.sample.feature.weeks.viewmodel.ObjectiveNavigation
@@ -271,7 +272,8 @@ private fun ScheduleMainContent(
               snackbarHostState = snackbarHostState,
               onObjectiveNavigation = { nav ->
                 if (nav is ObjectiveNavigation.ToCourseExercises) {
-                  onSelectObjective(nav.objective)
+                  val enriched = resolveObjectiveMaterials(nav.objective)
+                  onSelectObjective(enriched)
                 }
               },
               onTodoClicked = onOpenTodo)
@@ -356,4 +358,12 @@ private fun ScheduleSideEffects(
       else -> Unit
     }
   }
+}
+
+private fun resolveObjectiveMaterials(objective: Objective): Objective {
+  val materials = Ba1Week14Materials.forCourse(objective.course)
+
+  return objective.copy(
+      coursePdfUrl = materials?.lecturePdf.orEmpty(),
+      exercisePdfUrl = materials?.exercisePdf.orEmpty())
 }
