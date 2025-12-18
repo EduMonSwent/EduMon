@@ -56,6 +56,7 @@ object ScheduleScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
+    onScheduleTopBarVisibilityChanged: (Boolean) -> Unit = {},
     onAddTodoClicked: (LocalDate) -> Unit = {},
     onOpenTodo: (String) -> Unit = {},
     @DrawableRes avatarResId: Int = R.drawable.edumon,
@@ -105,6 +106,7 @@ fun ScheduleScreen(
 
   var currentTab by remember { mutableStateOf(ScheduleTab.DAY) }
   var activeObjective by remember { mutableStateOf<Objective?>(null) }
+  LaunchedEffect(activeObjective) { onScheduleTopBarVisibilityChanged(activeObjective == null) }
 
   val snackbarHostState = remember { SnackbarHostState() }
   val classEvents: List<ScheduleEvent> =
