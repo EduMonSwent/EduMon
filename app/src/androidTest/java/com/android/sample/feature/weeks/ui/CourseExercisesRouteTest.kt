@@ -587,4 +587,74 @@ class CourseExercisesRouteTest {
 
     // Successfully clicked - covers the PdfHelper.openPdf branch
   }
+
+  @Test
+  fun exerciseObjective_opensWithExercisesTabSelected() {
+    val exerciseObjective = testObjective.copy(sourceId = "AUTO:CS101:EXERCISE:14")
+
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = exerciseObjective,
+            coursePdfLabel = "Course",
+            exercisesPdfLabel = "Exercises",
+            coursePdfUrl = "https://example.com/course.pdf",
+            exercisePdfUrl = "https://example.com/exercise.pdf",
+            onBack = {},
+            onCompleted = {})
+      }
+    }
+
+    // Exercises tab should be selected initially
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.COURSE_TAB).assertIsNotSelected()
+
+    // Exercises content should be visible
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_PDF_CARD).assertExists()
+  }
+
+  @Test
+  fun labObjective_opensWithExercisesTabSelected() {
+    val labObjective = testObjective.copy(sourceId = "AUTO:CS101:LAB:14")
+
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = labObjective,
+            coursePdfLabel = "Course",
+            exercisesPdfLabel = "Lab",
+            coursePdfUrl = "https://example.com/course.pdf",
+            exercisePdfUrl = "https://example.com/lab.pdf",
+            onBack = {},
+            onCompleted = {})
+      }
+    }
+
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.EXERCISES_PDF_CARD).assertExists()
+  }
+
+  @Test
+  fun lectureObjective_opensWithCourseTabSelectedByDefault() {
+    val lectureObjective = testObjective.copy(sourceId = "AUTO:CS101:LECTURE:14")
+
+    composeTestRule.setContent {
+      EduMonTheme {
+        CourseExercisesRoute(
+            objective = lectureObjective,
+            coursePdfLabel = "Course",
+            exercisesPdfLabel = "Exercises",
+            coursePdfUrl = "https://example.com/course.pdf",
+            exercisePdfUrl = "https://example.com/exercise.pdf",
+            onBack = {},
+            onCompleted = {})
+      }
+    }
+
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.COURSE_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(CourseExercisesTestTags.COURSE_PDF_CARD).assertExists()
+  }
 }

@@ -10,6 +10,10 @@ import java.io.File
 
 /** Helper object for opening PDF files. Supports both local files and web URLs. */
 object PdfHelper {
+  // User-facing string constants
+  private const val DEFAULT_FALLBACK_MESSAGE = "No app available to open PDF"
+  private const val NO_PDF_AVAILABLE_MESSAGE = "No PDF available"
+  private const val ERROR_OPENING_PDF_PREFIX = "Error opening PDF: "
   /**
    * Opens a PDF file using an external app or web browser.
    *
@@ -20,10 +24,10 @@ object PdfHelper {
   fun openPdf(
       context: Context,
       pdfUrl: String,
-      fallbackMessage: String = "No app available to open PDF"
+      fallbackMessage: String = DEFAULT_FALLBACK_MESSAGE
   ) {
     if (pdfUrl.isBlank()) {
-      Toast.makeText(context, "No PDF available", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, NO_PDF_AVAILABLE_MESSAGE, Toast.LENGTH_SHORT).show()
       return
     }
 
@@ -56,7 +60,7 @@ object PdfHelper {
     } catch (e: ActivityNotFoundException) {
       Toast.makeText(context, fallbackMessage, Toast.LENGTH_LONG).show()
     } catch (e: Exception) {
-      Toast.makeText(context, "Error opening PDF: ${e.message}", Toast.LENGTH_LONG).show()
+      Toast.makeText(context, ERROR_OPENING_PDF_PREFIX + e.message, Toast.LENGTH_LONG).show()
     }
   }
 
