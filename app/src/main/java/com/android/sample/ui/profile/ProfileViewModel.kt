@@ -1,4 +1,4 @@
-// This code was written with the assistance of an AI (LLM).
+// This code has been written partially using A.I (LLM).
 package com.android.sample.ui.profile
 
 import LevelingConfig.levelForPoints
@@ -60,11 +60,16 @@ class ProfileViewModel(
     const val ACCESSORY_NONE = "none"
     const val MIN_DELTA = 0
     const val MIN_AMOUNT = 0
+
+    const val REWARD_EVENT_REPLAY = 1
+    const val REWARD_EVENT_EXTRA_BUFFER = 1
+
     const val COLOR_LIGHT_FACTOR = 0.25f
     const val COLOR_DARK_FACTOR = 0.75f
     const val COLOR_VIBRANT_FACTOR = 1.1f
     const val COLOR_MIN = 0f
     const val COLOR_MAX = 1f
+
     val DEFAULT_ACCENT_COLOR = Color(0xFF7C4DFF)
   }
 
@@ -102,8 +107,16 @@ class ProfileViewModel(
   private val _userStats = MutableStateFlow(UserStats())
   val userStats: StateFlow<UserStats> = _userStats
 
-  private val _rewardEvents = MutableSharedFlow<LevelUpRewardUiEvent>()
+  private val _rewardEvents =
+      MutableSharedFlow<LevelUpRewardUiEvent>(
+          replay = Constants.REWARD_EVENT_REPLAY,
+          extraBufferCapacity = Constants.REWARD_EVENT_EXTRA_BUFFER,
+      )
   val rewardEvents: SharedFlow<LevelUpRewardUiEvent> = _rewardEvents
+
+  fun clearRewardEventsReplayCache() {
+    _rewardEvents.resetReplayCache()
+  }
 
   private val accentVariant = MutableStateFlow(AccentVariant.Base)
   val accentVariantFlow: StateFlow<AccentVariant> = accentVariant
@@ -359,7 +372,6 @@ class ProfileViewModel(
               points = newPoints,
               level = computed,
               coins = stats.coins,
-              streak = stats.streak,
               lastRewardedLevel = computed,
               studyStats =
                   old.studyStats.copy(
@@ -389,7 +401,6 @@ class ProfileViewModel(
           old.copy(
               points = newPoints,
               coins = stats.coins,
-              streak = stats.streak,
               studyStats =
                   old.studyStats.copy(
                       totalTimeMin = stats.totalStudyMinutes,
@@ -426,7 +437,6 @@ class ProfileViewModel(
     val final =
         rewarded.copy(
             coins = stats.coins + result.summary.coinsGranted,
-            streak = stats.streak,
             studyStats =
                 old.studyStats.copy(
                     totalTimeMin = stats.totalStudyMinutes,
@@ -435,12 +445,18 @@ class ProfileViewModel(
     _userProfile.value = final
     pushProfile(final)
 
-    if (!result.summary.isEmpty && globalSyncCount > Constants.STARTUP_SYNC_THRESHOLD) {
+    // IMPORTANT: emit whenever there is a reward summary (no syncCount gating).
+    if (!result.summary.isEmpty) {
       val event =
           LevelUpRewardUiEvent.RewardsGranted(newLevel = safeNewLevel, summary = result.summary)
+
       viewModelScope.launch {
         _rewardEvents.emit(event)
-        ToastNotifier.showLevelUpEvent(event)
+
+        // Keep toast gated if you want, but snackbar needs the event always.
+        if (globalSyncCount > Constants.STARTUP_SYNC_THRESHOLD) {
+          ToastNotifier.showLevelUpEvent(event)
+        }
       }
     }
   }

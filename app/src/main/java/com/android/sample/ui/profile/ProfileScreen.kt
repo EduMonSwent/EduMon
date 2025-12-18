@@ -49,6 +49,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -57,6 +58,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,7 +82,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
-import com.android.sample.data.AccentVariant
 import com.android.sample.data.AccessoryItem
 import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
@@ -108,6 +109,13 @@ object ProfileScreenTestTags {
   const val ACCOUNT_ACTIONS_SECTION = "accountActionsSection"
   const val SWITCH_LOCATION = "switchLocation"
   const val SWITCH_FOCUS_MODE = "switchFocusMode"
+}
+
+// This code has been written partially using A.I (LLM).
+object ProfileSnackbarTestTags {
+  const val HOST = "profile_snackbar_host"
+  const val SNACKBAR = "profile_snackbar"
+  const val MESSAGE = "profile_snackbar_message"
 }
 
 private val CARD_CORNER_RADIUS = 16.dp
@@ -147,11 +155,23 @@ fun ProfileScreen(
 
   val snackbarHostState = remember { SnackbarHostState() }
 
-  // LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
+  // IMPORTANT: keep this enabled (tests + real UX).
+  LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
   Scaffold(
-      snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
-          innerPadding ->
+      snackbarHost = {
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.testTag(ProfileSnackbarTestTags.HOST),
+            snackbar = { data ->
+              Snackbar(modifier = Modifier.testTag(ProfileSnackbarTestTags.SNACKBAR)) {
+                Text(
+                    text = data.visuals.message,
+                    modifier = Modifier.testTag(ProfileSnackbarTestTags.MESSAGE))
+              }
+            })
+      },
+      containerColor = Color.Transparent) { innerPadding ->
         LazyColumn(
             modifier =
                 Modifier.fillMaxSize()
@@ -409,7 +429,7 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(SMALL_FONT_SIZE.dp)) {
-      AccentVariant.values().forEach { v ->
+      com.android.sample.data.AccentVariant.values().forEach { v ->
         FilterChip(
             selected = v == currentVariant,
             onClick = { viewModel.setAccentVariant(v) },
@@ -649,5 +669,28 @@ fun LevelProgressBar(level: Int, points: Int) {
         text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
         color = TextLight.copy(alpha = 0.7f),
         fontSize = 11.sp)
+  }
+}
+
+// This code has been written partially using A.I (LLM).
+@Composable
+private fun LevelUpRewardSnackbarHandler(
+    viewModel: ProfileViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+  LaunchedEffect(viewModel) {
+    viewModel.rewardEvents.collect { event ->
+      when (event) {
+        is LevelUpRewardUiEvent.RewardsGranted -> {
+          // Keep the message deterministic for tests.
+          val message = "Level ${event.newLevel}"
+
+          // Avoid re-showing after recompositions (rewardEvents can be replayed).
+          viewModel.clearRewardEventsReplayCache()
+
+          snackbarHostState.showSnackbar(message)
+        }
+      }
+    }
   }
 }
