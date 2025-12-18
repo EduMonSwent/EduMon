@@ -20,11 +20,7 @@ class UpcomingEventsSectionExtraTest {
   @Test
   fun shows_no_events_message_when_list_empty() {
     composeTestRule.setContent {
-      UpcomingEventsSection(
-          tasks = emptyList(),
-          selectedDate = LocalDate.now(),
-          onTaskClick = {},
-          title = "Upcoming Events")
+      UpcomingEventsSection(tasks = emptyList(), onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("No upcoming events", ignoreCase = true).assertIsDisplayed()
@@ -50,8 +46,7 @@ class UpcomingEventsSectionExtraTest {
                 type = TaskType.WORK))
 
     composeTestRule.setContent {
-      UpcomingEventsSection(
-          tasks = tasks, selectedDate = today, onTaskClick = {}, title = "Upcoming Events")
+      UpcomingEventsSection(tasks = tasks, onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("Study Math").assertIsDisplayed()

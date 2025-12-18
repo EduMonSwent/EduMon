@@ -20,13 +20,11 @@ import com.android.sample.ui.theme.CustomGreen
 import com.android.sample.ui.theme.EventViolet
 import com.android.sample.ui.theme.Pink
 import com.android.sample.ui.theme.VioletLilas
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun UpcomingEventsSection(
     tasks: List<StudyItem>,
-    selectedDate: LocalDate,
     onTaskClick: (StudyItem) -> Unit,
     title: String = stringResource(R.string.upcoming_events)
 ) {

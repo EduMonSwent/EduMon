@@ -178,7 +178,6 @@ fun WeekTabContent(
                 tasks =
                     weekTasks.sortedWith(
                         compareBy({ it.date }, { it.time ?: java.time.LocalTime.MIN })),
-                selectedDate = selectedDate,
                 onTaskClick = {},
                 title = stringResource(R.string.upcoming_events),
             )
