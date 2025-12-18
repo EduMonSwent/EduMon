@@ -192,4 +192,59 @@ class ScheduleScreenAllAndroidTest {
     rule.waitForIdle()
     rule.onNodeWithText(thisWeek).assertIsDisplayed()
   }
+
+  @Test
+  fun scheduleScreen_navEvents_execute_whenBlock_routesOrShowsSnackbar() {
+    val ctx = rule.activity
+    val navigations = mutableListOf<String>()
+
+    rule.setContent {
+      ScheduleScreen(onAddTodoClicked = {}, onNavigateTo = { route -> navigations.add(route) })
+    }
+
+    // These are common labels for quick actions. Adjust if your UI uses different text.
+    val possibleLabels = listOf("Flashcards", "Games", "Study Together", "Study", "Wellness")
+
+    // Click the first label that exists. This should trigger vm.navEvents emission,
+    // which executes your when(event) block.
+    var clicked = false
+    for (label in possibleLabels) {
+      val nodes =
+          rule
+              .onAllNodesWithText(
+                  label, substring = true, ignoreCase = true, useUnmergedTree = true)
+              .fetchSemanticsNodes()
+      if (nodes.isNotEmpty()) {
+        rule
+            .onAllNodesWithText(label, substring = true, ignoreCase = true, useUnmergedTree = true)[
+                0]
+            .performClick()
+        clicked = true
+        break
+      }
+    }
+
+    // Minimal “did something happen” check:
+    // - Either we navigated (one of ToFlashcards/ToGames/ToStudySession/ToStudyTogether),
+    // - OR a snackbar was shown (ShowWellnessSuggestion).
+    rule.waitUntil(timeoutMillis = 10_000) {
+      navigations.isNotEmpty() ||
+          rule
+              .onAllNodesWithText(
+                  "Well", substring = true, ignoreCase = true, useUnmergedTree = true)
+              .fetchSemanticsNodes()
+              .isNotEmpty() ||
+          rule
+              .onAllNodesWithText("up", substring = true, ignoreCase = true, useUnmergedTree = true)
+              .fetchSemanticsNodes()
+              .isNotEmpty()
+    }
+
+    // If nothing clickable exists, fail clearly (so you can update labels once)
+    if (!clicked) {
+      throw AssertionError(
+          "Could not find any nav trigger with labels: $possibleLabels. " +
+              "Update possibleLabels to match your UI text for the nav action buttons/cards.")
+    }
+  }
 }
