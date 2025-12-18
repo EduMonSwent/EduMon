@@ -36,34 +36,21 @@ class UpcomingEventsSectionTest {
                 type = TaskType.WORK))
 
     composeTestRule.setContent {
-      UpcomingEventsSection(
-          tasks = tasks,
-          selectedDate = today,
-          onAddTaskClick = {},
-          onTaskClick = {},
-          title = "Upcoming Events")
+      UpcomingEventsSection(tasks = tasks, onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("Upcoming Events").assertIsDisplayed()
 
     composeTestRule.onNodeWithText("Math Revision").assertIsDisplayed()
     composeTestRule.onNodeWithText("Team Meeting").assertIsDisplayed()
-
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists().performClick()
   }
 
   @Test
   fun upcomingEventsSection_shows_empty_message_when_no_tasks() {
     composeTestRule.setContent {
-      UpcomingEventsSection(
-          tasks = emptyList(),
-          selectedDate = LocalDate.now(),
-          onAddTaskClick = {},
-          onTaskClick = {},
-          title = "Upcoming Events")
+      UpcomingEventsSection(tasks = emptyList(), onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("No upcoming events", ignoreCase = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists()
   }
 }

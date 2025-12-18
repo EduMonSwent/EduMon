@@ -291,18 +291,20 @@ class ScheduleViewModel(
               attendance = attendance,
               completion = completion)
 
+      _uiState.update { st ->
+        val updated =
+            st.attendanceRecords.filterNot { it.classId == classItem.id } + attendanceRecord
+        st.copy(attendanceRecords = updated)
+      }
+      onDismissClassAttendanceModal()
       val result = plannerRepository.saveAttendance(attendanceRecord)
-      if (result.isSuccess) {
-        onDismissClassAttendanceModal()
-        _uiState.update { st ->
-          val updated =
-              st.attendanceRecords.filterNot { it.classId == classItem.id } + attendanceRecord
-          st.copy(attendanceRecords = updated)
-        }
+
+      if (result.isFailure) {
+        _eventFlow.emit(
+            UiEvent.ShowSnackbar(resources.getString(R.string.attendance_saved_offline)))
+      } else {
         _eventFlow.emit(
             UiEvent.ShowSnackbar(resources.getString(R.string.attendance_saved_success)))
-      } else {
-        _eventFlow.emit(UiEvent.ShowSnackbar(resources.getString(R.string.attendance_save_error)))
       }
     }
   }

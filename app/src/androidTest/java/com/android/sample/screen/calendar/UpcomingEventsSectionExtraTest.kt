@@ -4,7 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import com.android.sample.feature.schedule.data.calendar.Priority
 import com.android.sample.feature.schedule.data.calendar.StudyItem
 import com.android.sample.feature.schedule.data.calendar.TaskType
@@ -21,16 +20,10 @@ class UpcomingEventsSectionExtraTest {
   @Test
   fun shows_no_events_message_when_list_empty() {
     composeTestRule.setContent {
-      UpcomingEventsSection(
-          tasks = emptyList(),
-          selectedDate = LocalDate.now(),
-          onAddTaskClick = {},
-          onTaskClick = {},
-          title = "Upcoming Events")
+      UpcomingEventsSection(tasks = emptyList(), onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("No upcoming events", ignoreCase = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).assertExists()
   }
 
   @Test
@@ -53,16 +46,10 @@ class UpcomingEventsSectionExtraTest {
                 type = TaskType.WORK))
 
     composeTestRule.setContent {
-      UpcomingEventsSection(
-          tasks = tasks,
-          selectedDate = today,
-          onAddTaskClick = {},
-          onTaskClick = {},
-          title = "Upcoming Events")
+      UpcomingEventsSection(tasks = tasks, onTaskClick = {}, title = "Upcoming Events")
     }
 
     composeTestRule.onNodeWithText("Study Math").assertIsDisplayed()
     composeTestRule.onNodeWithText("Team meeting").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Add event", ignoreCase = true).performClick()
   }
 }

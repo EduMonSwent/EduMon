@@ -1,5 +1,7 @@
 package com.android.sample.ui.schedule
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,15 +27,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,6 +57,7 @@ import com.android.sample.feature.schedule.data.planner.ScheduleEventItem
 import com.android.sample.feature.schedule.data.planner.ScheduleGapItem
 import com.android.sample.feature.schedule.data.planner.WellnessEventType
 import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
+import com.android.sample.feature.schedule.util.isOnline
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.schedule.viewmodel.ScheduleViewModel
 import com.android.sample.feature.weeks.ui.DailyObjectivesSection
@@ -69,6 +75,7 @@ import com.android.sample.ui.theme.StatBarLightbulb
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 /** This class was implemented with the help of ai (chatgbt) */
 data class ScheduleActions(
@@ -83,6 +90,7 @@ fun DayTabContent(
     vm: ScheduleViewModel,
     state: ScheduleUiState,
     objectivesVm: ObjectivesViewModel,
+    snackbarHostState: SnackbarHostState,
     onObjectiveNavigation: (ObjectiveNavigation) -> Unit = {},
     onTodoClicked: (String) -> Unit = {}
 ) {
@@ -156,7 +164,8 @@ fun DayTabContent(
             onGapClick = { vm.onGapClicked(it) },
             onEventClick = { vm.onScheduleEventClicked(it) },
             onEventDelete = { vm.onDeleteScheduleEvent(it) },
-            modifier = Modifier.fillMaxWidth())
+            modifier = Modifier.fillMaxWidth(),
+            snackbarHostState = snackbarHostState)
       }
 }
 
@@ -175,7 +184,8 @@ private fun TodayCard(
     todos: List<ToDo>,
     onTodoClicked: (String) -> Unit,
     modifier: Modifier = Modifier,
-    allClassesFinished: Boolean
+    allClassesFinished: Boolean,
+    snackbarHostState: SnackbarHostState
 ) {
   val cs = MaterialTheme.colorScheme
   val today = LocalDate.now()
@@ -225,7 +235,7 @@ private fun TodayCard(
 
     Spacer(Modifier.height(14.dp))
 
-    WellnessSection()
+    WellnessSection(snackbarHostState)
   }
 }
 
@@ -338,32 +348,45 @@ private fun TodosSection(todos: List<ToDo>, onTodoClicked: (String) -> Unit, mod
 }
 
 @Composable
-private fun WellnessSection() {
+private fun WellnessSection(snackbarHostState: SnackbarHostState) {
+  val context = LocalContext.current
+  val scope = rememberCoroutineScope()
+
   val cs = MaterialTheme.colorScheme
+  fun openIfOnline(eventType: WellnessEventType) {
+    if (context.isOnline()) {
+      eventType.url?.let {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(context.getString(it))))
+      }
+    } else {
+      scope.launch {
+        snackbarHostState.showSnackbar(context.getString(R.string.wellness_event_offline))
+      }
+    }
+  }
 
   SectionBox(
       header = {
         Text(
             stringResource(R.string.wellness_events_label),
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = cs.onSurface),
-            modifier = Modifier.padding(bottom = Dimensions.spacingSmall))
+            style = MaterialTheme.typography.titleMedium)
       }) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           WellnessEventItem(
               title = stringResource(R.string.wellness_event_yoga_title),
               time = stringResource(R.string.wellness_event_yoga_time),
               description = stringResource(R.string.wellness_event_yoga_description),
-              eventType = WellnessEventType.YOGA,
-              onClick = {})
+              eventType = WellnessEventType.SPORTS,
+              onClick = { openIfOnline(WellnessEventType.SPORTS) })
+
           HorizontalDivider(color = cs.onSurface.copy(alpha = 0.08f))
+
           WellnessEventItem(
               title = stringResource(R.string.wellness_event_lecture_title),
               time = stringResource(R.string.wellness_event_lecture_time),
               description = stringResource(R.string.wellness_event_lecture_description),
               eventType = WellnessEventType.LECTURE,
-              onClick = {})
+              onClick = { openIfOnline(WellnessEventType.LECTURE) })
         }
       }
 }

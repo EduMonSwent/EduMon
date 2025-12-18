@@ -9,21 +9,23 @@ import org.junit.Rule
 import org.junit.Test
 
 class WellnessEventItemTest {
+
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   @Test
   fun displaysTitleAndDescription() {
     var clicked = false
+
     composeTestRule.setContent {
       WellnessEventItem(
-          title = "Yoga Session",
-          time = "10:00 AM",
-          description = "Morning relaxation",
-          eventType = WellnessEventType.YOGA,
+          title = "UNIL Sport Activities",
+          time = "Today",
+          description = "See today’s available sport activities at UNIL.",
+          eventType = WellnessEventType.SPORTS,
           onClick = { clicked = true })
     }
 
-    composeTestRule.onNodeWithText("Yoga Session").assertExists()
-    composeTestRule.onNodeWithText("Morning relaxation").assertExists()
+    composeTestRule.onNodeWithText("UNIL Sport Activities").assertExists()
+    composeTestRule.onNodeWithText("See today’s available sport activities at UNIL.").assertExists()
   }
 }

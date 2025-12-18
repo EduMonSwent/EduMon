@@ -4,6 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -49,7 +51,12 @@ class DayTabContentAllAndroidTest {
             todaySchedule = emptyList(), attendanceRecords = emptyList(), allClassesFinished = true)
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     // "No classes today" should NOT be shown when allClassesFinished = true
@@ -66,7 +73,12 @@ class DayTabContentAllAndroidTest {
             todayClasses = emptyList(), attendanceRecords = emptyList(), allClassesFinished = false)
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText(ctx.getString(R.string.no_classes_today)).assertIsDisplayed()
@@ -83,7 +95,10 @@ class DayTabContentAllAndroidTest {
         ScheduleUiState(
             todaySchedule = listOf(ScheduleClassItem(clazz)), attendanceRecords = listOf(record))
 
-    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+    rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false), snackbarHostState)
+    }
 
     rule.onNodeWithText(ctx.getString(R.string.attendance_attended)).assertIsDisplayed()
     rule.onNodeWithText(ctx.getString(R.string.completion_done)).assertIsDisplayed()
@@ -106,7 +121,14 @@ class DayTabContentAllAndroidTest {
             todaySchedule = listOf(ScheduleClassItem(clazz)),
             attendanceRecords = listOf(latePartial))
 
-    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+    rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm,
+          state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
 
     rule.onNodeWithText(ctx.getString(R.string.attendance_arrived_late)).assertIsDisplayed()
     rule.onNodeWithText(ctx.getString(R.string.completion_partially)).assertIsDisplayed()
@@ -127,7 +149,14 @@ class DayTabContentAllAndroidTest {
             todaySchedule = listOf(ScheduleClassItem(clazz)),
             attendanceRecords = listOf(missedNotDone))
 
-    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+    rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm,
+          state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
+    }
 
     rule.onNodeWithText(ctx.getString(R.string.attendance_missed)).assertIsDisplayed()
     rule.onNodeWithText(ctx.getString(R.string.completion_not_done)).assertIsDisplayed()
@@ -142,7 +171,12 @@ class DayTabContentAllAndroidTest {
 
     rule.setContent {
       Column(Modifier.verticalScroll(rememberScrollState())) {
-        DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false))
+        val snackbarHostState = remember { SnackbarHostState() }
+        DayTabContent(
+            vm,
+            state,
+            snackbarHostState = snackbarHostState,
+            objectivesVm = ObjectivesViewModel(requireAuth = false))
       }
     }
 
@@ -185,7 +219,12 @@ class DayTabContentAllAndroidTest {
 
     rule.setContent {
       Column(Modifier.verticalScroll(rememberScrollState())) {
-        DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false))
+        val snackbarHostState = remember { SnackbarHostState() }
+        DayTabContent(
+            vm,
+            state,
+            snackbarHostState = snackbarHostState,
+            objectivesVm = ObjectivesViewModel(requireAuth = false))
       }
     }
 
@@ -216,7 +255,12 @@ class DayTabContentAllAndroidTest {
         )
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText(ctx.getString(R.string.confirm_attendance_completion)).assertIsDisplayed()
@@ -236,9 +280,13 @@ class DayTabContentAllAndroidTest {
     val vm = buildScheduleVM(ctx)
 
     rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
       Column(Modifier.verticalScroll(rememberScrollState())) {
         DayTabContent(
-            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+            vm = vm,
+            state = state,
+            snackbarHostState = snackbarHostState,
+            objectivesVm = ObjectivesViewModel(requireAuth = false))
       }
     }
 
@@ -273,7 +321,12 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(todayClasses = emptyList())
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText(ctx.getString(R.string.no_classes_today)).assertIsDisplayed()
@@ -292,7 +345,12 @@ class DayTabContentAllAndroidTest {
             todaySchedule = listOf(ScheduleClassItem(clazz)), attendanceRecords = listOf(record))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText(ctx.getString(R.string.attendance_attended)).assertIsDisplayed()
@@ -318,7 +376,12 @@ class DayTabContentAllAndroidTest {
             attendanceRecords = listOf(latePartial))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText(ctx.getString(R.string.attendance_arrived_late)).assertIsDisplayed()
@@ -342,7 +405,12 @@ class DayTabContentAllAndroidTest {
             attendanceRecords = listOf(missedNotDone))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText(ctx.getString(R.string.attendance_missed)).assertIsDisplayed()
@@ -359,9 +427,13 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(todayClasses = listOf(clazz))
 
     rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
       Column(Modifier.verticalScroll(rememberScrollState())) {
         DayTabContent(
-            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+            vm = vm,
+            state = state,
+            snackbarHostState = snackbarHostState,
+            objectivesVm = ObjectivesViewModel(requireAuth = false))
       }
     }
 
@@ -435,9 +507,13 @@ class DayTabContentAllAndroidTest {
             todayClasses = emptyList(), attendanceRecords = emptyList(), todos = emptyList())
 
     rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
       Column(Modifier.verticalScroll(rememberScrollState())) {
         DayTabContent(
-            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+            vm = vm,
+            state = state,
+            snackbarHostState = snackbarHostState,
+            objectivesVm = ObjectivesViewModel(requireAuth = false))
       }
     }
 
@@ -476,9 +552,13 @@ class DayTabContentAllAndroidTest {
             todos = listOf(todayTodo, tomorrowTodo))
 
     rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
       Column(Modifier.verticalScroll(rememberScrollState())) {
         DayTabContent(
-            vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+            vm = vm,
+            state = state,
+            snackbarHostState = snackbarHostState,
+            objectivesVm = ObjectivesViewModel(requireAuth = false))
       }
     }
 
@@ -496,7 +576,12 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(todaySchedule = listOf(gap))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText("Free Time (30 min)").assertIsDisplayed()
@@ -511,7 +596,12 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(showGapOptionsModal = true, selectedGap = gap)
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText("Free Time Found (20 min)").assertIsDisplayed()
@@ -533,7 +623,12 @@ class DayTabContentAllAndroidTest {
             showGapPropositionsModal = true, selectedGap = gap, gapPropositions = propositions)
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText("Suggestions").assertIsDisplayed()
@@ -557,7 +652,12 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          snackbarHostState = snackbarHostState,
+          objectivesVm = ObjectivesViewModel(requireAuth = false))
     }
 
     rule.onNodeWithText("Review Flashcards").assertIsDisplayed()
@@ -587,7 +687,10 @@ class DayTabContentAllAndroidTest {
 
     val state = ScheduleUiState(todaySchedule = items)
 
-    rule.setContent { DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false)) }
+    rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false), snackbarHostState)
+    }
 
     rule.onNodeWithText("Math").assertIsDisplayed()
     rule.onNodeWithText("Free Time (30 min)").assertIsDisplayed()
@@ -607,12 +710,14 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
 
     rule.setContent {
+      val snackbarHostState = remember { SnackbarHostState() }
       DayTabContent(
           vm = vm,
           state = state,
           objectivesVm = ObjectivesViewModel(requireAuth = false),
           onObjectiveNavigation = {},
           onTodoClicked = {},
+          snackbarHostState = snackbarHostState,
       )
     }
 
@@ -627,7 +732,12 @@ class DayTabContentAllAndroidTest {
     val state = ScheduleUiState(todaySchedule = listOf(ScheduleEventItem(event)))
 
     rule.setContent {
-      DayTabContent(vm = vm, state = state, objectivesVm = ObjectivesViewModel(requireAuth = false))
+      val snackbarHostState = remember { SnackbarHostState() }
+      DayTabContent(
+          vm = vm,
+          state = state,
+          objectivesVm = ObjectivesViewModel(requireAuth = false),
+          snackbarHostState)
     }
 
     rule.onNodeWithContentDescription("Remove event").performClick()
