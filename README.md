@@ -99,11 +99,15 @@ By completing this epic, our application transforms from a solo productivity too
 ## 📱Screens
 
 ### 🏠 Home Screen
-- Displays your EduMon and an overview of your statictics and your edumon statictics
-- Overview of your top 3 Todo lists
-- Quick action buttons (Focus Mode, Pomodoro timer, etc.)
-- Bottom navigation bar (Home, Study session, Calendar, Games, Profile)
-- App icon at the top left for quick screen navigation
+
+- Displays your **EduMon** with its current **level** and environment
+- Overview of **your stats**: streak, points, study today, weekly goal
+- **Affirmation card** with a motivational quote
+- Quick access to **Open Schedule** and **Daily Reflection**
+- **To-dos preview** (up to 3 pending, with empty state)
+- **Quick Actions**: Study 30m, Take Break, Flashcards, Social Time
+- **Bottom navigation bar**: Home, Study, Calendar, Games, Profile
+- **Top-left menu icon** for fast screen navigation
 
 ---
 
@@ -116,19 +120,20 @@ By completing this epic, our application transforms from a solo productivity too
 ---
 
 ### 👤 Profile
-- Displays your creature and personal stats
-- Basic user information (profile pic, university, level, ...)
-- Options to enable notifications, location, and focus mode
-- Customize your EduMon’s look and accessories
-- Logout button
+- Shows your EduMon, level, and progress bars
+- User info: avatar, name, email, university (EPFL), level & points
+- Progress toward next level
+- Personal stats: streak, points, coins, study time, daily goal
+- Access to settings and logout
+
 
 ---
 
 ### 📊 Stats & Progress
-- Weekly and semester tracking of your study activity
-- Visual charts showing your progress toward goals
-- Displays study streaks, completed tasks, and consistency level
-- Highlights growth of your EduMon alongside your productivity
+- Weekly overview of your study activity
+- Key metrics: **total study time**, **completed goals**, **weekly goal**
+- Breakdown of **time per subject** (current week)
+- **7-day progression chart** to visualize daily study effort
 
 ---
 
@@ -143,6 +148,25 @@ By completing this epic, our application transforms from a solo productivity too
 - Map screen displaying streets, building and campus
 - Displays your location with your avatar
 - Displays your friends locations with their avatar
+- Always shows your campus status chip (On/Off campus) with an EPFL indicator
+- Friends list includes each friend’s study status (Studying / Break / Idle) and a Find action to center the map on them
+- Includes a “Go back to my location” chip to quickly re-center on your avatar
+
+---
+
+### 🧠 Daily Reflection
+- Log your daily mood using a simple emoji scale
+- Add a short personal note (up to 140 characters)
+- View your mood history over the past 7 days
+- Track mood trends over time (weekly / monthly view)
+
+---
+
+### 🛒 Shop
+- Spend earned coins to customize your EduMon
+- Browse cosmetic items (hats, accessories, effects)
+- Displays your current coin balance
+- Online shop with unlockable visual upgrades
 
 ---
 
