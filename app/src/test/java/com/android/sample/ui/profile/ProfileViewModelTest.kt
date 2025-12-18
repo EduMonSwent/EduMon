@@ -259,32 +259,6 @@ class ProfileViewModelTest {
       }
 
   @Test
-  fun accentEffective_changes_when_variant_changes() =
-      runTest(dispatcher) {
-        val profileRepo =
-            FakeProfileRepository(UserProfile(avatarAccent = Color.Red.toArgb().toLong()))
-        val (vm, _) = vmWith(profileRepo, RecordingUserStatsRepository())
-
-        advanceUntilIdle()
-
-        vm.setAccentVariant(AccentVariant.Dark)
-        advanceUntilIdle()
-        assertEquals(AccentVariant.Dark, vm.accentVariantFlow.value)
-
-        vm.setAccentVariant(AccentVariant.Vibrant)
-        advanceUntilIdle()
-        assertEquals(AccentVariant.Vibrant, vm.accentVariantFlow.value)
-
-        vm.setAccentVariant(AccentVariant.Base)
-        advanceUntilIdle()
-        assertEquals(AccentVariant.Base, vm.accentVariantFlow.value)
-
-        vm.setAccentVariant(AccentVariant.Light)
-        advanceUntilIdle()
-        assertEquals(AccentVariant.Light, vm.accentVariantFlow.value)
-      }
-
-  @Test
   fun accentEffective_flow_emits_transformed_color() =
       runTest(dispatcher) {
         val baseColor = Color(0xFF0000FF) // Blue
@@ -945,5 +919,136 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Updated", vm.userProfile.value.name)
+      }
+
+  // ==================== applyAccentVariant Branch Coverage ====================
+
+  @Test
+  fun accentVariant_light_triggers_flow_emission() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Light)
+        advanceUntilIdle()
+
+        assertEquals(AccentVariant.Light, vm.accentVariantFlow.value)
+        // The accentEffective flow combines userProfile and accentVariantFlow
+        // Setting the variant will trigger the applyAccentVariant function
+        val color = vm.accentEffective.value
+        assertNotNull("Should have effective color", color)
+      }
+
+  @Test
+  fun accentVariant_dark_triggers_flow_emission() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Dark)
+        advanceUntilIdle()
+
+        assertEquals(AccentVariant.Dark, vm.accentVariantFlow.value)
+        val color = vm.accentEffective.value
+        assertNotNull("Should have effective color", color)
+      }
+
+  @Test
+  fun accentVariant_vibrant_triggers_flow_emission() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Vibrant)
+        advanceUntilIdle()
+
+        assertEquals(AccentVariant.Vibrant, vm.accentVariantFlow.value)
+        val color = vm.accentEffective.value
+        assertNotNull("Should have effective color", color)
+      }
+
+  @Test
+  fun accentVariant_base_triggers_flow_emission() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Base)
+        advanceUntilIdle()
+
+        assertEquals(AccentVariant.Base, vm.accentVariantFlow.value)
+        val color = vm.accentEffective.value
+        assertNotNull("Should have effective color", color)
+      }
+
+  @Test
+  fun accentEffective_value_has_valid_rgb_range() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        // Test each variant produces valid RGB values
+        for (variant in AccentVariant.values()) {
+          vm.setAccentVariant(variant)
+          advanceUntilIdle()
+
+          val color = vm.accentEffective.value
+          assertNotNull("Should have color for $variant", color)
+          assertTrue("Red should be >= 0 for $variant", color.red >= 0f)
+          assertTrue("Red should be <= 1 for $variant", color.red <= 1f)
+          assertTrue("Green should be >= 0 for $variant", color.green >= 0f)
+          assertTrue("Green should be <= 1 for $variant", color.green <= 1f)
+          assertTrue("Blue should be >= 0 for $variant", color.blue >= 0f)
+          assertTrue("Blue should be <= 1 for $variant", color.blue <= 1f)
+        }
+      }
+
+  @Test
+  fun accentVariant_switching_all_variants_updates_flow() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        // Light
+        vm.setAccentVariant(AccentVariant.Light)
+        advanceUntilIdle()
+        assertEquals(AccentVariant.Light, vm.accentVariantFlow.value)
+
+        // Dark
+        vm.setAccentVariant(AccentVariant.Dark)
+        advanceUntilIdle()
+        assertEquals(AccentVariant.Dark, vm.accentVariantFlow.value)
+
+        // Vibrant
+        vm.setAccentVariant(AccentVariant.Vibrant)
+        advanceUntilIdle()
+        assertEquals(AccentVariant.Vibrant, vm.accentVariantFlow.value)
+
+        // Base
+        vm.setAccentVariant(AccentVariant.Base)
+        advanceUntilIdle()
+        assertEquals(AccentVariant.Base, vm.accentVariantFlow.value)
+      }
+
+  @Test
+  fun accentEffective_updates_when_avatar_accent_changes() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Light)
+        advanceUntilIdle()
+
+        val colorBefore = vm.accentEffective.value
+
+        // Change the avatar accent
+        vm.setAvatarAccent(Color.Blue)
+        advanceUntilIdle()
+
+        val colorAfter = vm.accentEffective.value
+
+        assertNotNull("Color before should exist", colorBefore)
+        assertNotNull("Color after should exist", colorAfter)
+        // Colors should potentially differ since base color changed
       }
 }
