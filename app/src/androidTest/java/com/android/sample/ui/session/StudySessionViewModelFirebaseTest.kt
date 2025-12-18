@@ -210,13 +210,15 @@ class StudySessionViewModelFirebaseTest {
             repository = FakeStudySessionRepository(),
             userStatsRepository = FakeUserStatsRepository(),
             statsRepository = FakeStatsRepository(),
-            subjectsRepository = FirebaseTestFakeSubjectsRepository())
+            subjectsRepository = FirebaseTestFakeSubjectsRepository(),
+            firebaseAuth = auth,
+            firebaseFirestore = firestore)
+
+    // Ensure flow has started by getting initial state
+    viewModel.uiState.first()
 
     // Simulate starting a study session (should update mode to STUDY)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-
-    // Wait for ViewModel's flow to process the state change
-    withTimeout(3_000) { viewModel.uiState.first { it.isSessionActive } }
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
@@ -256,13 +258,15 @@ class StudySessionViewModelFirebaseTest {
             repository = FakeStudySessionRepository(),
             userStatsRepository = FakeUserStatsRepository(),
             statsRepository = FakeStatsRepository(),
-            subjectsRepository = FirebaseTestFakeSubjectsRepository())
+            subjectsRepository = FirebaseTestFakeSubjectsRepository(),
+            firebaseAuth = auth,
+            firebaseFirestore = firestore)
+
+    // Ensure flow has started
+    viewModel.uiState.first()
 
     // Start pomodoro timer (transition to RUNNING)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-
-    // Wait for ViewModel's flow to process the state change
-    withTimeout(3_000) { viewModel.uiState.first { it.isSessionActive } }
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
@@ -292,22 +296,21 @@ class StudySessionViewModelFirebaseTest {
             repository = FakeStudySessionRepository(),
             userStatsRepository = FakeUserStatsRepository(),
             statsRepository = FakeStatsRepository(),
-            subjectsRepository = FirebaseTestFakeSubjectsRepository())
+            subjectsRepository = FirebaseTestFakeSubjectsRepository(),
+            firebaseAuth = auth,
+            firebaseFirestore = firestore)
+
+    // Ensure flow has started
+    viewModel.uiState.first()
 
     // First set to RUNNING (IDLE -> RUNNING transition should trigger STUDY mode)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-
-    // Wait for session to become active
-    withTimeout(3_000) { viewModel.uiState.first { it.isSessionActive } }
 
     // Wait for Firebase to update to STUDY
     waitForModeUpdate(uid, FriendMode.STUDY)
 
     // Then pause (RUNNING -> PAUSED transition should trigger IDLE mode)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
-
-    // Wait for session to become inactive
-    withTimeout(3_000) { viewModel.uiState.first { !it.isSessionActive } }
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)

@@ -56,6 +56,9 @@ class StudySessionViewModel(
     private val userStatsRepository: UserStatsRepository = AppRepositories.userStatsRepository,
     private val statsRepository: StatsRepository = AppRepositories.statsRepository,
     private val subjectsRepository: SubjectsRepository = AppRepositories.subjectsRepository,
+    // Allow injecting emulator instances in tests; default to production instances
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val firebaseFirestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(StudySessionUiState())
@@ -298,11 +301,9 @@ class StudySessionViewModel(
 
   /** Updates the user's mode in their Firestore profile. Only updates if user is signed in. */
   private suspend fun updateUserMode(mode: FriendMode) {
-    val auth = FirebaseAuth.getInstance()
-    val uid = auth.currentUser?.uid ?: return // Not signed in, skip
+    val uid = firebaseAuth.currentUser?.uid ?: return // Not signed in, skip
 
-    val db = FirebaseFirestore.getInstance()
-    val profileRef = db.collection("profiles").document(uid)
+    val profileRef = firebaseFirestore.collection("profiles").document(uid)
 
     // Check if profile exists
     val snapshot = profileRef.get().await()
