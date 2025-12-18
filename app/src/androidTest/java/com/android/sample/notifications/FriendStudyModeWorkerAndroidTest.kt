@@ -20,6 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -94,7 +95,7 @@ class FriendStudyModeWorkerAndroidTest {
   private var testUserId: String? = null
 
   @Before
-  fun setup() {
+  fun setup() = runBlocking {
     context = ApplicationProvider.getApplicationContext()
     workManager = WorkManager.getInstance(context)
     notificationManager =
@@ -110,6 +111,11 @@ class FriendStudyModeWorkerAndroidTest {
     auth = FirebaseAuth.getInstance()
     db = FirebaseFirestore.getInstance()
 
+    // Sign in anonymously and WAIT for it to complete before proceeding
+    // This ensures auth is ready after clearAll() in previous test's @After
+    auth.signInAnonymously().await()
+    testUserId = auth.currentUser?.uid
+
     // Clear notifications
     notificationManager.cancelAll()
 
@@ -117,7 +123,18 @@ class FriendStudyModeWorkerAndroidTest {
     context.getSharedPreferences("friend_study_mode", Context.MODE_PRIVATE).edit().clear().apply()
 
     // Cancel any existing work
-    runBlocking { workManager.cancelAllWork().await() }
+    workManager.cancelAllWork().await()
+  }
+
+  @After
+  fun tearDown() = runBlocking {
+    // Sign out to prevent auth state leaking between tests
+    auth.signOut()
+
+    // Clear emulator data to prevent Firestore state/listeners from interfering with next test
+    if (FirebaseEmulator.isRunning) {
+      FirebaseEmulator.clearAll()
+    }
   }
 
   /**
@@ -311,10 +328,10 @@ class FriendStudyModeWorkerAndroidTest {
     testUserId = auth.currentUser?.uid
     val currentUid = auth.currentUser!!.uid
 
-    // Create multiple test friends
-    val friend1Id = "test_friend_1"
-    val friend2Id = "test_friend_2"
-    val friend3Id = "test_friend_3"
+    // Create multiple test friends with hardcoded IDs (Firestore emulator rules allow this)
+    val friend1Id = "test_friend_multi_1"
+    val friend2Id = "test_friend_multi_2"
+    val friend3Id = "test_friend_multi_3"
 
     // Create current user profile using /profiles collection (allowed by rules)
     db.collection("profiles")
