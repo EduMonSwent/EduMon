@@ -393,7 +393,8 @@ fun ShopItemCard(
     enableAnimations: Boolean = true
 ) {
   var scale by remember { mutableFloatStateOf(SCALE_NORMAL) }
-  var particles by remember { mutableStateOf(emptyList<Offset>()) }
+  // Store particles with their alpha values to avoid Random on every recomposition
+  var particles by remember { mutableStateOf(emptyList<Pair<Offset, Float>>()) }
 
   // Determine if purchase is allowed
   val canPurchase = isOnline && !item.owned && !isPurchasing
@@ -408,7 +409,8 @@ fun ShopItemCard(
   val onSuccess = {
     if (enableAnimations) {
       scale = SCALE_SUCCESS
-      particles = generateParticles()
+      // Generate particles with stable alpha values
+      particles = generateParticles().map { offset -> offset to kotlin.random.Random.nextFloat() }
     }
   }
   val onFail = {
@@ -434,11 +436,11 @@ fun ShopItemCard(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
           // Particles canvas
           Canvas(modifier = Modifier.matchParentSize()) {
-            particles.forEach { p ->
+            particles.forEach { (position, alpha) ->
               drawCircle(
-                  color = particleColor.copy(alpha = Random.nextFloat()),
+                  color = particleColor.copy(alpha = alpha),
                   radius = ITEM_PARTICLE_RADIUS,
-                  center = p)
+                  center = position)
             }
           }
 
