@@ -104,11 +104,11 @@ class DayTabContentAllAndroidTest {
   @org.junit.After
   fun tearDown() = runBlocking {
     // Sign out to prevent auth state leaking between tests
-    auth.signOut()
-
-    // Clear emulator data to prevent Firestore state/listeners from interfering with next test
-    if (FirebaseEmulator.isRunning) {
-      FirebaseEmulator.clearAll()
+    // Note: We do NOT call FirebaseEmulator.clearAll() here because:
+    // 1. This is a UI test that doesn't create Firebase data
+    // 2. clearAll() would interfere with FriendStudyModeWorkerAndroidTest running in parallel
+    if (::auth.isInitialized) {
+      auth.signOut()
     }
   }
 
