@@ -52,6 +52,48 @@ By completing this epic, our application now provides a powerful, end-to-end stu
 2.  **Ensuring Data Safety:** Migrating to DataStore and Firestore means the user's hard work (creating flashcards) is never lost.
 3.  **Building a Scalable Foundation:** The Firestore backend allows for future "v2" features, such as sharing flashcard decks with friends (part of the "StudyTogether" social system).
 
+
+### Second Epic : Social Study Features (Study Together)
+
+
+### Objective
+Build a social accountability system that allows students to see their friends' study activity and location, fostering motivation through community and turning studying from an isolated activity into a shared experience.
+
+### Completed Features (Issues)
+
+* **`Social Presence & Location Sharing (Prototype)` (S4)**
+    * **What it is:** Initial prototype allowing students to share their study status (studying, break, idle) and general location with friends.
+    * **Why it matters:** This validates the core concept - can social accountability actually motivate students? The prototype tested whether students would engage with this feature and demonstrated the technical feasibility of real-time status sharing.
+
+* **`StudyTogether v1 (Social System)` (S5)**
+    * **What it is:** Full implementation of the social study map, showing friends' avatars on a campus map with real-time status updates powered by Firestore listeners.
+    * **Why it matters:** This brings the feature to life with a visual, engaging interface. Students can literally see who's studying, creating a virtual study hall atmosphere even when physically apart. It transforms studying from a solitary activity into a shared experience.
+
+* **`On campus detection` (S6)**
+    * **What it is:** Geofencing logic that detects when a student is on campus using GPS coordinates and displays a visual indicator.
+    * **Why it matters:** Context matters for motivation. Seeing friends studying on campus when you're also there creates stronger accountability than seeing remote studiers. This feature makes the social element more relevant and encourages spontaneous in-person study sessions.
+
+* **`Real-time friend activity notifications` (S9)**
+    * **What it is:** Optional push notifications alerting students when their friends start studying, creating timely social nudges.
+    * **Why it matters:** Social features only work if users know when their friends are active. These notifications leverage FOMO (fear of missing out) and social proof to encourage study sessions - "If my friend is studying now, maybe I should too."
+ 
+* **`Enhance Study Together UI` (S10)**
+    * **What it is:** UI polish including better EduMon avatars on the map, clearer status indicators (green for studying, yellow for break, gray for idle), and smoother map interactions.
+    * **Why it matters:** Social features live or die on engagement. A polished, delightful interface encourages students to check in on friends regularly, creating the network effects that make the feature valuable. Poor UI would turn this from a motivational tool into a chore.
+
+### Alignment with Project Goal
+By completing this epic, our application transforms from a solo productivity tool into a social study platform. It directly aligns with our goal of being an all-in-one student companion by:
+
+1. **Addressing Isolation:** Many students struggle with motivation when studying alone. Study Together creates a sense of community and shared purpose, making studying feel less lonely.
+
+2. **Creating Accountability:** When friends can see your study status, there's positive peer pressure to actually study. This accountability loop helps students follow through on their intentions.
+
+3. **Building Network Effects:** The more friends a student has on EduMon, the more valuable the app becomes. This creates natural growth through word-of-mouth as students invite friends to join them.
+
+4. **Enabling Spontaneous Collaboration:** Campus detection enables real-world meetups. Students can see "Oh, Sarah's studying in the library right now" and join her, transforming the app from purely digital to facilitating real connections.
+
+5. **Laying Foundation for Future Features:** The social infrastructure (friend system, location sharing, real-time sync) enables future features like shared flashcard decks, group study challenges, or collaborative note-taking.
+
 ---
 
 ## 📱Screens
