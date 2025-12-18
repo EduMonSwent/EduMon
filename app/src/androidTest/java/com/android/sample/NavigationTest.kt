@@ -6,7 +6,6 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -56,9 +55,10 @@ class Navigation1Test {
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Click Profile
-    composeTestRule.waitUntilAtLeastOneExists(hasText("Profile"), timeoutMillis = 5000)
-    composeTestRule.onNodeWithText("Profile").performClick()
+    // Use test tag to avoid ambiguity
+    val drawerTag = HomeTestTags.drawerTag(AppDestination.Profile.route)
+    composeTestRule.waitUntilAtLeastOneExists(hasTestTag(drawerTag), timeoutMillis = 5000)
+    composeTestRule.onNodeWithTag(drawerTag).performClick()
     composeTestRule.waitForIdle()
 
     // Verify we're on Profile screen
@@ -81,8 +81,9 @@ class Navigation1Test {
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntilAtLeastOneExists(hasText("Schedule"), timeoutMillis = 5000)
-    composeTestRule.onNodeWithText("Schedule").performClick()
+    val drawerTag = HomeTestTags.drawerTag(AppDestination.Schedule.route)
+    composeTestRule.waitUntilAtLeastOneExists(hasTestTag(drawerTag), timeoutMillis = 5000)
+    composeTestRule.onNodeWithTag(drawerTag).performClick()
     composeTestRule.waitForIdle()
 
     composeTestRule.waitUntilAtLeastOneExists(
@@ -104,8 +105,9 @@ class Navigation1Test {
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntilAtLeastOneExists(hasText("Stats"), timeoutMillis = 5000)
-    composeTestRule.onNodeWithText("Stats").performClick()
+    val drawerTag = HomeTestTags.drawerTag(AppDestination.Stats.route)
+    composeTestRule.waitUntilAtLeastOneExists(hasTestTag(drawerTag), timeoutMillis = 5000)
+    composeTestRule.onNodeWithTag(drawerTag).performClick()
     composeTestRule.waitForIdle()
 
     composeTestRule.waitUntilAtLeastOneExists(
@@ -124,8 +126,9 @@ class Navigation1Test {
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntilAtLeastOneExists(hasText("Games"), timeoutMillis = 5000)
-    composeTestRule.onNodeWithText("Games").performClick()
+    val drawerTag = HomeTestTags.drawerTag(AppDestination.Games.route)
+    composeTestRule.waitUntilAtLeastOneExists(hasTestTag(drawerTag), timeoutMillis = 5000)
+    composeTestRule.onNodeWithTag(drawerTag).performClick()
     composeTestRule.waitForIdle()
 
     composeTestRule.waitUntilAtLeastOneExists(
@@ -144,8 +147,9 @@ class Navigation1Test {
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntilAtLeastOneExists(hasText("Flashcards"), timeoutMillis = 5000)
-    composeTestRule.onNodeWithText("Flashcards").performClick()
+    val drawerTag = HomeTestTags.drawerTag(AppDestination.Flashcards.route)
+    composeTestRule.waitUntilAtLeastOneExists(hasTestTag(drawerTag), timeoutMillis = 5000)
+    composeTestRule.onNodeWithTag(drawerTag).performClick()
     composeTestRule.waitForIdle()
 
     composeTestRule.waitUntilAtLeastOneExists(
@@ -165,8 +169,9 @@ class Navigation1Test {
     composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntilAtLeastOneExists(hasText("Todo"), timeoutMillis = 5000)
-    composeTestRule.onNodeWithText("Todo").performClick()
+    val drawerTag = HomeTestTags.drawerTag(AppDestination.Todo.route)
+    composeTestRule.waitUntilAtLeastOneExists(hasTestTag(drawerTag), timeoutMillis = 5000)
+    composeTestRule.onNodeWithTag(drawerTag).performClick()
     composeTestRule.waitForIdle()
 
     composeTestRule.waitUntilAtLeastOneExists(
