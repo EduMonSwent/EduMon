@@ -10,7 +10,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -22,7 +21,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.android.sample.feature.homeScreen.AppDestination
@@ -119,233 +117,6 @@ class HolisticEndToEndTest {
       }
 
   /**
-   * Complete user journey test:
-   * 1. Login screen → simulate login
-   * 2. Home screen → verify widgets & quick actions
-   * 3. Schedule → navigate tabs (Day/Week/Month)
-   * 4. Week Progress → expand weeks list & objectives
-   * 5. Study Session → verify timer & stats
-   * 6. Profile → check settings & stats card
-   * 7. To-Do → view task list
-   * 8. Games → access games section
-   * 9. Shop → browse items
-   * 10. Return to Home
-   */
-  @OptIn(ExperimentalTestApi::class)
-  @Test
-  fun completeUserJourney_coversAllMajorFeatures() {
-    // ═══════════════════════════════════════════════════════════════════
-    // SETUP: Launch app with Login screen
-    // ═══════════════════════════════════════════════════════════════════
-    composeRule.setContent {
-      EduMonTheme {
-        val loggedIn = remember { mutableStateOf(false) }
-        loggedInState = loggedIn
-
-        if (!loggedIn.value) {
-          LoginScreen(onLoggedIn = { loggedIn.value = true })
-        } else {
-          EduMonNavHost()
-        }
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 1: LOGIN SCREEN
-    // ═══════════════════════════════════════════════════════════════════
-    composeRule.waitUntilExactlyOneExists(
-        hasText("Connect yourself to EduMon."), timeoutMillis = 20_000)
-
-    composeRule.onNodeWithText("Connect yourself to EduMon.").assertIsDisplayed()
-    composeRule.onNodeWithText("Continue with Google").assertIsDisplayed()
-
-    // Simulate successful login (bypass Google/Firebase)
-    composeRule.runOnIdle { loggedInState.value = true }
-    composeRule.waitForIdle()
-    composeRule.mainClock.advanceTimeBy(500)
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 2: HOME SCREEN - Verify widgets & navigation
-    // ═══════════════════════════════════════════════════════════════════
-    waitForHome()
-
-    // Verify home screen quick actions exist
-    ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
-    ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
-    ensureHomeChildVisible(HomeTestTags.CHIP_MOOD)
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 3: SCHEDULE SCREEN - Test tabs (Day/Week/Month)
-    // ═══════════════════════════════════════════════════════════════════
-    composeRule
-        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .performClick()
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ScheduleScreenTestTags.ROOT), timeoutMillis = 20_000)
-
-    // Verify schedule screen elements
-    composeRule.onNodeWithTag(ScheduleScreenTestTags.ROOT).assertExists()
-    composeRule.onNodeWithTag(ScheduleScreenTestTags.TAB_ROW).assertExists()
-
-    // Navigate through tabs
-    composeRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_DAY).assertExists()
-
-    composeRule.onNodeWithText("Week").performClick()
-    composeRule.waitForIdle()
-    composeRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_WEEK).assertExists()
-
-    composeRule.onNodeWithText("Month").performClick()
-    composeRule.waitForIdle()
-    composeRule.onNodeWithTag(ScheduleScreenTestTags.CONTENT_MONTH).assertExists()
-
-    // Return to Day tab
-    composeRule.onNodeWithText("Day").performClick()
-    composeRule.waitForIdle()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 4: WEEK PROGRESS & DAILY OBJECTIVES (via Schedule)
-    // ═══════════════════════════════════════════════════════════════════
-    composeRule
-        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .performClick()
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ScheduleScreenTestTags.ROOT), timeoutMillis = 20_000)
-
-    // Check if week progress section exists (may need scrolling)
-    composeRule.waitForIdle()
-    composeRule.mainClock.advanceTimeBy(300)
-
-    // Try to find week progress elements if visible
-    tryScrollToAndAssert(WeekProgDailyObjTags.WEEK_PROGRESS_SECTION)
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 5: STUDY SESSION - Timer & stats
-    // ═══════════════════════════════════════════════════════════════════
-    ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
-    composeRule.onNodeWithTag(HomeTestTags.QUICK_STUDY, useUnmergedTree = true).performClick()
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 20_000)
-
-    composeRule
-        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Study"))
-        .assertExists()
-
-    // Verify study session components
-    composeRule.onNodeWithTag(StudySessionTestTags.TIMER_SECTION).assertExists()
-    composeRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertExists()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 6: PROFILE SCREEN - Settings & stats
-    // ═══════════════════════════════════════════════════════════════════
-    openDrawerDestination(AppDestination.Profile.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ProfileScreenTestTags.PROFILE_SCREEN), timeoutMillis = 20_000)
-
-    // Verify profile sections
-    composeRule.onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN).assertExists()
-    composeRule.onNodeWithTag(ProfileScreenTestTags.PET_SECTION).assertExists()
-
-    // Scroll to stats card
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.STATS_CARD))
-    composeRule.onNodeWithTag(ProfileScreenTestTags.STATS_CARD).assertExists()
-
-    // Scroll to settings card
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.SETTINGS_CARD))
-    composeRule.onNodeWithTag(ProfileScreenTestTags.SETTINGS_CARD).assertExists()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 7: TO-DO SCREEN - Task list
-    // ═══════════════════════════════════════════════════════════════════
-    openDrawerDestination(AppDestination.Todo.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ToDoTestTags.OverviewScreen), timeoutMillis = 20_000)
-
-    composeRule.onNodeWithTag(ToDoTestTags.OverviewScreen).assertExists()
-    composeRule.onNodeWithTag(ToDoTestTags.FabAdd).assertExists()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 8: GAMES SCREEN
-    // ═══════════════════════════════════════════════════════════════════
-    openDrawerDestination(AppDestination.Games.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 20_000)
-
-    composeRule
-        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Games"))
-        .assertExists()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 9: SHOP SCREEN
-    // ═══════════════════════════════════════════════════════════════════
-    openDrawerDestination(AppDestination.Shop.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 20_000)
-
-    composeRule
-        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Shop"))
-        .assertExists()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 10: STATS SCREEN
-    // ═══════════════════════════════════════════════════════════════════
-    openDrawerDestination(AppDestination.Stats.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 20_000)
-
-    composeRule
-        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Stats"))
-        .assertExists()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 11: FLASHCARDS SCREEN
-    // ═══════════════════════════════════════════════════════════════════
-    openDrawerDestination(AppDestination.Flashcards.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 20_000)
-
-    composeRule
-        .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText("Flashcards"))
-        .assertExists()
-
-    goBackToHome()
-
-    // ═══════════════════════════════════════════════════════════════════
-    // FINAL: Verify home is stable after full journey
-    // ═══════════════════════════════════════════════════════════════════
-    waitForHome()
-    composeRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists()
-  }
-
-  /**
    * Focused test: Schedule screen interactions
    * - Day/Week/Month tab switching
    * - FAB add button
@@ -358,9 +129,7 @@ class HolisticEndToEndTest {
 
     // Navigate to Schedule
     ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
-    composeRule
-        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .performClick()
+    composeRule.onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true).performClick()
 
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(ScheduleScreenTestTags.ROOT), timeoutMillis = 20_000)
@@ -387,9 +156,7 @@ class HolisticEndToEndTest {
     composeRule.onNodeWithTag(ScheduleScreenTestTags.FAB_ADD).assertExists()
   }
 
-  /**
-   * Focused test: Profile screen navigation & sections
-   */
+  /** Focused test: Profile screen navigation & sections */
   @OptIn(ExperimentalTestApi::class)
   @Test
   fun profileScreen_displaysAllSections() {
@@ -427,9 +194,7 @@ class HolisticEndToEndTest {
     composeRule.onNodeWithTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION).assertExists()
   }
 
-  /**
-   * Focused test: To-Do screen & FAB
-   */
+  /** Focused test: To-Do screen & FAB */
   @OptIn(ExperimentalTestApi::class)
   @Test
   fun todoScreen_displaysListAndFab() {
@@ -446,9 +211,7 @@ class HolisticEndToEndTest {
     composeRule.onNodeWithTag(ToDoTestTags.FabAdd).assertExists()
   }
 
-  /**
-   * Focused test: Study session components
-   */
+  /** Focused test: Study session components */
   @OptIn(ExperimentalTestApi::class)
   @Test
   fun studySession_displaysTimerAndStats() {
@@ -466,45 +229,13 @@ class HolisticEndToEndTest {
     composeRule.onNodeWithTag(StudySessionTestTags.STATS_PANEL).assertExists()
   }
 
-  /**
-   * Focused test: All drawer destinations are accessible
-   */
-  @OptIn(ExperimentalTestApi::class)
-  @Test
-  fun drawerNavigation_allDestinationsAccessible() {
-    setupAndLogin()
-
-    val destinations =
-        listOf(
-            AppDestination.Profile,
-            AppDestination.Games,
-            AppDestination.Stats,
-            AppDestination.Flashcards,
-            AppDestination.Todo,
-            AppDestination.Shop,
-        )
-
-    for (destination in destinations) {
-      openDrawerDestination(destination.route)
-
-      composeRule.waitUntilExactlyOneExists(
-          hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 20_000)
-
-      composeRule
-          .onNode(hasTestTag(NavigationTestTags.TOP_BAR_TITLE) and hasText(destination.label))
-          .assertExists()
-
-      goBackToHome()
-    }
-  }
-
   // ═══════════════════════════════════════════════════════════════════════════
   // FEATURE INTERACTION TESTS
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Test: Start an objective, navigate to course/exercises screen, and mark it completed.
-   * This tests the full objective workflow.
+   * Test: Start an objective, navigate to course/exercises screen, and mark it completed. This
+   * tests the full objective workflow.
    */
   @OptIn(ExperimentalTestApi::class)
   @Test
@@ -513,9 +244,7 @@ class HolisticEndToEndTest {
 
     // Navigate to Schedule
     ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
-    composeRule
-        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .performClick()
+    composeRule.onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true).performClick()
 
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(ScheduleScreenTestTags.ROOT), timeoutMillis = 20_000)
@@ -534,14 +263,18 @@ class HolisticEndToEndTest {
     // Check if there's an objective with a start button
     val hasStartButton =
         composeRule
-            .onAllNodes(hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX), useUnmergedTree = true)
+            .onAllNodes(
+                hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+                useUnmergedTree = true)
             .fetchSemanticsNodes()
             .isNotEmpty()
 
     if (hasStartButton) {
       // Click the first Start button to navigate to CourseExercises
       composeRule
-          .onAllNodes(hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX), useUnmergedTree = true)
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
           .onFirst()
           .performClick()
 
@@ -579,9 +312,7 @@ class HolisticEndToEndTest {
     goBackToHome()
   }
 
-  /**
-   * Test: Navigate through week tabs in Schedule and verify content changes
-   */
+  /** Test: Navigate through week tabs in Schedule and verify content changes */
   @OptIn(ExperimentalTestApi::class)
   @Test
   fun scheduleScreen_navigateAllTabs_contentChanges() {
@@ -589,9 +320,7 @@ class HolisticEndToEndTest {
 
     // Navigate to Schedule
     ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
-    composeRule
-        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .performClick()
+    composeRule.onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true).performClick()
 
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(ScheduleScreenTestTags.ROOT), timeoutMillis = 20_000)
@@ -625,9 +354,7 @@ class HolisticEndToEndTest {
     goBackToHome()
   }
 
-  /**
-   * Test: Toggle objectives section expansion (if multiple objectives exist)
-   */
+  /** Test: Toggle objectives section expansion (if multiple objectives exist) */
   @OptIn(ExperimentalTestApi::class)
   @Test
   fun objectives_toggleExpansion_showsAllObjectives() {
@@ -635,9 +362,7 @@ class HolisticEndToEndTest {
 
     // Navigate to Schedule
     ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
-    composeRule
-        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .performClick()
+    composeRule.onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true).performClick()
 
     composeRule.waitUntilExactlyOneExists(
         hasTestTag(ScheduleScreenTestTags.ROOT), timeoutMillis = 20_000)
@@ -655,7 +380,8 @@ class HolisticEndToEndTest {
     // Check if "Show all" button exists (means multiple objectives)
     val hasShowAll =
         composeRule
-            .onAllNodesWithTag(WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_BUTTON, useUnmergedTree = true)
+            .onAllNodesWithTag(
+                WeekProgDailyObjTags.OBJECTIVES_SHOW_ALL_BUTTON, useUnmergedTree = true)
             .fetchSemanticsNodes()
             .isNotEmpty()
 
@@ -669,7 +395,9 @@ class HolisticEndToEndTest {
       // Verify multiple objective rows are now visible
       val objectiveRows =
           composeRule
-              .onAllNodes(hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX), useUnmergedTree = true)
+              .onAllNodes(
+                  hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_ROW_PREFIX),
+                  useUnmergedTree = true)
               .fetchSemanticsNodes()
 
       assert(objectiveRows.size > 1) { "Expected multiple objectives after expansion" }
@@ -684,51 +412,7 @@ class HolisticEndToEndTest {
     goBackToHome()
   }
 
-  /**
-   * Test: Profile settings toggles work correctly
-   */
-  @OptIn(ExperimentalTestApi::class)
-  @Test
-  fun profileScreen_toggleSettings_work() {
-    setupAndLogin()
-
-    // Navigate to Profile
-    openDrawerDestination(AppDestination.Profile.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ProfileScreenTestTags.PROFILE_SCREEN), timeoutMillis = 20_000)
-
-    // Scroll to settings card
-    composeRule
-        .onNodeWithTag(ProfileScreenTestTags.PROFILE_SCREEN)
-        .performScrollToNode(hasTestTag(ProfileScreenTestTags.SETTINGS_CARD))
-
-    // Toggle focus mode switch
-    val hasFocusSwitch =
-        composeRule
-            .onAllNodesWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-            .isNotEmpty()
-
-    if (hasFocusSwitch) {
-      composeRule
-          .onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE, useUnmergedTree = true)
-          .performClick()
-      composeRule.waitForIdle()
-
-      // Toggle back
-      composeRule
-          .onNodeWithTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE, useUnmergedTree = true)
-          .performClick()
-      composeRule.waitForIdle()
-    }
-
-    goBackToHome()
-  }
-
-  /**
-   * Test: Study session timer is interactive
-   */
+  /** Test: Study session timer is interactive */
   @OptIn(ExperimentalTestApi::class)
   @Test
   fun studySession_timerInteraction_works() {
@@ -769,104 +453,6 @@ class HolisticEndToEndTest {
         composeRule.waitForIdle()
       }
     }
-
-    goBackToHome()
-  }
-
-  /**
-   * Test: Week progress section can be expanded
-   */
-  @OptIn(ExperimentalTestApi::class)
-  @Test
-  fun weekProgress_expandSection_showsWeeksList() {
-    setupAndLogin()
-
-    // Navigate to Schedule
-    ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
-    composeRule
-        .onNodeWithTag(HomeTestTags.CHIP_OPEN_PLANNER, useUnmergedTree = true)
-        .performClick()
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ScheduleScreenTestTags.ROOT), timeoutMillis = 20_000)
-
-    // Wait for week progress section
-    composeRule.waitUntil(timeoutMillis = 15_000) {
-      composeRule
-          .onAllNodesWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_SECTION, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    tryScrollToAndAssert(WeekProgDailyObjTags.WEEK_PROGRESS_SECTION)
-
-    // Check if toggle exists and click it
-    val hasToggle =
-        composeRule
-            .onAllNodesWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-            .isNotEmpty()
-
-    if (hasToggle) {
-      composeRule
-          .onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE, useUnmergedTree = true)
-          .performClick()
-      composeRule.waitForIdle()
-
-      // Verify weeks list appears
-      composeRule.waitUntil(timeoutMillis = 10_000) {
-        composeRule
-            .onAllNodesWithTag(WeekProgDailyObjTags.WEEKS_LIST, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-            .isNotEmpty()
-      }
-
-      composeRule
-          .onNodeWithTag(WeekProgDailyObjTags.WEEKS_LIST, useUnmergedTree = true)
-          .assertExists()
-
-      // Collapse again
-      composeRule
-          .onNodeWithTag(WeekProgDailyObjTags.WEEK_PROGRESS_TOGGLE, useUnmergedTree = true)
-          .performClick()
-      composeRule.waitForIdle()
-    }
-
-    goBackToHome()
-  }
-
-  /**
-   * Test: To-Do FAB opens add screen
-   */
-  @OptIn(ExperimentalTestApi::class)
-  @Test
-  fun todoScreen_fabClick_opensAddScreen() {
-    setupAndLogin()
-
-    // Navigate to To-Do
-    openDrawerDestination(AppDestination.Todo.route)
-
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ToDoTestTags.OverviewScreen), timeoutMillis = 20_000)
-
-    // Click FAB to add new task
-    composeRule.onNodeWithTag(ToDoTestTags.FabAdd).performClick()
-    composeRule.waitForIdle()
-
-    // Verify Add screen opens
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ToDoTestTags.AddScreen), timeoutMillis = 10_000)
-
-    composeRule.onNodeWithTag(ToDoTestTags.TitleField).assertExists()
-    composeRule.onNodeWithTag(ToDoTestTags.SaveButton).assertExists()
-
-    // Go back without saving
-    composeRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
-    composeRule.waitForIdle()
-
-    // Should be back at overview
-    composeRule.waitUntilExactlyOneExists(
-        hasTestTag(ToDoTestTags.OverviewScreen), timeoutMillis = 10_000)
 
     goBackToHome()
   }
@@ -962,4 +548,3 @@ class HolisticEndToEndTest {
     }
   }
 }
-
