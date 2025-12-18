@@ -40,6 +40,7 @@ class StudySessionViewModelFirebaseTest {
 
   private lateinit var auth: FirebaseAuth
   private lateinit var firestore: FirebaseFirestore
+  private lateinit var fakePomodoro: FakePomodoroViewModel
   private lateinit var viewModel: StudySessionViewModel
 
   @Before
@@ -61,6 +62,9 @@ class StudySessionViewModelFirebaseTest {
     auth = FirebaseEmulator.auth
     firestore = FirebaseEmulator.firestore
 
+    // Create shared fake pomodoro
+    fakePomodoro = FakePomodoroViewModel()
+
     // Ensure clean state: sign out and wait
     runBlocking {
       try {
@@ -72,8 +76,6 @@ class StudySessionViewModelFirebaseTest {
         android.util.Log.w("StudySessionVMFirebaseTest", "Setup cleanup failed", e)
       }
       auth.signOut()
-      // Give Firebase time to process the signout
-      kotlinx.coroutines.delay(200)
     }
   }
 
@@ -89,8 +91,6 @@ class StudySessionViewModelFirebaseTest {
           android.util.Log.w("StudySessionVMFirebaseTest", "Teardown cleanup failed", e)
         }
         auth.signOut()
-        // Give Firebase time to process
-        kotlinx.coroutines.delay(200)
       }
     }
   }
@@ -131,7 +131,8 @@ class StudySessionViewModelFirebaseTest {
     // Ensure no user is signed in
     auth.signOut()
 
-    viewModel =
+    // Create ViewModel when no user is signed in
+    val testViewModel =
         StudySessionViewModel(
             pomodoroViewModel = FakePomodoroViewModel(),
             repository = FakeStudySessionRepository(),
@@ -140,7 +141,7 @@ class StudySessionViewModelFirebaseTest {
             subjectsRepository = FirebaseTestFakeSubjectsRepository())
 
     // Simulate starting a study session which triggers updateUserModeToStudy
-    val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
+    val fakePomodoro = testViewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
     // No user signed in, so no profile document should exist
@@ -167,7 +168,8 @@ class StudySessionViewModelFirebaseTest {
           "StudySessionVMFirebaseTest", "Profile document didn't exist, nothing to delete", e)
     }
 
-    viewModel =
+    // Create ViewModel after user sign-in but before profile exists
+    val testViewModel =
         StudySessionViewModel(
             pomodoroViewModel = FakePomodoroViewModel(),
             repository = FakeStudySessionRepository(),
@@ -176,7 +178,7 @@ class StudySessionViewModelFirebaseTest {
             subjectsRepository = FirebaseTestFakeSubjectsRepository())
 
     // Simulate starting a study session
-    val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
+    val fakePomodoro = testViewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
     // Give time for any async operations
@@ -201,16 +203,16 @@ class StudySessionViewModelFirebaseTest {
         .set(mapOf("uid" to uid, "mode" to FriendMode.IDLE.name))
         .await()
 
+    // Create ViewModel AFTER profile exists (like StudyTogetherViewModelEmulatorTest pattern)
     viewModel =
         StudySessionViewModel(
-            pomodoroViewModel = FakePomodoroViewModel(),
+            pomodoroViewModel = fakePomodoro,
             repository = FakeStudySessionRepository(),
             userStatsRepository = FakeUserStatsRepository(),
             statsRepository = FakeStatsRepository(),
             subjectsRepository = FirebaseTestFakeSubjectsRepository())
 
     // Simulate starting a study session (should update mode to STUDY)
-    val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
     // Wait for ViewModel's flow to process the state change
@@ -247,15 +249,14 @@ class StudySessionViewModelFirebaseTest {
         .set(mapOf("uid" to uid, "mode" to FriendMode.IDLE.name))
         .await()
 
+    // Create ViewModel AFTER profile exists
     viewModel =
         StudySessionViewModel(
-            pomodoroViewModel = FakePomodoroViewModel(),
+            pomodoroViewModel = fakePomodoro,
             repository = FakeStudySessionRepository(),
             userStatsRepository = FakeUserStatsRepository(),
             statsRepository = FakeStatsRepository(),
             subjectsRepository = FirebaseTestFakeSubjectsRepository())
-
-    val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
 
     // Start pomodoro timer (transition to RUNNING)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
@@ -273,7 +274,7 @@ class StudySessionViewModelFirebaseTest {
 
   @Test
   fun updateUserMode_whenSessionPauses_setsModeToIdle() = runBlocking {
-    // Create an anonymous test user with a profile in STUDY mode
+    // Create an anonymous test user with a profile in IDLE mode (to ensure clean transition)
     val result = auth.signInAnonymously().await()
     val uid = result.user?.uid
     assertNotNull(uid)
@@ -281,26 +282,28 @@ class StudySessionViewModelFirebaseTest {
     firestore
         .collection("profiles")
         .document(uid!!)
-        .set(mapOf("uid" to uid, "mode" to FriendMode.STUDY.name))
+        .set(mapOf("uid" to uid, "mode" to FriendMode.IDLE.name))
         .await()
 
+    // Create ViewModel AFTER profile exists
     viewModel =
         StudySessionViewModel(
-            pomodoroViewModel = FakePomodoroViewModel(),
+            pomodoroViewModel = fakePomodoro,
             repository = FakeStudySessionRepository(),
             userStatsRepository = FakeUserStatsRepository(),
             statsRepository = FakeStatsRepository(),
             subjectsRepository = FirebaseTestFakeSubjectsRepository())
 
-    val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
-
-    // First set to RUNNING
+    // First set to RUNNING (IDLE -> RUNNING transition should trigger STUDY mode)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
     // Wait for session to become active
     withTimeout(3_000) { viewModel.uiState.first { it.isSessionActive } }
 
-    // Then pause (transition from RUNNING to PAUSED)
+    // Wait for Firebase to update to STUDY
+    waitForModeUpdate(uid, FriendMode.STUDY)
+
+    // Then pause (RUNNING -> PAUSED transition should trigger IDLE mode)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
 
     // Wait for session to become inactive
