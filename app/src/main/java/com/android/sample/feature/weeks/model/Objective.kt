@@ -22,5 +22,7 @@ data class Objective(
     val day: DayOfWeek,
     val type: ObjectiveType = ObjectiveType.COURSE_OR_EXERCISES,
     val coursePdfUrl: String = DEFAULT_COURSE_PDF_URL,
-    val exercisePdfUrl: String = DEFAULT_EXERCISE_PDF_URL
+    val exercisePdfUrl: String = DEFAULT_EXERCISE_PDF_URL,
+    val isAuto: Boolean = false,
+    val sourceId: String? = null
 )

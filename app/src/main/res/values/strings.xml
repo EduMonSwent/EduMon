@@ -48,13 +48,6 @@
     <string name="did_you_finish_task_project">Did you finish the assigned task in the project?</string>
     <string name="cancel">Cancel</string>
 
-    <!-- Wellness Event Item -->
-    <string name="wellness_event_yoga_title">Yoga Session @ Sports Center</string>
-    <string name="wellness_event_yoga_time">17:00 _ 18:00</string>
-    <string name="wellness_event_yoga_description">Relax and recharge after classes. Sign up now!</string>
-    <string name="wellness_event_lecture_title">Guest Lecture: Future of AI</string>
-    <string name="wellness_event_lecture_time">19:30 _ 21:00</string>
-    <string name="wellness_event_lecture_description">EPFL Auditorium. Don\'t miss this insightful talk!</string>
     <!-- Time units -->
     <string name="minute">min</string>
     <string name="days">days</string>
@@ -174,6 +167,7 @@
     <string name="with">With</string>
 
     <string name="attendance_saved_success">Attendance saved successfully!</string>
+    <string name="attendance_saved_offline">Attendance saved offline. Will sync when online.</string>
     <string name="attendance_save_error">Error saving attendance</string>
 
     <string name="class_description_fmt">%1$s %2$s %3$s %4$s %5$s</string>
@@ -470,6 +464,21 @@
 
     <string name="flashcards_offline_generate_link">You are offline, you cannot generate a link.</string>
     <string name="flashcards_offline_import_deck">You are offline, you cannot import a deck.</string>
+
+    <!-- Wellness → External activities -->
+
+    <string name="wellness_event_yoga_title">UNIL Sport Activities</string>
+    <string name="wellness_event_yoga_time">Today</string>
+    <string name="wellness_event_yoga_description">See today’s available sport activities at UNIL.</string>
+
+    <string name="wellness_event_lecture_title">Guest Lectures &amp; Events</string>
+    <string name="wellness_event_lecture_time">Upcoming</string>
+    <string name="wellness_event_lecture_description">Browse today’s guest lectures and events at EPFL.</string>
+
+    <string name="wellness_event_offline">Connect to the internet to view today’s activities.</string>
+    <string name="url_unil_sport">https://sport.unil.ch/?pid=24</string>
+    <string name="url_epfl_events">https://www.epfl.ch/campus/events/</string>
+
 
 
 

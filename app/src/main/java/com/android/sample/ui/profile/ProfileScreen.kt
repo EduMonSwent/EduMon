@@ -2,7 +2,12 @@ package com.android.sample.ui.profile
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,25 +43,19 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Whatshot
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +65,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -85,9 +86,15 @@ import com.android.sample.data.AccessorySlot
 import com.android.sample.data.Rarity
 import com.android.sample.data.UserProfile
 import com.android.sample.data.UserStats
+import com.android.sample.ui.theme.AccentBlue
+import com.android.sample.ui.theme.AccentViolet
+import com.android.sample.ui.theme.DarkCardItem
+import com.android.sample.ui.theme.DarkDivider
+import com.android.sample.ui.theme.MidDarkCard
 import com.android.sample.ui.theme.StatBarHeart
 import com.android.sample.ui.theme.StatBarLightbulb
 import com.android.sample.ui.theme.StatBarLightning
+import com.android.sample.ui.theme.TextLight
 import com.android.sample.ui.theme.UiValues
 
 // This code has been written partially using A.I (LLM).
@@ -106,12 +113,17 @@ object ProfileScreenTestTags {
 private val CARD_CORNER_RADIUS = 16.dp
 private val SECTION_SPACING = 16.dp
 private val SCREEN_PADDING = 60.dp
+private val GRADIENT_COLORS = listOf(Color(0xFF12122A), Color(0xFF181830))
 private const val STREAK_PLURAL_THRESHOLD = 1
 private const val LEVEL_PROGRESS_ANIM_DURATION_MS = 600
+private const val LABEL_FONT_SIZE_SP = 12
+private const val VALUE_FONT_SIZE_SP = 11
 private const val SMALL_FONT_SIZE = 8
 
 private val LEVEL_BAR_HEIGHT = SMALL_FONT_SIZE.dp
 private val LEVEL_BAR_CORNER_RADIUS = 12.dp
+private val LABEL_ALPHA = 0.7f
+private val SPACING_SMALL = 4.dp
 
 @Composable
 fun ProfileScreen(
@@ -123,102 +135,82 @@ fun ProfileScreen(
 ) {
   val user by viewModel.userProfile.collectAsState()
   val stats by viewModel.userStats.collectAsState()
+  val accent by viewModel.accentEffective.collectAsState()
+  val variant by viewModel.accentVariantFlow.collectAsState()
   val context = LocalContext.current
-
   val launcher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) viewModel.importIcs(context, uri)
+        if (uri != null) {
+          viewModel.importIcs(context, uri)
+        }
       }
 
   val snackbarHostState = remember { SnackbarHostState() }
-  val cs = MaterialTheme.colorScheme
 
-  Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = cs.background) {
-      innerPadding ->
-    LazyColumn(
-        modifier =
-            Modifier.fillMaxSize()
-                .background(cs.background)
-                .padding(bottom = SCREEN_PADDING)
-                .padding(innerPadding)
-                .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        contentPadding = PaddingValues(vertical = SECTION_SPACING),
-        verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
-          item { PetSection(viewModel = viewModel) }
+  // LevelUpRewardSnackbarHandler(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
-          item {
-            SectionCard {
-              Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
-            }
-          }
-
-          item {
-            SectionCard {
-              Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user, stats) }
-            }
-          }
-
-          item {
-            SectionCard {
-              Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
-                CustomizePetSection(viewModel)
+  Scaffold(
+      snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = Color.Transparent) {
+          innerPadding ->
+        LazyColumn(
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(Brush.verticalGradient(GRADIENT_COLORS))
+                    .padding(bottom = SCREEN_PADDING)
+                    .padding(innerPadding)
+                    .testTag(ProfileScreenTestTags.PROFILE_SCREEN),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(vertical = SECTION_SPACING),
+            verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)) {
+              item { PetSection(viewModel = viewModel) }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.PROFILE_CARD)) { ProfileCard(user) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.STATS_CARD)) { StatsCard(user, stats) }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.CUSTOMIZE_PET_SECTION)) {
+                    CustomizePetSection(viewModel)
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
+                    SettingsCard(
+                        user = user,
+                        onToggleLocation = viewModel::toggleLocation,
+                        onToggleFocusMode = viewModel::toggleFocusMode,
+                        onOpenNotifications = onOpenNotifications,
+                        onEnterFocusMode = onOpenFocusMode,
+                        onImportIcs = { launcher.launch("text/calendar") })
+                  }
+                }
+              }
+              item {
+                GlowCard {
+                  Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
+                    AccountActionsSection(onSignOut = onSignOut)
+                  }
+                }
               }
             }
-          }
-
-          item {
-            SectionCard {
-              Box(Modifier.testTag(ProfileScreenTestTags.SETTINGS_CARD)) {
-                SettingsCard(
-                    user = user,
-                    onToggleLocation = viewModel::toggleLocation,
-                    onToggleFocusMode = viewModel::toggleFocusMode,
-                    onOpenNotifications = onOpenNotifications,
-                    onEnterFocusMode = onOpenFocusMode,
-                    onImportIcs = { launcher.launch("text/calendar") })
-              }
-            }
-          }
-
-          item {
-            SectionCard {
-              Box(Modifier.testTag(ProfileScreenTestTags.ACCOUNT_ACTIONS_SECTION)) {
-                AccountActionsSection(onSignOut = onSignOut)
-              }
-            }
-          }
-        }
-  }
-}
-
-/**
- * Replacement for the previous GlowCard:
- * - NO radial glow
- * - NO animated aura
- * - Still uses theme colors (adapts to chosen EduMon via MaterialTheme)
- */
-@Composable
-private fun SectionCard(content: @Composable () -> Unit) {
-  val cs = MaterialTheme.colorScheme
-  ElevatedCard(
-      modifier = Modifier.fillMaxWidth(0.9f),
-      shape = RoundedCornerShape(CARD_CORNER_RADIUS),
-      colors =
-          CardDefaults.elevatedCardColors(
-              containerColor = cs.surfaceColorAtElevation(2.dp), contentColor = cs.onSurface)) {
-        content()
       }
 }
 
 @Composable
 fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
-  val cs = MaterialTheme.colorScheme
   Box(
       modifier =
           modifier
               .fillMaxWidth()
-              .background(cs.surface)
+              .background(Brush.verticalGradient(listOf(Color(0xFF0B0C24), Color(0xFF151737))))
               .padding(vertical = 20.dp, horizontal = 16.dp)
               .testTag(ProfileScreenTestTags.PET_SECTION)) {
         Row(
@@ -231,7 +223,6 @@ fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
                 StatBar("⚡", 0.7f, StatBarLightning)
               }
 
-              // Do not touch anything related to the EduMon sprite/aura
               Column(
                   horizontalAlignment = Alignment.CenterHorizontally,
                   verticalArrangement = Arrangement.Center) {
@@ -246,30 +237,48 @@ fun PetSection(viewModel: ProfileViewModel, modifier: Modifier = Modifier) {
 
 @Composable
 fun StatBar(icon: String, percent: Float, color: Color) {
-  val cs = MaterialTheme.colorScheme
   Row(verticalAlignment = Alignment.CenterVertically) {
     Text(icon, fontSize = 16.sp)
     Spacer(Modifier.width(4.dp))
-
-    Box(
-        Modifier.width(70.dp)
-            .height(10.dp)
-            .background(cs.surfaceVariant, RoundedCornerShape(10.dp))) {
-          Box(
-              Modifier.height(10.dp)
-                  .width(70.dp * percent)
-                  .background(color, RoundedCornerShape(10.dp)))
-        }
-
+    Box(Modifier.width(70.dp).height(10.dp).background(DarkCardItem, RoundedCornerShape(10.dp))) {
+      Box(
+          Modifier.fillMaxSize()
+              .width(70.dp * percent)
+              .background(color, RoundedCornerShape(10.dp)))
+    }
     Spacer(Modifier.width(4.dp))
-    Text("${(percent * 100).toInt()}%", color = cs.onSurface.copy(alpha = 0.8f), fontSize = 12.sp)
+    Text("${(percent * 100).toInt()}%", color = TextLight.copy(alpha = 0.8f), fontSize = 12.sp)
   }
 }
 
 @Composable
-fun ProfileCard(user: UserProfile) {
-  val cs = MaterialTheme.colorScheme
+fun GlowCard(content: @Composable () -> Unit) {
+  val glow by
+      rememberInfiniteTransition(label = "glow")
+          .animateFloat(
+              initialValue = 0.25f,
+              targetValue = 0.6f,
+              animationSpec =
+                  infiniteRepeatable(tween(2500, easing = LinearEasing), RepeatMode.Reverse),
+              label = "glowVal")
 
+  Card(
+      modifier =
+          Modifier.fillMaxWidth(0.9f)
+              .shadow(
+                  elevation = 16.dp,
+                  ambientColor = AccentViolet.copy(alpha = glow),
+                  spotColor = AccentViolet.copy(alpha = glow),
+                  shape = RoundedCornerShape(CARD_CORNER_RADIUS)),
+      shape = RoundedCornerShape(CARD_CORNER_RADIUS),
+      colors = CardDefaults.cardColors(containerColor = MidDarkCard)) {
+        content()
+      }
+}
+
+@Composable
+fun ProfileCard(user: UserProfile) {
+  // Extract initials from the user's name
   val initials =
       user.name
           .split(" ")
@@ -284,35 +293,31 @@ fun ProfileCard(user: UserProfile) {
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()) {
           Box(
-              Modifier.size(70.dp).background(cs.primary, shape = RoundedCornerShape(50.dp)),
+              Modifier.size(70.dp).background(AccentViolet, shape = RoundedCornerShape(50.dp)),
               contentAlignment = Alignment.Center) {
-                Text(initials, color = cs.onPrimary, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                Text(initials, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
               }
-
           Spacer(Modifier.width(20.dp))
           Image(
               painter = painterResource(id = R.drawable.epfl),
               contentDescription = "EPFL Logo",
               modifier = Modifier.height(28.dp).width(60.dp))
         }
-
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
-    Text(user.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = cs.onSurface)
-    Text(user.email, color = cs.onSurface.copy(alpha = 0.7f), fontSize = 14.sp)
-
+    Text(user.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextLight)
+    Text(user.email, color = TextLight.copy(alpha = 0.7f), fontSize = 14.sp)
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(SMALL_FONT_SIZE.dp)) {
-      Badge(text = "Level ${user.level}", bg = cs.primary, textColor = cs.onPrimary)
-      Badge(text = "${user.points} pts", bg = cs.surfaceVariant, textColor = cs.primary)
+      Badge(text = "Level ${user.level}", bg = AccentViolet)
+      Badge(text = "${user.points} pts", bg = Color.White, textColor = AccentViolet)
     }
-
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
     LevelProgressBar(level = user.level, points = user.points)
   }
 }
 
 @Composable
-fun Badge(text: String, bg: Color, textColor: Color) {
+fun Badge(text: String, bg: Color, textColor: Color = Color.White) {
   Box(
       Modifier.background(bg, RoundedCornerShape(12.dp))
           .padding(horizontal = SMALL_FONT_SIZE.dp, vertical = 4.dp),
@@ -322,18 +327,23 @@ fun Badge(text: String, bg: Color, textColor: Color) {
 }
 
 @Composable
-fun StatsCard(profile: UserProfile, stats: UserStats) {
-  val cs = MaterialTheme.colorScheme
-
+fun StatsCard(
+    profile: UserProfile,
+    stats: UserStats,
+) {
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
         text = stringResource(id = R.string.stats_title),
         fontWeight = FontWeight.SemiBold,
-        color = cs.onSurface.copy(alpha = 0.85f))
+        color = TextLight.copy(alpha = 0.8f))
     Spacer(modifier = Modifier.height(SMALL_FONT_SIZE.dp))
 
     val streakUnit =
-        if (stats.streak > STREAK_PLURAL_THRESHOLD) stringResource(id = R.string.days) else "day"
+        if (stats.streak > STREAK_PLURAL_THRESHOLD) {
+          stringResource(id = R.string.days)
+        } else {
+          "day"
+        }
 
     StatRow(
         Icons.Outlined.Whatshot,
@@ -354,36 +364,30 @@ fun StatsCard(profile: UserProfile, stats: UserStats) {
 
 @Composable
 fun StatRow(icon: ImageVector, label: String, value: String) {
-  val cs = MaterialTheme.colorScheme
   Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Icon(icon, contentDescription = null, tint = cs.primary)
+          Icon(icon, contentDescription = null, tint = AccentViolet)
           Spacer(modifier = Modifier.width(SMALL_FONT_SIZE.dp))
-          Text(label, color = cs.onSurface.copy(alpha = 0.9f))
+          Text(label, color = TextLight.copy(alpha = 0.9f))
         }
-        Text(value, color = cs.onSurface, fontWeight = FontWeight.Medium)
+        Text(value, color = TextLight, fontWeight = FontWeight.Medium)
       }
 }
 
 @Composable
 fun CustomizePetSection(viewModel: ProfileViewModel) {
-  val cs = MaterialTheme.colorScheme
   val user by viewModel.userProfile.collectAsState()
   val currentVariant by viewModel.accentVariantFlow.collectAsState()
 
   Column(Modifier.padding(16.dp)) {
-    Text(
-        "Customize Buddy",
-        color = cs.onSurface.copy(alpha = 0.85f),
-        fontWeight = FontWeight.SemiBold)
+    Text("Customize Buddy", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(12.dp))
 
-    Text("Accent color", color = cs.onSurface.copy(alpha = 0.70f), fontSize = 13.sp)
+    Text("Accent color", color = TextLight.copy(alpha = 0.7f), fontSize = 13.sp)
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
-
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
       viewModel.accentPalette.forEach { c ->
         val selected = user.avatarAccent == c.toArgb().toLong()
@@ -394,72 +398,42 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
                     .background(c)
                     .border(
                         if (selected) 3.dp else 1.dp,
-                        if (selected) cs.onSurface else cs.outline.copy(alpha = 0.30f),
+                        if (selected) Color.White else Color.White.copy(alpha = 0.25f),
                         CircleShape)
                     .clickable { viewModel.setAvatarAccent(c) },
             contentAlignment = Alignment.Center) {
-              if (selected) Icon(Icons.Outlined.Check, null, tint = cs.onSurface)
+              if (selected) Icon(Icons.Outlined.Check, null, tint = Color.White)
             }
       }
     }
 
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
-
     Row(horizontalArrangement = Arrangement.spacedBy(SMALL_FONT_SIZE.dp)) {
       AccentVariant.values().forEach { v ->
         FilterChip(
             selected = v == currentVariant,
             onClick = { viewModel.setAccentVariant(v) },
             label = { Text(v.name) },
-            modifier = Modifier.widthIn(min = 72.dp),
-            colors =
-                FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = cs.primary.copy(alpha = 0.18f),
-                    selectedLabelColor = cs.onSurface,
-                    containerColor = cs.surfaceVariant,
-                    labelColor = cs.onSurface.copy(alpha = 0.85f)),
-            border =
-                FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = v == currentVariant,
-                    borderColor = cs.outline.copy(alpha = 0.30f),
-                    selectedBorderColor = cs.primary.copy(alpha = 0.55f)))
+            modifier = Modifier.widthIn(min = 72.dp))
       }
     }
 
     Spacer(Modifier.height(20.dp))
 
-    Text("Inventory", color = cs.onSurface.copy(alpha = 0.85f), fontWeight = FontWeight.SemiBold)
+    Text("Inventory", color = TextLight.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(10.dp))
 
     var selectedTab by remember { mutableStateOf(AccessorySlot.HEAD) }
     val tabs = AccessorySlot.values()
-
-    TabRow(
-        selectedTabIndex = tabs.indexOf(selectedTab),
-        containerColor = cs.surfaceVariant.copy(alpha = 0.35f),
-        contentColor = cs.onSurface,
-        divider = { Divider(color = cs.outline.copy(alpha = 0.22f)) },
-        indicator = { tabPositions ->
-          TabRowDefaults.Indicator(
-              modifier = Modifier.tabIndicatorOffset(tabPositions[tabs.indexOf(selectedTab)]),
-              color = cs.primary)
-        }) {
-          tabs.forEach { slot ->
-            val title = slot.name.lowercase().replaceFirstChar { it.titlecase() }
-            Tab(
-                selected = selectedTab == slot,
-                onClick = { selectedTab = slot },
-                text = {
-                  Text(
-                      title,
-                      color =
-                          if (selectedTab == slot) cs.onSurface
-                          else cs.onSurface.copy(alpha = 0.75f))
-                })
-          }
-        }
-
+    TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
+      tabs.forEach { slot ->
+        val title = slot.name.lowercase().replaceFirstChar { it.titlecase() }
+        Tab(
+            selected = selectedTab == slot,
+            onClick = { selectedTab = slot },
+            text = { Text(title) })
+      }
+    }
     Spacer(Modifier.height(SMALL_FONT_SIZE.dp))
 
     val userState by viewModel.userProfile.collectAsState()
@@ -481,30 +455,27 @@ fun CustomizePetSection(viewModel: ProfileViewModel) {
 
 @Composable
 fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (String) -> Unit) {
-  val cs = MaterialTheme.colorScheme
-
   LazyVerticalGrid(
       columns = GridCells.Adaptive(minSize = 96.dp),
       modifier = Modifier.fillMaxWidth().height(200.dp),
       userScrollEnabled = false) {
         items(items, key = { "${it.slot}-${it.id}" }) { item ->
           val on = selectedId == item.id || (selectedId == null && item.id == "none")
-
           val rarityStroke =
               when (item.rarity) {
-                Rarity.COMMON -> cs.outline.copy(alpha = 0.30f)
-                Rarity.RARE -> cs.secondary
-                Rarity.EPIC -> cs.primary
-                Rarity.LEGENDARY -> cs.tertiary
+                Rarity.COMMON -> Color.White.copy(alpha = 0.25f)
+                Rarity.RARE -> AccentBlue
+                Rarity.EPIC -> AccentViolet
+                Rarity.LEGENDARY -> Color(0xFFFFC107)
               }
+          val stroke = if (on) rarityStroke else Color.White.copy(alpha = 0.25f)
 
-          val stroke = if (on) rarityStroke else cs.outline.copy(alpha = 0.25f)
-          val container =
-              if (on) stroke.copy(alpha = 0.14f) else cs.surfaceVariant.copy(alpha = 0.35f)
-
-          ElevatedCard(
+          Card(
               shape = RoundedCornerShape(16.dp),
-              colors = CardDefaults.elevatedCardColors(containerColor = container),
+              colors =
+                  CardDefaults.cardColors(
+                      containerColor =
+                          if (on) stroke.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.06f)),
               modifier =
                   Modifier.padding(6.dp)
                       .fillMaxWidth()
@@ -531,10 +502,9 @@ fun AccessoriesGrid(items: List<AccessoryItem>, selectedId: String?, onSelect: (
                         tint = stroke,
                         modifier = Modifier.size(26.dp))
                   }
-
                   Text(
                       item.label,
-                      color = cs.onSurface,
+                      color = TextLight,
                       fontSize = 12.sp,
                       modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp))
                 }
@@ -552,50 +522,48 @@ fun SettingsCard(
     onEnterFocusMode: () -> Unit,
     onImportIcs: () -> Unit
 ) {
-  val cs = MaterialTheme.colorScheme
-
   Column(modifier = Modifier.padding(16.dp)) {
     Text(
         stringResource(id = R.string.settings_title),
-        color = cs.onSurface.copy(alpha = 0.85f),
+        color = TextLight.copy(alpha = 0.8f),
         fontWeight = FontWeight.SemiBold)
     Spacer(modifier = Modifier.height(SMALL_FONT_SIZE.dp))
 
     SettingRow(
-        title = stringResource(id = R.string.settings_location),
-        desc = stringResource(id = R.string.settings_location_desc),
-        value = user.locationEnabled,
-        onToggle = onToggleLocation,
+        stringResource(id = R.string.settings_location),
+        stringResource(id = R.string.settings_location_desc),
+        user.locationEnabled,
+        onToggleLocation,
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_LOCATION))
 
-    Divider(color = cs.outline.copy(alpha = 0.22f))
+    Divider(color = DarkDivider)
 
     SettingRow(
-        title = stringResource(id = R.string.settings_focus),
-        desc = stringResource(id = R.string.settings_focus_desc),
-        value = user.focusModeEnabled,
+        stringResource(id = R.string.settings_focus),
+        stringResource(id = R.string.settings_focus_desc),
+        user.focusModeEnabled,
         onToggle = {
           onToggleFocusMode()
-          if (!user.focusModeEnabled) onEnterFocusMode()
+          if (!user.focusModeEnabled) {
+            onEnterFocusMode()
+          }
         },
         modifier = Modifier.testTag(ProfileScreenTestTags.SWITCH_FOCUS_MODE))
 
-    Divider(color = cs.outline.copy(alpha = 0.22f))
+    Divider(color = DarkDivider)
     Spacer(Modifier.height(12.dp))
-
     TextButton(
         onClick = onOpenNotifications,
         modifier = Modifier.fillMaxWidth().testTag("open_notifications_screen")) {
-          Text("Manage notifications", color = cs.onSurface)
+          Text("Manage notifications")
         }
-
-    Divider(color = cs.outline.copy(alpha = 0.22f))
+    Divider(color = DarkDivider)
     Spacer(Modifier.height(12.dp))
 
     TextButton(onClick = onImportIcs, modifier = Modifier.fillMaxWidth()) {
       Text(
           text = stringResource(R.string.import_timetable),
-          color = cs.primary,
+          color = AccentViolet,
           fontWeight = FontWeight.Medium)
     }
   }
@@ -609,47 +577,30 @@ fun SettingRow(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-  val cs = MaterialTheme.colorScheme
-
   Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
         Column {
-          Text(title, color = cs.onSurface)
-          Text(desc, color = cs.onSurface.copy(alpha = 0.6f), fontSize = 12.sp)
+          Text(title, color = TextLight)
+          Text(desc, color = TextLight.copy(alpha = 0.6f), fontSize = 12.sp)
         }
-
-        Switch(
-            checked = value,
-            onCheckedChange = { onToggle() },
-            modifier = modifier,
-            colors =
-                SwitchDefaults.colors(
-                    checkedThumbColor = cs.surface,
-                    checkedTrackColor = cs.primary.copy(alpha = 0.65f),
-                    uncheckedThumbColor = cs.onSurfaceVariant,
-                    uncheckedTrackColor = cs.surfaceVariant))
+        Switch(checked = value, onCheckedChange = { onToggle() }, modifier = modifier)
       }
 }
 
 @Composable
 fun AccountActionsSection(onSignOut: () -> Unit = {}) {
-  val cs = MaterialTheme.colorScheme
   Column(modifier = Modifier.padding(12.dp)) {
     ActionButton(stringResource(id = R.string.account_privacy)) {}
     ActionButton(stringResource(id = R.string.account_terms)) {}
     ActionButton(
-        stringResource(id = R.string.account_logout), textColor = cs.error, onClick = onSignOut)
+        stringResource(id = R.string.account_logout), textColor = Color.Red, onClick = onSignOut)
   }
 }
 
 @Composable
-fun ActionButton(
-    text: String,
-    textColor: Color = MaterialTheme.colorScheme.onSurface,
-    onClick: () -> Unit = {}
-) {
+fun ActionButton(text: String, textColor: Color = TextLight, onClick: () -> Unit = {}) {
   TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
     Text(text, color = textColor, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
   }
@@ -659,7 +610,6 @@ private const val PROGRESS_TO_NEXT_LEVEL = "Progress to next level"
 
 @Composable
 fun LevelProgressBar(level: Int, points: Int) {
-  val cs = MaterialTheme.colorScheme
   val currentLevelBase = LevelingConfig.pointsForLevel(level)
   val nextLevelBase = LevelingConfig.pointsForLevel(level + 1)
 
@@ -670,32 +620,34 @@ fun LevelProgressBar(level: Int, points: Int) {
   val animatedFraction by
       animateFloatAsState(
           targetValue = targetFraction,
-          animationSpec = tween(durationMillis = LEVEL_PROGRESS_ANIM_DURATION_MS),
+          animationSpec = tween(durationMillis = 600),
           label = "levelProgressAnim")
 
   Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-    Text(text = PROGRESS_TO_NEXT_LEVEL, color = cs.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
+    Text(text = PROGRESS_TO_NEXT_LEVEL, color = TextLight.copy(alpha = 0.7f), fontSize = 12.sp)
+
     Spacer(Modifier.height(4.dp))
 
     Box(
         modifier =
             Modifier.fillMaxWidth()
-                .height(LEVEL_BAR_HEIGHT)
-                .clip(RoundedCornerShape(LEVEL_BAR_CORNER_RADIUS))
-                .background(cs.surfaceVariant)) {
+                .height(SMALL_FONT_SIZE.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(DarkCardItem)) {
           Box(
               modifier =
                   Modifier.fillMaxWidth(animatedFraction.coerceIn(0f, 1f))
                       .fillMaxHeight()
-                      .background(cs.primary))
+                      .background(AccentViolet))
         }
 
     Spacer(Modifier.height(4.dp))
 
     val remaining = nextLevelBase - points
+
     Text(
         text = "$rawProgressPoints / $levelRange pts  •  $remaining pts to next level",
-        color = cs.onSurface.copy(alpha = 0.7f),
+        color = TextLight.copy(alpha = 0.7f),
         fontSize = 11.sp)
   }
 }

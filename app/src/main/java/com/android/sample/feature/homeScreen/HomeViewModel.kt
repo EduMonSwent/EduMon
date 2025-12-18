@@ -37,8 +37,19 @@ class HomeViewModel(
   val uiState: StateFlow<HomeUiState> = _uiState
 
   init {
+    initializeStatsListener()
+    refresh()
+  }
+
+  private fun initializeStatsListener() {
     // Start unified stats listener
-    viewModelScope.launch { userStatsRepository.start() }
+    viewModelScope.launch {
+      try {
+        userStatsRepository.start()
+      } catch (e: Exception) {
+        // User might not be logged in yet, will retry on refresh
+      }
+    }
 
     // Keep Home screen in sync with unified stats
     viewModelScope.launch {
@@ -57,6 +68,14 @@ class HomeViewModel(
   fun refresh() {
     _uiState.update { it.copy(isLoading = true) }
     viewModelScope.launch {
+      // Ensure stats listener is running for current user
+      try {
+        userStatsRepository.start()
+      } catch (e: Exception) {
+        // Handle case where user is not logged in
+      }
+
+      val todos = repository.fetchTodos()
       val objectives = repository.fetchObjectives()
       val creature = repository.fetchCreatureStats()
       val quote = repository.dailyQuote()
