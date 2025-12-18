@@ -151,9 +151,7 @@ class FirestoreUserStatsRepository(
       _stats.value = updated
 
       // Save to Firestore
-      doc.set(updated.toMap(), SetOptions.merge())
-          .addOnSuccessListener {}
-          .addOnFailureListener { e -> }
+      doc.set(updated.toMap(), SetOptions.merge()).addOnSuccessListener {}.addOnFailureListener {}
     }
   }
 
