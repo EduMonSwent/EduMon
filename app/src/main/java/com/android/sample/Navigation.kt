@@ -195,6 +195,7 @@ private fun EduMonDrawerContent(
 @Composable
 private fun ScreenWithTopBar(
     title: String,
+    showTopBar: Boolean = true,
     drawerState: androidx.compose.material3.DrawerState,
     scope: CoroutineScope,
     navController: NavHostController,
@@ -202,20 +203,24 @@ private fun ScreenWithTopBar(
 ) {
   Scaffold(
       topBar = {
-        TopAppBar(
-            title = { Text(title, modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE)) },
-            navigationIcon = {
-              IconButton(
-                  onClick = { safeNavigateBack(navController) },
-                  modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
-                  }
-            },
-            actions = {
-              IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                Icon(Icons.Outlined.Menu, contentDescription = null)
-              }
-            })
+        if (showTopBar) {
+          TopAppBar(
+              title = {
+                Text(title, modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+              },
+              navigationIcon = {
+                IconButton(
+                    onClick = { safeNavigateBack(navController) },
+                    modifier = Modifier.testTag(NavigationTestTags.GO_BACK_BUTTON)) {
+                      Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
+                    }
+              },
+              actions = {
+                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                  Icon(Icons.Outlined.Menu, contentDescription = null)
+                }
+              })
+        }
       }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) { content() }
       }
@@ -257,6 +262,7 @@ fun EduMonNavHost(
 
   var hasDecided by remember { mutableStateOf(false) }
   var needsOnboarding by remember { mutableStateOf(false) }
+  var showScheduleTopBar by remember { mutableStateOf(true) }
 
   LaunchedEffect(isLoaded, userProfile) {
     if (isLoaded && !hasDecided) {
@@ -358,7 +364,8 @@ fun EduMonNavHost(
                       title = "Schedule",
                       drawerState = drawerState,
                       scope = scope,
-                      navController = navController) {
+                      navController = navController,
+                      showTopBar = showScheduleTopBar) {
                         ScheduleScreen(
                             onAddTodoClicked = { date ->
                               navController.navigate("addTodoFromSchedule/$date") {
@@ -368,7 +375,8 @@ fun EduMonNavHost(
                             onOpenTodo = { _ ->
                               navController.navigateSingleTopTo(AppDestination.Todo.route)
                             },
-                            onNavigateTo = { route -> navController.navigateSingleTopTo(route) })
+                            onNavigateTo = { route -> navController.navigateSingleTopTo(route) },
+                            onScheduleTopBarVisibilityChanged = { showScheduleTopBar = it })
                       }
                 }
 

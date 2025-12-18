@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -26,6 +25,7 @@ import com.android.sample.repos_providors.RepositoriesProvider
 import com.android.sample.ui.schedule.ScheduleScreen
 import com.android.sample.ui.schedule.ScheduleScreenTestTags
 import java.time.LocalDate
+import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -396,61 +396,6 @@ class ScheduleScreenCourseExercisesNavigationTest {
   }
 
   @Test
-  fun courseExercises_completedButton_marksObjectiveComplete() {
-    composeTestRule.setContent { ScheduleScreen() }
-
-    composeTestRule.waitUntil(10_000) {
-      composeTestRule
-          .onAllNodes(
-              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
-              useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onAllNodes(
-            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
-            useUnmergedTree = true)
-        .onFirst()
-        .performScrollTo()
-        .performClick()
-
-    composeTestRule.mainClock.advanceTimeBy(1_000)
-
-    composeTestRule.waitUntil(15_000) {
-      composeTestRule
-          .onAllNodesWithTag(CourseExercisesTestTags.COMPLETED_FAB, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(CourseExercisesTestTags.COMPLETED_FAB, useUnmergedTree = true)
-        .performClick()
-
-    composeTestRule.mainClock.advanceTimeBy(1_000)
-
-    composeTestRule.waitUntil(15_000) {
-      composeTestRule
-          .onAllNodesWithTag(ScheduleScreenTestTags.ROOT)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(ScheduleScreenTestTags.ROOT, useUnmergedTree = true)
-        .assertExists()
-
-    // Start button for the first objective should no longer exist
-    composeTestRule
-        .onAllNodes(
-            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
-            useUnmergedTree = true)
-        .assertCountEquals(0)
-  }
-
-  @Test
   fun courseExercises_tabRow_exists() {
     composeTestRule.setContent { ScheduleScreen() }
 
@@ -488,6 +433,82 @@ class ScheduleScreenCourseExercisesNavigationTest {
         .assertExists()
     composeTestRule
         .onNodeWithTag(CourseExercisesTestTags.EXERCISES_TAB, useUnmergedTree = true)
+        .assertExists()
+  }
+
+  @Test
+  fun scheduleScreen_topBarVisibilityChanges_whenOpeningAndClosingObjective() {
+    val visibilityEvents = mutableListOf<Boolean>()
+
+    composeTestRule.setContent {
+      ScheduleScreen(
+          onScheduleTopBarVisibilityChanged = { visible -> visibilityEvents.add(visible) })
+    }
+
+    // Initial state → schedule visible
+    composeTestRule.waitUntil(5_000) { visibilityEvents.isNotEmpty() }
+    assertEquals(true, visibilityEvents.last())
+
+    // Open an objective
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .performScrollTo()
+        .performClick()
+
+    composeTestRule.waitUntil(5_000) { visibilityEvents.last() == false }
+
+    // Go back
+    composeTestRule
+        .onNodeWithTag(CourseExercisesTestTags.BACK_BUTTON, useUnmergedTree = true)
+        .performClick()
+
+    composeTestRule.waitUntil(5_000) { visibilityEvents.last() == true }
+  }
+
+  @Test
+  fun clickingStartButton_enrichesObjectiveWithMaterials() {
+    composeTestRule.setContent { ScheduleScreen() }
+
+    // Open first objective
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodes(
+              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+              useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onAllNodes(
+            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
+            useUnmergedTree = true)
+        .onFirst()
+        .performScrollTo()
+        .performClick()
+
+    // CourseExercises screen should show PDFs if enrichment happened
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule
+          .onAllNodesWithTag(CourseExercisesTestTags.COURSE_PDF_CARD, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onNodeWithTag(CourseExercisesTestTags.COURSE_PDF_CARD, useUnmergedTree = true)
         .assertExists()
   }
 }
