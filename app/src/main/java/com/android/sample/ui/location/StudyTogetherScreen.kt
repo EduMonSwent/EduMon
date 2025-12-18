@@ -188,7 +188,7 @@ fun StudyTogetherScreen(
     showMap: Boolean = true,
     chooseLocation: Boolean = false,
     chosenLocation: LatLng = DEFAULT_LOCATION,
-    @DrawableRes userEdumonResId: Int = R.drawable.edumon,
+    @DrawableRes userEdumonResId: Int = R.drawable.edumon2,
 ) {
   val permissions =
       rememberMultiplePermissionsState(

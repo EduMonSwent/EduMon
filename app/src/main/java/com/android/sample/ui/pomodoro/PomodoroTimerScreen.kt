@@ -62,7 +62,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModelContract = viewModel<PomodoroView
 
   val backgroundColor =
       when (phase) {
-        PomodoroPhase.WORK -> MaterialTheme.colorScheme.primaryContainer
+        PomodoroPhase.WORK -> MaterialTheme.colorScheme.error
         PomodoroPhase.SHORT_BREAK -> MaterialTheme.colorScheme.secondaryContainer
         PomodoroPhase.LONG_BREAK -> MaterialTheme.colorScheme.tertiaryContainer
       }

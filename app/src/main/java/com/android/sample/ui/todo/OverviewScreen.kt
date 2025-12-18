@@ -63,7 +63,7 @@ fun OverviewScreen(onAddClicked: () -> Unit, onEditClicked: (String) -> Unit) {
       floatingActionButton = {
         FloatingActionButton(
             onClick = onAddClicked,
-            containerColor = TodoColors.Accent,
+            containerColor = MaterialTheme.colorScheme.primary,
             modifier = Modifier.testTag(TestTags.FabAdd)) {
               Icon(
                   Icons.Default.Add,
