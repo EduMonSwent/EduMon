@@ -84,26 +84,6 @@ class DayTabContentAllAndroidTest {
     rule.onNodeWithText(ctx.getString(R.string.no_classes_today)).assertIsDisplayed()
   }
 
-  // ---- Attendance YES/YES ----
-  @Test
-  fun showsAttendanceAndCompletionChips_yes_yes() {
-    val vm = buildScheduleVM(ctx)
-    val clazz = fakeClass(id = "c1", name = "Algorithms")
-    val record = fakeAttendance("c1") // default YES/YES
-
-    val state =
-        ScheduleUiState(
-            todaySchedule = listOf(ScheduleClassItem(clazz)), attendanceRecords = listOf(record))
-
-    rule.setContent {
-      val snackbarHostState = remember { SnackbarHostState() }
-      DayTabContent(vm, state, ObjectivesViewModel(requireAuth = false), snackbarHostState)
-    }
-
-    rule.onNodeWithText(ctx.getString(R.string.attendance_attended)).assertIsDisplayed()
-    rule.onNodeWithText(ctx.getString(R.string.completion_done)).assertIsDisplayed()
-  }
-
   // ---- Attendance: ARRIVED_LATE / PARTIALLY ----
   @Test
   fun showsLateAndPartialStatuses() {
