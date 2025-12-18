@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -43,7 +43,7 @@ class StudySessionViewModelFirebaseTest {
   private lateinit var auth: FirebaseAuth
   private lateinit var firestore: FirebaseFirestore
   private lateinit var viewModel: StudySessionViewModel
-  private val testDispatcher = StandardTestDispatcher()
+  private val testDispatcher = UnconfinedTestDispatcher()
 
   @OptIn(ExperimentalCoroutinesApi::class)
   @Before
@@ -213,7 +213,6 @@ class StudySessionViewModelFirebaseTest {
     // Simulate starting a study session (should update mode to STUDY)
     val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    kotlinx.coroutines.yield()
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
@@ -224,7 +223,6 @@ class StudySessionViewModelFirebaseTest {
 
     // Simulate stopping the study session (should update mode to IDLE)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
-    kotlinx.coroutines.yield()
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)
@@ -260,9 +258,6 @@ class StudySessionViewModelFirebaseTest {
     // Start pomodoro timer (transition to RUNNING)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
-    // Yield to allow the flow in viewModelScope to collect and process the state change
-    kotlinx.coroutines.yield()
-
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
 
@@ -296,11 +291,9 @@ class StudySessionViewModelFirebaseTest {
 
     // First set to RUNNING
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
-    kotlinx.coroutines.yield()
 
     // Then pause (transition from RUNNING to PAUSED)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
-    kotlinx.coroutines.yield()
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)
