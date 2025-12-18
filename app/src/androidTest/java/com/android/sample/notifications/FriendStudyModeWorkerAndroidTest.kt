@@ -95,7 +95,7 @@ class FriendStudyModeWorkerAndroidTest {
   private var testUserId: String? = null
 
   @Before
-  fun setup() {
+  fun setup() = runBlocking {
     context = ApplicationProvider.getApplicationContext()
     workManager = WorkManager.getInstance(context)
     notificationManager =
@@ -111,6 +111,11 @@ class FriendStudyModeWorkerAndroidTest {
     auth = FirebaseAuth.getInstance()
     db = FirebaseFirestore.getInstance()
 
+    // Sign in anonymously and WAIT for it to complete before proceeding
+    // This ensures auth is ready after clearAll() in previous test's @After
+    auth.signInAnonymously().await()
+    testUserId = auth.currentUser?.uid
+
     // Clear notifications
     notificationManager.cancelAll()
 
@@ -118,7 +123,7 @@ class FriendStudyModeWorkerAndroidTest {
     context.getSharedPreferences("friend_study_mode", Context.MODE_PRIVATE).edit().clear().apply()
 
     // Cancel any existing work
-    runBlocking { workManager.cancelAllWork().await() }
+    workManager.cancelAllWork().await()
   }
 
   @After
