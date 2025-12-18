@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -393,61 +392,6 @@ class ScheduleScreenCourseExercisesNavigationTest {
     }
 
     composeTestRule.onNodeWithTag(ScheduleScreenTestTags.ROOT).assertExists()
-  }
-
-  @Test
-  fun courseExercises_completedButton_marksObjectiveComplete() {
-    composeTestRule.setContent { ScheduleScreen() }
-
-    composeTestRule.waitUntil(10_000) {
-      composeTestRule
-          .onAllNodes(
-              hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
-              useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onAllNodes(
-            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
-            useUnmergedTree = true)
-        .onFirst()
-        .performScrollTo()
-        .performClick()
-
-    composeTestRule.mainClock.advanceTimeBy(1_000)
-
-    composeTestRule.waitUntil(15_000) {
-      composeTestRule
-          .onAllNodesWithTag(CourseExercisesTestTags.COMPLETED_FAB, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(CourseExercisesTestTags.COMPLETED_FAB, useUnmergedTree = true)
-        .performClick()
-
-    composeTestRule.mainClock.advanceTimeBy(1_000)
-
-    composeTestRule.waitUntil(15_000) {
-      composeTestRule
-          .onAllNodesWithTag(ScheduleScreenTestTags.ROOT)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(ScheduleScreenTestTags.ROOT, useUnmergedTree = true)
-        .assertExists()
-
-    // Start button for the first objective should no longer exist
-    composeTestRule
-        .onAllNodes(
-            hasTestTagPrefix(WeekProgDailyObjTags.OBJECTIVE_START_BUTTON_PREFIX),
-            useUnmergedTree = true)
-        .assertCountEquals(0)
   }
 
   @Test

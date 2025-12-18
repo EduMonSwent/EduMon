@@ -10,16 +10,6 @@ import java.io.File
 
 /** Helper object for opening PDF files. Supports both local files and web URLs. */
 object PdfHelper {
-
-  // Constants for strings
-  private const val MIME_TYPE_PDF = "application/pdf"
-  private const val URI_SCHEME_CONTENT = "content"
-  private const val URI_SCHEME_HTTP = "http://"
-  private const val URI_SCHEME_HTTPS = "https://"
-  private const val DEFAULT_FALLBACK_MESSAGE = "No app available to open PDF"
-  private const val NO_PDF_AVAILABLE_MESSAGE = "No PDF available"
-  private const val ERROR_OPENING_PDF_PREFIX = "Error opening PDF: "
-
   /**
    * Opens a PDF file using an external app or web browser.
    *
