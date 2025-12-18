@@ -130,28 +130,4 @@ class WeeksViewModel(
       _uiState.update { it.copy(currentWeekContent = content) }
     }
   }
-
-  fun markExerciseDone(exerciseId: String, done: Boolean) {
-    val idx = uiState.value.selectedWeekIndex
-    viewModelScope.launch {
-      val updatedWeeks = repository.markExerciseDone(idx, exerciseId, done)
-      val header = updatedWeeks.getOrNull(idx)?.percent ?: uiState.value.weekProgressPercent
-      val content = repository.getWeekContent(idx)
-      _uiState.update {
-        it.copy(weeks = updatedWeeks, weekProgressPercent = header, currentWeekContent = content)
-      }
-    }
-  }
-
-  fun markCourseRead(courseId: String, read: Boolean) {
-    val idx = uiState.value.selectedWeekIndex
-    viewModelScope.launch {
-      val updatedWeeks = repository.markCourseRead(idx, courseId, read)
-      val header = updatedWeeks.getOrNull(idx)?.percent ?: uiState.value.weekProgressPercent
-      val content = repository.getWeekContent(idx)
-      _uiState.update {
-        it.copy(weeks = updatedWeeks, weekProgressPercent = header, currentWeekContent = content)
-      }
-    }
-  }
 }
