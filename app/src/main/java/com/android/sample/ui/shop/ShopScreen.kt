@@ -410,7 +410,7 @@ fun ShopItemCard(
     if (enableAnimations) {
       scale = SCALE_SUCCESS
       // Generate particles with stable alpha values
-      particles = generateParticles().map { offset -> offset to kotlin.random.Random.nextFloat() }
+      particles = generateParticles().map { offset -> offset to Random.nextFloat() }
     }
   }
   val onFail = {

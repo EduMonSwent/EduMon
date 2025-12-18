@@ -16,8 +16,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -94,31 +96,35 @@ class StudySessionViewModelFirebaseTest {
   }
 
   /**
-   * Helper function to wait for Firebase to update the mode field. Polls every 100ms for up to 3
-   * seconds.
+   * Helper function to wait for Firebase to update the mode field. Uses snapshot listener to react
+   * to changes in real-time (pattern from StudyTogetherViewModelEmulatorTest).
    */
-  private suspend fun waitForModeUpdate(uid: String, expectedMode: FriendMode) {
-    val maxAttempts = 30 // 3 seconds total (30 * 100ms)
-    var attempts = 0
-
-    while (attempts < maxAttempts) {
-      val snapshot = firestore.collection("profiles").document(uid).get().await()
-      val currentMode = snapshot.getString("mode")
-
-      if (currentMode == expectedMode.name) {
-        return // Success!
+  @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+  private suspend fun waitForModeUpdate(
+      uid: String,
+      expectedMode: FriendMode,
+      timeoutMs: Long = 6_000
+  ) =
+      withTimeout(timeoutMs) {
+        kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+          val ref = firestore.collection("profiles").document(uid)
+          val reg =
+              ref.addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE) {
+                  snap,
+                  err ->
+                if (err != null) {
+                  if (cont.isActive) cont.resumeWith(Result.failure(err))
+                  return@addSnapshotListener
+                }
+                if (snap != null && snap.exists() && snap.getString("mode") == expectedMode.name) {
+                  if (cont.isActive) {
+                    cont.resume(Unit, onCancellation = null)
+                  }
+                }
+              }
+          cont.invokeOnCancellation { reg.remove() }
+        }
       }
-
-      kotlinx.coroutines.delay(100)
-      attempts++
-    }
-
-    // If we get here, timeout occurred
-    val snapshot = firestore.collection("profiles").document(uid).get().await()
-    val actualMode = snapshot.getString("mode")
-    throw AssertionError(
-        "Timeout waiting for mode update. Expected: ${expectedMode.name}, Actual: $actualMode")
-  }
 
   @Test
   fun updateUserMode_whenNotSignedIn_doesNothing() = runBlocking {
@@ -207,6 +213,9 @@ class StudySessionViewModelFirebaseTest {
     val fakePomodoro = viewModel.pomodoroViewModel as FakePomodoroViewModel
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
+    // Wait for ViewModel's flow to process the state change
+    withTimeout(3_000) { viewModel.uiState.first { it.isSessionActive } }
+
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
 
@@ -251,6 +260,9 @@ class StudySessionViewModelFirebaseTest {
     // Start pomodoro timer (transition to RUNNING)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
+    // Wait for ViewModel's flow to process the state change
+    withTimeout(3_000) { viewModel.uiState.first { it.isSessionActive } }
+
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.STUDY)
 
@@ -285,8 +297,14 @@ class StudySessionViewModelFirebaseTest {
     // First set to RUNNING
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.RUNNING)
 
+    // Wait for session to become active
+    withTimeout(3_000) { viewModel.uiState.first { it.isSessionActive } }
+
     // Then pause (transition from RUNNING to PAUSED)
     fakePomodoro.simulatePhaseAndState(PomodoroPhase.WORK, PomodoroState.PAUSED)
+
+    // Wait for session to become inactive
+    withTimeout(3_000) { viewModel.uiState.first { !it.isSessionActive } }
 
     // Wait for Firebase to update the mode
     waitForModeUpdate(uid, FriendMode.IDLE)
