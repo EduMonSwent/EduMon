@@ -20,6 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -118,6 +119,17 @@ class FriendStudyModeWorkerAndroidTest {
 
     // Cancel any existing work
     runBlocking { workManager.cancelAllWork().await() }
+  }
+
+  @After
+  fun tearDown() = runBlocking {
+    // Sign out to prevent auth state leaking between tests
+    auth.signOut()
+
+    // Clear emulator data to prevent Firestore state/listeners from interfering with next test
+    if (FirebaseEmulator.isRunning) {
+      FirebaseEmulator.clearAll()
+    }
   }
 
   /**
@@ -306,96 +318,80 @@ class FriendStudyModeWorkerAndroidTest {
 
   @Test
   fun doWork_withMultipleFriendsEnteringStudyMode_postsGroupNotification() = runBlocking {
-    // Sign in anonymously as first user (will become current user after recreating friends)
+    // Sign in anonymously
     auth.signInAnonymously().await()
     testUserId = auth.currentUser?.uid
+    val currentUid = auth.currentUser!!.uid
+
+    // Create multiple test friends with hardcoded IDs (Firestore emulator rules allow this)
+    val friend1Id = "test_friend_multi_1"
+    val friend2Id = "test_friend_multi_2"
+    val friend3Id = "test_friend_multi_3"
+
+    // Create current user profile using /profiles collection (allowed by rules)
+    db.collection("profiles")
+        .document(currentUid)
+        .set(mapOf("name" to "Test User", "mode" to FriendMode.IDLE.name))
+        .await()
+
+    // Create friend edges in /users/{uid}/friendIds/{friendUid} (owned by current user)
+    db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend1Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend2Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
+
+    db.collection("users")
+        .document(currentUid)
+        .collection("friendIds")
+        .document(friend3Id)
+        .set(mapOf("addedAt" to System.currentTimeMillis()))
+        .await()
 
     // Create friend profiles all in STUDY mode using /profiles collection
-    // Need to sign in as each friend to create their profile (Firestore rules require it)
-
-    // Friend 1
-    auth.signOut()
-    auth.signInAnonymously().await()
-    val friend1Uid = auth.currentUser!!.uid
     db.collection("profiles")
-        .document(friend1Uid)
+        .document(friend1Id)
         .set(
             mapOf(
-                "uid" to friend1Uid,
                 "name" to "Alae",
                 "mode" to FriendMode.STUDY.name,
                 "latitude" to 46.5202,
                 "longitude" to 6.5652))
         .await()
 
-    // Friend 2
-    auth.signOut()
-    auth.signInAnonymously().await()
-    val friend2Uid = auth.currentUser!!.uid
     db.collection("profiles")
-        .document(friend2Uid)
+        .document(friend2Id)
         .set(
             mapOf(
-                "uid" to friend2Uid,
                 "name" to "Kenza",
                 "mode" to FriendMode.STUDY.name,
                 "latitude" to 46.5202,
                 "longitude" to 6.5652))
         .await()
 
-    // Friend 3
-    auth.signOut()
-    auth.signInAnonymously().await()
-    val friend3Uid = auth.currentUser!!.uid
     db.collection("profiles")
-        .document(friend3Uid)
+        .document(friend3Id)
         .set(
             mapOf(
-                "uid" to friend3Uid,
                 "name" to "Florian",
                 "mode" to FriendMode.STUDY.name,
                 "latitude" to 46.5202,
                 "longitude" to 6.5652))
         .await()
 
-    // Sign back in as current user
-    auth.signOut()
-    auth.signInAnonymously().await()
-    val finalUid = auth.currentUser!!.uid
-
-    // Recreate current user profile
-    db.collection("profiles")
-        .document(finalUid)
-        .set(mapOf("uid" to finalUid, "name" to "Test User", "mode" to FriendMode.IDLE.name))
-        .await()
-
-    // Recreate friend edges with the actual friend UIDs
-    db.collection("users")
-        .document(finalUid)
-        .collection("friendIds")
-        .document(friend1Uid)
-        .set(mapOf("addedAt" to System.currentTimeMillis()))
-        .await()
-
-    db.collection("users")
-        .document(finalUid)
-        .collection("friendIds")
-        .document(friend2Uid)
-        .set(mapOf("addedAt" to System.currentTimeMillis()))
-        .await()
-
-    db.collection("users")
-        .document(finalUid)
-        .collection("friendIds")
-        .document(friend3Uid)
-        .set(mapOf("addedAt" to System.currentTimeMillis()))
-        .await()
-
     // Set all previous modes to IDLE
     val prefs = context.getSharedPreferences("friend_study_mode", Context.MODE_PRIVATE).edit()
-    prefs.putString(friend1Uid, FriendMode.IDLE.name)
-    prefs.putString(friend2Uid, FriendMode.IDLE.name)
-    prefs.putString(friend3Uid, FriendMode.IDLE.name)
+    prefs.putString(friend1Id, FriendMode.IDLE.name)
+    prefs.putString(friend2Id, FriendMode.IDLE.name)
+    prefs.putString(friend3Id, FriendMode.IDLE.name)
     prefs.apply()
 
     // Run worker

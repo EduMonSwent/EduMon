@@ -1,5 +1,6 @@
 package com.android.sample.schedule
 
+import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ApplicationProvider
 import com.android.sample.R
 import com.android.sample.data.Priority as TodoPriority
 import com.android.sample.data.Status as TodoStatus
@@ -28,17 +30,87 @@ import com.android.sample.feature.schedule.data.schedule.ScheduleEvent
 import com.android.sample.feature.schedule.viewmodel.ScheduleUiState
 import com.android.sample.feature.weeks.viewmodel.ObjectivesViewModel
 import com.android.sample.ui.schedule.DayTabContent
+import com.android.sample.util.FirebaseEmulator
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 
 class DayTabContentAllAndroidTest {
 
+  companion object {
+    private var configured = false
+
+    @JvmStatic
+    @BeforeClass
+    fun setupClass() {
+      if (configured) return
+
+      val context = ApplicationProvider.getApplicationContext<Context>()
+
+      // Initialize default Firebase app if needed
+      if (FirebaseApp.getApps(context).isEmpty()) {
+        FirebaseApp.initializeApp(context)
+      }
+
+      // Initialize Firebase emulator if running
+      FirebaseEmulator.initIfNeeded(context)
+      if (FirebaseEmulator.isRunning) {
+        // Configure DEFAULT instances to use emulator
+        try {
+          FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
+          FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
+          configured = true
+        } catch (_: IllegalStateException) {
+          // Already configured
+          configured = true
+        }
+      }
+    }
+  }
+
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
   private val ctx
     get() = rule.activity
+
+  private lateinit var auth: FirebaseAuth
+
+  @Before
+  fun setup() = runBlocking {
+    // Verify emulator is running (same check as FriendStudyModeWorkerAndroidTest)
+    assertTrue(
+        "Firebase emulators not reachable (firestore:8080, auth:9099). " +
+            "Start with: firebase emulators:start --only firestore,auth",
+        FirebaseEmulator.isRunning)
+
+    // Use default instances (now configured to use emulator)
+    auth = FirebaseAuth.getInstance()
+
+    // Sign in anonymously to avoid permission errors
+    if (auth.currentUser == null) {
+      auth.signInAnonymously().await()
+    }
+  }
+
+  @org.junit.After
+  fun tearDown() = runBlocking {
+    // Sign out to prevent auth state leaking between tests
+    auth.signOut()
+
+    // Clear emulator data to prevent Firestore state/listeners from interfering with next test
+    if (FirebaseEmulator.isRunning) {
+      FirebaseEmulator.clearAll()
+    }
+  }
 
   // ---- Test new branch: allClassesFinished ----
   @Test
