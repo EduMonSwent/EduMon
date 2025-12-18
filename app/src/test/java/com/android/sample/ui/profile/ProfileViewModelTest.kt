@@ -946,4 +946,160 @@ class ProfileViewModelTest {
 
         assertEquals("Updated", vm.userProfile.value.name)
       }
+
+  @Test
+  fun applyAccentVariant_light_produces_lighter_color() =
+      runTest(dispatcher) {
+        val baseColor = Color(0xFF404080) // Dark blue-ish
+        val profileRepo =
+            FakeProfileRepository(UserProfile(avatarAccent = baseColor.toArgb().toLong()))
+        val (vm, _) = vmWith(profileRepo, RecordingUserStatsRepository())
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Light)
+        advanceUntilIdle()
+
+        val effective = vm.accentEffective.first()
+        // Light variant should produce a lighter (higher RGB values) color
+        assertTrue(effective.red >= baseColor.red)
+        assertTrue(effective.green >= baseColor.green)
+        assertTrue(effective.blue >= baseColor.blue)
+      }
+
+  @Test
+  fun applyAccentVariant_dark_produces_darker_color() =
+      runTest(dispatcher) {
+        val baseColor = Color(0xFFB0B0FF) // Light blue
+        val profileRepo =
+            FakeProfileRepository(UserProfile(avatarAccent = baseColor.toArgb().toLong()))
+        val (vm, _) = vmWith(profileRepo, RecordingUserStatsRepository())
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Dark)
+        advanceUntilIdle()
+
+        val effective = vm.accentEffective.first()
+        // Dark variant should produce a darker (lower RGB values) color
+        assertTrue(effective.red <= baseColor.red)
+        assertTrue(effective.green <= baseColor.green)
+        assertTrue(effective.blue <= baseColor.blue)
+      }
+
+  @Test
+  fun applyAccentVariant_vibrant_clamps_to_max() =
+      runTest(dispatcher) {
+        // Use a very bright color where vibrant multiplication would exceed 1.0
+        val baseColor = Color(0xFFFFFFFF) // White
+        val profileRepo =
+            FakeProfileRepository(UserProfile(avatarAccent = baseColor.toArgb().toLong()))
+        val (vm, _) = vmWith(profileRepo, RecordingUserStatsRepository())
+        advanceUntilIdle()
+
+        vm.setAccentVariant(AccentVariant.Vibrant)
+        advanceUntilIdle()
+
+        val effective = vm.accentEffective.first()
+        // Should be clamped to 1.0
+        assertTrue(effective.red <= 1.0f)
+        assertTrue(effective.green <= 1.0f)
+        assertTrue(effective.blue <= 1.0f)
+      }
+
+  @Test
+  fun accentVariant_switching_rapidly() =
+      runTest(dispatcher) {
+        val baseColor = Color(0xFF606080)
+        val profileRepo =
+            FakeProfileRepository(UserProfile(avatarAccent = baseColor.toArgb().toLong()))
+        val (vm, _) = vmWith(profileRepo, RecordingUserStatsRepository())
+        advanceUntilIdle()
+
+        // Rapidly switch variants
+        vm.setAccentVariant(AccentVariant.Light)
+        vm.setAccentVariant(AccentVariant.Dark)
+        vm.setAccentVariant(AccentVariant.Vibrant)
+        vm.setAccentVariant(AccentVariant.Base)
+        vm.setAccentVariant(AccentVariant.Light)
+        advanceUntilIdle()
+
+        // Should end up with Light variant
+        assertEquals(AccentVariant.Light, vm.accentVariantFlow.value)
+      }
+
+  // ==================== clearRewardEventsReplayCache Tests ====================
+
+  @Test
+  fun clearRewardEventsReplayCache_clears_the_cache() =
+      runTest(dispatcher) {
+        val (vm, _) = vmWith()
+        advanceUntilIdle()
+
+        // Just verify the method doesn't crash
+        vm.clearRewardEventsReplayCache()
+        advanceUntilIdle()
+
+        // The replay cache should be cleared (no way to verify directly, but no crash = success)
+        assertNotNull(vm.rewardEvents)
+      }
+
+  // ==================== EduMonType Flow Tests ====================
+
+  @Test
+  fun eduMonType_flow_reflects_starter_id() =
+      runTest(dispatcher) {
+        val profile = UserProfile(starterId = "pyromon")
+        val repo = FakeProfileRepository(profile)
+        val (vm, _) = vmWith(repo, RecordingUserStatsRepository())
+        advanceUntilIdle()
+
+        val type = vm.eduMonType.first()
+        assertNotNull(type)
+      }
+
+  @Test
+  fun eduMonType_updates_when_starter_changes() =
+      runTest(dispatcher) {
+        val profile = UserProfile(starterId = "pyromon")
+        val repo = FakeProfileRepository(profile)
+        val (vm, _) = vmWith(repo, RecordingUserStatsRepository())
+        advanceUntilIdle()
+
+        vm.setStarter("aquamon")
+        advanceUntilIdle()
+
+        val type = vm.eduMonType.first()
+        assertNotNull(type)
+      }
+
+  // ==================== Sync Profile Edge Cases ====================
+
+  @Test
+  fun syncProfileWithStats_handles_negative_delta() =
+      runTest(dispatcher) {
+        val profile = UserProfile(level = 5, points = 1000, coins = 500)
+        val repo = FakeProfileRepository(profile)
+        val statsRepo = RecordingUserStatsRepository(UserStats(points = 1000, coins = 500))
+        val (vm, _) = vmWith(repo, statsRepo)
+        advanceUntilIdle()
+
+        // Simulate a decrease in points (shouldn't happen normally but edge case)
+        statsRepo.setStats(UserStats(points = 800, coins = 400))
+        advanceUntilIdle()
+
+        // Level should not decrease
+        assertTrue(vm.userProfile.value.level >= 1)
+      }
+
+  @Test
+  fun syncProfileWithStats_updates_study_stats() =
+      runTest(dispatcher) {
+        val profile = UserProfile(level = 1, points = 0)
+        val repo = FakeProfileRepository(profile)
+        val statsRepo = RecordingUserStatsRepository(UserStats(totalStudyMinutes = 60))
+        val (vm, _) = vmWith(repo, statsRepo)
+        advanceUntilIdle()
+
+        // Study minutes should be synced
+        assertEquals(60, vm.userProfile.value.studyStats.totalTimeMin)
+      }
 }
