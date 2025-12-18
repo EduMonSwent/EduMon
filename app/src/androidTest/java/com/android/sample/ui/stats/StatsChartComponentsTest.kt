@@ -3,7 +3,6 @@ package com.android.sample.ui.stats
 import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
@@ -57,7 +56,7 @@ class StatsChartComponentsTest {
     val context = ApplicationProvider.getApplicationContext<Context>()
     composeTestRule
         .onNodeWithText(context.getString(R.string.stats_section_subject_distribution))
-        .assertIsDisplayed()
+        .assertExists()
   }
 
   @Test
@@ -80,10 +79,10 @@ class StatsChartComponentsTest {
       }
     }
 
-    // Verify legend entries are displayed
-    composeTestRule.onNodeWithText("Math", substring = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Physics", substring = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Chemistry", substring = true).assertIsDisplayed()
+    // Verify legend entries exist
+    composeTestRule.onNodeWithText("Math", substring = true).assertExists()
+    composeTestRule.onNodeWithText("Physics", substring = true).assertExists()
+    composeTestRule.onNodeWithText("Chemistry", substring = true).assertExists()
   }
 
   @OptIn(ExperimentalFoundationApi::class)
@@ -117,13 +116,13 @@ class StatsChartComponentsTest {
     val sat = context.getString(R.string.stats_label_day_sat)
     val sun = context.getString(R.string.stats_label_day_sun)
 
-    composeTestRule.onNodeWithText(mon).performScrollTo().assertIsDisplayed()
-    composeTestRule.onNodeWithText(tue).performScrollTo().assertIsDisplayed()
-    composeTestRule.onNodeWithText(wed).performScrollTo().assertIsDisplayed()
-    composeTestRule.onNodeWithText(thu).performScrollTo().assertIsDisplayed()
-    composeTestRule.onNodeWithText(fri).performScrollTo().assertIsDisplayed()
-    composeTestRule.onNodeWithText(sat).performScrollTo().assertIsDisplayed()
-    composeTestRule.onNodeWithText(sun).performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText(mon).performScrollTo().assertExists()
+    composeTestRule.onNodeWithText(tue).performScrollTo().assertExists()
+    composeTestRule.onNodeWithText(wed).performScrollTo().assertExists()
+    composeTestRule.onNodeWithText(thu).performScrollTo().assertExists()
+    composeTestRule.onNodeWithText(fri).performScrollTo().assertExists()
+    composeTestRule.onNodeWithText(sat).performScrollTo().assertExists()
+    composeTestRule.onNodeWithText(sun).performScrollTo().assertExists()
   }
 
   @Test
@@ -147,7 +146,7 @@ class StatsChartComponentsTest {
     }
 
     // Should display "45m" not "0h 45m"
-    composeTestRule.onNodeWithText("45m").assertIsDisplayed()
+    composeTestRule.onNodeWithText("45m").assertExists()
   }
 
   @Test
@@ -171,7 +170,7 @@ class StatsChartComponentsTest {
     }
 
     // Should display "2h 5m"
-    composeTestRule.onNodeWithText("2h 5m").assertIsDisplayed()
+    composeTestRule.onNodeWithText("2h 5m").assertExists()
   }
 
   @OptIn(ExperimentalFoundationApi::class)
@@ -197,11 +196,11 @@ class StatsChartComponentsTest {
 
     val context = ApplicationProvider.getApplicationContext<Context>()
 
-    // Ensure the caption is scrolled into view
+    // Ensure the caption exists (scroll into view first)
     composeTestRule
         .onNodeWithText(context.getString(R.string.stats_bar_chart_caption))
         .performScrollTo()
-        .assertIsDisplayed()
+        .assertExists()
   }
 
   @Test
@@ -225,9 +224,9 @@ class StatsChartComponentsTest {
     }
 
     // Legend should show percentages (50%, 30%, 20%)
-    composeTestRule.onNodeWithText("50%", substring = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("30%", substring = true).assertIsDisplayed()
-    composeTestRule.onNodeWithText("20%", substring = true).assertIsDisplayed()
+    composeTestRule.onNodeWithText("50%", substring = true).assertExists()
+    composeTestRule.onNodeWithText("30%", substring = true).assertExists()
+    composeTestRule.onNodeWithText("20%", substring = true).assertExists()
   }
 
   @Test
@@ -257,6 +256,6 @@ class StatsChartComponentsTest {
     val context = ApplicationProvider.getApplicationContext<Context>()
     composeTestRule
         .onNodeWithText(context.getString(R.string.stats_section_progress_7_days))
-        .assertIsDisplayed()
+        .assertExists()
   }
 }

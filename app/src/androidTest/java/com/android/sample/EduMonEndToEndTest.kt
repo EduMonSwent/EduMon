@@ -3,9 +3,16 @@ package com.android.sample
 // This code has been written partially using A.I (LLM).
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -15,13 +22,13 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.android.sample.feature.homeScreen.AppDestination
 import com.android.sample.feature.homeScreen.HomeTestTags
 import com.android.sample.repos_providors.AppRepositories
 import com.android.sample.repos_providors.FakeRepositoriesProvider
-import com.android.sample.ui.login.LoginScreen
 import com.android.sample.ui.schedule.ScheduleScreenTestTags
 import com.android.sample.ui.session.StudySessionTestTags
 import com.android.sample.ui.theme.EduMonTheme
@@ -42,13 +49,27 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
 
   @Before
   fun setUp() {
-    // Use fake repositories to avoid any network / Firestore dependency in CI
+    // Preserve current provider, then swap to fakes for CI stability
+    originalRepositories = AppRepositories
     AppRepositories = FakeRepositoriesProvider
   }
 
   @After
   fun tearDown() {
     AppRepositories = originalRepositories
+  }
+
+  /**
+   * IMPORTANT: We intentionally do NOT use the real LoginScreen here because it may trigger
+   * Firebase Auth / network calls during composition. This lightweight test login is fully local
+   * and deterministic.
+   */
+  @Composable
+  private fun TestLoginScreen(onLoggedIn: () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+      Text("Connect yourself to EduMon.")
+      Button(onClick = onLoggedIn) { Text("Continue with Google") }
+    }
   }
 
   @OptIn(ExperimentalTestApi::class)
@@ -61,23 +82,21 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
         loggedInState = loggedIn
 
         if (!loggedIn.value) {
-          LoginScreen(onLoggedIn = { loggedIn.value = true })
+          TestLoginScreen(onLoggedIn = { loggedIn.value = true })
         } else {
           EduMonNavHost()
         }
       }
     }
 
-    // 0) LOGIN SCREEN
+    // 0) LOGIN SCREEN (local test login)
     composeRule.waitUntilExactlyOneExists(
         hasText("Connect yourself to EduMon."),
         timeoutMillis = 20_000,
     )
     composeRule.onNodeWithText("Connect yourself to EduMon.").assertExists()
-    composeRule.onNodeWithText("Continue with Google").assertExists()
+    composeRule.onNodeWithText("Continue with Google").assertExists().performClick()
 
-    // Simulate login success without hitting Google / Firebase
-    composeRule.runOnIdle { loggedInState.value = true }
     composeRule.waitForIdle()
     composeRule.mainClock.advanceTimeBy(500)
     composeRule.waitForIdle()
@@ -85,8 +104,8 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
     // 1) HOME + NAV HOST READY
     waitForHome()
 
-    // 2) MOTIVATION WIDGETS VISIBLE ON HOME
-    ensureHomeChildVisible(HomeTestTags.TODAY_SEE_ALL)
+    // 2) HOME WIDGETS VISIBLE (updated for carousel)
+    ensureHomeChildVisible(HomeTestTags.CAROUSEL_CARD)
     ensureHomeChildVisible(HomeTestTags.CHIP_MOOD)
     ensureHomeChildVisible(HomeTestTags.QUICK_STUDY)
     ensureHomeChildVisible(HomeTestTags.CHIP_OPEN_PLANNER)
@@ -214,7 +233,10 @@ class MotivationCalendarStudyProfileGamesEndToEndTest {
   @OptIn(ExperimentalTestApi::class)
   private fun openDrawerDestination(route: String) {
     // Open the drawer from Home
-    composeRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).assertExists().performClick()
+    composeRule
+        .onNodeWithTag(HomeTestTags.MENU_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     val drawerItemTag = HomeTestTags.drawerTag(route)
 

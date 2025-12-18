@@ -2,6 +2,8 @@ package com.android.sample.ui.login
 
 import androidx.credentials.Credential
 import androidx.credentials.CustomCredential
+import com.android.sample.data.FirestoreUserStatsRepository
+import com.android.sample.repos_providors.AppRepositories
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -20,8 +22,13 @@ class FirebaseAuthRepository(private val auth: FirebaseAuth = FirebaseAuth.getIn
         val idToken = GoogleAuthHelper.fromBundle(credential.data).idToken
         val firebaseCred = GoogleAuthHelper.toFirebaseCredential(idToken)
         val user = auth.signInWithCredential(firebaseCred).await().user
-        if (user != null) Result.success(user)
-        else Result.failure(IllegalStateException(ERROR_NO_USER_AFTER_LOGIN))
+        if (user != null) {
+          // Restart stats repository for new user
+          AppRepositories.userStatsRepository.start()
+          Result.success(user)
+        } else {
+          Result.failure(IllegalStateException(ERROR_NO_USER_AFTER_LOGIN))
+        }
       } else {
         Result.failure(IllegalArgumentException(ERROR_CREDENTIAL_NOT_SUPPORTED))
       }
@@ -32,6 +39,9 @@ class FirebaseAuthRepository(private val auth: FirebaseAuth = FirebaseAuth.getIn
 
   override fun logout(): Result<Unit> {
     return try {
+      // Stop the stats repository listener before signing out
+      (AppRepositories.userStatsRepository as? FirestoreUserStatsRepository)?.stop()
+
       auth.signOut()
       Result.success(Unit)
     } catch (e: Exception) {
