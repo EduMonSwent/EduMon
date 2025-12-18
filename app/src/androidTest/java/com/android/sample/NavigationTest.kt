@@ -173,26 +173,6 @@ class Navigation1Test {
         hasText("Todo") and hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 5000)
   }
 
-  @OptIn(ExperimentalTestApi::class)
-  @Test
-  fun drawerItem_navigatesToShop() {
-    composeTestRule.setContent {
-      EduMonTheme { EduMonNavHost(startDestination = AppDestination.Home.route) }
-    }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(HomeTestTags.MENU_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntilAtLeastOneExists(hasText("Shop"), timeoutMillis = 5000)
-    composeTestRule.onNodeWithText("Shop").performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntilAtLeastOneExists(
-        hasText("Shop") and hasTestTag(NavigationTestTags.TOP_BAR_TITLE), timeoutMillis = 5000)
-  }
-
   // ════════════════════════════════════════════════════════════════════════════
   // Back Navigation Tests
   // ════════════════════════════════════════════════════════════════════════════

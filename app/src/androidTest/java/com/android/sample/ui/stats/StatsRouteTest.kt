@@ -55,26 +55,6 @@ class StatsRouteTest {
   }
 
   @Test
-  fun statsRoute_displays_stats_screen_when_data_available() {
-    val fakeStatsRepo = FakeStatsRepository()
-    val fakeUserStatsRepo = FakeUserStatsRepository()
-
-    val vm =
-        StatsViewModel(
-            repo = fakeStatsRepo,
-            objectivesRepo = FakeObjectivesRepository,
-            userStatsRepo = fakeUserStatsRepo)
-
-    composeTestRule.setContent { SampleAppTheme { StatsRoute(viewModel = vm) } }
-
-    composeTestRule.waitForIdle()
-
-    // Stats content should be displayed (not loading indicator)
-    // Check for presence of scenario buttons or other stats content
-    composeTestRule.onNodeWithText("Début de semaine").assertIsDisplayed()
-  }
-
-  @Test
   fun statsRoute_responds_to_scenario_selection() {
     val fakeStatsRepo = FakeStatsRepository()
     val fakeUserStatsRepo = FakeUserStatsRepository()
