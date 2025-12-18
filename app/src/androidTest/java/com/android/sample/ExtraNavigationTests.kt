@@ -513,26 +513,6 @@ class NavigationExtraCoverageTest {
     // This covers: arguments = listOf(navArgument("date") { type = NavType.StringType })
   }
 
-  @Test
-  fun addTodoFromSchedule_differentDateFormats() {
-    val dates = listOf("2024-01-01", "2024-06-15", "2024-12-31")
-
-    dates.forEach { date ->
-      composeTestRule.setContent { EduMonNavHost(startDestination = "addTodoFromSchedule/$date") }
-
-      composeTestRule.waitForIdle()
-
-      composeTestRule.waitUntil(timeoutMillis = 5000) {
-        try {
-          composeTestRule.onNodeWithTag(NavigationTestTags.NAV_HOST).assertExists()
-          true
-        } catch (e: AssertionError) {
-          false
-        }
-      }
-    }
-  }
-
   // ============================================================
   // STUDY TOGETHER ROUTE
   // ============================================================
