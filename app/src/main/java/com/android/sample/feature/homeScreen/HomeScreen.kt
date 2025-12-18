@@ -122,12 +122,12 @@ fun EduMonHomeScreen(
           .verticalScroll(rememberScrollState())
           .padding(horizontal = 16.dp, vertical = 8.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        CreatureHouseCard(
-            creatureResId = creatureResId,
-            level = LevelingConfig.levelForPoints(state.userStats.points),
-            environmentResId = environmentResId,
-        )
-
+      CreatureHouseCard(
+          creatureResId = creatureResId,
+          level = LevelingConfig.levelForPoints(state.userStats.points),
+          environmentResId = environmentResId,
+          userStats = state.userStats, // ✅ NEW
+      )
         Row(
             Modifier.fillMaxWidth().height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
