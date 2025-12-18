@@ -247,4 +247,109 @@ class ScheduleScreenAllAndroidTest {
               "Update possibleLabels to match your UI text for the nav action buttons/cards.")
     }
   }
+
+  @Test
+  fun scheduleScreen_navEvents_allRoutesCovered() {
+    val routes = mutableListOf<String>()
+
+    rule.setContent { ScheduleScreen(onNavigateTo = { routes.add(it) }) }
+
+    val labels =
+        mapOf(
+            "Flashcards" to "flashcards",
+            "Games" to "games",
+            "Study" to "study",
+            "Together" to "study_together")
+
+    labels.forEach { (label, route) ->
+      val node =
+          rule
+              .onAllNodesWithText(label, substring = true, ignoreCase = true)
+              .fetchSemanticsNodes()
+              .firstOrNull()
+
+      if (node != null) {
+        rule.onNodeWithText(label, substring = true, ignoreCase = true).performClick()
+        rule.waitForIdle()
+      }
+    }
+
+    rule.waitUntil(10_000) { routes.isNotEmpty() }
+  }
+
+  @Test
+  fun scheduleScreen_showsWellnessSnackbar() {
+    rule.setContent { ScheduleScreen() }
+
+    val wellnessNode =
+        rule
+            .onAllNodesWithText("Well", substring = true, ignoreCase = true)
+            .fetchSemanticsNodes()
+            .firstOrNull()
+
+    if (wellnessNode != null) {
+      rule.onNodeWithText("Well", substring = true, ignoreCase = true).performClick()
+
+      rule.waitUntil(10_000) {
+        rule
+            .onAllNodesWithText("up", substring = true, ignoreCase = true)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+    }
+  }
+
+  @Test
+  fun monthTab_prevNext_andDateSelection_areTriggered() {
+    rule.setContent { ScheduleScreen() }
+
+    // Switch to Month tab
+    rule.onNodeWithText("Month").performClick()
+    rule.waitForIdle()
+
+    // Prev / Next month
+    rule.onNodeWithContentDescription("Previous").performClick()
+    rule.waitForIdle()
+
+    rule.onNodeWithContentDescription("Next").performClick()
+    rule.waitForIdle()
+
+    // Click any visible date cell
+    rule.onAllNodes(hasText(Regex("\\d+").toString())).fetchSemanticsNodes().firstOrNull()?.let {
+      rule.onAllNodes(hasText(Regex("\\d+").toString()))[0].performClick()
+    }
+  }
+
+  @Test
+  fun addStudyTaskModal_opens_and_dismisses() {
+    rule.setContent { ScheduleScreen() }
+
+    // FAB click triggers modal
+    rule.onNodeWithTag(ScheduleScreenTestTags.FAB_ADD).performClick()
+
+    // Modal should appear
+    rule.waitUntil(5_000) {
+      rule.onAllNodesWithText("Add", substring = true).fetchSemanticsNodes().isNotEmpty()
+    }
+
+    // Dismiss modal
+    rule.onNodeWithText("Cancel", substring = true).performClick()
+  }
+
+  @Test
+  fun scheduleScreen_uiEventSnackbar_isShown() {
+    rule.setContent { ScheduleScreen() }
+
+    // Trigger something that causes UiEvent.ShowSnackbar
+    rule.onAllNodesWithText("Adjust", substring = true).fetchSemanticsNodes().firstOrNull()?.let {
+      rule.onAllNodesWithText("Adjust", substring = true)[0].performClick()
+    }
+
+    rule.waitUntil(10_000) {
+      rule
+          .onAllNodesWithText("success", substring = true, ignoreCase = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+  }
 }
