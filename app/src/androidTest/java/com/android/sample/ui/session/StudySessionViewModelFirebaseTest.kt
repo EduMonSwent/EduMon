@@ -14,14 +14,10 @@ import com.android.sample.ui.stats.repository.FakeStatsRepository
 import com.android.sample.util.FirebaseEmulator
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -43,12 +39,9 @@ class StudySessionViewModelFirebaseTest {
   private lateinit var auth: FirebaseAuth
   private lateinit var firestore: FirebaseFirestore
   private lateinit var viewModel: StudySessionViewModel
-  private val testDispatcher = UnconfinedTestDispatcher()
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   @Before
   fun setup() {
-    Dispatchers.setMain(testDispatcher)
 
     val context = ApplicationProvider.getApplicationContext<android.content.Context>()
 
