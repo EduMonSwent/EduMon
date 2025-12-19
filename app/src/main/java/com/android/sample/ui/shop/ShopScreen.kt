@@ -524,8 +524,8 @@ private fun BuyButton(
       shape = RoundedCornerShape(BUY_BUTTON_CORNER_SIZE),
       colors =
           ButtonDefaults.buttonColors(
-              containerColor = AccentViolet,
-              disabledContainerColor = AccentViolet.copy(alpha = BUTTON_DISABLED_ALPHA)),
+              containerColor = MaterialTheme.colorScheme.primary,
+              disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = BUTTON_DISABLED_ALPHA)),
       modifier = Modifier.fillMaxWidth()) {
         if (isPurchasing) {
           CircularProgressIndicator(

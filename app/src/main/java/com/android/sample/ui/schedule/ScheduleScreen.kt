@@ -61,8 +61,8 @@ fun ScheduleScreen(
     onOpenTodo: (String) -> Unit = {},
     @DrawableRes avatarResId: Int = R.drawable.edumon,
     petBackgroundBrush: Brush? = null,
-    @DrawableRes environmentResId: Int = R.drawable.home, // 👈 NEW: environment
-    level: Int = 5,
+    @DrawableRes environmentResId: Int = R.drawable.bg_aquamon, // 👈 NEW: environment
+    level: Int = 1,
     onNavigateTo: (String) -> Unit = {}
 ) {
   val colorScheme = MaterialTheme.colorScheme
